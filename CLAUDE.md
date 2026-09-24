@@ -28,6 +28,7 @@ WKWebView와 SFSafariViewController 설정을 실시간 테스트하는 개발�
 - For ASC REST calls on this machine, `xcrun altool --generate-jwt --verbose --apiKey ... --apiIssuer ... --p8-file-path ...` prints the JWT on stderr; parse it internally and do not log the token.
 - App Review submission currently uses the modern `reviewSubmissions` flow: create/reuse review submission, create `reviewSubmissionItems` for the `appStoreVersion`, then patch the review submission with `submitted: true`. The older `appStoreVersionSubmissions` create endpoint can return a 403 that only allows DELETE.
 - Newly created App Store versions may have empty `whatsNew`; copy `fastlane/metadata/*/release_notes.txt` into every `appStoreVersionLocalization` before adding the version to a review submission.
+- Open (2026-09-24): `xcodebuild archive` fails under Xcode 26.6 inside the Runestone 0.5.1 SPM dependency: `UITextSearchingHelper.swift:170: protocol 'UIFindInteractionDelegate' requires 'findInteraction(_:sessionFor:)' to be available in iOS 14.0 and newer`. This is a compile error, not signing. Signing works headless: pass `-allowProvisioningUpdates` plus the App Store Connect key flags (`-authenticationKeyPath/-authenticationKeyID/-authenticationKeyIssuerID`) to both archive and `-exportArchive`, with export `signingStyle` automatic and `destination` export (the checked-in `ExportOptions.plist` uploads).
 
 ### Build & Run
 ```bash
