@@ -1,1 +1,1 @@
-Page Startup Setupia parannettu lokalisoiduilla teksteillä, luotettavammalla bridge-mockilla ja viestien kaappauksen korjauksilla.
+Parannettu yhteensopivuutta ja vakautta.

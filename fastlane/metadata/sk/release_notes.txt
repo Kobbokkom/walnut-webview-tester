@@ -1,1 +1,1 @@
-Vylepšený Page Startup Setup s lokalizovanými textami, spoľahlivejším bridge mockom a opravami zachytávania správ.
+Vylepšená kompatibilita a stabilita.

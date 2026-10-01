@@ -1,1 +1,1 @@
-Ulepszono Page Startup Setup: dodano lokalizację tekstów, stabilniejsze mockowanie bridge i poprawki przechwytywania wiadomości.
+Poprawiono zgodność i stabilność.

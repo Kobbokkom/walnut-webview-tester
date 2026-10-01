@@ -1,1 +1,1 @@
-Mejoras en Page Startup Setup, con textos localizados, una simulación de bridge más fiable y correcciones en la captura de mensajes.
+Mejoras de compatibilidad y estabilidad.

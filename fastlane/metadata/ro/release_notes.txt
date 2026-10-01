@@ -1,1 +1,1 @@
-Page Startup Setup a fost îmbunătățit cu texte localizate, bridge mock mai fiabil și corecții pentru capturarea mesajelor.
+Compatibilitate și stabilitate îmbunătățite.

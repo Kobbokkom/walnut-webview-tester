@@ -1,1 +1,1 @@
-Javult a Page Startup Setup: lokalizált szövegek, megbízhatóbb bridge mock és üzenetrögzítési javítások.
+Jobb kompatibilitás és stabilitás.

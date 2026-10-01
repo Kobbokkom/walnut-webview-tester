@@ -1,1 +1,1 @@
-Improved Page Startup Setup with localised text, more reliable bridge mocking and fixes for message capture.
+Improved compatibility and stability.

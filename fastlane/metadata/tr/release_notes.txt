@@ -1,1 +1,1 @@
-Page Startup Setup yerelleştirilmiş metinler, daha güvenilir bridge mock ve mesaj yakalama düzeltmeleriyle iyileştirildi.
+Uyumluluk ve kararlılık iyileştirildi.

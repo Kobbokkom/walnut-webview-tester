@@ -1,1 +1,1 @@
-改進 Page Startup Setup，加入在地化文字、更可靠的 bridge mock，並修正訊息擷取處理。
+改善了相容性和穩定性。

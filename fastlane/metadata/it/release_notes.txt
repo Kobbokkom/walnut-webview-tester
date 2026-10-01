@@ -1,1 +1,1 @@
-Migliorato Page Startup Setup con testi localizzati, bridge mock più affidabile e correzioni per la cattura dei messaggi.
+Compatibilità e stabilità migliorate.

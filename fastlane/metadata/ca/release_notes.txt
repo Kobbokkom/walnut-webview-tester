@@ -1,1 +1,1 @@
-Millores a Page Startup Setup, incloent textos localitzats, simulació de pont més fiable i correccions en la captura de missatges.
+Millores de compatibilitat i estabilitat.

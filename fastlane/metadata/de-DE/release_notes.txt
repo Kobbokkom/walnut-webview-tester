@@ -1,1 +1,1 @@
-Verbesserungen am Page Startup Setup, darunter lokalisierte Texte, zuverlässigeres Bridge-Mocking und Korrekturen bei der Nachrichtenerfassung.
+Kompatibilität und Stabilität verbessert.

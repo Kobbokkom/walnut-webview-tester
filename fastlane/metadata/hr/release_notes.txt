@@ -1,1 +1,1 @@
-Poboljšan je Page Startup Setup s lokaliziranim tekstom, pouzdanijim bridge mockom i ispravcima hvatanja poruka.
+Poboljšana kompatibilnost i stabilnost.

@@ -1,1 +1,1 @@
-Page Startup Setup verbeterd met gelokaliseerde tekst, betrouwbaardere bridge-mocking en fixes voor berichtregistratie.
+Verbeterde compatibiliteit en stabiliteit.

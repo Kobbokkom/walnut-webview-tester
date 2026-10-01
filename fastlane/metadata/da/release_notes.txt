@@ -1,1 +1,1 @@
-Forbedringer af Page Startup Setup med lokaliserede tekster, mere stabil bridge-mock og rettelser til beskedopsamling.
+Forbedret kompatibilitet og stabilitet.

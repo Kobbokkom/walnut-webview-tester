@@ -1,1 +1,1 @@
-Cải thiện Page Startup Setup với văn bản bản địa hóa, bridge mock ổn định hơn và sửa lỗi ghi nhận tin nhắn.
+Cải thiện khả năng tương thích và độ ổn định.
