@@ -56,14 +56,14 @@ extension ContentView {
                     // URL Input
                     HStack(spacing: 12) {
                         HStack(spacing: 12) {
-                            Image(systemName: useCallbackTestPage ? "checkmark.circle.fill" : urlValidationState.iconName)
-                                .foregroundStyle(useCallbackTestPage ? .green : urlValidationState.iconColor)
+                            Image(systemName: isCallbackTestPageActive ? "checkmark.circle.fill" : urlValidationState.iconName)
+                                .foregroundStyle(isCallbackTestPageActive ? .green : urlValidationState.iconColor)
                                 .font(.system(size: 16))
                                 .contentTransition(.symbolEffect(.replace))
 
                             TextField(
-                                useCallbackTestPage ? "Callback Test Page" : "Enter URL",
-                                text: useCallbackTestPage
+                                isCallbackTestPageActive ? "Callback Test Page" : "Enter URL",
+                                text: isCallbackTestPageActive
                                     ? .constant(CallbackTestManager.testPageURL.absoluteString) : $urlText
                             )
                             .textFieldStyle(.plain)
@@ -73,14 +73,12 @@ extension ContentView {
                             .submitLabel(.go)
                             .font(.system(size: 16))
                             .focused($textFieldFocused)
-                            .disabled(useCallbackTestPage)
-                            .foregroundStyle(useCallbackTestPage ? .secondary : .primary)
+                            .disabled(isCallbackTestPageActive)
+                            .foregroundStyle(isCallbackTestPageActive ? .secondary : .primary)
                             .onSubmit {
-                                validateURL()
-                                if urlValidationState == .valid || useCallbackTestPage {
+                                if submitURL() {
                                     textFieldFocused = false
                                     showDropdown = false
-                                    submitURL()
                                 }
                             }
                             .onChange(of: urlText) { _, _ in
@@ -103,21 +101,21 @@ extension ContentView {
                                     .contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
-                            .opacity(urlText.isEmpty || useCallbackTestPage ? 0 : 1)
-                            .disabled(urlText.isEmpty || useCallbackTestPage)
+                            .opacity(urlText.isEmpty || isCallbackTestPageActive ? 0 : 1)
+                            .disabled(urlText.isEmpty || isCallbackTestPageActive)
                         }
                         .padding(.horizontal, 18)
                         .padding(.vertical, 10)
-                        .frame(width: (urlValidationState == .valid || useCallbackTestPage) ? max(0, inputWidth - 60) : inputWidth)
+                        .frame(width: (urlValidationState == .valid || isCallbackTestPageActive) ? max(0, inputWidth - 60) : inputWidth)
                         .contentShape(Capsule())
                         .onTapGesture {
-                            if !useCallbackTestPage {
+                            if !isCallbackTestPageActive {
                                 textFieldFocused = true
                             }
                         }
                         .backport.glassEffect(in: .capsule)
 
-                        if urlValidationState == .valid || useCallbackTestPage {
+                        if urlValidationState == .valid || isCallbackTestPageActive {
                             Button {
                                 textFieldFocused = false
                                 showDropdown = false
@@ -135,7 +133,7 @@ extension ContentView {
                         }
                     }
                     .animation(.easeOut(duration: 0.25), value: urlValidationState)
-                    .animation(.easeOut(duration: 0.25), value: useCallbackTestPage)
+                    .animation(.easeOut(duration: 0.25), value: isCallbackTestPageActive)
                     .overlay(alignment: .bottom) {
                         // Dropdown (higher layer, overlays quick options)
                         dropdownOverlay

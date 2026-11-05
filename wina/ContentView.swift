@@ -44,6 +44,7 @@ struct ContentView: View {
     @AppStorage("privateBrowsing") var privateBrowsing = false
     // SafariVC: Use callback test page instead of manual URL
     @State var useCallbackTestPage: Bool = false
+    var isCallbackTestPageActive: Bool { useSafariWebView && useCallbackTestPage }
     @AppStorage("colorSchemeOverride") private var colorSchemeOverride: String?
 
     // Safari configuration settings (for onChange detection)
@@ -413,14 +414,15 @@ struct ContentView: View {
 
     // MARK: - URL Actions (internal for extension access)
 
-    func submitURL() {
+    @discardableResult
+    func submitURL() -> Bool {
         // Handle callback test page mode
         let targetURL: String
-        if useCallbackTestPage {
+        if isCallbackTestPageActive {
             targetURL = CallbackTestManager.testPageURL.absoluteString
         } else {
-            guard !urlText.isEmpty else { return }
-            guard validateSafariURLIfNeeded(urlText) else { return }
+            validateURL()
+            guard urlValidationState == .valid, validateSafariURLIfNeeded(urlText) else { return false }
             // Add to history via shared storage
             urlStorage.addToHistory(urlText)
             targetURL = urlText
@@ -432,13 +434,15 @@ struct ContentView: View {
         let initialURLValue = URL(string: normalized)
 
         // Clean Start: clear all website data and DevTools logs before loading
-        if cleanStart {
+        if cleanStart && !useSafariWebView {
+            let clearPersistentData = !privateBrowsing
             Task {
-                // 1. Clear all WKWebView website data (cookies, localStorage, cache, etc.)
-                let dataStore = WKWebsiteDataStore.default()
-                let allTypes = WKWebsiteDataStore.allWebsiteDataTypes()
-                let records = await dataStore.dataRecords(ofTypes: allTypes)
-                await dataStore.removeData(ofTypes: allTypes, for: records)
+                if clearPersistentData {
+                    let dataStore = WKWebsiteDataStore.default()
+                    let allTypes = WKWebsiteDataStore.allWebsiteDataTypes()
+                    let records = await dataStore.dataRecords(ofTypes: allTypes)
+                    await dataStore.removeData(ofTypes: allTypes, for: records)
+                }
 
                 await MainActor.run {
                     // 2. Clear all DevTools data
@@ -476,6 +480,7 @@ struct ContentView: View {
                 showWebView = true
             }
         }
+        return true
     }
 
     private func validateSafariURLIfNeeded(_ url: String) -> Bool {
