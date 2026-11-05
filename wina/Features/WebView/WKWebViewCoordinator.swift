@@ -459,6 +459,7 @@ class WKWebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
         }
         pendingDocumentRequestId = nil
         // reload 실패 시 다음 정상 탐색에 force-init이 남지 않도록 정리합니다.
+        shouldSkipNextCommitClearStrategy = false
         shouldForceErudaInitOnNextFinish = false
     }
 
@@ -476,6 +477,7 @@ class WKWebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
         }
         pendingDocumentRequestId = nil
         // provisional 실패도 동일하게 force-init 플래그를 정리합니다.
+        shouldSkipNextCommitClearStrategy = false
         shouldForceErudaInitOnNextFinish = false
     }
 
@@ -504,7 +506,9 @@ class WKWebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
         alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: { _ in
             completionHandler()
         }))
-        presentAlertController(alertController)
+        if !presentAlertController(alertController, from: webView) {
+            completionHandler()
+        }
     }
 
     // Handle JavaScript confirms
@@ -521,7 +525,9 @@ class WKWebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
         alertController.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: { _ in
             completionHandler(false)
         }))
-        presentAlertController(alertController)
+        if !presentAlertController(alertController, from: webView) {
+            completionHandler(false)
+        }
     }
 
     // Handle JavaScript prompts
@@ -536,29 +542,30 @@ class WKWebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
         alertController.addTextField { textField in
             textField.text = defaultText
         }
-        alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: { _ in
-            completionHandler(alertController.textFields?.first?.text)
+        alertController.addAction(UIAlertAction(title: "OK", style: .default, handler: { [weak alertController] _ in
+            completionHandler(alertController?.textFields?.first?.text)
         }))
         alertController.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: { _ in
             completionHandler(nil)
         }))
-        presentAlertController(alertController)
+        if !presentAlertController(alertController, from: webView) {
+            completionHandler(nil)
+        }
     }
 
-    private func presentAlertController(_ alertController: UIAlertController) {
-        guard let windowScene = UIApplication.shared.connectedScenes
-            .compactMap({ $0 as? UIWindowScene })
-            .first(where: { $0.activationState == .foregroundActive }),
-            let rootViewController = windowScene.windows.first(where: { $0.isKeyWindow })?.rootViewController
-        else {
-            return
-        }
+    private func presentAlertController(_ alertController: UIAlertController, from webView: WKWebView) -> Bool {
+        guard let window = webView.window,
+              window.windowScene?.activationState == .foregroundActive,
+              let rootViewController = window.rootViewController else { return false }
         // Find topmost presented view controller
         var topVC = rootViewController
         while let presented = topVC.presentedViewController {
             topVC = presented
         }
+        guard topVC.viewIfLoaded?.window === window,
+              !topVC.isBeingDismissed, !topVC.isBeingPresented else { return false }
         topVC.present(alertController, animated: true)
+        return true
     }
 
     deinit {

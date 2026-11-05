@@ -251,6 +251,17 @@ struct WebViewInfo: Sendable {
             }
         } catch(e) {}
 
+        function supportsWritableStorage(getStorage) {
+            try {
+                var storage = getStorage();
+                var key = '__walnut_storage_probe_' + Date.now() + '_' + Math.random();
+                if (storage.getItem(key) !== null) return false;
+                storage.setItem(key, '1');
+                storage.removeItem(key);
+                return true;
+            } catch(e) { return false; }
+        }
+
         return {
             browser: {
                 userAgent: navigator.userAgent,
@@ -280,8 +291,8 @@ struct WebViewInfo: Sendable {
                 pictureInPicture: 'pictureInPictureEnabled' in document,
                 fullscreen: !!document.documentElement.requestFullscreen || !!document.documentElement.webkitRequestFullscreen,
                 cookies: navigator.cookieEnabled,
-                localStorage: (function() { try { var k = '__test__'; localStorage.setItem(k, '1'); localStorage.removeItem(k); return true; } catch(e) { return false; } })(),
-                sessionStorage: (function() { try { var k = '__test__'; sessionStorage.setItem(k, '1'); sessionStorage.removeItem(k); return true; } catch(e) { return false; } })(),
+                localStorage: supportsWritableStorage(function() { return window.localStorage; }),
+                sessionStorage: supportsWritableStorage(function() { return window.sessionStorage; }),
                 indexedDB: (function() { try { return typeof indexedDB !== 'undefined' && indexedDB !== null; } catch(e) { return false; } })(),
                 cacheAPI: (function() { try { return 'caches' in window && typeof caches.open === 'function'; } catch(e) { return false; } })(),
                 webSocket: typeof WebSocket !== 'undefined',

@@ -177,9 +177,13 @@ struct DisplayInfo: Sendable {
     }
 
     private static func formatPx(_ value: Any?) -> String {
-        if let num = value as? Int { return "\(num) px" }
-        if let num = value as? Double { return "\(Int(num)) px" }
-        return "N/A"
+        pixelCount(value).map { "\($0) px" } ?? "N/A"
+    }
+
+    private static func pixelCount(_ value: Any?) -> Int? {
+        if let count = value as? Int { return count }
+        guard let number = value as? Double else { return nil }
+        return Int(exactly: number.rounded(.towardZero))
     }
 
     private static func gcd(_ a: Int, _ b: Int) -> Int {
@@ -187,9 +191,7 @@ struct DisplayInfo: Sendable {
     }
 
     private static func calculateAspectRatio(width: Any?, height: Any?) -> String {
-        let w = (width as? Int) ?? Int(width as? Double ?? 0)
-        let h = (height as? Int) ?? Int(height as? Double ?? 0)
-        guard w > 0 && h > 0 else { return "N/A" }
+        guard let w = pixelCount(width), let h = pixelCount(height), w > 0, h > 0 else { return "N/A" }
         let divisor = gcd(w, h)
         return "\(w / divisor):\(h / divisor)"
     }

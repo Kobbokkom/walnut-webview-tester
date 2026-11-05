@@ -27,10 +27,7 @@ indirect enum ConsoleValue {
         case .string(let stringValue):
             return "\"\(stringValue)\""
         case .number(let numberValue):
-            if numberValue == Double(Int(numberValue)) {
-                return String(Int(numberValue))
-            }
-            return String(numberValue)
+            return Self.formatNumber(numberValue)
         case .boolean(let boolValue):
             return boolValue ? "true" : "false"
         case .null:
@@ -91,6 +88,10 @@ indirect enum ConsoleValue {
         prettyPrinted(indent: 0)
     }
 
+    static func formatNumber(_ number: Double) -> String {
+        Int(exactly: number).map(String.init) ?? String(number)
+    }
+
     /// 들여쓰기를 적용한 pretty-printed 문자열 생성
     private func prettyPrinted(indent: Int) -> String {
         let indentStr = String(repeating: "  ", count: indent)
@@ -100,10 +101,7 @@ indirect enum ConsoleValue {
         case .string(let str):
             return "\"\(str)\""
         case .number(let num):
-            if num == Double(Int(num)) {
-                return String(Int(num))
-            }
-            return String(num)
+            return Self.formatNumber(num)
         case .boolean(let bool):
             return bool ? "true" : "false"
         case .null:

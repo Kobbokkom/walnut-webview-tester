@@ -34,8 +34,7 @@ final class NavigationLogRegressionTests: XCTestCase {
         let original = keys.map { defaults.object(forKey: $0) }
         defer {
             for (key, value) in zip(keys, original) {
-                if let value { defaults.set(value, forKey: key) }
-                else { defaults.removeObject(forKey: key) }
+                if let value { defaults.set(value, forKey: key) } else { defaults.removeObject(forKey: key) }
             }
         }
         defaults.set(true, forKey: LogClearStrategy.migrationFlagKey)
@@ -71,6 +70,40 @@ final class NavigationLogRegressionTests: XCTestCase {
             webView.navigationDelegate = nil
             coordinator.invalidateObservation()
             navigator.detach()
+        }
+    }
+
+    func testFailedReloadDoesNotSkipClearingAtNextCommit() async {
+        let defaults = UserDefaults.standard
+        let key = LogClearStrategy.consoleDefaultsKey
+        let migrationKey = LogClearStrategy.migrationFlagKey
+        let previous = defaults.object(forKey: key)
+        let previousMigration = defaults.object(forKey: migrationKey)
+        defaults.set(LogClearStrategy.page.rawValue, forKey: key)
+        defaults.set(true, forKey: migrationKey)
+        defer {
+            defaults.set(previous, forKey: key)
+            defaults.set(previousMigration, forKey: migrationKey)
+        }
+
+        let navigator = WebViewNavigator()
+        let webView = WKWebView(frame: .zero)
+        let coordinator = Coordinator(isLoading: .constant(false), navigator: navigator)
+        webView.navigationDelegate = coordinator
+
+        for provisional in [true, false] {
+            coordinator.prepareForManualReloadRequest()
+            if provisional {
+                coordinator.webView(webView, didFailProvisionalNavigation: nil, withError: URLError(.notConnectedToInternet))
+            } else {
+                coordinator.webView(webView, didFail: nil, withError: URLError(.networkConnectionLost))
+            }
+            navigator.consoleManager.logs.append(ConsoleLog(type: .log, message: "old page", source: nil, timestamp: Date()))
+            let loaded = expectation(description: "Next document loaded")
+            coordinator.onFinish = { loaded.fulfill() }
+            webView.loadHTMLString("<html><body>next page</body></html>", baseURL: nil)
+            await fulfillment(of: [loaded], timeout: 5)
+            XCTAssertTrue(navigator.consoleManager.logs.isEmpty)
         }
     }
 

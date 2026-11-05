@@ -24,6 +24,16 @@ final class ConsoleValueTests: XCTestCase {
         XCTAssertFalse(intValue.isExpandable)
     }
 
+    func testNumberPreviewAndCopyHandleNonrepresentableIntegers() {
+        let values: [Double] = [1e30, -1e30, Double(Int.max), .infinity, -.infinity, .nan]
+        for number in values {
+            let value = ConsoleValue.number(number)
+            XCTAssertEqual(value.preview, String(number))
+            let nested = ConsoleValue.array(ConsoleArray(elements: [value]))
+            XCTAssertEqual(nested.copyableString, "[\n  \(number)\n]")
+        }
+    }
+
     func testBooleanValue() {
         let trueValue = ConsoleValue.boolean(true)
         XCTAssertEqual(trueValue.preview, "true")

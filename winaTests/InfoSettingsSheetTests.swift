@@ -94,6 +94,52 @@ final class SharedInfoCacheRegressionTests: XCTestCase {
         }
     }
 
+    func testLiveInfoPreservesPageStorage() async throws {
+        let configuration = WKWebViewConfiguration()
+        configuration.websiteDataStore = .nonPersistent()
+        let webView = WKWebView(frame: .zero, configuration: configuration)
+        await webView.loadHTMLStringAsync("<html><body>storage fixture</body></html>", baseURL: URL(string: "https://example.com"))
+        _ = try await webView.evaluateJavaScript("""
+        localStorage.setItem('__test__', 'local value');
+        sessionStorage.setItem('__test__', 'session value');
+        """)
+        let navigator = WebViewNavigator()
+        navigator.attach(to: webView)
+        let shared = SharedInfoWebView.shared
+        shared.setNavigator(navigator)
+        defer { shared.setNavigator(nil); navigator.detach() }
+
+        let info = await WebViewInfo.load { _ in }
+        XCTAssertTrue(info.supportsLocalStorage)
+        XCTAssertTrue(info.supportsSessionStorage)
+        let values = try await webView.evaluateJavaScript("""
+        [localStorage.getItem('__test__'), sessionStorage.getItem('__test__'), localStorage.length, sessionStorage.length]
+        """) as? [NSObject]
+        XCTAssertEqual(values, ["local value" as NSString, "session value" as NSString, NSNumber(value: 1), NSNumber(value: 1)])
+    }
+
+    func testLiveDisplayInfoHandlesUnrepresentableScreenDimensions() async throws {
+        let webView = WKWebView(frame: .zero)
+        await webView.loadHTMLStringAsync("<html><body>display fixture</body></html>", baseURL: nil)
+        _ = try await webView.evaluateJavaScript("""
+        Object.defineProperty(screen, 'width', { value: 1e30 });
+        Object.defineProperty(screen, 'height', { value: 600 });
+        Object.defineProperty(screen, 'availWidth', { value: -1e30 });
+        true;
+        """)
+        let navigator = WebViewNavigator()
+        navigator.attach(to: webView)
+        let shared = SharedInfoWebView.shared
+        shared.setNavigator(navigator)
+        defer { shared.setNavigator(nil); navigator.detach() }
+
+        let info = await DisplayInfo.load { _ in }
+        XCTAssertEqual(info.screenWidth, "N/A")
+        XCTAssertEqual(info.screenHeight, "600 px")
+        XCTAssertEqual(info.availWidth, "N/A")
+        XCTAssertEqual(info.aspectRatio, "N/A")
+    }
+
     func testReopeningInfoClearsSameNavigatorCaches() async {
         let navigator = InfoNavigator()
         let webView = WKWebView(frame: .zero)

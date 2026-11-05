@@ -6,6 +6,44 @@ import XCTest
 final class WKWebViewCoordinatorTests: XCTestCase {
     private static var retainedNavigators: [WebViewNavigator] = []
 
+    @MainActor
+    func testConsoleBridgeDisplaysNumbersOutsideIntRange() async throws {
+        let navigator = WebViewNavigator()
+        let coordinator = WKWebViewCoordinator(isLoading: .constant(false), navigator: navigator)
+        let configuration = WKWebViewConfiguration()
+        let controller = configuration.userContentController
+        controller.add(coordinator, name: "consoleLog")
+        controller.addUserScript(WKUserScript(
+            source: WebViewScripts.consoleHook, injectionTime: .atDocumentStart, forMainFrameOnly: true
+        ))
+        let webView = WKWebView(frame: .zero, configuration: configuration)
+        defer { controller.removeScriptMessageHandler(forName: "consoleLog") }
+        await webView.loadHTMLStringAsync("<html><body>console fixture</body></html>", baseURL: nil)
+
+        _ = try await webView.evaluateJavaScript("console.log('large', 1e30)")
+        let captured = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+            navigator.consoleManager.logs.contains { log in
+                log.inlineSegments?.contains { $0.kind == .number && $0.text == "1e+30" } == true
+            }
+        }, object: nil)
+        await fulfillment(of: [captured], timeout: 3)
+    }
+
+    @MainActor
+    func testDialogsCompleteWhenWebViewHasNoWindow() async throws {
+        let coordinator = WKWebViewCoordinator(isLoading: .constant(false), navigator: nil)
+        let webView = WKWebView(frame: .zero)
+        webView.uiDelegate = coordinator
+        await webView.loadHTMLStringAsync("<html><body>dialog fixture</body></html>", baseURL: nil)
+        XCTAssertNil(webView.window)
+
+        let result = try await webView.evaluateJavaScript("""
+        alert('Detached alert');
+        [confirm('Detached confirm'), prompt('Detached prompt') === null]
+        """) as? [Bool]
+        XCTAssertEqual(result, [false, true])
+    }
+
     private final class CoordinatorSpyNavigator: WebViewNavigator {
         var syncCallCount: Int = 0
         var syncForceInitValues: [Bool] = []

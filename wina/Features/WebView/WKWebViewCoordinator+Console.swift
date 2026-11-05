@@ -268,11 +268,7 @@ extension WKWebViewCoordinator {
 
     func formattedNumber(_ value: Any?) -> String {
         if let number = value as? NSNumber {
-            let doubleValue = number.doubleValue
-            if doubleValue == Double(Int(doubleValue)) {
-                return String(Int(doubleValue))
-            }
-            return String(doubleValue)
+            return ConsoleValue.formatNumber(number.doubleValue)
         }
         return String(describing: value ?? "")
     }
