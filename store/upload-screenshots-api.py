@@ -36,6 +36,13 @@ DISPLAY_TYPES = {
     "iPadPro129": "APP_IPAD_PRO_3GEN_129",  # 12.9"/13" (2048x2732)
 }
 
+MAX_SCREENSHOTS_PER_SET = 10
+
+
+class ScreenshotUploadError(RuntimeError):
+    pass
+
+
 # Token cache
 _cached_token = None
 _token_expiry = 0
@@ -84,13 +91,13 @@ def api_request(method, endpoint, data=None):
     url = f"{BASE_URL}{endpoint}"
 
     if method == "GET":
-        response = requests.get(url, headers=headers)
+        response = requests.get(url, headers=headers, timeout=30)
     elif method == "POST":
-        response = requests.post(url, headers=headers, json=data)
+        response = requests.post(url, headers=headers, json=data, timeout=30)
     elif method == "PATCH":
-        response = requests.patch(url, headers=headers, json=data)
+        response = requests.patch(url, headers=headers, json=data, timeout=30)
     elif method == "DELETE":
-        response = requests.delete(url, headers=headers)
+        response = requests.delete(url, headers=headers, timeout=30)
     else:
         raise ValueError(f"Unknown method: {method}")
 
@@ -151,7 +158,7 @@ def get_screenshot_sets(localization_id):
     response = api_request("GET", f"/appStoreVersionLocalizations/{localization_id}/appScreenshotSets")
 
     if response.status_code != 200:
-        return {}
+        raise ScreenshotUploadError(f"Listing screenshot sets failed (HTTP {response.status_code})")
 
     data = response.json()
     sets = {}
@@ -194,24 +201,27 @@ def create_screenshot_set(localization_id, display_type):
         return None
 
 
-def delete_existing_screenshots(screenshot_set_id):
-    """Delete all existing screenshots in a set."""
-    response = api_request("GET", f"/appScreenshotSets/{screenshot_set_id}/appScreenshots")
-
+def screenshot_ids(set_id):
+    response = api_request("GET", f"/appScreenshotSets/{set_id}/appScreenshots?limit=50")
     if response.status_code != 200:
-        return 0
-
-    data = response.json()
-    count = 0
-    for screenshot in data.get("data", []):
-        screenshot_id = screenshot["id"]
-        api_request("DELETE", f"/appScreenshots/{screenshot_id}")
-        count += 1
-
-    return count
+        raise ScreenshotUploadError(f"Listing screenshots failed (HTTP {response.status_code})")
+    return [screenshot["id"] for screenshot in response.json()["data"]]
 
 
-def upload_screenshot(screenshot_set_id, file_path):
+def delete_screenshots(ids):
+    failed = []
+    for screenshot_id in ids:
+        try:
+            response = api_request("DELETE", f"/appScreenshots/{screenshot_id}")
+            if response.status_code in (204, 404):
+                continue
+        except requests.RequestException:
+            pass
+        failed.append(screenshot_id)
+    return failed
+
+
+def upload_screenshot(screenshot_set_id, file_path, staged_ids):
     """Upload a single screenshot."""
     file_size = os.path.getsize(file_path)
     file_name = os.path.basename(file_path)
@@ -247,6 +257,7 @@ def upload_screenshot(screenshot_set_id, file_path):
 
     reservation = response.json()["data"]
     screenshot_id = reservation["id"]
+    staged_ids.append(screenshot_id)
     upload_ops = reservation["attributes"].get("uploadOperations", [])
 
     if not upload_ops:
@@ -261,7 +272,7 @@ def upload_screenshot(screenshot_set_id, file_path):
 
         chunk = file_data[offset:offset + length]
 
-        upload_response = requests.put(upload_url, headers=request_headers, data=chunk)
+        upload_response = requests.put(upload_url, headers=request_headers, data=chunk, timeout=30)
 
         if upload_response.status_code not in [200, 201]:
             return False
@@ -283,6 +294,49 @@ def upload_screenshot(screenshot_set_id, file_path):
     return response.status_code in [200, 201]
 
 
+def wait_for_screenshots(ids):
+    pending = set(ids)
+    deadline = time.monotonic() + 180
+    while pending and time.monotonic() < deadline:
+        for screenshot_id in list(pending):
+            response = api_request("GET", f"/appScreenshots/{screenshot_id}")
+            if response.status_code != 200:
+                raise ScreenshotUploadError(f"Checking {screenshot_id} failed (HTTP {response.status_code})")
+            delivery = response.json()["data"]["attributes"]["assetDeliveryState"]
+            if delivery["state"] == "COMPLETE":
+                pending.remove(screenshot_id)
+            elif delivery["state"] == "FAILED":
+                raise ScreenshotUploadError(f"Processing {screenshot_id} failed: {delivery.get('errors')}")
+        if pending:
+            time.sleep(3)
+    if pending:
+        raise ScreenshotUploadError("Timed out waiting for screenshot processing")
+
+
+def replace_screenshots(set_id, paths):
+    originals = screenshot_ids(set_id)
+    if len(originals) + len(paths) > MAX_SCREENSHOTS_PER_SET:
+        raise ScreenshotUploadError("Not enough free slots to stage the replacement while keeping the existing screenshots")
+
+    staged = []
+    try:
+        for path in paths:
+            if not upload_screenshot(set_id, path, staged):
+                raise ScreenshotUploadError(f"Upload failed for {path.name}")
+        wait_for_screenshots(staged)
+        if set(screenshot_ids(set_id)) != set(originals + staged):
+            raise ScreenshotUploadError("Screenshot set changed during upload")
+    except (Exception, KeyboardInterrupt) as error:
+        failed = delete_screenshots(staged)
+        if failed:
+            raise ScreenshotUploadError(f"{error}; could not remove staged screenshots {', '.join(failed)}") from error
+        raise
+
+    failed = delete_screenshots(originals)
+    if failed:
+        raise ScreenshotUploadError(f"Replacements are ready; could not remove old screenshots {', '.join(failed)}")
+
+
 def process_locale(locale, localization_id):
     """Process all screenshots for a single locale."""
     locale_dir = SCREENSHOTS_DIR / locale
@@ -290,42 +344,35 @@ def process_locale(locale, localization_id):
     if not locale_dir.exists():
         return 0, 0, "No directory"
 
-    # Get or create screenshot sets
-    existing_sets = get_screenshot_sets(localization_id)
+    try:
+        existing_sets = get_screenshot_sets(localization_id)
+    except (ScreenshotUploadError, requests.RequestException, ValueError, KeyError) as error:
+        return 0, 0, str(error)
 
     iphone_count = 0
     ipad_count = 0
+    failures = []
 
-    # Process each display type
     for device_prefix, display_type in DISPLAY_TYPES.items():
-        # Find screenshots for this device
-        pattern = f"*_{device_prefix}_*.png"
-        screenshots = sorted(locale_dir.glob(pattern))
-
+        screenshots = sorted(locale_dir.glob(f"*_{device_prefix}_*.png"))
         if not screenshots:
             continue
 
-        # Get or create screenshot set
-        if display_type in existing_sets:
-            set_id = existing_sets[display_type]
-        else:
-            set_id = create_screenshot_set(localization_id, display_type)
+        try:
+            set_id = existing_sets.get(display_type) or create_screenshot_set(localization_id, display_type)
             if not set_id:
-                continue
+                raise ScreenshotUploadError("Could not create screenshot set")
+            replace_screenshots(set_id, screenshots)
+        except (ScreenshotUploadError, requests.RequestException, OSError, ValueError, KeyError) as error:
+            failures.append(f"{device_prefix}: {error}")
+            continue
 
-        # Delete existing screenshots
-        delete_existing_screenshots(set_id)
+        if "iPhone" in device_prefix:
+            iphone_count += len(screenshots)
+        else:
+            ipad_count += len(screenshots)
 
-        # Upload each screenshot
-        for screenshot_path in screenshots:
-            success = upload_screenshot(set_id, screenshot_path)
-            if success:
-                if "iPhone" in device_prefix:
-                    iphone_count += 1
-                else:
-                    ipad_count += 1
-
-    return iphone_count, ipad_count, "OK"
+    return iphone_count, ipad_count, "; ".join(failures) if failures else "OK"
 
 
 def main():
@@ -338,7 +385,7 @@ def main():
     if not SCREENSHOTS_DIR.exists():
         print(f"Error: Screenshots directory not found: {SCREENSHOTS_DIR}")
         print("Run upload-screenshots.py first to generate PNGs")
-        return
+        return 1
 
     # Get App Store version
     print("\n1. Getting App Store version...")
@@ -346,7 +393,7 @@ def main():
     result = get_app_store_version()
     if not result:
         print("Error: No editable App Store version found")
-        return
+        return 1
     version_id, version_string, state = result
     print(f"   Version: {version_string} ({state})")
     print(f"   ID: {version_id}")
@@ -357,6 +404,8 @@ def main():
     sys.stdout.flush()
     localizations = get_localizations(version_id)
     print(f"   Found {len(localizations)} localizations")
+    if not localizations:
+        return 1
     sys.stdout.flush()
 
     # Process each locale
@@ -366,21 +415,22 @@ def main():
 
     total_iphone = 0
     total_ipad = 0
-    processed = 0
+    failed = False
 
-    for locale, loc_id in sorted(localizations.items()):
-        processed += 1
+    for processed, (locale, loc_id) in enumerate(sorted(localizations.items()), start=1):
         iphone, ipad, status = process_locale(locale, loc_id)
         total_iphone += iphone
         total_ipad += ipad
+        failed |= status not in ("OK", "No directory")
 
         print(f"[{processed:2d}/{len(localizations)}] {locale}: {iphone} iPhone, {ipad} iPad - {status}")
         sys.stdout.flush()
 
     print("\n" + "=" * 60)
-    print(f"Done! Uploaded {total_iphone} iPhone + {total_ipad} iPad screenshots")
+    print(f"{'Completed with errors' if failed else 'Done'}: {total_iphone} iPhone + {total_ipad} iPad screenshots")
     print("=" * 60)
+    return int(failed)
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
