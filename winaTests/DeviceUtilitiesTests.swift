@@ -143,6 +143,16 @@ final class AdaptiveWebViewSizeTests: XCTestCase {
         }
     }
 
+    func testAppPresetAdaptsWhileCustomAndFullscreenRatiosRemainUnchanged() {
+        let original = BarConstants.appContainerHeightRatio(for: 900)
+        XCTAssertEqual(BarConstants.heightRatioAfterResize(widthRatio: 1, heightRatio: original, from: 900, to: 400),
+                       BarConstants.appContainerHeightRatio(for: 400))
+        XCTAssertEqual(BarConstants.heightRatioAfterResize(widthRatio: 1, heightRatio: 0.75, from: 900, to: 400), 0.75)
+        XCTAssertEqual(BarConstants.heightRatioAfterResize(widthRatio: 0.75, heightRatio: original, from: 900, to: 400), original)
+        XCTAssertEqual(BarConstants.heightRatioAfterResize(widthRatio: 1, heightRatio: 1, from: 900, to: 400), 1)
+        XCTAssertEqual(BarConstants.heightRatioAfterResize(widthRatio: 1, heightRatio: original, from: 0, to: 400), original)
+    }
+
     func testAppPresetRemainsValidInShortOrUnmeasuredWindows() {
         for height: CGFloat in [-1, 0, 1, 100, 192, 240] {
             XCTAssertEqual(BarConstants.appContainerHeightRatio(for: height), 0.25)

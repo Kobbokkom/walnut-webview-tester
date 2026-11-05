@@ -120,7 +120,18 @@ struct ContentView: View {
                     .frame(width: browserFrame.width, height: browserFrame.height)
                     .onGeometryChange(for: CGSize.self) { proxy in
                         CGSize(width: proxy.size.width, height: proxy.size.height + proxy.safeAreaInsets.bottom)
-                    } action: { browserSize = $0 }
+                    } action: { size in
+                        let previousHeight = browserSize.height
+                        browserSize = size
+                        webViewHeightRatio = BarConstants.heightRatioAfterResize(
+                            widthRatio: webViewWidthRatio, heightRatio: webViewHeightRatio,
+                            from: previousHeight, to: size.height
+                        )
+                        safariHeightRatio = BarConstants.heightRatioAfterResize(
+                            widthRatio: safariWidthRatio, heightRatio: safariHeightRatio,
+                            from: previousHeight, to: size.height
+                        )
+                    }
                     .position(x: browserFrame.midX, y: browserFrame.midY)
                 if hasPanel, let tool = devToolsState.selectedTool {
                     DevToolsPanel(state: devToolsState) {

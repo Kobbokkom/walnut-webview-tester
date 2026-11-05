@@ -45,6 +45,15 @@ enum BarConstants {
         return min(1.0, max(0.25, 1.0 - (totalUIHeight / screenHeight)))
     }
 
+    static func heightRatioAfterResize(
+        widthRatio: Double, heightRatio: Double, from oldHeight: CGFloat, to newHeight: CGFloat
+    ) -> Double {
+        guard oldHeight > 0, newHeight > 0,
+              abs(widthRatio - 1) < 0.01,
+              abs(heightRatio - appContainerHeightRatio(for: oldHeight)) < 0.01 else { return heightRatio }
+        return appContainerHeightRatio(for: newHeight)
+    }
+
     // MARK: - Sheet Presentation
 
     /// Standard sheet detents with compact option

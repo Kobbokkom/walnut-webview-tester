@@ -150,18 +150,7 @@ struct WebViewContainer: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .onChange(of: webViewWidthRatio) { _, _ in
-                if !useSafari { webViewID = UUID() }
-            }
-            .onChange(of: webViewHeightRatio) { _, _ in
-                if !useSafari { webViewID = UUID() }
-            }
-            .onChange(of: safariWidthRatio) { _, _ in
-                if useSafari { webViewID = UUID() }
-            }
-            .onChange(of: safariHeightRatio) { _, _ in
-                if useSafari { webViewID = UUID() }
-            }
+
         }
     }
 
