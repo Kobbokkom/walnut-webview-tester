@@ -27,137 +27,139 @@ extension ContentView {
                 let adSize = currentOrientationAnchoredAdaptiveBanner(width: geometry.size.width)
                 VStack {
                     Spacer()
-                    BannerAdView(adUnitId: AdManager.bannerAdUnitId)
+                    BannerAdView(adUnitId: AdManager.bannerAdUnitId, availableWidth: geometry.size.width)
                         .frame(width: adSize.size.width, height: adSize.size.height)
                 }
             }
 
-            VStack(spacing: 16) {
-                // Walnut logo
-                Image("walnut")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(height: 120)
-                    .padding(.bottom, -12)
+            ScrollView {
+                VStack(spacing: 16) {
+                    // Walnut logo
+                    Image("walnut")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(height: 120)
+                        .padding(.bottom, -12)
 
-                // URL parts chips - FlowLayout for wrapping
-                FlowLayout(spacing: 8, alignment: .center) {
-                    ForEach(urlParts, id: \.self) { part in
-                        ChipButton(label: part) {
-                            urlText += part
+                    // URL parts chips - FlowLayout for wrapping
+                    FlowLayout(spacing: 8, alignment: .center) {
+                        ForEach(urlParts, id: \.self) { part in
+                            ChipButton(label: part) {
+                                urlText += part
+                            }
                         }
                     }
-                }
-                .frame(width: inputWidth)
-                .contentShape(Rectangle())
-                .onTapGesture {}  // Prevent background tap propagation
+                    .frame(width: inputWidth)
+                    .contentShape(Rectangle())
+                    .onTapGesture {}  // Prevent background tap propagation
 
-                // WebView Type Toggle
-                Picker("WebView Type", selection: $useSafariWebView) {
-                    Text("WKWebView")
-                        .tag(false)
-                    Text(verbatim: "SafariVC")
-                        .tag(true)
-                }
-                .pickerStyle(.segmented)
-                .frame(width: inputWidth)
+                    // WebView Type Toggle
+                    Picker("WebView Type", selection: $useSafariWebView) {
+                        Text("WKWebView")
+                            .tag(false)
+                        Text(verbatim: "SafariVC")
+                            .tag(true)
+                    }
+                    .pickerStyle(.segmented)
+                    .frame(width: inputWidth)
 
-                // URL Input
-                HStack(spacing: 12) {
+                    // URL Input
                     HStack(spacing: 12) {
-                        Image(systemName: useCallbackTestPage ? "checkmark.circle.fill" : urlValidationState.iconName)
-                            .foregroundStyle(useCallbackTestPage ? .green : urlValidationState.iconColor)
-                            .font(.system(size: 16))
-                            .contentTransition(.symbolEffect(.replace))
+                        HStack(spacing: 12) {
+                            Image(systemName: useCallbackTestPage ? "checkmark.circle.fill" : urlValidationState.iconName)
+                                .foregroundStyle(useCallbackTestPage ? .green : urlValidationState.iconColor)
+                                .font(.system(size: 16))
+                                .contentTransition(.symbolEffect(.replace))
 
-                        TextField(
-                            useCallbackTestPage ? "Callback Test Page" : "Enter URL",
-                            text: useCallbackTestPage
-                                ? .constant(CallbackTestManager.testPageURL.absoluteString) : $urlText
-                        )
-                        .textFieldStyle(.plain)
-                        .autocorrectionDisabled()
-                        .textInputAutocapitalization(.never)
-                        .keyboardType(.URL)
-                        .submitLabel(.go)
-                        .font(.system(size: 16))
-                        .focused($textFieldFocused)
-                        .disabled(useCallbackTestPage)
-                        .foregroundStyle(useCallbackTestPage ? .secondary : .primary)
-                        .onSubmit {
-                            if urlValidationState == .valid || useCallbackTestPage {
+                            TextField(
+                                useCallbackTestPage ? "Callback Test Page" : "Enter URL",
+                                text: useCallbackTestPage
+                                    ? .constant(CallbackTestManager.testPageURL.absoluteString) : $urlText
+                            )
+                            .textFieldStyle(.plain)
+                            .autocorrectionDisabled()
+                            .textInputAutocapitalization(.never)
+                            .keyboardType(.URL)
+                            .submitLabel(.go)
+                            .font(.system(size: 16))
+                            .focused($textFieldFocused)
+                            .disabled(useCallbackTestPage)
+                            .foregroundStyle(useCallbackTestPage ? .secondary : .primary)
+                            .onSubmit {
+                                if urlValidationState == .valid || useCallbackTestPage {
+                                    textFieldFocused = false
+                                    showDropdown = false
+                                    submitURL()
+                                }
+                            }
+                            .onChange(of: urlText) { _, _ in
+                                // Debounced URL validation
+                                validationTask?.cancel()
+                                validationTask = Task {
+                                    try? await Task.sleep(for: .milliseconds(150))
+                                    guard !Task.isCancelled else { return }
+                                    validateURL()
+                                }
+                            }
+
+                            Button {
+                                urlText = ""
+                                textFieldFocused = false
+                            } label: {
+                                Image(systemName: "xmark.circle.fill")
+                                    .foregroundStyle(.secondary)
+                                    .padding(8)
+                                    .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                            .opacity(urlText.isEmpty || useCallbackTestPage ? 0 : 1)
+                            .disabled(urlText.isEmpty || useCallbackTestPage)
+                        }
+                        .padding(.horizontal, 18)
+                        .padding(.vertical, 10)
+                        .frame(width: (urlValidationState == .valid || useCallbackTestPage) ? max(0, inputWidth - 60) : inputWidth)
+                        .contentShape(Capsule())
+                        .onTapGesture {
+                            if !useCallbackTestPage {
+                                textFieldFocused = true
+                            }
+                        }
+                        .backport.glassEffect(in: .capsule)
+
+                        if urlValidationState == .valid || useCallbackTestPage {
+                            Button {
                                 textFieldFocused = false
                                 showDropdown = false
                                 submitURL()
+                            } label: {
+                                Image(systemName: "arrow.right")
+                                    .font(.system(size: 18, weight: .semibold))
+                                    .foregroundStyle(.primary)
+                                    .frame(width: 48, height: 48)
+                                    .contentShape(Circle())
                             }
+                            .buttonStyle(.plain)
+                            .backport.glassEffect(in: .circle)
+                            .transition(.opacity.animation(.easeOut(duration: 0.15)))
                         }
-                        .onChange(of: urlText) { _, _ in
-                            // Debounced URL validation
-                            validationTask?.cancel()
-                            validationTask = Task {
-                                try? await Task.sleep(for: .milliseconds(150))
-                                guard !Task.isCancelled else { return }
-                                validateURL()
-                            }
-                        }
+                    }
+                    .animation(.easeOut(duration: 0.25), value: urlValidationState)
+                    .animation(.easeOut(duration: 0.25), value: useCallbackTestPage)
+                    .overlay(alignment: .bottom) {
+                        // Dropdown (higher layer, overlays quick options)
+                        dropdownOverlay
+                            .alignmentGuide(.bottom) { $0[.top] }
+                    }
+                    .zIndex(1)
 
-                        Button {
-                            urlText = ""
-                            textFieldFocused = false
-                        } label: {
-                            Image(systemName: "xmark.circle.fill")
-                                .foregroundStyle(.secondary)
-                                .padding(8)
-                                .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
-                        .opacity(urlText.isEmpty || useCallbackTestPage ? 0 : 1)
-                        .disabled(urlText.isEmpty || useCallbackTestPage)
-                    }
-                    .padding(.horizontal, 18)
-                    .padding(.vertical, 10)
-                    .frame(width: (urlValidationState == .valid || useCallbackTestPage) ? inputWidth - 60 : inputWidth)
-                    .contentShape(Capsule())
-                    .onTapGesture {
-                        if !useCallbackTestPage {
-                            textFieldFocused = true
-                        }
-                    }
-                    .backport.glassEffect(in: .capsule)
-
-                    if urlValidationState == .valid || useCallbackTestPage {
-                        Button {
-                            textFieldFocused = false
-                            showDropdown = false
-                            submitURL()
-                        } label: {
-                            Image(systemName: "arrow.right")
-                                .font(.system(size: 18, weight: .semibold))
-                                .foregroundStyle(.primary)
-                                .frame(width: 48, height: 48)
-                                .contentShape(Circle())
-                        }
-                        .buttonStyle(.plain)
-                        .backport.glassEffect(in: .circle)
-                        .transition(.opacity.animation(.easeOut(duration: 0.15)))
-                    }
-                }
-                .animation(.easeOut(duration: 0.25), value: urlValidationState)
-                .animation(.easeOut(duration: 0.25), value: useCallbackTestPage)
-                .overlay(alignment: .bottom) {
-                    // Quick options (lower layer)
                     quickOptionsOverlay
-                        .alignmentGuide(.bottom) { $0[.top] }
                         .animation(.easeOut(duration: 0.15), value: useSafariWebView)
                 }
-                .overlay(alignment: .bottom) {
-                    // Dropdown (higher layer, overlays quick options)
-                    dropdownOverlay
-                        .alignmentGuide(.bottom) { $0[.top] }
-                }
-                .zIndex(1)
+                .padding(.top, max(72, geometry.size.height * 0.32 - 130))
+                .padding(.bottom, StoreManager.shared.isAdRemoved ? 16 : 80)
+                .frame(maxWidth: .infinity)
             }
-            .position(x: geometry.size.width / 2, y: geometry.size.height * 0.32)
+            .scrollDismissesKeyboard(.interactively)
             .onChange(of: textFieldFocused) { _, newValue in
                 withAnimation(.easeOut(duration: 0.15)) {
                     showDropdown = newValue && !filteredURLs.isEmpty

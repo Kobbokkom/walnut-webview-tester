@@ -12,6 +12,7 @@ import SwiftUI
 struct ConsoleView: View {
     let consoleManager: ConsoleManager
     var navigator: WebViewNavigator?  // Optional - for JS execution
+    @Environment(\.closeDevTools) private var closeDevTools
     @Environment(\.dismiss) private var dismiss
     @State var filterType: ConsoleLog.LogType?
     @State var searchText: String = ""
@@ -131,7 +132,7 @@ struct ConsoleView: View {
             title: "Console",
             leftButtons: [
                 .init(icon: "xmark.circle.fill", color: .secondary) {
-                    dismiss()
+                    (closeDevTools ?? { dismiss() })()
                 },
                 .init(
                     icon: "trash",

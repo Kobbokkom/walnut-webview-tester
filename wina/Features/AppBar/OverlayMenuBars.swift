@@ -324,6 +324,8 @@ private extension OverlayMenuBars {
                                     BottomBarIconButton(icon: item.icon) {
                                         handleToolbarItemTap(item)
                                     }
+                                    .accessibilityLabel(item.label)
+                                    .accessibilityIdentifier("devTools.\(item.rawValue)")
                                 }
                             }
                         }

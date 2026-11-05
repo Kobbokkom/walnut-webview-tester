@@ -6,6 +6,8 @@
 //
 
 import XCTest
+import SwiftUI
+import UIKit
 @testable import wina
 
 // MARK: - Settings Formatter Tests
@@ -128,5 +130,104 @@ final class ByteFormatterTests: XCTestCase {
         // Check decimal precision (%.1f uses banker's rounding - 1.25 → 1.2)
         XCTAssertEqual(ByteFormatter.format(1_234), "1.2 KB")  // 1.234 → 1.2
         XCTAssertEqual(ByteFormatter.format(1_250_000), "1.2 MB")  // 1.25 → 1.2 (banker's rounding)
+    }
+}
+
+@MainActor
+final class AdaptiveWebViewSizeTests: XCTestCase {
+    func testAppPresetFitsAvailableContainer() {
+        for height: CGFloat in [320, 568, 852, 1024] {
+            let ratio = BarConstants.appContainerHeightRatio(for: height)
+            XCTAssertEqual(CGFloat(ratio) * height, height - BarConstants.totalUIHeight, accuracy: 0.001)
+            XCTAssertTrue((0.25...1).contains(ratio))
+        }
+    }
+
+    func testAppPresetRemainsValidInShortOrUnmeasuredWindows() {
+        for height: CGFloat in [-1, 0, 1, 100, 192, 240] {
+            XCTAssertEqual(BarConstants.appContainerHeightRatio(for: height), 0.25)
+        }
+    }
+}
+
+@MainActor
+final class NetworkTextResizeTests: XCTestCase {
+    func testTextReflowsWhenContainerNarrows() {
+        let scrollView = NetworkTextScrollView(frame: CGRect(x: 0, y: 0, width: 800, height: 300))
+        let textView = UITextView()
+        textView.tag = 100
+        textView.isScrollEnabled = false
+        textView.text = String(repeating: "Response body content ", count: 100)
+        scrollView.addSubview(textView)
+        scrollView.layoutSubviews()
+        let wideHeight = scrollView.contentSize.height
+        XCTAssertEqual(textView.frame.width, 800)
+
+        scrollView.frame.size.width = 320
+        scrollView.layoutSubviews()
+        XCTAssertEqual(textView.frame.width, 320)
+        XCTAssertGreaterThan(scrollView.contentSize.height, wideHeight)
+    }
+}
+
+@MainActor
+final class AdaptiveDevToolsPresentationTests: XCTestCase {
+    func testDockingPreservesSelectedToolWhenSheetDismisses() {
+        let state = DevToolsOverlayState()
+        state.open(.network)
+        let sheet = state.presentationBinding(for: .network)
+        XCTAssertTrue(sheet.wrappedValue)
+        state.isDocked = true
+        XCTAssertFalse(sheet.wrappedValue)
+        sheet.wrappedValue = false
+        XCTAssertEqual(state.selectedTool, .network)
+        state.isDocked = false
+        XCTAssertTrue(sheet.wrappedValue)
+        sheet.wrappedValue = false
+        XCTAssertNil(state.selectedTool)
+    }
+
+    func testSwitchingToolsPreservesIndependentPageSearch() {
+        let state = DevToolsOverlayState()
+        state.open(.console)
+        state.open(.searchText)
+        state.toggle(.network)
+        XCTAssertEqual(state.active, [.network, .searchText])
+        state.toggle(.network)
+        XCTAssertEqual(state.active, [.searchText])
+        state.open(.editor)
+        state.closeAll()
+        XCTAssertTrue(state.active.isEmpty)
+    }
+}
+
+final class DevToolsWorkspaceLayoutTests: XCTestCase {
+    func testUnfoldedLayoutUsesSideBySidePanes() {
+        let frames = DevToolsWorkspaceLayout.frames(in: CGSize(width: 1000, height: 800), division: nil)
+        XCTAssertEqual(frames.browser, CGRect(x: 0, y: 0, width: 580, height: 800))
+        XCTAssertEqual(frames.tools, CGRect(x: 580, y: 0, width: 420, height: 800))
+    }
+
+    func testBookFoldKeepsPanesClearOfReservedRegion() {
+        let fold = CGRect(x: 480, y: -20, width: 40, height: 840)
+        let frames = DevToolsWorkspaceLayout.frames(in: CGSize(width: 1000, height: 800), division: fold)
+        XCTAssertEqual(frames.browser.maxX, 480)
+        XCTAssertEqual(frames.tools.minX, 520)
+        XCTAssertFalse(frames.browser.intersects(fold))
+        XCTAssertFalse(frames.tools.intersects(fold))
+    }
+
+    func testTabletopFoldStacksPanesAboveAndBelowFold() {
+        let fold = CGRect(x: -20, y: 380, width: 1040, height: 40)
+        let frames = DevToolsWorkspaceLayout.frames(in: CGSize(width: 1000, height: 800), division: fold)
+        XCTAssertEqual(frames.browser.maxY, 380)
+        XCTAssertEqual(frames.tools.minY, 420)
+        XCTAssertEqual(frames.tools.height, 380)
+    }
+
+    func testNonintersectingDivisionDoesNotAffectLayout() {
+        let size = CGSize(width: 1000, height: 800)
+        let frames = DevToolsWorkspaceLayout.frames(in: size, division: CGRect(x: 2000, y: 0, width: 30, height: 800))
+        XCTAssertEqual(frames.tools, DevToolsWorkspaceLayout.frames(in: size, division: nil).tools)
     }
 }

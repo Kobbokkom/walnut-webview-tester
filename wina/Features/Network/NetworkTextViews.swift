@@ -52,7 +52,8 @@ struct SelectableTextView: UIViewRepresentable {
 // Custom UITextView that properly calculates intrinsic content size
 class AutoSizingTextView: UITextView {
     override var intrinsicContentSize: CGSize {
-        let fixedWidth = bounds.width > 0 ? bounds.width : ScreenUtility.screenSize.width - 64
+        guard bounds.width > 0 else { return CGSize(width: UIView.noIntrinsicMetric, height: UIView.noIntrinsicMetric) }
+        let fixedWidth = bounds.width
         let size = sizeThatFits(CGSize(width: fixedWidth, height: .greatestFiniteMagnitude))
         return CGSize(width: UIView.noIntrinsicMetric, height: size.height)
     }
@@ -60,6 +61,18 @@ class AutoSizingTextView: UITextView {
     override func layoutSubviews() {
         super.layoutSubviews()
         invalidateIntrinsicContentSize()
+    }
+}
+
+// Text must reflow after a fold or window resize even when its content hasn't changed.
+class NetworkTextScrollView: UIScrollView {
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        guard bounds.width > 0, let textView = viewWithTag(100) as? UITextView,
+              textView.frame.width != bounds.width else { return }
+        let size = textView.sizeThatFits(CGSize(width: bounds.width, height: .greatestFiniteMagnitude))
+        textView.frame = CGRect(origin: .zero, size: CGSize(width: bounds.width, height: size.height))
+        contentSize = textView.frame.size
     }
 }
 
@@ -78,7 +91,7 @@ struct SearchableTextView: UIViewRepresentable {
     }
 
     func makeUIView(context: Context) -> UIScrollView {
-        let scrollView = UIScrollView()
+        let scrollView = NetworkTextScrollView()
         scrollView.alwaysBounceVertical = true
         scrollView.showsVerticalScrollIndicator = true
 
@@ -168,7 +181,7 @@ struct SearchableTextView: UIViewRepresentable {
                 textView.attributedText = attributedText
 
                 // Update layout
-                let width = uiView.bounds.width > 0 ? uiView.bounds.width : ScreenUtility.screenSize.width - 64
+                let width = max(1, uiView.bounds.width)
                 let textSize = textView.sizeThatFits(CGSize(width: width, height: .greatestFiniteMagnitude))
                 textView.frame = CGRect(origin: .zero, size: CGSize(width: width, height: textSize.height))
                 uiView.contentSize = textView.frame.size

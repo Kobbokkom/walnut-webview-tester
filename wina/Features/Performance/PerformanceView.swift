@@ -31,6 +31,7 @@ struct PerformanceView: View {
     let onCollect: () -> Void
     let onReload: () -> Void
 
+    @Environment(\.closeDevTools) private var closeDevTools
     @Environment(\.dismiss) private var dismiss
     @State private var selectedTab: PerformanceTab = .metrics
     @State private var searchText: String = ""
@@ -140,7 +141,7 @@ struct PerformanceView: View {
             title: "Performance",
             leftButtons: [
                 .init(icon: "xmark.circle.fill", color: .secondary) {
-                    dismiss()
+                    (closeDevTools ?? { dismiss() })()
                 },
                 .init(icon: "trash", isDisabled: !hasData) {
                     performanceManager.clear()

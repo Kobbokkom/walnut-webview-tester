@@ -488,6 +488,7 @@ private struct StorageScrollMetrics: Equatable {
 struct StorageView: View {
     let storageManager: StorageManager
     let navigator: WebViewNavigator?
+    @Environment(\.closeDevTools) private var closeDevTools
     @Environment(\.dismiss) private var dismiss
     @State private var selectedType: StorageItem.StorageType = .localStorage
     @State private var showsAllStorage: Bool = false
@@ -646,7 +647,7 @@ struct StorageView: View {
     private var storageHeaderLeftButtons: [DevToolsHeader.HeaderButton] {
         var buttons: [DevToolsHeader.HeaderButton] = [
             .init(icon: "xmark.circle.fill", color: .secondary) {
-                dismiss()
+                (closeDevTools ?? { dismiss() })()
             },
             .init(
                 icon: "trash",

@@ -120,6 +120,7 @@ struct DevToolsHeader: View {
                         .contentShape(Circle())
                 }
                 .disabled(button.isDisabled)
+                .accessibilityIdentifier(button.icon == "xmark.circle.fill" ? "closeDevTools" : button.icon)
             }
         }
     }

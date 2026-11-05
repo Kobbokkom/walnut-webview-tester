@@ -16,6 +16,7 @@ enum SettingsCopy {
 // MARK: - Live Settings View (Apply to Save)
 
 struct LiveSettingsView: View {
+    @Environment(\.webViewContainerSize) private var containerSize
     @Environment(\.dismiss) private var dismiss
 
     // AppStorage (persistent)
@@ -207,7 +208,7 @@ struct LiveSettingsView: View {
         findInteractionEnabled = false
         customUserAgent = ""
         webViewWidthRatio = 1.0
-        webViewHeightRatio = BarConstants.appContainerHeightRatio(for: ScreenUtility.screenSize.height)
+        webViewHeightRatio = BarConstants.appContainerHeightRatio(for: containerSize.height)
     }
 }
 
@@ -421,6 +422,7 @@ struct SettingsCategoryRow: View {
 // MARK: - Combined Settings View (For Initial Setup)
 
 struct SettingsView: View {
+    @Environment(\.webViewContainerSize) private var containerSize
     @Environment(\.dismiss) private var dismiss
 
     // Core Settings
@@ -895,7 +897,7 @@ struct SettingsView: View {
 
         // WebView Size (App preset)
         webViewWidthRatio = 1.0
-        webViewHeightRatio = BarConstants.appContainerHeightRatio(for: ScreenUtility.screenSize.height)
+        webViewHeightRatio = BarConstants.appContainerHeightRatio(for: containerSize.height)
 
         // Third-Party Tools
         erudaModeEnabled = false

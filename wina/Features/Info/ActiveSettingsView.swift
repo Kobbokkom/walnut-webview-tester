@@ -67,13 +67,11 @@ struct ActiveSettingsView: View {
         )
     }
 
-    private var screenSize: CGSize {
-        ScreenUtility.screenSize
-    }
+    @Environment(\.webViewContainerSize) private var containerSize
 
     private var webViewSizeText: String {
-        let w = Int(screenSize.width * webViewWidthRatio)
-        let h = Int(screenSize.height * webViewHeightRatio)
+        let w = Int(containerSize.width * webViewWidthRatio)
+        let h = Int(containerSize.height * webViewHeightRatio)
         return "\(w) × \(h)"
     }
 

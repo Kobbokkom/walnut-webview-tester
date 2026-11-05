@@ -157,6 +157,7 @@ struct AccessibilityIssue: Identifiable, Equatable {
 struct AccessibilityAuditView: View {
     let navigator: WebViewNavigator?
 
+    @Environment(\.closeDevTools) private var closeDevTools
     @Environment(\.dismiss) private var dismiss
     @State private var feedbackState = CopiedFeedbackState()
     @State private var showingShareSheet: Bool = false
@@ -242,7 +243,7 @@ struct AccessibilityAuditView: View {
             title: "Accessibility",
             leftButtons: [
                 .init(icon: "xmark.circle.fill", color: .secondary) {
-                    dismiss()
+                    (closeDevTools ?? { dismiss() })()
                 },
                 .init(
                     icon: "trash",

@@ -97,6 +97,7 @@ enum NetworkResourceFilter: String, CaseIterable, Identifiable {
 struct NetworkView: View {
     let networkManager: NetworkManager
     let resourceManager: ResourceManager
+    @Environment(\.closeDevTools) private var closeDevTools
     @Environment(\.dismiss) private var dismiss
     @State private var filter: NetworkResourceFilter = .all
     @State private var searchText: String = ""
@@ -262,7 +263,7 @@ struct NetworkView: View {
             title: "Network",
             leftButtons: [
                 .init(icon: "xmark.circle.fill", color: .secondary) {
-                    dismiss()
+                    (closeDevTools ?? { dismiss() })()
                 },
                 .init(
                     icon: "trash",

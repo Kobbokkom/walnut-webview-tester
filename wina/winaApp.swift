@@ -60,15 +60,13 @@ struct winaApp: App {
 
     /// Initialize WebView size ratios to "App" preset on first launch
     /// Must be called after Scene is ready (UIWindowScene available)
-    static func initializeWebViewSizeIfNeeded() {
+    static func initializeWebViewSizeIfNeeded(containerHeight: CGFloat) {
         let defaults = UserDefaults.standard
         let hasInitializedKey = "hasInitializedWebViewSize"
 
-        guard !defaults.bool(forKey: hasInitializedKey) else { return }
+        guard containerHeight > 0, !defaults.bool(forKey: hasInitializedKey) else { return }
 
-        // Calculate "App" preset height ratio based on device screen
-        let screenHeight = ScreenUtility.screenSize.height
-        let appContainerHeightRatio = BarConstants.appContainerHeightRatio(for: screenHeight)
+        let appContainerHeightRatio = BarConstants.appContainerHeightRatio(for: containerHeight)
 
         // Set both WKWebView and SafariVC to "App" preset
         defaults.set(1.0, forKey: "webViewWidthRatio")
@@ -81,18 +79,23 @@ struct winaApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .preferredColorScheme(preferredScheme)
-                .environment(\.locale, resolvedLocale)
-                .onAppear {
-                    // Initialize WebView size after Scene is ready
-                    Self.initializeWebViewSizeIfNeeded()
-                }
-                .onOpenURL { url in
-                    // Handle URL scheme callbacks (walnut://...)
-                    CallbackTestManager.shared.handleIncomingURL(url)
-                }
-                .callbackResultSheet()
+            GeometryReader { geometry in
+                let containerSize = CGSize(
+                    width: geometry.size.width,
+                    height: geometry.size.height + geometry.safeAreaInsets.bottom
+                )
+                ContentView()
+                    .environment(\.webViewContainerSize, containerSize)
+                    .preferredColorScheme(preferredScheme)
+                    .environment(\.locale, resolvedLocale)
+                    .onChange(of: containerSize, initial: true) { _, size in
+                        Self.initializeWebViewSizeIfNeeded(containerHeight: size.height)
+                    }
+                    .onOpenURL { url in
+                        CallbackTestManager.shared.handleIncomingURL(url)
+                    }
+                    .callbackResultSheet()
+            }
         }
     }
 

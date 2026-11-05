@@ -41,6 +41,17 @@
                ReferencedContainer = "container:wina.xcodeproj">
             </BuildableReference>
          </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "A27D00000000000000000001"
+               BuildableName = "winaUITests.xctest"
+               BlueprintName = "winaUITests"
+               ReferencedContainer = "container:wina.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
       </Testables>
    </TestAction>
    <LaunchAction

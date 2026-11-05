@@ -383,6 +383,7 @@ class SnippetsManager {
 
 struct SnippetsView: View {
     @Bindable var navigator: WebViewNavigator
+    @Environment(\.closeDevTools) private var closeDevTools
     @Environment(\.dismiss) private var dismiss
     @State private var selectedCategory: SnippetCategory = .all
     @State private var searchText: String = ""
@@ -467,7 +468,7 @@ struct SnippetsView: View {
             title: "Snippets",
             leftButtons: [
                 .init(icon: "xmark.circle.fill", color: .secondary) {
-                    dismiss()
+                    (closeDevTools ?? { dismiss() })()
                 },
                 .init(
                     icon: "arrow.counterclockwise",

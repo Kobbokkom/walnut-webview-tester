@@ -10,7 +10,8 @@ import SwiftUI
 // MARK: - DevTools Sheet Modifier
 
 struct DevToolsSheetModifier: ViewModifier {
-    @State private var detent: PresentationDetent = UIDevice.current.isIPad ? .large : BarConstants.defaultSheetDetent
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @State private var detent: PresentationDetent = BarConstants.defaultSheetDetent
 
     func body(content: Content) -> some View {
         content
@@ -19,6 +20,9 @@ struct DevToolsSheetModifier: ViewModifier {
             .presentationBackgroundInteraction(.enabled(upThrough: .medium))
             .presentationContentInteraction(.scrolls)
             .presentationDragIndicator(.visible)
+            .onChange(of: horizontalSizeClass, initial: true) { _, sizeClass in
+                detent = sizeClass == .regular ? .large : BarConstants.defaultSheetDetent
+            }
             .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
                 if detent != .large {
                     detent = .large

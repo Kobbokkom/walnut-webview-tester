@@ -231,7 +231,7 @@ final class WKWebViewCoordinatorTests: XCTestCase {
     }
 
     @MainActor
-    func testDelayedBridgeResponseIsCancelledOnCommit() {
+    func testDelayedBridgeResponseIsCancelledOnCommit() async {
         var isLoading = false
         let binding = Binding(
             get: { isLoading },
@@ -241,6 +241,7 @@ final class WKWebViewCoordinatorTests: XCTestCase {
         Self.retainedNavigators.append(navigator)
         let coordinator = WKWebViewCoordinator(isLoading: binding, navigator: navigator)
 
+        let webView = WKWebView(frame: .zero)
         coordinator.schedulePreloadBridgeResponse(
             "window.__walnutResponse = true;",
             channel: "request",
@@ -248,14 +249,14 @@ final class WKWebViewCoordinatorTests: XCTestCase {
         )
         XCTAssertEqual(coordinator.pendingBridgeResponseWorkItemCount, 1)
 
-        coordinator.webView(WKWebView(frame: .zero), didCommit: nil)
+        coordinator.webView(webView, didCommit: nil)
         XCTAssertEqual(coordinator.pendingBridgeResponseWorkItemCount, 0)
 
         let expectation = expectation(description: "cancelled bridge response would have fired")
         DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(100)) {
             expectation.fulfill()
         }
-        waitForExpectations(timeout: 1.0)
+        await fulfillment(of: [expectation], timeout: 5.0)
 
         XCTAssertFalse(navigator.preloadBridgeLogManager.entries.contains { $0.direction == .responded })
     }

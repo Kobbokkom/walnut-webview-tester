@@ -281,9 +281,7 @@ private struct SafariActiveSettingsDetailView: View {
     @AppStorage("safariWidthRatio") private var widthRatio: Double = 1.0
     @AppStorage("safariHeightRatio") private var heightRatio: Double = 0.82
 
-    private var screenSize: CGSize {
-        ScreenUtility.screenSize
-    }
+    @Environment(\.webViewContainerSize) private var containerSize
 
     var body: some View {
         List {
@@ -349,8 +347,8 @@ private struct SafariActiveSettingsDetailView: View {
             }
 
             Section {
-                let w = Int(screenSize.width * widthRatio)
-                let h = Int(screenSize.height * heightRatio)
+                let w = Int(containerSize.width * widthRatio)
+                let h = Int(containerSize.height * heightRatio)
 
                 SafariInfoRow(
                     label: "Width",

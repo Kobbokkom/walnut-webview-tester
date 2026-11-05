@@ -6,38 +6,36 @@ private let logger = Logger(subsystem: "com.walnut.wina", category: "AdManager")
 
 // MARK: - Banner Ad View
 
-struct BannerAdView: UIViewRepresentable {
+struct BannerAdView: UIViewControllerRepresentable {
     let adUnitId: String
+    let availableWidth: CGFloat
 
-    func makeUIView(context: Context) -> BannerView {
+    func makeUIViewController(context: Context) -> UIViewController {
+        let controller = UIViewController()
         let banner = BannerView()
         banner.adUnitID = adUnitId
         banner.delegate = context.coordinator
-
-        // Get root view controller for ad requests
-        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-           let rootViewController = windowScene.windows.first?.rootViewController
-        {
-            banner.rootViewController = rootViewController
-        }
-
-        // Load adaptive banner
-        let adSize = currentOrientationAnchoredAdaptiveBanner(
-            width: UIScreen.main.bounds.width
-        )
-        banner.adSize = adSize
-        banner.load(Request())
-
-        return banner
+        banner.rootViewController = controller
+        controller.view = banner
+        return controller
     }
 
-    func updateUIView(_ uiView: BannerView, context: Context) {}
+    func updateUIViewController(_ controller: UIViewController, context: Context) {
+        guard availableWidth > 0, let banner = controller.view as? BannerView else { return }
+        let adSize = currentOrientationAnchoredAdaptiveBanner(width: availableWidth)
+        guard context.coordinator.requestedSize != adSize.size else { return }
+        context.coordinator.requestedSize = adSize.size
+        banner.adSize = adSize
+        banner.load(Request())
+    }
 
     func makeCoordinator() -> BannerCoordinator {
         BannerCoordinator()
     }
 
     class BannerCoordinator: NSObject, BannerViewDelegate {
+        var requestedSize: CGSize?
+
         func bannerViewDidReceiveAd(_ bannerView: BannerView) {
             logger.info("Banner ad loaded successfully")
         }

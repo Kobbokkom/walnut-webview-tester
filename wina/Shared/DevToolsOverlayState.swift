@@ -16,13 +16,25 @@ enum DevToolsOverlay: String, Hashable, CaseIterable {
     case accessibility
     case snippets
     case searchText
+
+    var menuItem: DevToolsMenuItem? {
+        DevToolsMenuItem(rawValue: self == .editor ? "sources" : rawValue)
+    }
 }
 
 @Observable
 final class DevToolsOverlayState {
-    var active: Set<DevToolsOverlay> = []
+    private(set) var active: Set<DevToolsOverlay> = []
+    var isDocked = false
+
+    var selectedTool: DevToolsOverlay? {
+        DevToolsOverlay.allCases.first { $0 != .searchText && active.contains($0) }
+    }
 
     func open(_ overlay: DevToolsOverlay) {
+        if overlay != .searchText {
+            active = active.intersection([.searchText])
+        }
         active.insert(overlay)
     }
 
@@ -34,7 +46,7 @@ final class DevToolsOverlayState {
         if active.contains(overlay) {
             active.remove(overlay)
         } else {
-            active.insert(overlay)
+            open(overlay)
         }
     }
 
@@ -44,6 +56,20 @@ final class DevToolsOverlayState {
 
     func isOpen(_ overlay: DevToolsOverlay) -> Bool {
         active.contains(overlay)
+    }
+
+    func presentationBinding(for overlay: DevToolsOverlay) -> Binding<Bool> {
+        Binding(
+            get: { !self.isDocked && self.isOpen(overlay) },
+            set: { isPresented in
+                guard !self.isDocked else { return }
+                if isPresented {
+                    self.open(overlay)
+                } else {
+                    self.close(overlay)
+                }
+            }
+        )
     }
 
     func binding(for overlay: DevToolsOverlay) -> Binding<Bool> {

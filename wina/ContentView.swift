@@ -100,77 +100,41 @@ struct ContentView: View {
         ".com",
         "192.168.", ":8080", ":3000",
     ]
-    let inputWidth: CGFloat = 340
+    @Environment(\.webViewContainerSize) private var containerSize
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @State private var browserSize: CGSize = .zero
+
+    private var shouldDockDevTools: Bool {
+        horizontalSizeClass == .regular && showWebView && !useSafariWebView && !erudaModeEnabled
+    }
+
+    var inputWidth: CGFloat { min(340, max(0, containerSize.width - 32)) }
 
     var body: some View {
-        ZStack {
-            if showWebView {
-                // WebView screen
-                WebViewContainer(
-                    urlString: loadedURL,
-                    useSafari: useSafariWebView,
-                    webViewID: $webViewID,
-                    navigator: useSafariWebView ? nil : webViewNavigator
-                )
-                .ignoresSafeArea(edges: .bottom)
-            } else {
-                // URL input screen
-                urlInputView
+        GeometryReader { geometry in
+            let frames = DevToolsWorkspaceLayout.frames(in: geometry.size, division: activeDivision(in: geometry))
+            let hasPanel = shouldDockDevTools && devToolsState.selectedTool != nil
+            let browserFrame = hasPanel ? frames.browser : CGRect(origin: .zero, size: geometry.size)
+            ZStack(alignment: .topLeading) {
+                browserContent
+                    .frame(width: browserFrame.width, height: browserFrame.height)
+                    .onGeometryChange(for: CGSize.self) { proxy in
+                        CGSize(width: proxy.size.width, height: proxy.size.height + proxy.safeAreaInsets.bottom)
+                    } action: { browserSize = $0 }
+                    .position(x: browserFrame.midX, y: browserFrame.midY)
+                if hasPanel, let tool = devToolsState.selectedTool {
+                    DevToolsPanel(state: devToolsState) {
+                        devToolsContent(for: tool)
+                            .environment(\.closeDevTools, { devToolsState.close(tool) })
+                    }
+                    .frame(width: frames.tools.width, height: frames.tools.height)
+                    .position(x: frames.tools.midX, y: frames.tools.midY)
+                }
             }
-
-            // Menu bars
-            if showWebView {
-                OverlayMenuBars(
-                    showWebView: showWebView,
-                    hasBookmarks: !urlStorage.bookmarks.isEmpty,
-                    useSafariVC: useSafariWebView,
-                    isOverlayMode: !shouldBarsBeExpanded,
-                    erudaModeEnabled: erudaModeEnabled,
-                    onHome: {
-                        // Close all DevTools overlays with single call
-                        devToolsState.closeAll()
-
-                        // Close other sheets
-                        showSettings = false
-                        showBookmarks = false
-                        showInfo = false
-                        showURLInput = false
-                        urlInputText = ""
-
-                        // Clear initial URL tracking
-                        webViewNavigator.clearInitialURL()
-
-                        withAnimation(.easeOut(duration: 0.2)) {
-                            showWebView = false
-                        }
-                    },
-                    onURLChange: { newURL in
-                        guard validateSafariURLIfNeeded(newURL) else { return }
-                        // Add to history
-                        urlStorage.addToHistory(newURL)
-
-                        // Load in same WebView instance (preserves history)
-                        if !useSafariWebView {
-                            webViewNavigator.loadURL(newURL)
-                        } else {
-                            // SafariVC needs recreation
-                            loadedURL = newURL
-                            webViewID = UUID()
-                        }
-                    },
-                    navigator: useSafariWebView ? nil : webViewNavigator,
-                    recorder: screenRecorder,
-                    urlStorage: urlStorage,
-                    showURLInput: $showURLInput,
-                    urlInputText: $urlInputText,
-                    showSettings: $showSettings,
-                    showBookmarks: $showBookmarks,
-                    showInfo: $showInfo,
-                    devToolsState: devToolsState
-                )
-            } else if !showWebView {
-                topBar
-            }
+        }
+        .environment(\.webViewContainerSize, browserSize == .zero ? containerSize : browserSize)
+        .onChange(of: shouldDockDevTools, initial: true) { _, docked in
+            devToolsState.isDocked = docked
         }
         .sheet(isPresented: $showSettings) {
             if useSafariWebView {
@@ -241,66 +205,40 @@ struct ContentView: View {
                 .preferredColorScheme(preferredScheme)
             }
         }
-        .sheet(isPresented: devToolsState.binding(for: .console)) {
-            ConsoleView(consoleManager: webViewNavigator.consoleManager, navigator: webViewNavigator)
+        .sheet(isPresented: devToolsState.presentationBinding(for: .console)) {
+            devToolsContent(for: .console)
                 .devToolsSheet()
                 .preferredColorScheme(preferredScheme)
         }
-        .sheet(isPresented: devToolsState.binding(for: .network)) {
-            NetworkView(
-                networkManager: webViewNavigator.networkManager,
-                resourceManager: webViewNavigator.resourceManager
-            )
-            .devToolsSheet()
-            .preferredColorScheme(preferredScheme)
-        }
-        .sheet(isPresented: devToolsState.binding(for: .storage)) {
-            StorageView(storageManager: storageManager, navigator: webViewNavigator)
+        .sheet(isPresented: devToolsState.presentationBinding(for: .network)) {
+            devToolsContent(for: .network)
                 .devToolsSheet()
                 .preferredColorScheme(preferredScheme)
         }
-        .sheet(isPresented: devToolsState.binding(for: .performance)) {
-            PerformanceView(
-                performanceManager: webViewNavigator.performanceManager,
-                onCollect: {
-                    // Collect cached performance data from current page
-                    Task {
-                        await collectPerformanceData(webViewNavigator, isReload: false)
-                    }
-                },
-                onReload: {
-                    // Reload page and collect fresh performance data
-                    Task {
-                        await collectPerformanceData(webViewNavigator, isReload: true)
-                    }
-                }
-            )
-            .devToolsSheet()
-            .preferredColorScheme(preferredScheme)
-        }
-        .sheet(isPresented: devToolsState.binding(for: .editor)) {
-            SourcesView(navigator: webViewNavigator)
+        .sheet(isPresented: devToolsState.presentationBinding(for: .storage)) {
+            devToolsContent(for: .storage)
                 .devToolsSheet()
                 .preferredColorScheme(preferredScheme)
         }
-        .sheet(isPresented: devToolsState.binding(for: .accessibility)) {
-            AccessibilityAuditView(navigator: webViewNavigator)
+        .sheet(isPresented: devToolsState.presentationBinding(for: .performance)) {
+            devToolsContent(for: .performance)
                 .devToolsSheet()
                 .preferredColorScheme(preferredScheme)
         }
-        .sheet(isPresented: devToolsState.binding(for: .snippets)) {
-            SnippetsView(navigator: webViewNavigator)
+        .sheet(isPresented: devToolsState.presentationBinding(for: .editor)) {
+            devToolsContent(for: .editor)
                 .devToolsSheet()
                 .preferredColorScheme(preferredScheme)
         }
-        .overlay {
-            if devToolsState.isOpen(.searchText) {
-                SearchTextOverlay(
-                    navigator: webViewNavigator,
-                    isPresented: devToolsState.binding(for: .searchText),
-                    bottomPaddingCalculator: searchOverlayBottomPadding
-                )
-            }
+        .sheet(isPresented: devToolsState.presentationBinding(for: .accessibility)) {
+            devToolsContent(for: .accessibility)
+                .devToolsSheet()
+                .preferredColorScheme(preferredScheme)
+        }
+        .sheet(isPresented: devToolsState.presentationBinding(for: .snippets)) {
+            devToolsContent(for: .snippets)
+                .devToolsSheet()
+                .preferredColorScheme(preferredScheme)
         }
         .sheet(isPresented: $showAbout) {
             AboutView()
@@ -332,6 +270,122 @@ struct ContentView: View {
                     await webViewNavigator.destroyEruda()
                 }
             }
+        }
+    }
+
+    private func activeDivision(in geometry: GeometryProxy) -> CGRect? {
+        #if compiler(>=6.4)
+        if #available(iOS 27.1, *) {
+            return geometry.reservedRegions(kind: .division).first?.frame
+        }
+        #endif
+        return nil
+    }
+
+    private var browserContent: some View {
+        ZStack {
+            if showWebView {
+                // WebView screen
+                WebViewContainer(
+                    urlString: loadedURL,
+                    useSafari: useSafariWebView,
+                    webViewID: $webViewID,
+                    navigator: useSafariWebView ? nil : webViewNavigator
+                )
+                .ignoresSafeArea(edges: .bottom)
+            } else {
+                // URL input screen
+                urlInputView
+            }
+
+            // Menu bars
+            if showWebView {
+                OverlayMenuBars(
+                    showWebView: showWebView,
+                    hasBookmarks: !urlStorage.bookmarks.isEmpty,
+                    useSafariVC: useSafariWebView,
+                    isOverlayMode: !shouldBarsBeExpanded,
+                    erudaModeEnabled: erudaModeEnabled,
+                    onHome: {
+                        // Close all DevTools overlays with single call
+                        devToolsState.closeAll()
+
+                        // Close other sheets
+                        showSettings = false
+                        showBookmarks = false
+                        showInfo = false
+                        showURLInput = false
+                        urlInputText = ""
+
+                        // Clear initial URL tracking
+                        webViewNavigator.clearInitialURL()
+
+                        withAnimation(.easeOut(duration: 0.2)) {
+                            showWebView = false
+                        }
+                    },
+                    onURLChange: { newURL in
+                        guard validateSafariURLIfNeeded(newURL) else { return }
+                        // Add to history
+                        urlStorage.addToHistory(newURL)
+
+                        // Load in same WebView instance (preserves history)
+                        if !useSafariWebView {
+                            webViewNavigator.loadURL(newURL)
+                        } else {
+                            // SafariVC needs recreation
+                            loadedURL = newURL
+                            webViewID = UUID()
+                        }
+                    },
+                    navigator: useSafariWebView ? nil : webViewNavigator,
+                    recorder: screenRecorder,
+                    urlStorage: urlStorage,
+                    showURLInput: $showURLInput,
+                    urlInputText: $urlInputText,
+                    showSettings: $showSettings,
+                    showBookmarks: $showBookmarks,
+                    showInfo: $showInfo,
+                    devToolsState: devToolsState
+                )
+            } else if !showWebView {
+                topBar
+            }
+        }
+        .overlay {
+            if devToolsState.isOpen(.searchText) {
+                SearchTextOverlay(
+                    navigator: webViewNavigator,
+                    isPresented: devToolsState.binding(for: .searchText),
+                    bottomPaddingCalculator: searchOverlayBottomPadding
+                )
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func devToolsContent(for tool: DevToolsOverlay) -> some View {
+        switch tool {
+        case .console:
+            ConsoleView(consoleManager: webViewNavigator.consoleManager, navigator: webViewNavigator)
+        case .network:
+            NetworkView(networkManager: webViewNavigator.networkManager, resourceManager: webViewNavigator.resourceManager)
+        case .storage:
+            StorageView(storageManager: storageManager, navigator: webViewNavigator)
+        case .performance:
+            PerformanceView(
+                performanceManager: webViewNavigator.performanceManager,
+                onCollect: { Task { await collectPerformanceData(webViewNavigator, isReload: false) } },
+                onReload: { Task { await collectPerformanceData(webViewNavigator, isReload: true) } }
+            )
+        case .editor:
+            SourcesView(navigator: webViewNavigator)
+        case .accessibility:
+            AccessibilityAuditView(navigator: webViewNavigator)
+        case .snippets:
+            SnippetsView(navigator: webViewNavigator)
+        case .searchText:
+            EmptyView()
         }
     }
 

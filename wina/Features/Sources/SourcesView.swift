@@ -42,6 +42,7 @@ enum ElementsViewMode: String, CaseIterable {
 struct SourcesView: View {
     let navigator: WebViewNavigator?
 
+    @Environment(\.closeDevTools) private var closeDevTools
     @Environment(\.dismiss) private var dismiss
     @State var manager = SourcesManager()
     @State private var selectedTab: SourceTab = .elements
@@ -287,7 +288,7 @@ struct SourcesView: View {
             title: "Sources",
             leftButtons: [
                 .init(icon: "xmark.circle.fill", color: .secondary) {
-                    dismiss()
+                    (closeDevTools ?? { dismiss() })()
                 },
                 .init(icon: "arrow.clockwise") {
                     Task {

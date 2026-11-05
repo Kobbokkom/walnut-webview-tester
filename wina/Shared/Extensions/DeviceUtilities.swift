@@ -16,15 +16,15 @@ extension UIDevice {
     }
 }
 
-// MARK: - Screen Utilities
+// The presenting WebView's available size must survive presentation into a settings sheet.
+private struct WebViewContainerSizeKey: EnvironmentKey {
+    static let defaultValue: CGSize = .zero
+}
 
-enum ScreenUtility {
-    /// Returns the current screen size from UIWindowScene
-    static var screenSize: CGSize {
-        guard let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene else {
-            return CGSize(width: 393, height: 852) // Default iPhone size
-        }
-        return scene.screen.bounds.size
+extension EnvironmentValues {
+    var webViewContainerSize: CGSize {
+        get { self[WebViewContainerSizeKey.self] }
+        set { self[WebViewContainerSizeKey.self] = newValue }
     }
 }
 
@@ -81,5 +81,16 @@ enum ByteFormatter {
             return String(format: "%.1f KB", Double(bytes) / 1_000)
         }
         return "\(bytes) B"
+    }
+}
+
+private struct CloseDevToolsKey: EnvironmentKey {
+    static let defaultValue: (() -> Void)? = nil
+}
+
+extension EnvironmentValues {
+    var closeDevTools: (() -> Void)? {
+        get { self[CloseDevToolsKey.self] }
+        set { self[CloseDevToolsKey.self] = newValue }
     }
 }

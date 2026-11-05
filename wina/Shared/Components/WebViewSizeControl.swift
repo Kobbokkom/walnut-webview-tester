@@ -14,19 +14,17 @@ struct WebViewSizeControl: View {
     @Binding var heightRatio: Double
 
     private var appContainerHeightRatio: Double {
-        BarConstants.appContainerHeightRatio(for: screenSize.height)
+        BarConstants.appContainerHeightRatio(for: containerSize.height)
     }
 
-    private var screenSize: CGSize {
-        ScreenUtility.screenSize
-    }
+    @Environment(\.webViewContainerSize) private var containerSize
 
     private var currentWidth: Int {
-        Int(screenSize.width * widthRatio)
+        Int(containerSize.width * widthRatio)
     }
 
     private var currentHeight: Int {
-        Int(screenSize.height * heightRatio)
+        Int(containerSize.height * heightRatio)
     }
 
     private var isAppContainerSelected: Bool {
