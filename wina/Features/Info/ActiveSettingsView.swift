@@ -27,6 +27,7 @@ struct ActiveSettingsView: View {
     @AppStorage("allowsAirPlay") private var allowsAirPlay: Bool = true
     @AppStorage("allowsPictureInPicture") private var allowsPictureInPicture: Bool = true
     @AppStorage("preferredContentMode") private var preferredContentMode: Int = 0
+    @AppStorage("allowZoom") private var allowZoom: Bool = false
     @AppStorage("javaScriptCanOpenWindows") private var javaScriptCanOpenWindows: Bool = false
     @AppStorage("fraudulentWebsiteWarning") private var fraudulentWebsiteWarning: Bool = true
     @AppStorage("elementFullscreenEnabled") private var elementFullscreenEnabled: Bool = false
@@ -41,7 +42,6 @@ struct ActiveSettingsView: View {
     // Live Settings (instant apply)
     @AppStorage("allowsBackForwardGestures") private var allowsBackForwardGestures: Bool = false
     @AppStorage("allowsLinkPreview") private var allowsLinkPreview: Bool = true
-    @AppStorage("allowZoom") private var allowZoom: Bool = false
     @AppStorage("textInteractionEnabled") private var textInteractionEnabled: Bool = true
     @AppStorage("findInteractionEnabled") private var findInteractionEnabled: Bool = false
     @AppStorage("pageZoom") private var pageZoom: Double = 1.0
@@ -103,9 +103,6 @@ struct ActiveSettingsView: View {
                 ActiveSettingRow(
                     label: "Link Preview", enabled: allowsLinkPreview,
                     info: "Preview links before opening.\nLong-press or 3D Touch.\nSee page without leaving.")
-                ActiveSettingRow(
-                    label: "Ignore Viewport Scale Limits", enabled: allowZoom,
-                    info: "Force pinch-to-zoom.\nOverrides pages that disable zoom.\nBetter accessibility.")
                 ActiveSettingRow(
                     label: "Text Interaction", enabled: textInteractionEnabled,
                     info: "Select and copy text.\nOff = No text selection.\nDisable for game-like pages.")
@@ -208,6 +205,9 @@ struct ActiveSettingsView: View {
             }
 
             Section {
+                ActiveSettingRow(
+                    label: "Ignore Viewport Scale Limits", enabled: allowZoom,
+                    info: "Force pinch-to-zoom.\nOverrides pages that disable zoom.\nBetter accessibility.")
                 ActiveSettingRow(
                     label: "JS Can Open Windows", enabled: javaScriptCanOpenWindows,
                     info: "Allow popup windows.\nOff = Block popups.\nSome sites need this on.")

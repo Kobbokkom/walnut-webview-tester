@@ -26,6 +26,7 @@ struct ConfigurationSettingsView: View {
     @AppStorage("allowsAirPlay") private var storedAllowsAirPlay: Bool = true
     @AppStorage("allowsPictureInPicture") private var storedAllowsPictureInPicture: Bool = true
     @AppStorage("preferredContentMode") private var storedPreferredContentMode: Int = 0
+    @AppStorage("allowZoom") private var storedAllowZoom: Bool = false
     @AppStorage("javaScriptCanOpenWindows") private var storedJavaScriptCanOpenWindows: Bool = false
     @AppStorage("fraudulentWebsiteWarning") private var storedFraudulentWebsiteWarning: Bool = true
     @AppStorage("elementFullscreenEnabled") private var storedElementFullscreenEnabled: Bool = false
@@ -46,6 +47,7 @@ struct ConfigurationSettingsView: View {
     @State private var allowsAirPlay: Bool = true
     @State private var allowsPictureInPicture: Bool = true
     @State private var preferredContentMode: Int = 0
+    @State private var allowZoom: Bool = false
     @State private var javaScriptCanOpenWindows: Bool = false
     @State private var fraudulentWebsiteWarning: Bool = true
     @State private var elementFullscreenEnabled: Bool = false
@@ -70,6 +72,7 @@ struct ConfigurationSettingsView: View {
         allowsAirPlay != storedAllowsAirPlay ||
         allowsPictureInPicture != storedAllowsPictureInPicture ||
         preferredContentMode != storedPreferredContentMode ||
+        allowZoom != storedAllowZoom ||
         javaScriptCanOpenWindows != storedJavaScriptCanOpenWindows ||
         fraudulentWebsiteWarning != storedFraudulentWebsiteWarning ||
         elementFullscreenEnabled != storedElementFullscreenEnabled ||
@@ -132,6 +135,7 @@ struct ConfigurationSettingsView: View {
         allowsAirPlay = storedAllowsAirPlay
         allowsPictureInPicture = storedAllowsPictureInPicture
         preferredContentMode = storedPreferredContentMode
+        allowZoom = storedAllowZoom
         javaScriptCanOpenWindows = storedJavaScriptCanOpenWindows
         fraudulentWebsiteWarning = storedFraudulentWebsiteWarning
         elementFullscreenEnabled = storedElementFullscreenEnabled
@@ -153,6 +157,7 @@ struct ConfigurationSettingsView: View {
         storedAllowsAirPlay = allowsAirPlay
         storedAllowsPictureInPicture = allowsPictureInPicture
         storedPreferredContentMode = preferredContentMode
+        storedAllowZoom = allowZoom
         storedJavaScriptCanOpenWindows = javaScriptCanOpenWindows
         storedFraudulentWebsiteWarning = fraudulentWebsiteWarning
         storedElementFullscreenEnabled = elementFullscreenEnabled
@@ -272,6 +277,12 @@ struct ConfigurationSettingsView: View {
     private var configBehaviorSection: some View {
         Section {
             SettingToggleRow(
+                title: "Ignore Viewport Scale Limits",
+                isOn: $allowZoom,
+                info: "Allows pinch-to-zoom even when the page disables it via viewport meta tag."
+            )
+            .settingsSearchItem("allowZoom")
+            SettingToggleRow(
                 title: "JS Can Open Windows",
                 isOn: $javaScriptCanOpenWindows,
                 info: "Allows window.open() without user gesture. Disable to block pop-ups."
@@ -366,6 +377,7 @@ struct ConfigurationSettingsView: View {
         allowsPictureInPicture = true
 
         // Content
+        allowZoom = false
         suppressesIncrementalRendering = false
         javaScriptCanOpenWindows = false
         fraudulentWebsiteWarning = true

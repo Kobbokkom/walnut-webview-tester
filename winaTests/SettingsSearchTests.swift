@@ -29,6 +29,21 @@ final class SettingsSearchTests: XCTestCase {
         XCTAssertTrue(search.results(in: .loaded, locale: korean).contains { $0.item.id == "webViewSize" })
     }
 
+    func testViewportScaleLimitSearchOpensConfiguration() throws {
+        var search = SettingsSearch()
+        search.query = "Ignore Viewport Scale Limits"
+        let results = search.results(in: .loaded, locale: english)
+
+        XCTAssertEqual(results.map(\.id), ["configuration.allowZoom"])
+        let result = try XCTUnwrap(results.first)
+        XCTAssertEqual(result.item.section, "Behavior")
+        let selected = SettingsSearch(item: result.item, locale: english)
+        let destination = SettingsSearchCatalog.items(for: result.screen)
+        XCTAssertEqual(destination.filter { selected.matches($0, screen: result.screen, locale: english) }.map(\.id), ["allowZoom"])
+        XCTAssertFalse(SettingsSearchCatalog.items(for: .live).contains { $0.id == "allowZoom" })
+        XCTAssertEqual(SettingsSearchCatalog.items(for: .settings).filter { $0.id == "allowZoom" }.count, 1)
+    }
+
     func testSelectedResultShowsOnlyThatSettingUntilQueryChanges() throws {
         let items = SettingsSearchCatalog.items(for: .configuration)
         let item = try XCTUnwrap(items.first { $0.id == "enableJavaScript" })

@@ -45,6 +45,7 @@ enum SettingsSearchCatalog {
         SettingsSearchItem("allowsAirPlay", "AirPlay", "Media", "Enables streaming media to Apple TV and other AirPlay devices."),
         SettingsSearchItem("allowsPictureInPicture", "Picture in Picture", "Media", "Allows videos to continue playing in a floating window."),
         SettingsSearchItem("preferredContentMode", "Content Mode", "Content Mode"),
+        SettingsSearchItem("allowZoom", "Ignore Viewport Scale Limits", "Behavior", "Allows pinch-to-zoom even when the page disables it via viewport meta tag."),
         SettingsSearchItem("javaScriptCanOpenWindows", "JS Can Open Windows", "Behavior", "Allows window.open() without user gesture. Disable to block pop-ups."),
         SettingsSearchItem("fraudulentWebsiteWarning", "Fraudulent Website Warning", "Behavior", "Shows warning for suspected phishing or malware sites."),
         SettingsSearchItem("elementFullscreenEnabled", "Element Fullscreen API", "Behavior", "Allows elements to enter fullscreen mode. Full API available on iPad only; iPhone is limited to video elements."),
@@ -60,7 +61,6 @@ enum SettingsSearchCatalog {
     private static let live: [SettingsSearchItem] = [
         SettingsSearchItem("allowsBackForwardGestures", "Back/Forward Gestures", "Navigation & Interaction", "Enables swipe from edge to navigate history."),
         SettingsSearchItem("allowsLinkPreview", "Link Preview", "Navigation & Interaction", "Shows page preview on long-press or 3D Touch on links."),
-        SettingsSearchItem("allowZoom", "Ignore Viewport Scale Limits", "Navigation & Interaction", "Allows pinch-to-zoom even when the page disables it via viewport meta tag."),
         SettingsSearchItem("textInteractionEnabled", "Text Interaction", "Navigation & Interaction", "Enables text selection, copy, and other text interactions."),
         SettingsSearchItem("findInteractionEnabled", "Find Interaction", "Navigation & Interaction", "Enables the system find panel (Cmd+F on iPad with keyboard)."),
         SettingsSearchItem("pageZoom", "Page Zoom", "Display"),

@@ -23,7 +23,6 @@ struct LiveSettingsView: View {
     // AppStorage (persistent)
     @AppStorage("allowsBackForwardGestures") private var storedAllowsBackForwardGestures: Bool = false
     @AppStorage("allowsLinkPreview") private var storedAllowsLinkPreview: Bool = true
-    @AppStorage("allowZoom") private var storedAllowZoom: Bool = false
     @AppStorage("textInteractionEnabled") private var storedTextInteractionEnabled: Bool = true
     @AppStorage("pageZoom") private var storedPageZoom: Double = 1.0
     @AppStorage("underPageBackgroundColor") private var storedUnderPageBackgroundColorHex: String = ""
@@ -35,7 +34,6 @@ struct LiveSettingsView: View {
     // Local state (editable)
     @State private var allowsBackForwardGestures: Bool = false
     @State private var allowsLinkPreview: Bool = true
-    @State private var allowZoom: Bool = false
     @State private var textInteractionEnabled: Bool = true
     @State private var pageZoom: Double = 1.0
     @State private var underPageBackgroundColorHex: String = ""
@@ -48,7 +46,6 @@ struct LiveSettingsView: View {
     private var hasChanges: Bool {
         allowsBackForwardGestures != storedAllowsBackForwardGestures ||
         allowsLinkPreview != storedAllowsLinkPreview ||
-        allowZoom != storedAllowZoom ||
         textInteractionEnabled != storedTextInteractionEnabled ||
         pageZoom != storedPageZoom ||
         underPageBackgroundColorHex != storedUnderPageBackgroundColorHex ||
@@ -73,12 +70,6 @@ struct LiveSettingsView: View {
                     info: "Shows page preview on long-press or 3D Touch on links."
                 )
                 .settingsSearchItem("allowsLinkPreview")
-                SettingToggleRow(
-                    title: "Ignore Viewport Scale Limits",
-                    isOn: $allowZoom,
-                    info: "Allows pinch-to-zoom even when the page disables it via viewport meta tag."
-                )
-                .settingsSearchItem("allowZoom")
                 SettingToggleRow(
                     title: "Text Interaction",
                     isOn: $textInteractionEnabled,
@@ -189,7 +180,6 @@ struct LiveSettingsView: View {
     private func loadFromStorage() {
         allowsBackForwardGestures = storedAllowsBackForwardGestures
         allowsLinkPreview = storedAllowsLinkPreview
-        allowZoom = storedAllowZoom
         textInteractionEnabled = storedTextInteractionEnabled
         pageZoom = storedPageZoom
         underPageBackgroundColorHex = storedUnderPageBackgroundColorHex
@@ -202,7 +192,6 @@ struct LiveSettingsView: View {
     private func applyChanges() {
         storedAllowsBackForwardGestures = allowsBackForwardGestures
         storedAllowsLinkPreview = allowsLinkPreview
-        storedAllowZoom = allowZoom
         storedTextInteractionEnabled = textInteractionEnabled
         storedPageZoom = pageZoom
         storedUnderPageBackgroundColorHex = underPageBackgroundColorHex
@@ -216,7 +205,6 @@ struct LiveSettingsView: View {
     private func resetToDefaults() {
         allowsBackForwardGestures = false
         allowsLinkPreview = true
-        allowZoom = false
         textInteractionEnabled = true
         pageZoom = 1.0
         underPageBackgroundColorHex = ""
@@ -466,7 +454,6 @@ struct SettingsView: View {
     // Core Settings
     @AppStorage("enableJavaScript") private var enableJavaScript: Bool = true
     @AppStorage("allowsContentJavaScript") private var allowsContentJavaScript: Bool = true
-    @AppStorage("allowZoom") private var allowZoom: Bool = false
     @AppStorage("minimumFontSize") private var minimumFontSize: Double = 0
 
     // Media Settings
@@ -481,6 +468,7 @@ struct SettingsView: View {
     @AppStorage("findInteractionEnabled") private var findInteractionEnabled: Bool = false
 
     // Content Settings
+    @AppStorage("allowZoom") private var allowZoom: Bool = false
     @AppStorage("suppressesIncrementalRendering") private var suppressesIncrementalRendering: Bool = false
     @AppStorage("javaScriptCanOpenWindows") private var javaScriptCanOpenWindows: Bool = false
     @AppStorage("fraudulentWebsiteWarning") private var fraudulentWebsiteWarning: Bool = true
@@ -745,6 +733,12 @@ struct SettingsView: View {
     private var behaviorSection: some View {
         Section {
             SettingToggleRow(
+                title: "Ignore Viewport Scale Limits",
+                isOn: $allowZoom,
+                info: "Allows pinch-to-zoom even when the page disables it via viewport meta tag."
+            )
+            .settingsSearchItem("allowZoom")
+            SettingToggleRow(
                 title: "JS Can Open Windows",
                 isOn: $javaScriptCanOpenWindows,
                 info: "Allows window.open() without user gesture. Disable to block pop-ups."
@@ -843,12 +837,6 @@ struct SettingsView: View {
             )
             .settingsSearchItem("allowsLinkPreview")
             SettingToggleRow(
-                title: "Ignore Viewport Scale Limits",
-                isOn: $allowZoom,
-                info: "Allows pinch-to-zoom even when the page disables it via viewport meta tag."
-            )
-            .settingsSearchItem("allowZoom")
-            SettingToggleRow(
                 title: "Text Interaction",
                 isOn: $textInteractionEnabled,
                 info: "Enables text selection, copy, and other text interactions."
@@ -927,7 +915,6 @@ struct SettingsView: View {
         // Core
         enableJavaScript = true
         allowsContentJavaScript = true
-        allowZoom = false
         minimumFontSize = 0
 
         // Media
@@ -942,6 +929,7 @@ struct SettingsView: View {
         findInteractionEnabled = false
 
         // Content
+        allowZoom = false
         suppressesIncrementalRendering = false
         javaScriptCanOpenWindows = false
         fraudulentWebsiteWarning = true
