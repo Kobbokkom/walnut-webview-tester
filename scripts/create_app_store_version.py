@@ -12,7 +12,7 @@ import jwt
 import requests
 
 # Configuration
-BUNDLE_ID = "com.kobbokkom.walnut"
+BUNDLE_ID = "com.kobbokkom.wina"
 ISSUER_ID = "a7524762-b1db-463b-84a8-bbee51a37cc2"
 KEY_ID = "74HC92L9NA"
 PRIVATE_KEY_PATH = Path("/Users/semanticist/Documents/API/AuthKey_74HC92L9NA.p8")
