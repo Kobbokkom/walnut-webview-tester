@@ -162,7 +162,7 @@ struct WebViewContainer: View {
         config.ignoresViewportScaleLimits = allowZoom
         config.preferences.javaScriptCanOpenWindowsAutomatically = javaScriptCanOpenWindows
         config.preferences.isFraudulentWebsiteWarningEnabled = fraudulentWebsiteWarning
-        config.preferences.minimumFontSize = CGFloat(minimumFontSize)
+        config.preferences.minimumFontSize = CGFloat(SettingsFormatter.validMinimumFontSize(minimumFontSize))
 
         // Media
         if mediaAutoplay {

@@ -30,6 +30,7 @@ class WebViewNavigator {
     var canGoBack: Bool = false
     var canGoForward: Bool = false
     var currentURL: URL?
+    private(set) var documentID = UUID()
     /// 최초 입력된 URL (네비게이션 시작점)
     private(set) var initialURL: URL?
     var showScreenshotFlash: Bool = false
@@ -116,6 +117,7 @@ class WebViewNavigator {
 
     func attach(to webView: WKWebView) {
         self.webView = webView
+        documentDidChange(in: webView)
 
         // Initial state
         canGoBack = webView.canGoBack
@@ -141,6 +143,12 @@ class WebViewNavigator {
         }
     }
 
+    func documentDidChange(in webView: WKWebView) {
+        guard self.webView === webView else { return }
+        documentID = UUID()
+        performanceManager.clear()
+    }
+
     func detach() {
         recorder.stopRecording()
         canGoBackObservation?.invalidate()
@@ -154,6 +162,8 @@ class WebViewNavigator {
         canGoBack = false
         canGoForward = false
         currentURL = nil
+        documentID = UUID()
+        performanceManager.clear()
     }
 
     /// 수동 새로고침 직전에 실행할 coordinator 콜백을 등록합니다.

@@ -14,6 +14,10 @@ enum PreloadScriptBuilder {
         guard profile.isEnabled else { return "" }
 
         var blocks: [String] = [baseHelpers]
+        let bridgeChannels = profile.enabledBridgeChannelNames.filter { $0 != PreloadBridgeConstants.postMessageCaptureChannel }
+        if !bridgeChannels.isEmpty {
+            blocks.append(bridgeDocumentScript(channels: bridgeChannels))
+        }
 
         for item in profile.windowItems where item.isEnabled {
             if let script = windowItemScript(item) {
@@ -32,6 +36,26 @@ enum PreloadScriptBuilder {
             \(blocks.joined(separator: "\n\n"))
             })();
             """
+    }
+
+    private static func bridgeDocumentScript(channels: [String]) -> String {
+        let names = channels.map(JavaScriptLiteral.quoted).joined(separator: ", ")
+        return """
+        (function() {
+            const token = Array.from(crypto.getRandomValues(new Uint32Array(4))).join('-');
+            Object.defineProperty(document, '__winaBridgeDocumentToken', { value: token });
+            for (const name of [\(names)]) {
+                const handler = window.webkit?.messageHandlers?.[name];
+                if (!handler) continue;
+                const post = handler.postMessage.bind(handler);
+                Object.defineProperty(handler, 'postMessage', {
+                    value: body => post({ __winaBridgeDocumentToken: token, body }),
+                    writable: true,
+                    configurable: true
+                });
+            }
+        })();
+        """
     }
 
     static func customScripts(for profile: WebViewPreloadProfile) -> [(source: String, forMainFrameOnly: Bool)] {

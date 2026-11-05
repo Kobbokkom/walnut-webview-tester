@@ -14,7 +14,7 @@ extension InfoView {
         [
             InfoSearchItem(category: "Active Settings", label: "Content JavaScript", value: allowsContentJavaScript ? "Enabled" : "Disabled"),
             InfoSearchItem(category: "Active Settings", label: "Ignore Viewport Scale Limits", value: allowZoom ? "Enabled" : "Disabled"),
-            InfoSearchItem(category: "Active Settings", label: "Minimum Font Size", value: minimumFontSize == 0 ? "Default" : "\(Int(minimumFontSize)) pt"),
+            InfoSearchItem(category: "Active Settings", label: "Minimum Font Size", value: SettingsFormatter.minimumFontSizeText(minimumFontSize)),
             InfoSearchItem(category: "Active Settings", label: "Auto-play Media", value: mediaAutoplay ? "Enabled" : "Disabled"),
             InfoSearchItem(category: "Active Settings", label: "Inline Playback", value: inlineMediaPlayback ? "Enabled" : "Disabled"),
             InfoSearchItem(category: "Active Settings", label: "AirPlay", value: allowsAirPlay ? "Enabled" : "Disabled"),

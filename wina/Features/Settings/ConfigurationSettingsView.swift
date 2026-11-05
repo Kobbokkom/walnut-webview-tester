@@ -125,7 +125,7 @@ struct ConfigurationSettingsView: View {
 
     private func loadFromStorage() {
         allowsContentJavaScript = storedAllowsContentJavaScript
-        minimumFontSize = storedMinimumFontSize
+        minimumFontSize = SettingsFormatter.validMinimumFontSize(storedMinimumFontSize)
         mediaAutoplay = storedMediaAutoplay
         inlineMediaPlayback = storedInlineMediaPlayback
         allowsAirPlay = storedAllowsAirPlay
@@ -146,7 +146,7 @@ struct ConfigurationSettingsView: View {
 
     private func applyChanges() {
         storedAllowsContentJavaScript = allowsContentJavaScript
-        storedMinimumFontSize = minimumFontSize
+        storedMinimumFontSize = SettingsFormatter.validMinimumFontSize(minimumFontSize)
         storedMediaAutoplay = mediaAutoplay
         storedInlineMediaPlayback = inlineMediaPlayback
         storedAllowsAirPlay = allowsAirPlay

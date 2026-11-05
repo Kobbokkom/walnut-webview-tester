@@ -31,6 +31,15 @@ extension EnvironmentValues {
 // MARK: - Settings Formatters
 
 enum SettingsFormatter {
+    static func validMinimumFontSize(_ size: Double) -> Double {
+        size >= 0 && size < Double(Int.max) ? size : 0
+    }
+
+    static func minimumFontSizeText(_ size: Double) -> String {
+        let validSize = validMinimumFontSize(size)
+        return validSize == 0 ? "Default" : "\(Int(validSize)) pt"
+    }
+
     /// Formats content mode integer to display string
     static func contentModeText(_ mode: Int) -> String {
         switch mode {

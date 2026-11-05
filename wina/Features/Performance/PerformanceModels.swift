@@ -331,6 +331,8 @@ class PerformanceManager {
     var data = PerformanceData()
     var isLoading: Bool = false
     var lastError: String?
+    private(set) var isReloading = false
+    @ObservationIgnored private var collectionID = UUID()
 
     // JavaScript to inject PerformanceObservers at page load (for LCP, CLS)
     // Note: INP removed - Safari/WKWebView doesn't support Event Timing API (until 2026)
@@ -351,16 +353,30 @@ class PerformanceManager {
         } catch (e) {}
 
         // CLS tracking
-        window.__webVitals_cls = 0;
-        try {
-            new PerformanceObserver((list) => {
-                for (const entry of list.getEntries()) {
-                    if (!entry.hadRecentInput) {
-                        window.__webVitals_cls += entry.value;
+        window.__webVitals_cls = -1;
+        if (typeof PerformanceObserver !== 'undefined' && PerformanceObserver.supportedEntryTypes?.includes('layout-shift')) {
+            let sessionStart = null;
+            let lastShift = 0;
+            let sessionScore = 0;
+            try {
+                window.__webVitals_cls = 0;
+                new PerformanceObserver((list) => {
+                    for (const entry of list.getEntries()) {
+                        if (entry.hadRecentInput) continue;
+                        if (sessionStart === null || entry.startTime - lastShift >= 1000 ||
+                            entry.startTime - sessionStart >= 5000) {
+                            sessionStart = entry.startTime;
+                            sessionScore = 0;
+                        }
+                        lastShift = entry.startTime;
+                        sessionScore += entry.value;
+                        window.__webVitals_cls = Math.max(window.__webVitals_cls, sessionScore);
                     }
-                }
-            }).observe({ type: 'layout-shift', buffered: true });
-        } catch (e) {}
+                }).observe({ type: 'layout-shift', buffered: true });
+            } catch (e) {
+                window.__webVitals_cls = -1;
+            }
+        }
     })();
     """
 
@@ -428,21 +444,9 @@ class PerformanceManager {
         } catch (e) {}
 
         // CLS (Cumulative Layout Shift)
-        // Prefer observer value (accumulates all shifts), fallback to getEntriesByType
-        try {
-            if (typeof window.__webVitals_cls === 'number' && window.__webVitals_cls >= 0) {
-                result.cls = window.__webVitals_cls;
-            } else {
-                const layoutShifts = performance.getEntriesByType('layout-shift');
-                let clsValue = 0;
-                for (const entry of layoutShifts) {
-                    if (!entry.hadRecentInput) {
-                        clsValue += entry.value;
-                    }
-                }
-                result.cls = clsValue;
-            }
-        } catch (e) {}
+        if (typeof window.__webVitals_cls === 'number') {
+            result.cls = window.__webVitals_cls;
+        }
 
         // TBT approximation - sum of long task blocking time
         try {
@@ -460,6 +464,57 @@ class PerformanceManager {
         return JSON.stringify(result);
     })()
     """
+
+    @MainActor
+    func collect(using navigator: WebViewNavigator, reload: Bool) async {
+        let id = UUID()
+        collectionID = id
+        isLoading = true
+        isReloading = reload
+        lastError = nil
+        defer {
+            if collectionID == id {
+                isLoading = false
+                isReloading = false
+            }
+        }
+
+        guard navigator.isAttached else {
+            lastError = "Failed to collect performance data. Make sure a page is loaded."
+            return
+        }
+        let initialDocument = navigator.documentID
+        if reload {
+            clear()
+            navigator.reload()
+        }
+
+        let script = """
+        if (document.readyState === 'complete' &&
+            (performance.getEntriesByType('navigation')[0]?.loadEventEnd ?? 1) > 0) {
+            \(Self.collectionScript)
+        }
+        """
+        for _ in 0..<20 {
+            guard !Task.isCancelled, collectionID == id else { return }
+            let document = navigator.documentID
+            if !reload || document != initialDocument {
+                let result = await navigator.evaluateJavaScript(script)
+                guard !Task.isCancelled, collectionID == id else { return }
+                if navigator.documentID == document, let result = result as? String {
+                    parseData(from: result)
+                    if data.navigation == nil && data.paints.isEmpty {
+                        lastError = "Page load incomplete. Try refreshing again."
+                    }
+                    return
+                }
+            }
+            try? await Task.sleep(for: .milliseconds(500))
+        }
+        if !Task.isCancelled, collectionID == id {
+            lastError = "Page load incomplete. Try refreshing again."
+        }
+    }
 
     func parseData(from jsonString: String) {
         guard let jsonData = jsonString.data(using: .utf8) else {

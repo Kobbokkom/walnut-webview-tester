@@ -19,7 +19,7 @@ struct SearchTextOverlay: View {
     @State private var searchText: String = ""
     @State private var matchCount: Int = 0
     @State private var currentIndex: Int = 0
-    @State private var isSearching: Bool = false
+    @State private var searchTask: Task<Void, Never>?
     @State private var hasCompletedSearch: Bool = false
     @FocusState private var isTextFieldFocused: Bool
 
@@ -38,7 +38,6 @@ struct SearchTextOverlay: View {
                         size: .small,
                         color: .secondary
                     ) {
-                        clearHighlights()
                         isPresented = false
                     }
 
@@ -55,14 +54,13 @@ struct SearchTextOverlay: View {
                             .focused($isTextFieldFocused)
                             .submitLabel(.search)
                             .onSubmit {
-                                performSearch()
+                                scheduleSearch()
                             }
 
                         // Clear 버튼
                         if !searchText.isEmpty {
                             Button {
                                 searchText = ""
-                                clearHighlights()
                             } label: {
                                 Image(systemName: "xmark.circle.fill")
                                     .font(.system(size: 16))
@@ -121,43 +119,49 @@ struct SearchTextOverlay: View {
         .onDisappear {
             clearHighlights()
         }
-        .onChange(of: searchText) { _, newValue in
-            if newValue.isEmpty {
-                clearHighlights()
-            } else {
-                // Debounce search
-                Task {
-                    try? await Task.sleep(for: .milliseconds(300))
-                    if searchText == newValue {
-                        performSearch()
-                    }
-                }
-            }
+        .onChange(of: searchText) { _, _ in
+            scheduleSearch(debounce: true)
+        }
+        .onChange(of: navigator.documentID) { _, _ in
+            scheduleSearch(waitForDocument: true)
         }
     }
 
     // MARK: - Search Actions
 
-    private func performSearch() {
-        guard !searchText.isEmpty else { return }
-        isSearching = true
-
-        guard let script = Self.searchScript(for: searchText) else {
-            isSearching = false
+    private func scheduleSearch(debounce: Bool = false, waitForDocument: Bool = false) {
+        searchTask?.cancel()
+        matchCount = 0
+        currentIndex = 0
+        hasCompletedSearch = false
+        guard !searchText.isEmpty, let script = Self.searchScript(for: searchText) else {
+            clearHighlights()
             return
         }
 
-        Task {
-            let result = await navigator.evaluateJavaScript(script)
-            await MainActor.run {
-                isSearching = false
-                if let jsonString = result as? String,
-                   let data = jsonString.data(using: .utf8),
+        let document = navigator.documentID
+        let query = searchText
+        searchTask = Task {
+            if debounce { try? await Task.sleep(for: .milliseconds(300)) }
+            // The new document may not have a body yet when WebKit commits it.
+            while navigator.isAttached {
+                guard !Task.isCancelled, navigator.documentID == document, searchText == query else { return }
+                let result = await navigator.evaluateJavaScript("""
+                if (document.readyState === 'loading' && (\(waitForDocument) || !document.body)) { 'wait'; }
+                else if (document.body) { \(script) }
+                else { JSON.stringify({count: 0, index: 0}); }
+                """)
+                guard !Task.isCancelled, navigator.documentID == document, searchText == query,
+                      let jsonString = result as? String else { return }
+                if let data = jsonString.data(using: .utf8),
                    let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
                     matchCount = json["count"] as? Int ?? 0
                     currentIndex = json["index"] as? Int ?? 0
                     hasCompletedSearch = true
+                    return
                 }
+                guard jsonString == "wait" else { return }
+                try? await Task.sleep(for: .milliseconds(500))
             }
         }
     }
@@ -258,9 +262,12 @@ struct SearchTextOverlay: View {
         })();
         """
 
+        let document = navigator.documentID
+        let query = searchText
         Task {
             let result = await navigator.evaluateJavaScript(script)
             await MainActor.run {
+                guard navigator.documentID == document, searchText == query else { return }
                 if let jsonString = result as? String,
                    let data = jsonString.data(using: .utf8),
                    let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
@@ -297,9 +304,12 @@ struct SearchTextOverlay: View {
         })();
         """
 
+        let document = navigator.documentID
+        let query = searchText
         Task {
             let result = await navigator.evaluateJavaScript(script)
             await MainActor.run {
+                guard navigator.documentID == document, searchText == query else { return }
                 if let jsonString = result as? String,
                    let data = jsonString.data(using: .utf8),
                    let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
@@ -310,6 +320,7 @@ struct SearchTextOverlay: View {
     }
 
     private func clearHighlights() {
+        searchTask?.cancel()
         matchCount = 0
         currentIndex = 0
         hasCompletedSearch = false

@@ -728,7 +728,11 @@ private struct NetworkRequestRow: View {
                     Image(systemName: "xmark.circle.fill")
                         .font(.system(size: 11))
                         .foregroundStyle(.red)
-                } else {
+                } else if let statusText = request.statusText {
+                    Text(statusText)
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                } else if request.isPending {
                     ProgressView()
                         .scaleEffect(0.6)
                 }

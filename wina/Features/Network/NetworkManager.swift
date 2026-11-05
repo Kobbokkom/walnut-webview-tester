@@ -343,6 +343,17 @@ class NetworkManager {
         }
     }
 
+    func completeDocumentRequest(id: String, error: String?) {
+        guard let uuid = UUID(uuidString: id) else { return }
+        DispatchQueue.main.async { [weak self] in
+            guard let self, let index = requests.firstIndex(where: { $0.id == uuid }) else { return }
+            var request = requests[index]
+            if let error { request.error = error }
+            request.endTime = request.endTime ?? Date()
+            requests[index] = request
+        }
+    }
+
     func updateRequestBody(
         id: String,
         requestBody: String?

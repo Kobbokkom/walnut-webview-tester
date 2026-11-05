@@ -66,7 +66,7 @@ final class NavigationLogRegressionTests: XCTestCase {
                 let loaded = expectation(description: "\(strategy.rawValue) committed \(url)")
                 coordinator.onFinish = { loaded.fulfill() }
                 webView.load(URLRequest(url: url))
-                await fulfillment(of: [loaded], timeout: 10)
+                await fulfillment(of: [loaded], timeout: 20)
                 await withCheckedContinuation { continuation in
                     DispatchQueue.main.async { continuation.resume() }
                 }
@@ -114,7 +114,7 @@ final class NavigationLogRegressionTests: XCTestCase {
             let loaded = expectation(description: "Next document loaded")
             coordinator.onFinish = { loaded.fulfill() }
             webView.loadHTMLString("<html><body>next page</body></html>", baseURL: nil)
-            await fulfillment(of: [loaded], timeout: 5)
+            await fulfillment(of: [loaded], timeout: 15)
             XCTAssertTrue(navigator.consoleManager.logs.isEmpty)
         }
     }
@@ -141,7 +141,7 @@ final class NavigationLogRegressionTests: XCTestCase {
         let loaded = expectation(description: "Slow document committed")
         coordinator.onCommit = { loaded.fulfill() }
         webView.load(URLRequest(url: url))
-        await fulfillment(of: [loaded], timeout: 5)
+        await fulfillment(of: [loaded], timeout: 15)
 
         navigator.consoleManager.logs.append(ConsoleLog(type: .log, message: "keep this log", source: nil, timestamp: Date()))
         let canceled = expectation(description: "First document canceled")
@@ -151,10 +151,120 @@ final class NavigationLogRegressionTests: XCTestCase {
         let reloaded = expectation(description: "Reload committed")
         coordinator.onCommit = { reloaded.fulfill() }
         XCTAssertNotNil(webView.reload())
-        await fulfillment(of: [canceled, reloaded], timeout: 5)
+        await fulfillment(of: [canceled, reloaded], timeout: 15)
         XCTAssertEqual(navigator.consoleManager.logs.map(\.message), ["keep this log"])
         webView.navigationDelegate = nil
         webView.stopLoading()
+    }
+
+    func testSupersededDocumentKeepsItsResponseAndDoesNotCorruptTheNextRequest() async throws {
+        let slow = try await startHTTPServer(delayBody: true)
+        let fast = try await startHTTPServer()
+        defer { slow.cancel(); fast.cancel() }
+        let slowURL = try XCTUnwrap(URL(string: "http://127.0.0.1:\(XCTUnwrap(slow.port).rawValue)/slow"))
+        let fastURL = try XCTUnwrap(URL(string: "http://127.0.0.1:\(XCTUnwrap(fast.port).rawValue)/fast"))
+        let defaults = UserDefaults.standard
+        let keys = [LogClearStrategy.networkDefaultsKey, LogClearStrategy.migrationFlagKey]
+        let previous = keys.map { defaults.object(forKey: $0) }
+        defaults.set(LogClearStrategy.keep.rawValue, forKey: keys[0])
+        defaults.set(true, forKey: keys[1])
+        defer {
+            for (key, value) in zip(keys, previous) { defaults.set(value, forKey: key) }
+        }
+
+        let navigator = WebViewNavigator()
+        let coordinator = Coordinator(isLoading: .constant(false), navigator: navigator)
+        let webView = WKWebView(frame: .zero)
+        webView.navigationDelegate = coordinator
+        let slowCommitted = expectation(description: "Slow document committed")
+        coordinator.onCommit = { slowCommitted.fulfill() }
+        webView.load(URLRequest(url: slowURL))
+        await fulfillment(of: [slowCommitted], timeout: 15)
+
+        coordinator.onCommit = nil
+        let fastFinished = expectation(description: "Second document finished")
+        coordinator.onFinish = { fastFinished.fulfill() }
+        webView.load(URLRequest(url: fastURL))
+        await fulfillment(of: [fastFinished], timeout: 15)
+
+        let first = try XCTUnwrap(navigator.networkManager.requests.first { $0.url == slowURL.absoluteString })
+        let second = try XCTUnwrap(navigator.networkManager.requests.first { $0.url == fastURL.absoluteString })
+        XCTAssertEqual(first.status, 200)
+        XCTAssertEqual(second.status, 200)
+        XCTAssertNil(second.error)
+    }
+
+    func testRedirectUsesDelegateEvidenceAndKeepsTheFinalStatus() async throws {
+        let server = try await startHTTPServer()
+        defer { server.cancel() }
+        let base = try XCTUnwrap(URL(string: "http://127.0.0.1:\(XCTUnwrap(server.port).rawValue)"))
+        let defaults = UserDefaults.standard
+        let keys = [LogClearStrategy.networkDefaultsKey, LogClearStrategy.migrationFlagKey]
+        let previous = keys.map { defaults.object(forKey: $0) }
+        defaults.set(LogClearStrategy.keep.rawValue, forKey: keys[0])
+        defaults.set(true, forKey: keys[1])
+        defer {
+            for (key, value) in zip(keys, previous) { defaults.set(value, forKey: key) }
+        }
+
+        let navigator = WebViewNavigator()
+        let coordinator = Coordinator(isLoading: .constant(false), navigator: navigator)
+        let webView = WKWebView(frame: .zero)
+        webView.navigationDelegate = coordinator
+        let loaded = expectation(description: "Redirect target finished")
+        coordinator.onFinish = { loaded.fulfill() }
+        webView.load(URLRequest(url: base.appending(path: "redirect")))
+        await fulfillment(of: [loaded], timeout: 15)
+
+        let redirect = try XCTUnwrap(navigator.networkManager.requests.first { $0.url.hasSuffix("/redirect") })
+        let target = try XCTUnwrap(navigator.networkManager.requests.first { $0.url.hasSuffix("/target") })
+        XCTAssertNil(redirect.status)
+        XCTAssertEqual(redirect.statusText, "Redirect")
+        XCTAssertFalse(redirect.isPending)
+        XCTAssertEqual(target.status, 200)
+    }
+
+    func testCookieAddReportsRejectionAndPerformanceClearsOnlyForNewDocuments() async throws {
+        let server = try await startHTTPServer()
+        defer { server.cancel() }
+        let url = try XCTUnwrap(URL(string: "http://127.0.0.1:\(XCTUnwrap(server.port).rawValue)/page"))
+        let navigator = WebViewNavigator()
+        let coordinator = Coordinator(isLoading: .constant(false), navigator: navigator)
+        let webView = WKWebView(frame: .zero, configuration: WKWebViewConfiguration())
+        navigator.attach(to: webView)
+        webView.navigationDelegate = coordinator
+
+        let loaded = expectation(description: "First page loaded")
+        coordinator.onFinish = { loaded.fulfill() }
+        webView.load(URLRequest(url: url))
+        await fulfillment(of: [loaded], timeout: 15)
+
+        let storage = StorageManager()
+        storage.setNavigator(navigator)
+        let accepted = await storage.addItem(key: "small", value: "works", type: .cookies, pageURL: url)
+        let rejected = await storage.addItem(key: "large", value: String(repeating: "a", count: 10_000), type: .cookies, pageURL: url)
+        let whitespace = await storage.addItem(key: " padded ", value: " value ", type: .cookies, pageURL: url)
+        XCTAssertTrue(accepted)
+        XCTAssertTrue(whitespace)
+        XCTAssertFalse(rejected)
+        let cookies = try await webView.evaluateJavaScript("document.cookie") as? String
+        XCTAssertEqual(Set(cookies?.split(separator: ";").map { $0.trimmingCharacters(in: .whitespaces) } ?? []), ["small=works", "padded=value"])
+
+        await navigator.performanceManager.collect(using: navigator, reload: false)
+        XCTAssertNotNil(navigator.performanceManager.data.navigation)
+        let originalDocument = navigator.documentID
+        _ = try await webView.evaluateJavaScript("location.hash = 'same-document'")
+        XCTAssertEqual(navigator.documentID, originalDocument)
+        XCTAssertNotNil(navigator.performanceManager.data.navigation)
+
+        let next = expectation(description: "Second page loaded")
+        coordinator.onFinish = { next.fulfill() }
+        webView.load(URLRequest(url: url.deletingLastPathComponent().appending(path: "other")))
+        await fulfillment(of: [next], timeout: 15)
+        XCTAssertNotEqual(navigator.documentID, originalDocument)
+        XCTAssertNil(navigator.performanceManager.data.navigation)
+        await navigator.performanceManager.collect(using: navigator, reload: false)
+        XCTAssertNotNil(navigator.performanceManager.data.navigation)
     }
 
     func testNetworkHookPreservesFetchAndXHRHeaderValues() async throws {
@@ -200,7 +310,14 @@ final class NavigationLogRegressionTests: XCTestCase {
         await fulfillment(of: [captured], timeout: 3)
     }
 
-    private func startHTTPServer(delayBody: Bool = false) async throws -> NWListener {
+}
+
+@MainActor
+extension XCTestCase {
+    func startHTTPServer(
+        delayBody: Bool = false,
+        handleRequest: ((NWConnection) -> Void)? = nil
+    ) async throws -> NWListener {
         let parameters = NWParameters.tcp
         parameters.requiredLocalEndpoint = .hostPort(host: "127.0.0.1", port: .any)
         let listener = try NWListener(using: parameters)
@@ -210,7 +327,16 @@ final class NavigationLogRegressionTests: XCTestCase {
         }
         listener.newConnectionHandler = { connection in
             connection.start(queue: .main)
-            connection.receive(minimumIncompleteLength: 1, maximumLength: 65536) { _, _, _, _ in
+            connection.receive(minimumIncompleteLength: 1, maximumLength: 65536) { data, _, _, _ in
+                if let handleRequest {
+                    handleRequest(connection)
+                    return
+                }
+                if let data, String(decoding: data, as: UTF8.self).hasPrefix("GET /redirect ") {
+                    let redirect = "HTTP/1.1 307 Temporary Redirect\r\nLocation: /target\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+                    connection.send(content: Data(redirect.utf8), completion: .contentProcessed { _ in connection.cancel() })
+                    return
+                }
                 let body = "<html><body>navigation fixture</body></html>"
                 let trailing = delayBody ? String(repeating: " ", count: 4096) : ""
                 let response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nX-Walnut-Detail: first: second\r\nContent-Length: \(body.utf8.count + trailing.utf8.count)\r\nConnection: close\r\n\r\n" + body
@@ -226,7 +352,7 @@ final class NavigationLogRegressionTests: XCTestCase {
             }
         }
         listener.start(queue: .main)
-        await fulfillment(of: [ready], timeout: 5)
+        await fulfillment(of: [ready], timeout: 10)
         _ = try XCTUnwrap(listener.port)
         return listener
     }

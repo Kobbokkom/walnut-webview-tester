@@ -28,8 +28,7 @@ class WKWebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
     // didFinish 연속 호출 시 이전 Eruda 동기화 작업을 취소하고 최신 작업만 유지합니다.
     private var erudaSyncTask: Task<Void, Never>?
     private var bridgeResponseGeneration = 0
-    private var subframeBridgeResponseGeneration = 0
-    private var pendingBridgeResponseWorkItems: [UUID: (workItem: DispatchWorkItem, isSubframe: Bool)] = [:]
+    private var pendingBridgeResponseWorkItems: [UUID: DispatchWorkItem] = [:]
     let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "wina", category: "ConsoleBridge")
 
     var pendingBridgeResponseWorkItemCount: Int {
@@ -61,8 +60,11 @@ class WKWebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
     }
 
     private func handlePreloadBridgeMessage(_ message: WKScriptMessage) {
+        let envelope = message.body as? [String: Any]
+        let documentToken = envelope?["__winaBridgeDocumentToken"] as? String
+        let body = documentToken == nil ? message.body : envelope?["body"] ?? NSNull()
         let bodyText = PreloadBridgeLogFormatter.truncated(
-            toMessageString(message.body) ?? String(describing: message.body)
+            toMessageString(body) ?? String(describing: body)
         )
         navigator?.preloadBridgeLogManager.add(
             channel: message.name,
@@ -85,18 +87,20 @@ class WKWebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
 
         // Evaluate rules across ALL enabled channels with this name — duplicates are not silently
         // shadowed (the editor defaults every new channel to "request").
+        guard let documentToken else { return }
         let matchingChannels = preloadProfile.bridgeChannels.filter { $0.isEnabled && $0.name == message.name }
         guard !matchingChannels.isEmpty else { return }
 
         for channel in matchingChannels {
-            for rule in channel.responseRules where rule.isEnabled && BridgeRuleMatcher.matches(rule.matcher, message: message.body) {
+            for rule in channel.responseRules where rule.isEnabled && BridgeRuleMatcher.matches(rule.matcher, message: body) {
                 let script = PreloadScriptBuilder.responseScript(
                     for: rule.response,
-                    message: message.body,
+                    message: body,
                     channel: message.name
                 )
                 schedulePreloadBridgeResponse(
-                    script, channel: message.name, delayMilliseconds: rule.delayMilliseconds, in: message.frameInfo
+                    script, channel: message.name, delayMilliseconds: rule.delayMilliseconds,
+                    in: message.frameInfo, documentToken: documentToken
                 )
             }
         }
@@ -122,24 +126,39 @@ class WKWebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
         _ script: String,
         channel: String,
         delayMilliseconds: Int,
-        in frame: WKFrameInfo? = nil
+        in frame: WKFrameInfo? = nil,
+        documentToken: String? = nil
     ) {
         guard !script.isEmpty else { return }
         let generation = bridgeResponseGeneration
-        let subframeGeneration = subframeBridgeResponseGeneration
-        let isSubframe = frame?.isMainFrame == false
+        // WKFrameInfo can point to a replacement document by the time this runs.
+        // A function keeps custom declarations inside the guard and honors strict mode.
+        let guardedScript: String
+        if let documentToken {
+            let token = JavaScriptLiteral.quoted(documentToken)
+            guardedScript = """
+            if (document.__winaBridgeDocumentToken === \(token)) {
+                (function() {
+                \(script)
+                }).call(window);
+                true;
+            } else {
+                false;
+            }
+            """
+        } else {
+            guardedScript = script + "\n;true;"
+        }
         let workItemID = UUID()
 
         let execute = { [weak self] in
             guard let self else { return }
             defer { self.pendingBridgeResponseWorkItems[workItemID] = nil }
             guard self.bridgeResponseGeneration == generation, let webView = self.webView else { return }
-            guard !isSubframe || self.subframeBridgeResponseGeneration == subframeGeneration else { return }
             if let frameWebView = frame?.webView, frameWebView !== webView { return }
-            // A custom response may execute successfully and leave a non-serializable value.
-            webView.evaluateJavaScript(script + "\n;void 0;", in: frame, in: .page) { [weak self] result in
-                guard let self, self.bridgeResponseGeneration == generation, case .success = result else { return }
-                guard !isSubframe || self.subframeBridgeResponseGeneration == subframeGeneration else { return }
+            webView.evaluateJavaScript(guardedScript, in: frame, in: .page) { [weak self] result in
+                guard let self, self.bridgeResponseGeneration == generation,
+                      case .success(let delivered) = result, delivered as? Bool == true else { return }
                 self.navigator?.preloadBridgeLogManager.add(channel: channel, direction: .responded, body: script)
                 self.emitPreloadConsoleBadge(label: "📤 bridge", background: "#16A34A", trailing: "responded on \(channel)", source: channel)
             }
@@ -147,7 +166,7 @@ class WKWebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
 
         if delayMilliseconds > 0 {
             let workItem = DispatchWorkItem(block: execute)
-            pendingBridgeResponseWorkItems[workItemID] = (workItem, isSubframe)
+            pendingBridgeResponseWorkItems[workItemID] = workItem
             DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(delayMilliseconds), execute: workItem)
         } else {
             execute()
@@ -156,17 +175,8 @@ class WKWebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
 
     private func cancelPendingBridgeResponses() {
         bridgeResponseGeneration += 1
-        pendingBridgeResponseWorkItems.values.forEach { $0.workItem.cancel() }
+        pendingBridgeResponseWorkItems.values.forEach { $0.cancel() }
         pendingBridgeResponseWorkItems.removeAll()
-    }
-
-    private func cancelPendingSubframeBridgeResponses() {
-        subframeBridgeResponseGeneration += 1
-        // shortcut: WebKit exposes no stable public frame identity across these delegate calls.
-        for (id, pending) in pendingBridgeResponseWorkItems where pending.isSubframe {
-            pending.workItem.cancel()
-            pendingBridgeResponseWorkItems[id] = nil
-        }
     }
 
     func handleMainFrameNavigationStarted(from currentURL: URL?, to targetURL: URL?) {
@@ -312,11 +322,15 @@ class WKWebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
         shouldForceErudaInitOnNextFinish = false
         nextNavigationIsReload = false
         reloadNavigation = nil
+        nextDocumentRequest = nil
+        documentRequests.removeAll()
+        provisionalDocumentNavigation = nil
+        committedDocumentNavigation = nil
     }
 
     // MARK: - Clear Strategy
 
-    private func applyClearStrategies(currentURL: URL?, newURL: URL?) {
+    private func applyClearStrategies(currentURL: URL?, newURL: URL?, preserving requestID: String?) {
         let resolver = LogClearStrategyResolver()
         let strategies = resolver.resolveStrategies()
 
@@ -325,7 +339,7 @@ class WKWebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
         }
 
         if LogClearStrategyResolver.shouldClear(strategy: strategies.network, currentURL: currentURL, newURL: newURL) {
-            navigator?.networkManager.clearForNavigation(preserving: pendingDocumentRequestId)
+            navigator?.networkManager.clearForNavigation(preserving: requestID)
             navigator?.resourceManager.clear()
         }
     }
@@ -348,8 +362,16 @@ class WKWebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
         shouldForceErudaInitOnNextFinish = true
     }
 
-    // Track pending document request (only one at a time for main frame)
-    private var pendingDocumentRequestId: String?
+    private struct DocumentRequest {
+        let id = UUID().uuidString
+        let url: URL
+        let method: String
+    }
+
+    private var nextDocumentRequest: DocumentRequest?
+    private var documentRequests: [ObjectIdentifier: DocumentRequest] = [:]
+    private var provisionalDocumentNavigation: ObjectIdentifier?
+    private var committedDocumentNavigation: ObjectIdentifier?
 
     // Handle navigation actions (link clicks, reload, etc.)
     func webView(
@@ -360,8 +382,6 @@ class WKWebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
         let isMainFrameNavigation = navigationAction.targetFrame?.isMainFrame ?? true
         if isMainFrameNavigation {
             handleMainFrameNavigationStarted(from: webView.url, to: navigationAction.request.url)
-        } else {
-            cancelPendingSubframeBridgeResponses()
         }
 
         // Handle reload: use preserveLog setting
@@ -370,35 +390,8 @@ class WKWebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
             if nextNavigationIsReload { prepareForManualReloadRequest() }
         }
 
-        // Track document navigation for main frame only
-        if navigationAction.targetFrame?.isMainFrame == true,
-           let url = navigationAction.request.url?.absoluteString {
-
-            // If there's already a pending request, it must be a redirect
-            // Mark it as 302 before creating the new request
-            if let previousId = pendingDocumentRequestId {
-                navigator?.networkManager.updateRequest(
-                    id: previousId,
-                    status: 302,
-                    statusText: "Redirect",
-                    responseHeaders: nil,
-                    responseBody: nil,
-                    error: nil
-                )
-            }
-
-            // Create new request
-            let requestId = UUID().uuidString
-            pendingDocumentRequestId = requestId
-
-            navigator?.networkManager.addRequest(
-                id: requestId,
-                method: navigationAction.request.httpMethod ?? "GET",
-                url: url,
-                requestType: "document",
-                headers: nil,
-                body: nil
-            )
+        if navigationAction.targetFrame?.isMainFrame == true, let url = navigationAction.request.url {
+            nextDocumentRequest = DocumentRequest(url: url, method: navigationAction.request.httpMethod ?? "GET")
         }
 
         // Allow default WKWebView behavior (including universal links opening external apps)
@@ -408,6 +401,30 @@ class WKWebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
     func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
         if nextNavigationIsReload { reloadNavigation = navigation }
         nextNavigationIsReload = false
+        guard let navigation else { return }
+        let id = ObjectIdentifier(navigation)
+        if let previous = provisionalDocumentNavigation, previous != id {
+            finishDocumentRequest(previous, error: URLError(.cancelled))
+        }
+        provisionalDocumentNavigation = id
+        if let request = nextDocumentRequest {
+            trackDocumentRequest(request, navigation: id)
+        }
+        nextDocumentRequest = nil
+    }
+
+    func webView(_ webView: WKWebView, didReceiveServerRedirectForProvisionalNavigation navigation: WKNavigation!) {
+        guard let navigation, let next = nextDocumentRequest else { return }
+        let id = ObjectIdentifier(navigation)
+        guard provisionalDocumentNavigation == id, next.url == webView.url else { return }
+        if let previous = documentRequests[id] {
+            // WebKit confirms the redirect but does not provide the intermediate HTTP status.
+            navigator?.networkManager.updateRequest(
+                id: previous.id, status: nil, statusText: "Redirect", responseHeaders: nil, responseBody: nil, error: nil
+            )
+        }
+        trackDocumentRequest(next, navigation: id)
+        nextDocumentRequest = nil
     }
 
     // Get response status and headers for document navigation
@@ -418,15 +435,17 @@ class WKWebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
     ) {
         // Update document request with response info
         if navigationResponse.isForMainFrame,
-           let requestId = pendingDocumentRequestId,
-           let httpResponse = navigationResponse.response as? HTTPURLResponse {
+           let navigation = provisionalDocumentNavigation,
+           let request = documentRequests[navigation],
+           let httpResponse = navigationResponse.response as? HTTPURLResponse,
+           request.url == httpResponse.url {
             var headers: [String: String] = [:]
             for (key, value) in httpResponse.allHeaderFields {
                 headers[String(describing: key)] = String(describing: value)
             }
 
             navigator?.networkManager.updateRequest(
-                id: requestId,
+                id: request.id,
                 status: httpResponse.statusCode,
                 statusText: HTTPURLResponse.localizedString(forStatusCode: httpResponse.statusCode),
                 responseHeaders: headers.isEmpty ? nil : headers,
@@ -439,7 +458,7 @@ class WKWebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
 
     // Mark document navigation as complete
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-        pendingDocumentRequestId = nil
+        if let navigation { finishDocumentRequest(ObjectIdentifier(navigation)) }
 
         // 새로고침 force-init 플래그를 취소된 Task가 소거하지 않도록 완료 시점에만 해제합니다.
         let forceInit = shouldForceErudaInitOnNextFinish
@@ -457,6 +476,13 @@ class WKWebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
     func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
         cancelPendingBridgeResponses()
         let committedURL = webView.url
+        let navigationID = navigation.map(ObjectIdentifier.init)
+        if let previous = committedDocumentNavigation, previous != navigationID {
+            finishDocumentRequest(previous)
+        }
+        committedDocumentNavigation = navigationID
+        if provisionalDocumentNavigation == navigationID { provisionalDocumentNavigation = nil }
+        navigator?.documentDidChange(in: webView)
 
         if let navigation, navigation === reloadNavigation {
             reloadNavigation = nil
@@ -466,46 +492,19 @@ class WKWebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
 
         applyClearStrategies(
             currentURL: lastCommittedMainFrameURL,
-            newURL: committedURL
+            newURL: committedURL,
+            preserving: navigationID.flatMap { documentRequests[$0]?.id }
         )
         resetActiveSnippets()
         lastCommittedMainFrameURL = committedURL
     }
 
-    // Handle document navigation failure
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
-        if let requestId = pendingDocumentRequestId {
-            navigator?.networkManager.updateRequest(
-                id: requestId,
-                status: nil,
-                statusText: nil,
-                responseHeaders: nil,
-                responseBody: nil,
-                error: error.localizedDescription
-            )
-        }
-        pendingDocumentRequestId = nil
-        // reload 실패 시 다음 정상 탐색에 force-init이 남지 않도록 정리합니다.
-        if let navigation, navigation === reloadNavigation { reloadNavigation = nil }
-        shouldForceErudaInitOnNextFinish = false
+        handleDocumentFailure(navigation, error: error)
     }
 
-    // Handle provisional navigation failure
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
-        if let requestId = pendingDocumentRequestId {
-            navigator?.networkManager.updateRequest(
-                id: requestId,
-                status: nil,
-                statusText: nil,
-                responseHeaders: nil,
-                responseBody: nil,
-                error: error.localizedDescription
-            )
-        }
-        pendingDocumentRequestId = nil
-        // provisional 실패도 동일하게 force-init 플래그를 정리합니다.
-        if let navigation, navigation === reloadNavigation { reloadNavigation = nil }
-        shouldForceErudaInitOnNextFinish = false
+        handleDocumentFailure(navigation, error: error)
     }
 
     // Handle new window requests (target="_blank")
@@ -597,5 +596,37 @@ class WKWebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
 
     deinit {
         invalidateObservation()
+    }
+}
+
+private extension WKWebViewCoordinator {
+    private func trackDocumentRequest(_ request: DocumentRequest, navigation: ObjectIdentifier) {
+        documentRequests[navigation] = request
+        navigator?.networkManager.addRequest(
+            id: request.id,
+            method: request.method,
+            url: request.url.absoluteString,
+            requestType: "document",
+            headers: nil,
+            body: nil
+        )
+    }
+
+    func finishDocumentRequest(_ navigation: ObjectIdentifier, error: Error? = nil) {
+        if provisionalDocumentNavigation == navigation { provisionalDocumentNavigation = nil }
+        if committedDocumentNavigation == navigation { committedDocumentNavigation = nil }
+        if let request = documentRequests.removeValue(forKey: navigation) {
+            navigator?.networkManager.completeDocumentRequest(id: request.id, error: error?.localizedDescription)
+        }
+    }
+
+    func handleDocumentFailure(_ navigation: WKNavigation?, error: Error) {
+        if let navigation { finishDocumentRequest(ObjectIdentifier(navigation), error: error) }
+        if let navigation, navigation === reloadNavigation {
+            reloadNavigation = nil
+            shouldForceErudaInitOnNextFinish = false
+        } else if reloadNavigation == nil, !nextNavigationIsReload {
+            shouldForceErudaInitOnNextFinish = false
+        }
     }
 }

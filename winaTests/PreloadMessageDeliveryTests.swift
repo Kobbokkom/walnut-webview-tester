@@ -1,3 +1,4 @@
+import Network
 import SwiftUI
 import WebKit
 import XCTest
@@ -98,13 +99,90 @@ final class PreloadMessageDeliveryTests: XCTestCase {
         XCTAssertFalse(navigator.preloadBridgeLogManager.entries.contains { $0.channel == "request" && $0.direction == .responded })
     }
 
-    private func bridgeWebView(
-        delayMilliseconds: Int, onRequest: (() -> Void)? = nil
-    ) -> (WKWebView, WebViewNavigator, WKWebViewCoordinator) {
-        let rule = BridgeResponseRule(
-            response: BridgeResponse(target: .customEvent, bodyTemplate: #"{"ok":true}"#, eventName: "nativeReply"),
-            delayMilliseconds: delayMilliseconds
+    func testLateRequestFromOutgoingIframeCannotReachItsReplacement() async throws {
+        let requested = expectation(description: "Outgoing document posted after replacement started")
+        let replacing = expectation(description: "Replacement HTTP request is provisional")
+        let first = try await startHTTPServer { connection in
+            Self.respond(to: connection, with: """
+            <script>
+            addEventListener('message', () => webkit.messageHandlers.request.postMessage({type: 'late'}));
+            </script>
+            """)
+        }
+        var pending: NWConnection?
+        let second = try await startHTTPServer { connection in
+            pending = connection
+            replacing.fulfill()
+        }
+        defer { pending?.cancel(); first.cancel(); second.cancel() }
+
+        let base = try XCTUnwrap(URL(string: "http://127.0.0.1:\(XCTUnwrap(first.port).rawValue)"))
+        let replacement = try XCTUnwrap(URL(string: "http://127.0.0.1:\(XCTUnwrap(second.port).rawValue)/next"))
+        let (webView, navigator, coordinator) = bridgeWebView(delayMilliseconds: 1500) { requested.fulfill() }
+        await webView.loadHTMLStringAsync(
+            """
+            <script>
+            addEventListener('message', event => {
+                if (event.data === 'replacement-loaded') window.replacementLoaded = true;
+                if (event.data === 'stale-reply') window.staleReply = true;
+            });
+            </script>
+            <iframe src="/initial"></iframe>
+            """,
+            baseURL: base
         )
+        webView.navigationDelegate = coordinator
+        _ = try await webView.evaluateJavaScript("document.querySelector('iframe').src = \(JavaScriptLiteral.quoted(replacement.absoluteString))")
+        await fulfillment(of: [replacing], timeout: 15)
+        _ = try await webView.evaluateJavaScript("document.querySelector('iframe').contentWindow.postMessage('late', '*')")
+        await fulfillment(of: [requested], timeout: 15)
+        XCTAssertEqual(coordinator.pendingBridgeResponseWorkItemCount, 1)
+        Self.respond(to: try XCTUnwrap(pending), with: """
+        <script>
+        addEventListener('nativeReply', () => parent.postMessage('stale-reply', '*'));
+        parent.postMessage('replacement-loaded', '*');
+        </script>
+        """)
+
+        let settled = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+            coordinator.pendingBridgeResponseWorkItemCount == 0
+        }, object: nil)
+        await fulfillment(of: [settled], timeout: 15)
+        let state = try await webView.evaluateJavaScript("[window.replacementLoaded === true, window.staleReply === true]") as? [Bool]
+        XCTAssertEqual(state, [true, false])
+        XCTAssertFalse(navigator.preloadBridgeLogManager.entries.contains { $0.direction == .responded })
+    }
+
+    private static func respond(to connection: NWConnection, with html: String) {
+        let response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: \(html.utf8.count)\r\nConnection: close\r\n\r\n\(html)"
+        connection.send(content: Data(response.utf8), completion: .contentProcessed { _ in connection.cancel() })
+    }
+
+    func testGuardedCustomResponseKeepsStrictModeUnderPageCSP() async throws {
+        let response = BridgeResponse(target: .customJavaScript, customJavaScript: """
+        'use strict';
+        window.strictReply = (function () { return this === undefined; })();
+        """)
+        let (webView, navigator, _) = bridgeWebView(delayMilliseconds: 10, response: response)
+        await webView.loadHTMLStringAsync(
+            #"<meta http-equiv="Content-Security-Policy" content="script-src 'none'"><body>Bridge fixture</body>"#,
+            baseURL: URL(string: "https://example.com")
+        )
+        _ = try await webView.evaluateJavaScript("window.webkit.messageHandlers.request.postMessage({type: 'strict'}); void 0;")
+        let responded = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+            navigator.preloadBridgeLogManager.entries.contains { $0.direction == .responded }
+        }, object: nil)
+        await fulfillment(of: [responded], timeout: 5)
+        let strict = try await webView.evaluateJavaScript("window.strictReply") as? Bool
+        XCTAssertEqual(strict, true)
+    }
+
+    private func bridgeWebView(
+        delayMilliseconds: Int,
+        response: BridgeResponse = BridgeResponse(target: .customEvent, bodyTemplate: #"{"ok":true}"#, eventName: "nativeReply"),
+        onRequest: (() -> Void)? = nil
+    ) -> (WKWebView, WebViewNavigator, WKWebViewCoordinator) {
+        let rule = BridgeResponseRule(response: response, delayMilliseconds: delayMilliseconds)
         let profile = WebViewPreloadProfile(isEnabled: true, bridgeChannels: [BridgeChannel(responseRules: [rule])])
         let navigator = WebViewNavigator()
         let coordinator = WKWebViewCoordinator(isLoading: .constant(false), navigator: navigator, preloadProfile: profile)
@@ -115,6 +193,9 @@ final class PreloadMessageDeliveryTests: XCTestCase {
             coordinator
         }
         configuration.userContentController.add(handler, name: "request")
+        configuration.userContentController.addUserScript(WKUserScript(
+            source: PreloadScriptBuilder.bootstrapScript(for: profile), injectionTime: .atDocumentStart, forMainFrameOnly: false
+        ))
         let webView = WKWebView(frame: .zero, configuration: configuration)
         coordinator.observeWebView(webView)
         return (webView, navigator, coordinator)

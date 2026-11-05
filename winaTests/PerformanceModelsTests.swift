@@ -677,6 +677,39 @@ final class PerformanceCollectionRegressionTests: XCTestCase {
         XCTAssertEqual(manager.data.lcpRating, .unknown)
     }
 
+    func testCLSUsesLargestSessionAndLeavesUnsupportedMetricUnavailable() throws {
+        let context = try XCTUnwrap(JSContext())
+        context.evaluateScript("""
+        var window = {};
+        var performance = {getEntriesByType: () => []};
+        var observerCallback;
+        class PerformanceObserver {
+            static supportedEntryTypes = ['layout-shift'];
+            constructor(callback) { this.callback = callback; }
+            observe(options) {
+                if (options.type === 'layout-shift') observerCallback = this.callback;
+            }
+        }
+        const shifts = entries => observerCallback({getEntries: () => entries});
+        """)
+        context.evaluateScript(PerformanceManager.observerInjectionScript)
+        context.evaluateScript("""
+        shifts([{startTime: 0, value: 0.08}]);
+        shifts([{startTime: 1900, value: 0.08}, {startTime: 2000, value: 1, hadRecentInput: true}]);
+        """)
+        let manager = PerformanceManager()
+        manager.parseData(from: try XCTUnwrap(context.evaluateScript(PerformanceManager.collectionScript)?.toString()))
+        XCTAssertNil(context.exception)
+        XCTAssertEqual(manager.data.cls, 0.08, accuracy: 0.0001)
+        // An absent API must not look like a perfect score.
+        let unsupported = try XCTUnwrap(JSContext())
+        unsupported.evaluateScript("var window = {}; var performance = {getEntriesByType: () => []};")
+        unsupported.evaluateScript(PerformanceManager.observerInjectionScript)
+        manager.parseData(from: try XCTUnwrap(unsupported.evaluateScript(PerformanceManager.collectionScript)?.toString()))
+        XCTAssertNil(unsupported.exception)
+        XCTAssertEqual(manager.data.clsRating, .unknown)
+    }
+
     func testUnavailableLCPIsNotReplacedByLoadCompletion() {
         let manager = PerformanceManager()
         manager.parseData(from: """

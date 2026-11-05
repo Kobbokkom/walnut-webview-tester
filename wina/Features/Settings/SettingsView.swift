@@ -654,7 +654,10 @@ struct SettingsView: View {
             HStack {
                 Text("Minimum Font Size")
                 Spacer()
-                TextField("0", value: $minimumFontSize, format: .number)
+                TextField("0", value: Binding(
+                    get: { SettingsFormatter.validMinimumFontSize(minimumFontSize) },
+                    set: { minimumFontSize = SettingsFormatter.validMinimumFontSize($0) }
+                ), format: .number)
                     .keyboardType(.decimalPad)
                     .multilineTextAlignment(.trailing)
                     .frame(width: 60)

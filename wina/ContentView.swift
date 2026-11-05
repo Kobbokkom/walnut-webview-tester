@@ -399,8 +399,9 @@ struct ContentView: View {
         case .performance:
             PerformanceView(
                 performanceManager: webViewNavigator.performanceManager,
-                onCollect: { Task { await collectPerformanceData(webViewNavigator, isReload: false) } },
-                onReload: { Task { await collectPerformanceData(webViewNavigator, isReload: true) } }
+                documentID: webViewNavigator.documentID,
+                onCollect: { Task { await webViewNavigator.performanceManager.collect(using: webViewNavigator, reload: false) } },
+                onReload: { Task { await webViewNavigator.performanceManager.collect(using: webViewNavigator, reload: true) } }
             )
         case .editor:
             SourcesView(navigator: webViewNavigator)
@@ -507,43 +508,6 @@ struct ContentView: View {
     }
 
     // MARK: - Performance Data Collection
-
-    /// Collect performance data with proper page load detection
-    @MainActor
-    private func collectPerformanceData(_ navigator: WebViewNavigator, isReload: Bool) async {
-        let manager = navigator.performanceManager
-        manager.isLoading = true
-        manager.lastError = nil
-
-        if isReload {
-            manager.clear()
-            navigator.reload()
-            // Wait for page load with polling (max 10s)
-            let maxAttempts = 20
-            for _ in 0..<maxAttempts {
-                try? await Task.sleep(for: .milliseconds(500))
-                // Check if page load is complete
-                if let ready = await navigator.evaluateJavaScript(
-                    "document.readyState === 'complete' && performance.getEntriesByType('navigation')[0]?.loadEventEnd > 0"
-                ) as? Bool, ready {
-                    break
-                }
-            }
-        }
-
-        // Collect performance data
-        if let result = await navigator.evaluateJavaScript(PerformanceManager.collectionScript) as? String {
-            manager.parseData(from: result)
-            // Verify we got valid data (navigation timing should have loadEventTime > 0)
-            if manager.data.navigation == nil && manager.data.paints.isEmpty {
-                manager.lastError = "Page load incomplete. Try refreshing again."
-            }
-        } else {
-            manager.lastError = "Failed to collect performance data. Make sure a page is loaded."
-        }
-
-        manager.isLoading = false
-    }
 
     private func applyPreloadSettingsChangeIfNeeded() {
         guard !useSafariWebView,

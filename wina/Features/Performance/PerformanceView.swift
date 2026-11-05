@@ -28,6 +28,7 @@ enum PerformanceTab: String, CaseIterable {
 
 struct PerformanceView: View {
     let performanceManager: PerformanceManager
+    let documentID: UUID
     let onCollect: () -> Void
     let onReload: () -> Void
 
@@ -65,9 +66,8 @@ struct PerformanceView: View {
         }
         .background(Color(uiColor: .systemBackground))
         .dismissKeyboardOnTap()
-        // Sheet 열릴 때 자동으로 데이터 수집
-        .onAppear {
-            if !hasData && !performanceManager.isLoading {
+        .onChange(of: documentID, initial: true) { _, _ in
+            if !hasData && !performanceManager.isReloading {
                 onCollect()
             }
         }
@@ -732,6 +732,7 @@ private struct ResourceTypeRow: View {
             )
             return manager
         }(),
+        documentID: UUID(),
         onCollect: {},
         onReload: {}
     )

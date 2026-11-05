@@ -165,7 +165,7 @@ struct ActiveSettingsView: View {
                     info: "Scripts from web pages.\nOff = Block page scripts only.\nApp features still work.")
                 InfoRow(
                     label: "Minimum Font Size",
-                    value: minimumFontSize == 0 ? "Default" : "\(Int(minimumFontSize)) pt",
+                    value: SettingsFormatter.minimumFontSizeText(minimumFontSize),
                     info: "Minimum text size.\nMakes small text readable.\n0 = Use page's font sizes.")
             } header: {
                 HStack(spacing: 6) {

@@ -37,6 +37,8 @@ extension NetworkDetailView {
                     DetailTableRow(key: "Status Code", value: "\(status) \(statusText)", onCopy: copyToClipboard)
                 } else if let status = request.status {
                     DetailTableRow(key: "Status Code", value: "\(status)", onCopy: copyToClipboard)
+                } else if let statusText = request.statusText {
+                    DetailTableRow(key: "Status", value: statusText, onCopy: copyToClipboard)
                 }
                 DetailTableRow(
                     key: "Type",
@@ -99,6 +101,8 @@ extension NetworkDetailView {
             lines.append("Status Code: \(status) \(statusText)")
         } else if let status = request.status {
             lines.append("Status Code: \(status)")
+        } else if let statusText = request.statusText {
+            lines.append("Status: \(statusText)")
         }
         lines.append("Type: \(request.requestType.rawValue.capitalized)")
         return lines.joined(separator: "\n")

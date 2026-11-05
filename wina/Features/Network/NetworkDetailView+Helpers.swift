@@ -47,7 +47,7 @@ extension NetworkDetailView {
         === Network Request ===
         Method: \(request.method)
         URL: \(request.url)
-        Status: \(request.status.map { "\($0)" } ?? "Pending")
+        Status: \(request.status.map { "\($0)" } ?? request.statusText ?? (request.isPending ? "Pending" : "—"))
         Duration: \(request.durationText)
         Type: \(request.requestType.rawValue.capitalized)
         """

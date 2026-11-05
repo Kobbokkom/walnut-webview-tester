@@ -184,14 +184,20 @@ class StorageManager {
             \(storage).setItem(key, value);
             """
         case .cookies:
-            let escapedKey = key.replacingOccurrences(of: "=", with: "%3D")
-            let escapedValue = value.replacingOccurrences(of: ";", with: "%3B")
+            let cookieWhitespace = CharacterSet(charactersIn: " \t")
+            let cookieKey = key.trimmingCharacters(in: cookieWhitespace)
+            guard !cookieKey.isEmpty, !cookieKey.contains(";") else { return false }
+            let escapedKey = cookieKey.replacingOccurrences(of: "=", with: "%3D")
+            let escapedValue = value.trimmingCharacters(in: cookieWhitespace).replacingOccurrences(of: ";", with: "%3B")
             let path = URLComponents(url: pageURL, resolvingAgainstBaseURL: false)?.percentEncodedPath ?? ""
             arguments = [path.isEmpty ? "/" : path, "\(escapedKey)=\(escapedValue)"]
             operation = """
             const [path, cookie] = args;
             if (location.pathname !== path) return false;
+            const matches = item => item.trimStart() === cookie;
+            if (document.cookie.split(';').some(matches)) return false;
             document.cookie = cookie;
+            if (!document.cookie.split(';').some(matches)) return false;
             """
         }
 
