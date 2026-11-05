@@ -115,7 +115,11 @@ extension ContentView {
                         }
                         .backport.glassEffect(in: .capsule)
 
-                        if urlValidationState == .valid || isCallbackTestPageActive {
+                        if isPreparingCleanStart {
+                            ProgressView()
+                                .frame(width: 48, height: 48)
+                                .accessibilityLabel("Preparing WebView")
+                        } else if urlValidationState == .valid || isCallbackTestPageActive {
                             Button {
                                 textFieldFocused = false
                                 showDropdown = false

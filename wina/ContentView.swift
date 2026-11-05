@@ -26,6 +26,8 @@ struct ContentView: View {
     @State var urlValidationState: URLValidationState = .empty
     @State var useSafariWebView: Bool = false
     @State var showWebView: Bool = false
+    @State var isPreparingCleanStart = false
+    @State private var showCleanStartOptionsChanged = false
     @State private var loadedURL = ""
     @State private var webViewID = UUID()
     @State var validationTask: Task<Void, Never>?
@@ -145,6 +147,11 @@ struct ContentView: View {
             }
         }
         .environment(\.webViewContainerSize, browserSize == .zero ? containerSize : browserSize)
+        .alert("Browser options changed", isPresented: $showCleanStartOptionsChanged) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Check your browsing options and open the URL again.")
+        }
         .onChange(of: shouldDockDevTools, initial: true) { _, docked in
             devToolsState.isDocked = docked
         }
@@ -377,6 +384,7 @@ struct ContentView: View {
                 )
             }
         }
+        .disabled(isPreparingCleanStart)
     }
 
     @ViewBuilder
@@ -417,71 +425,63 @@ struct ContentView: View {
 
     @discardableResult
     func submitURL() -> Bool {
-        // Handle callback test page mode
+        guard !isPreparingCleanStart else { return false }
+
+        let isCallback = isCallbackTestPageActive
         let targetURL: String
-        if isCallbackTestPageActive {
+        if isCallback {
             targetURL = CallbackTestManager.testPageURL.absoluteString
         } else {
             validateURL()
             guard urlValidationState == .valid, validateSafariURLIfNeeded(urlText) else { return false }
-            // Add to history via shared storage
-            urlStorage.addToHistory(urlText)
             targetURL = urlText
         }
 
-        // Normalize URL for initialURL tracking (must match the scheme the
-        // WebView actually loads, so "go to initial" matches the loaded page)
-        let normalized = URLValidator.normalizeURL(targetURL)
-        let initialURLValue = URL(string: normalized)
-
         // Clean Start: clear all website data and DevTools logs before loading
         if cleanStart && !useSafariWebView {
-            let clearPersistentData = !privateBrowsing
-            Task {
-                if clearPersistentData {
+            let usesPrivateStore = privateBrowsing
+            isPreparingCleanStart = true
+            Task { @MainActor in
+                defer { isPreparingCleanStart = false }
+                if !usesPrivateStore {
                     let dataStore = WKWebsiteDataStore.default()
                     let allTypes = WKWebsiteDataStore.allWebsiteDataTypes()
                     let records = await dataStore.dataRecords(ofTypes: allTypes)
+                    guard privateBrowsing == usesPrivateStore else {
+                        showCleanStartOptionsChanged = true
+                        return
+                    }
                     await dataStore.removeData(ofTypes: allTypes, for: records)
                 }
 
-                await MainActor.run {
-                    // 2. Clear all DevTools data
-                    webViewNavigator.consoleManager.clear()
-                    webViewNavigator.networkManager.clear()
-                    webViewNavigator.resourceManager.clear()
-                    webViewNavigator.performanceManager.clear()
-                    webViewNavigator.accessibilityManager.clear()
-                    storageManager.clear()
-
-                    // 3. Create fresh navigator instance for completely new session
-                    webViewNavigator.detach()
-                    webViewNavigator = WebViewNavigator()
-
-                    // Set initial URL for "go to initial" feature
-                    if let url = initialURLValue {
-                        webViewNavigator.setInitialURL(url)
-                    }
-
-                    loadedURL = targetURL
-                    webViewID = UUID()  // Force new WebView instance
-                    withAnimation(.easeOut(duration: 0.2)) {
-                        showWebView = true
-                    }
+                guard privateBrowsing == usesPrivateStore else {
+                    showCleanStartOptionsChanged = true
+                    return
                 }
+                webViewNavigator.consoleManager.clear()
+                webViewNavigator.networkManager.clear()
+                webViewNavigator.resourceManager.clear()
+                webViewNavigator.performanceManager.clear()
+                webViewNavigator.accessibilityManager.clear()
+                storageManager.clear()
+                webViewNavigator.detach()
+                webViewNavigator = WebViewNavigator()
+                webViewID = UUID()
+                openSubmittedURL(targetURL, recordsHistory: !isCallback)
             }
         } else {
-            // Set initial URL for "go to initial" feature
-            if let url = initialURLValue {
-                webViewNavigator.setInitialURL(url)
-            }
-
-            loadedURL = targetURL
-            withAnimation(.easeOut(duration: 0.2)) {
-                showWebView = true
-            }
+            openSubmittedURL(targetURL, recordsHistory: !isCallback)
         }
         return true
+    }
+
+    private func openSubmittedURL(_ targetURL: String, recordsHistory: Bool) {
+        if recordsHistory { urlStorage.addToHistory(targetURL) }
+        if let url = URL(string: URLValidator.normalizeURL(targetURL)) {
+            webViewNavigator.setInitialURL(url)
+        }
+        loadedURL = targetURL
+        withAnimation(.easeOut(duration: 0.2)) { showWebView = true }
     }
 
     private func validateSafariURLIfNeeded(_ url: String) -> Bool {
