@@ -155,8 +155,7 @@ struct PreloadProfileSettingsView: View {
         Section {
             Toggle("Enable this setup", isOn: $state.profile.isEnabled)
 
-            TextField("Profile name", text: $state.profile.name)
-                .textInputAutocapitalization(.words)
+            PreloadTextField(title: "Profile name", text: $state.profile.name)
 
             if let validationMessage = state.validationMessage {
                 Label(validationMessage, systemImage: "exclamationmark.triangle.fill")
@@ -457,6 +456,37 @@ private struct PreloadEditableRow: View {
     }
 }
 
+// MARK: - Editor Fields
+
+private struct PreloadTextField: View {
+    let title: LocalizedStringKey
+    @Binding var text: String
+    var example: String?
+    var isTechnical = false
+
+    var body: some View {
+        LabeledContent {
+            TextField(title, text: $text, prompt: Text(verbatim: example ?? ""))
+                .accessibilityLabel(title)
+                .textFieldStyle(.plain)
+                .font(.system(.body, design: isTechnical ? .monospaced : .default))
+                .textInputAutocapitalization(isTechnical ? .never : .words)
+                .autocorrectionDisabled(isTechnical)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 7)
+                .overlay {
+                    RoundedRectangle(cornerRadius: 7)
+                        .strokeBorder(.quaternary, lineWidth: 1)
+                        .allowsHitTesting(false)
+                }
+        } label: {
+            Text(title)
+                .frame(minWidth: 90, alignment: .leading)
+                .accessibilityHidden(true)
+        }
+    }
+}
+
 // MARK: - Cookie Editor
 
 private struct PreloadCookieEditorView: View {
@@ -465,13 +495,13 @@ private struct PreloadCookieEditorView: View {
     var body: some View {
         Form {
             Section {
-                Toggle("Enabled", isOn: $cookie.isEnabled)
-                TextField("Name", text: $cookie.name)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
-                TextField("Value", text: $cookie.value)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
+                Toggle("Enable cookie", isOn: $cookie.isEnabled)
+                PreloadTextField(title: "Cookie name", text: $cookie.name, example: "session", isTechnical: true)
+                PreloadTextField(title: "Cookie value", text: $cookie.value, example: "demo", isTechnical: true)
+            } header: {
+                Text("Cookie details")
+            } footer: {
+                Text("When enabled, this cookie is set before the page opens.")
             }
 
             Section {
@@ -481,19 +511,23 @@ private struct PreloadCookieEditorView: View {
                     }
                 }
                 if cookie.domainMode == .custom {
-                    TextField("Domain", text: $cookie.customDomain)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
+                    PreloadTextField(title: "Custom domain", text: $cookie.customDomain, example: "example.com", isTechnical: true)
                 }
-                TextField("Path", text: $cookie.path)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
+                PreloadTextField(title: "Path", text: $cookie.path, example: "/", isTechnical: true)
+            } header: {
+                Text("Cookie scope")
+            } footer: {
+                Text("Use / to apply the cookie to all paths on the selected domain.")
             }
 
             Section {
                 Picker("Expires", selection: $cookie.expires) {
                     ForEach(PreloadCookieExpiration.allCases, id: \.self) { expiration in
-                        Text(expiration.localizedTitle).tag(expiration)
+                        if expiration == .session {
+                            Text("Browser session").tag(expiration)
+                        } else {
+                            Text(expiration.localizedTitle).tag(expiration)
+                        }
                     }
                 }
                 Picker("SameSite", selection: $cookie.sameSite) {
@@ -501,8 +535,10 @@ private struct PreloadCookieEditorView: View {
                         Text(sameSite.localizedTitle).tag(sameSite)
                     }
                 }
-                Toggle("Secure", isOn: $cookie.isSecure)
+                Toggle("HTTPS only", isOn: $cookie.isSecure)
                 Toggle("HTTP Only", isOn: $cookie.isHTTPOnly)
+            } header: {
+                Text("Advanced options")
             }
         }
         .navigationTitle("Cookie")
@@ -516,34 +552,34 @@ private struct WindowInjectionEditorView: View {
     @Binding var item: WindowInjectionItem
 
     var body: some View {
+        let valueTitle: LocalizedStringKey = item.kind == .functionBody ? "Function Body" : "Window value"
         Form {
             Section {
                 Toggle("Enabled", isOn: $item.isEnabled)
-                TextField("Name", text: $item.name)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
+                PreloadTextField(title: "Window property", text: $item.name, example: "appVersion", isTechnical: true)
                 Picker("Type", selection: $item.kind) {
                     ForEach(WindowInjectionKind.allCases, id: \.self) { kind in
                         Text(kind.localizedTitle).tag(kind)
                     }
                 }
                 if item.kind != .functionBody {
-                    Picker("Value", selection: $item.valueKind) {
+                    Picker("Value type", selection: $item.valueKind) {
                         ForEach(PreloadValueKind.allCases, id: \.self) { kind in
                         Text(kind.localizedTitle).tag(kind)
                         }
                     }
                 }
+            } footer: {
+                Text("Use dotted names like app.bridge.getToken to create nested window values.")
             }
 
             Section {
                 TextEditor(text: $item.value)
+                    .accessibilityLabel(valueTitle)
                     .font(.system(.body, design: .monospaced))
                     .frame(minHeight: 160)
             } header: {
-                Text(item.kind == .functionBody ? "Function Body" : "Value")
-            } footer: {
-                Text("Use dotted names like app.bridge.getToken to create nested window values.")
+                Text(valueTitle)
             }
         }
         .navigationTitle("Window Item")
@@ -560,9 +596,7 @@ private struct BridgeChannelEditorView: View {
         Form {
             Section {
                 Toggle("Enabled", isOn: $channel.isEnabled)
-                TextField("Channel name", text: $channel.name)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
+                PreloadTextField(title: "Channel name", text: $channel.name, example: "request", isTechnical: true)
 
                 if !BridgeChannelNameValidator.isValid(channel.name)
                     || BridgeChannelNameValidator.reservedNames.contains(channel.name)
@@ -626,7 +660,7 @@ private struct BridgeRuleEditorView: View {
         Form {
             Section {
                 Toggle("Enabled", isOn: $rule.isEnabled)
-                TextField("Name", text: $rule.name)
+                PreloadTextField(title: "Rule name", text: $rule.name)
                 BridgeMatcherEditor(matcher: $rule.matcher)
                 Picker("Respond with", selection: $rule.response.target) {
                     ForEach(BridgeResponseTarget.allCases, id: \.self) { target in
@@ -642,6 +676,7 @@ private struct BridgeRuleEditorView: View {
 
             Section {
                 TextEditor(text: $rule.response.bodyTemplate)
+                    .accessibilityLabel("Response JSON")
                     .font(.system(.body, design: .monospaced))
                     .frame(minHeight: 180)
 
@@ -670,16 +705,12 @@ private struct BridgeRuleEditorView: View {
 
         case .customEvent:
             Section {
-                TextField("Event name", text: $rule.response.eventName)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
+                PreloadTextField(title: "Event name", text: $rule.response.eventName, example: "nativeResponse", isTechnical: true)
             }
 
         case .callback:
             Section {
-                TextField("Callback name", text: $rule.response.callbackName)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
+                PreloadTextField(title: "Callback name", text: $rule.response.callbackName, example: "app.onNativeResponse", isTechnical: true)
 
                 if !JavaScriptPath.isValid(rule.response.callbackName) {
                     Label("Use a dotted JavaScript function path.", systemImage: "exclamationmark.triangle.fill")
@@ -693,6 +724,7 @@ private struct BridgeRuleEditorView: View {
         case .customJavaScript:
             Section {
                 TextEditor(text: $rule.response.customJavaScript)
+                    .accessibilityLabel("Custom JavaScript")
                     .font(.system(.body, design: .monospaced))
                     .frame(minHeight: 140)
             } header: {
@@ -720,16 +752,10 @@ private struct BridgeMatcherEditor: View {
             }
 
             if mode == .typeEquals {
-                TextField("type", text: $value)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
+                PreloadTextField(title: "Expected type", text: $value, example: "request", isTechnical: true)
             } else if mode == .jsonPathEquals {
-                TextField("JSON path", text: $path)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
-                TextField("Value", text: $value)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
+                PreloadTextField(title: "JSON path", text: $path, example: "payload.token", isTechnical: true)
+                PreloadTextField(title: "Expected value", text: $value, isTechnical: true)
             }
         }
         .onAppear(perform: load)
@@ -799,12 +825,13 @@ private struct CustomPreloadScriptEditorView: View {
         Form {
             Section {
                 Toggle("Enabled", isOn: $script.isEnabled)
-                TextField("Name", text: $script.name)
+                PreloadTextField(title: "Script name", text: $script.name)
                 Toggle("Main frame only", isOn: $script.forMainFrameOnly)
             }
 
             Section {
                 TextEditor(text: $script.source)
+                    .accessibilityLabel("Source")
                     .font(.system(.body, design: .monospaced))
                     .frame(minHeight: 240)
             } header: {

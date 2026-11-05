@@ -170239,6 +170239,196 @@
                       }
                 }
           }
+    },
+    "Advanced options" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "고급 옵션"
+          }
+        }
+      }
+    },
+    "Browser session" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "브라우저 세션"
+          }
+        }
+      }
+    },
+    "Cookie details" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "쿠키 정보"
+          }
+        }
+      }
+    },
+    "Cookie name" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이름"
+          }
+        }
+      }
+    },
+    "Cookie scope" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "적용 범위"
+          }
+        }
+      }
+    },
+    "Cookie value" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "값"
+          }
+        }
+      }
+    },
+    "Enable cookie" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "활성화"
+          }
+        }
+      }
+    },
+    "Expected type" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "비교할 타입"
+          }
+        }
+      }
+    },
+    "Expected value" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "비교할 값"
+          }
+        }
+      }
+    },
+    "HTTPS only" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "HTTPS에서만 전송"
+          }
+        }
+      }
+    },
+    "JSON path" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "JSON 경로"
+          }
+        }
+      }
+    },
+    "Rule name" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "규칙 이름"
+          }
+        }
+      }
+    },
+    "Script name" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "스크립트 이름"
+          }
+        }
+      }
+    },
+    "Use / to apply the cookie to all paths on the selected domain." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "경로가 /이면 선택한 도메인의 모든 경로에 적용됩니다."
+          }
+        }
+      }
+    },
+    "Use dotted names like app.bridge.getToken to create nested window values." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "app.bridge.getToken처럼 점으로 구분하면 window 아래에 중첩된 속성을 만들 수 있습니다."
+          }
+        }
+      }
+    },
+    "Value type" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "값의 형식"
+          }
+        }
+      }
+    },
+    "When enabled, this cookie is set before the page opens." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "활성화하면 페이지를 열기 전에 이 쿠키를 설정합니다."
+          }
+        }
+      }
+    },
+    "Window property" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "window 속성"
+          }
+        }
+      }
+    },
+    "Window value" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "값"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"
