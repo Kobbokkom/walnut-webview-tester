@@ -30,6 +30,7 @@ final class AdaptiveWorkspaceTests: XCTestCase {
         capture("DevTools-initial", app: app)
 
         let panel = app.otherElements["devToolsPanel"]
+        if app.frame.width >= 600 { XCTAssertTrue(panel.exists) }
         if panel.exists {
             let network = app.buttons["devToolsTab.network"]
             XCTAssertTrue(network.exists)
@@ -39,6 +40,8 @@ final class AdaptiveWorkspaceTests: XCTestCase {
         }
 
         XCUIDevice.shared.orientation = .landscapeLeft
+        // Let the system rotation animation settle before capturing the rendered layout.
+        Thread.sleep(forTimeInterval: 2)
         XCTAssertTrue(app.buttons["closeDevTools"].firstMatch.waitForExistence(timeout: 10))
         capture("DevTools-landscape", app: app)
         app.buttons["closeDevTools"].firstMatch.tap()
