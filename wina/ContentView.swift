@@ -340,7 +340,7 @@ struct ContentView: View {
                         }
                     },
                     onURLChange: { newURL in
-                        guard validateSafariURLIfNeeded(newURL) else { return }
+                        guard validateSafariURLIfNeeded(newURL) else { return false }
                         // Add to history
                         urlStorage.addToHistory(newURL)
 
@@ -352,6 +352,7 @@ struct ContentView: View {
                             loadedURL = newURL
                             webViewID = UUID()
                         }
+                        return true
                     },
                     navigator: useSafariWebView ? nil : webViewNavigator,
                     recorder: screenRecorder,

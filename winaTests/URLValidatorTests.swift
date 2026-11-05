@@ -66,10 +66,18 @@ final class URLValidationTests: XCTestCase {
         XCTAssertTrue(URLValidator.isSupportedSafariURL("example.com"))
     }
 
+    func testSafariSupportsBareHostsWithPorts() {
+        XCTAssertTrue(URLValidator.isSupportedSafariURL("localhost:3000/path"))
+        XCTAssertTrue(URLValidator.isSupportedSafariURL(" example.com:8080 "))
+        XCTAssertTrue(URLValidator.isSupportedSafariURL("192.168.1.1:8080"))
+    }
+
     func testSafariUnsupportedSchemes() {
         XCTAssertFalse(URLValidator.isSupportedSafariURL("about:blank"))
         XCTAssertFalse(URLValidator.isSupportedSafariURL("file:///path/to/file.html"))
         XCTAssertFalse(URLValidator.isSupportedSafariURL("myapp://deep-link"))
+        XCTAssertFalse(URLValidator.isSupportedSafariURL("com.example://deep-link"))
+        XCTAssertFalse(URLValidator.isSupportedSafariURL("about:123"))
     }
 
     // MARK: - Localhost Tests

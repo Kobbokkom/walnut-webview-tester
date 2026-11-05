@@ -16,7 +16,7 @@ struct URLInputOverlayView: View {
     @Binding var showBookmarks: Bool
     let urlStorage: URLStorageManager
     let currentURL: String?
-    let onURLChange: (String) -> Void
+    let onURLChange: (String) -> Bool
 
     @FocusState private var urlInputFocused: Bool
     @State private var feedbackState = CopiedFeedbackState()
@@ -194,9 +194,7 @@ struct URLInputOverlayView: View {
     }
 
     private func submitURL() {
-        guard urlValidationState == .valid else { return }
-        urlStorage.addToHistory(urlInputText)
-        onURLChange(urlInputText)
+        guard urlValidationState == .valid, onURLChange(urlInputText) else { return }
         showURLInput = false
     }
 

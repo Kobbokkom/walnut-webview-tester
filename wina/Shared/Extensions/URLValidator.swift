@@ -136,16 +136,16 @@ enum URLValidator {
     /// SafariVC only accepts http/https URLs.
     static func isSupportedSafariURL(_ string: String) -> Bool {
         let trimmed = string.trimmingCharacters(in: .whitespacesAndNewlines)
-        if let url = URL(string: trimmed), let scheme = url.scheme?.lowercased() {
-            return scheme == "http" || scheme == "https"
-        }
+        guard let normalized = URL(string: normalizeURL(trimmed)),
+              let host = normalized.host, !host.isEmpty else { return false }
 
-        let normalized = normalizeURL(trimmed)
-        guard let url = URL(string: normalized),
-              let scheme = url.scheme?.lowercased() else {
-            return false
+        switch URL(string: trimmed)?.scheme?.lowercased() {
+        case nil, "http", "https":
+            return true
+        default:
+            // Foundation also treats a bare hostname followed by a port as a scheme.
+            return normalized.port != nil && isValidURL(trimmed)
         }
-        return scheme == "http" || scheme == "https"
     }
 
     /// Extracts the host from a URL string

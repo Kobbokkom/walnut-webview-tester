@@ -18,7 +18,7 @@ struct OverlayMenuBars: View {
     let erudaModeEnabled: Bool
     let hasDockedDevTools: Bool
     let onHome: () -> Void
-    let onURLChange: (String) -> Void
+    let onURLChange: (String) -> Bool
     let navigator: WebViewNavigator?
     let recorder: WebViewRecorder
     let urlStorage: URLStorageManager
@@ -782,7 +782,7 @@ private struct BottomBarIconButton: View {
             erudaModeEnabled: false,
             hasDockedDevTools: false,
             onHome: {},
-            onURLChange: { _ in },
+            onURLChange: { _ in true },
             navigator: nil,
             recorder: WebViewRecorder(),
             urlStorage: .shared,
@@ -809,7 +809,7 @@ private struct BottomBarIconButton: View {
             erudaModeEnabled: false,
             hasDockedDevTools: false,
             onHome: {},
-            onURLChange: { _ in },
+            onURLChange: { _ in true },
             navigator: nil,
             recorder: WebViewRecorder(),
             urlStorage: .shared,
