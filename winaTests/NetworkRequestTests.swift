@@ -10,6 +10,21 @@ import SwiftUI
 import Testing
 @testable import wina
 
+@Test("cURL export quotes captured arguments and replays the body literally")
+func curlExportQuotesCapturedArguments() {
+    let request = NetworkRequest(
+        id: UUID(), method: "X'$(method)", url: "https://example.com/a'$(url)'b",
+        requestHeaders: ["X-Custom'": "$(header)'", "@file": "ignored"], requestBodyPreview: "@payload'",
+        startTime: Date(), pageIsSecure: true, requestType: .fetch
+    )
+
+    #expect(request.curlCommand == #"""
+    curl --globoff --proto '=http,https' --request 'X'\''$(method)' --url 'https://example.com/a'\''$(url)'\''b' \
+      --header 'X-Custom'\'': $(header)'\''' \
+      --data-raw '@payload'\'''
+    """#)
+}
+
 // MARK: - NetworkRequest Status Tests
 
 @Suite("NetworkRequest Status")

@@ -72,6 +72,21 @@ struct NetworkRequest: Identifiable, Equatable {
         loadFullRequestBody() ?? requestBodyPreview
     }
 
+    var curlCommand: String {
+        func shellArgument(_ value: String) -> String {
+            "'" + value.replacingOccurrences(of: "'", with: "'\\''") + "'"
+        }
+
+        var command = "curl --globoff --proto '=http,https' --request \(shellArgument(method)) --url \(shellArgument(url))"
+        for (name, value) in (requestHeaders ?? [:]).sorted(by: { $0.key < $1.key }) where !name.hasPrefix("@") {
+            command += " \\\n  --header \(shellArgument("\(name): \(value)"))"
+        }
+        if let body = requestBody, !body.isEmpty {
+            command += " \\\n  --data-raw \(shellArgument(body))"
+        }
+        return command
+    }
+
     var responseBody: String? {
         loadFullResponseBody() ?? responseBodyPreview
     }

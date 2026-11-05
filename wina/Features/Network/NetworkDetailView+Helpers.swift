@@ -76,33 +76,7 @@ extension NetworkDetailView {
     }
 
     func copyAsCurl() {
-        var curl = "curl"
-
-        // Method (skip if GET since it's default)
-        if request.method != "GET" {
-            curl += " -X \(request.method)"
-        }
-
-        // URL
-        curl += " '\(request.url)'"
-
-        // Request headers
-        if let headers = request.requestHeaders {
-            for (key, value) in headers.sorted(by: { $0.key < $1.key }) {
-                // Escape single quotes in header values
-                let escapedValue = value.replacingOccurrences(of: "'", with: "'\\''")
-                curl += " \\\n  -H '\(key): \(escapedValue)'"
-            }
-        }
-
-        // Request body
-        if let body = request.requestBody, !body.isEmpty {
-            // Escape single quotes in body
-            let escapedBody = body.replacingOccurrences(of: "'", with: "'\\''")
-            curl += " \\\n  -d '\(escapedBody)'"
-        }
-
-        UIPasteboard.general.string = curl
+        UIPasteboard.general.string = request.curlCommand
         feedbackState.showCopied("cURL")
     }
 
