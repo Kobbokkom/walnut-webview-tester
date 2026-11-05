@@ -198,6 +198,29 @@ class WebViewNavigator {
         webView?.reload()
     }
 
+    func applyEmulation(configScript: String) {
+        guard let webView else { return }
+        let controller = webView.configuration.userContentController
+        // WebKit returns a live NSArray; materialize it before clearing the controller.
+        // swiftlint:disable:next array_init
+        let scripts = controller.userScripts.map { $0 }
+        controller.removeAllUserScripts()
+        var replaced = false
+        for script in scripts {
+            if script.source.hasPrefix(WebViewScripts.emulationConfigMarker) {
+                controller.addUserScript(WKUserScript(source: configScript, injectionTime: .atDocumentStart, forMainFrameOnly: false))
+                replaced = true
+            } else {
+                controller.addUserScript(script)
+            }
+        }
+        if !replaced {
+            controller.addUserScript(WKUserScript(source: configScript, injectionTime: .atDocumentStart, forMainFrameOnly: false))
+            controller.addUserScript(WKUserScript(source: WebViewScripts.emulationBootstrap, injectionTime: .atDocumentStart, forMainFrameOnly: false))
+        }
+        reload()
+    }
+
     func stopLoading() {
         webView?.stopLoading()
     }

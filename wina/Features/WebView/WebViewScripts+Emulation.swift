@@ -63,38 +63,36 @@ extension WebViewScripts {
                 overrides['(prefers-color-scheme: ' + opposite + ')'] = false;
             }
             if (config.reducedMotion) {
+                overrides['(prefers-reduced-motion)'] = true;
                 overrides['(prefers-reduced-motion: reduce)'] = true;
                 overrides['(prefers-reduced-motion: no-preference)'] = false;
             }
             if (config.highContrast) {
+                overrides['(prefers-contrast)'] = true;
                 overrides['(prefers-contrast: more)'] = true;
                 overrides['(prefers-contrast: no-preference)'] = false;
+                overrides['(prefers-contrast: less)'] = false;
+                overrides['(prefers-contrast: custom)'] = false;
             }
             if (config.reducedTransparency) {
+                overrides['(prefers-reduced-transparency)'] = true;
                 overrides['(prefers-reduced-transparency: reduce)'] = true;
                 overrides['(prefers-reduced-transparency: no-preference)'] = false;
             }
 
-            // Override matchMedia for JS-based detection
+            // Keep native media query parsing, boolean logic, listeners and event delivery.
             const originalMatchMedia = window.matchMedia.bind(window);
             window.matchMedia = function(query) {
-                const result = originalMatchMedia(query);
-                const normalizedQuery = query.replace(/\\s+/g, ' ').trim().toLowerCase();
-
-                for (const [pattern, matches] of Object.entries(overrides)) {
-                    const feature = pattern.slice(1, -1); // Remove outer parens
-                    if (normalizedQuery.includes(feature)) {
-                        return {
-                            matches: matches,
-                            media: query,
-                            onchange: null,
-                            addListener: function(cb) { result.addListener(cb); },
-                            removeListener: function(cb) { result.removeListener(cb); },
-                            addEventListener: function(type, cb) { result.addEventListener(type, cb); },
-                            removeEventListener: function(type, cb) { result.removeEventListener(type, cb); },
-                            dispatchEvent: function(e) { return result.dispatchEvent(e); }
-                        };
-                    }
+                const text = String(query);
+                const substituted = text.replace(/\\(\\s*(prefers-[a-z-]+)\\s*(?::\\s*([a-z-]+)\\s*)?\\)/gi,
+                    function(clause, feature, value) {
+                        const pattern = '(' + feature.toLowerCase() + (value ? ': ' + value.toLowerCase() : '') + ')';
+                        if (!Object.prototype.hasOwnProperty.call(overrides, pattern)) return clause;
+                        return overrides[pattern] ? '(width >= 0px)' : '(width < 0px)';
+                    });
+                const result = originalMatchMedia(substituted);
+                if (substituted !== text) {
+                    Object.defineProperty(result, 'media', {value: text});
                 }
                 return result;
             };
@@ -118,10 +116,14 @@ extension WebViewScripts {
                 const style = document.createElement('style');
                 style.id = 'wina-emulation-style';
                 style.textContent = css;
-                (document.head || document.documentElement).appendChild(style);
+                const appendStyle = function() { (document.head || document.documentElement).appendChild(style); };
+                if (document.documentElement) appendStyle();
+                else document.addEventListener('DOMContentLoaded', appendStyle, {once: true});
             }
         })();
         """
+
+    static let emulationConfigMarker = "// Walnut emulation configuration"
 
     /// Script to set emulation config (call before page load or reload)
     static func emulationConfigScript(
@@ -131,6 +133,7 @@ extension WebViewScripts {
         reducedTransparency: Bool
     ) -> String {
         """
+        \(emulationConfigMarker)
         window.__winaEmulationConfig = {
             colorScheme: '\(colorScheme)',
             reducedMotion: \(reducedMotion),

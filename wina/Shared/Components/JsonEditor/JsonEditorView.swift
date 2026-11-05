@@ -7,6 +7,13 @@ struct JsonEditorSheet: View {
     @Binding var jsonText: String
     @Environment(\.dismiss) private var dismiss
 
+    @State private var draftText: String
+
+    init(jsonText: Binding<String>) {
+        self._jsonText = jsonText
+        self._draftText = State(initialValue: jsonText.wrappedValue)
+    }
+
     @State private var editingNode: JsonNode?
     @State private var addingToNode: JsonNode?
     @State private var parseResult: JsonParser.ParseResult = .empty
@@ -31,12 +38,13 @@ struct JsonEditorSheet: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") {
+                        jsonText = draftText
                         dismiss()
                     }
                 }
             }
             .onAppear {
-                parseResult = JsonParser.parse(jsonText)
+                parseResult = JsonParser.parse(draftText)
             }
         }
     }
@@ -76,14 +84,14 @@ struct JsonEditorSheet: View {
         .sheet(item: $editingNode) { node in
             NodeEditSheet(
                 node: node,
-                jsonText: $jsonText,
+                jsonText: $draftText,
                 onSave: { refreshParseResult() }
             )
         }
         .sheet(item: $addingToNode) { node in
             AddNodeSheet(
                 parentNode: node,
-                jsonText: $jsonText,
+                jsonText: $draftText,
                 onSave: { refreshParseResult() }
             )
         }
@@ -142,13 +150,13 @@ struct JsonEditorSheet: View {
     }
 
     private func deleteNode(_ node: JsonNode) {
-        guard let updated = JsonParser.delete(jsonText, at: node.path) else { return }
-        jsonText = updated
+        guard let updated = JsonParser.delete(draftText, at: node.path) else { return }
+        draftText = updated
         refreshParseResult()
     }
 
     private func refreshParseResult() {
-        parseResult = JsonParser.parse(jsonText)
+        parseResult = JsonParser.parse(draftText)
     }
 
     private func expandAll(from node: JsonNode) {
@@ -660,7 +668,7 @@ struct JsonExplorerView: View {
 
 // MARK: - Explorer Node (Chrome DevTools style enum)
 
-private enum ExplorerNode: Identifiable {
+enum ExplorerNode: Identifiable {
     case null(key: String?)
     case bool(key: String?, value: Bool)
     case number(key: String?, value: Double)
@@ -735,9 +743,10 @@ private enum ExplorerNode: Identifiable {
         switch json {
         case is NSNull:
             return .null(key: key)
-        case let bool as Bool:
-            return .bool(key: key, value: bool)
         case let number as NSNumber:
+            if CFGetTypeID(number) == CFBooleanGetTypeID() {
+                return .bool(key: key, value: number.boolValue)
+            }
             return .number(key: key, value: number.doubleValue)
         case let string as String:
             return .string(key: key, value: string)

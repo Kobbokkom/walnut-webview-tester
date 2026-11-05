@@ -126,6 +126,7 @@ struct MediaCodecInfo: Sendable {
         }
 
         // Initialize shared WebView (or use live WebView if available)
+        let generation = shared.cacheGeneration
         await shared.initialize(onStatusUpdate: onStatusUpdate)
 
         onStatusUpdate("Detecting media codecs...")
@@ -204,7 +205,9 @@ struct MediaCodecInfo: Sendable {
         )
 
         // Cache result
-        shared.cachedCodecInfo = codecResult
+        if shared.cacheGeneration == generation {
+            shared.cachedCodecInfo = codecResult
+        }
         return codecResult
     }
 }

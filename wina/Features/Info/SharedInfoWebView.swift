@@ -15,7 +15,7 @@ final class SharedInfoWebView {
 
     var webView: WKWebView?
     var isReady = false
-    private var initTask: Task<Void, Never>?
+    private(set) var cacheGeneration = 0
 
     // External WebView navigator (for live page testing)
     private(set) var navigator: WebViewNavigator?
@@ -40,14 +40,8 @@ final class SharedInfoWebView {
 
     /// Set external navigator for live page testing
     func setNavigator(_ navigator: WebViewNavigator?) {
-        let wasUsingLive = isUsingLiveWebView
         self.navigator = navigator
-        let nowUsingLive = isUsingLiveWebView
-
-        // Clear cache when switching between live/test mode or changing pages
-        if wasUsingLive != nowUsingLive {
-            clearCache()
-        }
+        clearCache()
     }
 
     func initialize(onStatusUpdate: @escaping (String) -> Void) async {
@@ -86,6 +80,7 @@ final class SharedInfoWebView {
     }
 
     func clearCache() {
+        cacheGeneration += 1
         cachedWebViewInfo = nil
         cachedCodecInfo = nil
         cachedDisplayInfo = nil

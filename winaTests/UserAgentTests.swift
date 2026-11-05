@@ -134,6 +134,16 @@ final class UserAgentBuilderTests: XCTestCase {
 
 final class UserAgentParserTests: XCTestCase {
 
+    func testCanonicalOSNamesRemainRecognized() {
+        for (platform, expected) in [("Android", "Android"), ("iOS", "iOS"),
+                                     ("Mac OS", "macOS"), ("macOS", "macOS"),
+                                     ("Windows", "Windows"), ("Linux", "Linux")] {
+            var parsed = UserAgentParser.ParsedUserAgent()
+            parsed.platform = platform
+            XCTAssertEqual(parsed.osName, expected, platform)
+        }
+    }
+
     // MARK: - Chrome Detection Tests
 
     func testParseChromeWindows() {
@@ -446,5 +456,17 @@ final class UserAgentVersionModifierTests: XCTestCase {
         XCTAssertFalse(updated.contains("Chrome/120.0.0.0"))
         XCTAssertFalse(updated.contains("Chrome/119.0.0.0"))
         XCTAssertTrue(updated.contains("Chrome/121.0.0.0"))
+    }
+}
+
+
+final class UserAgentPresetFilterTests: XCTestCase {
+    func testBrowserAndSearchFiltersBothApply() {
+        let combined = UserAgentPresets.search("Windows", browser: .firefox)
+        XCTAssertFalse(combined.isEmpty)
+        XCTAssertTrue(combined.allSatisfy { $0.browser == .firefox })
+        XCTAssertEqual(combined, UserAgentPresets.search("Windows").filter { $0.browser == .firefox })
+        XCTAssertEqual(UserAgentPresets.search("", browser: .firefox), UserAgentPresets.presets(for: .firefox))
+        XCTAssertEqual(UserAgentPresets.search(""), UserAgentPresets.allPresets)
     }
 }

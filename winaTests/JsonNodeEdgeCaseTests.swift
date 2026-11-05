@@ -137,3 +137,27 @@ struct JsonTypeColorEdgeCaseTests {
         #expect(!JsonTypeColor.null.foreground.isEmpty)
     }
 }
+
+
+@Suite("Storage JSON Explorer Type Preservation")
+@MainActor
+struct JsonExplorerTypeTests {
+    @Test("Displaying and copying preserves zero, one and Boolean JSON types")
+    func testExplorerKeepsNumberAndBooleanTypes() throws {
+        let original = "[0,1,true,false]"
+        let value = try JSONSerialization.jsonObject(with: Data(original.utf8))
+        let node = ExplorerNode.parse(value)
+        guard case .array(_, let values) = node else { Issue.record("Expected array"); return }
+        for (index, element) in values.enumerated() {
+            if index < 2 {
+                guard case .number(_, let number) = element else { Issue.record("Number became Boolean"); return }
+                #expect(number == Double(index))
+            } else {
+                guard case .bool(_, let flag) = element else { Issue.record("Boolean became number"); return }
+                #expect(flag == (index == 2))
+            }
+        }
+        let copied = try #require(node.toJsonString())
+        #expect(JsonParser.minify(copied) == original)
+    }
+}

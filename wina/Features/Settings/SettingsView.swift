@@ -39,6 +39,7 @@ struct LiveSettingsView: View {
     @State private var pageZoom: Double = 1.0
     @State private var underPageBackgroundColorHex: String = ""
     @State private var findInteractionEnabled: Bool = false
+    @State private var didLoadFromStorage = false
     @State private var customUserAgent: String = ""
     @State private var webViewWidthRatio: Double = 1.0
     @State private var webViewHeightRatio: Double = 0.82
@@ -168,7 +169,11 @@ struct LiveSettingsView: View {
             }
         }
         .animation(.easeInOut(duration: 0.2), value: hasChanges)
-        .onAppear { loadFromStorage() }
+        .onAppear {
+            guard !didLoadFromStorage else { return }
+            loadFromStorage()
+            didLoadFromStorage = true
+        }
     }
 
     private func loadFromStorage() {

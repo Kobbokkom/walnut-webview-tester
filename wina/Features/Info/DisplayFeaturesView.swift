@@ -139,13 +139,16 @@ struct DisplayInfo: Sendable {
         }
 
         // Initialize shared WebView (or use live WebView if available)
+        let generation = shared.cacheGeneration
         await shared.initialize(onStatusUpdate: onStatusUpdate)
 
         onStatusUpdate("Detecting display features...")
         let result = await shared.evaluateJavaScript(detectionScript) as? [String: Any] ?? [:]
 
         let displayResult = parseResult(from: result)
-        shared.cachedDisplayInfo = displayResult
+        if shared.cacheGeneration == generation {
+            shared.cachedDisplayInfo = displayResult
+        }
         return displayResult
     }
 

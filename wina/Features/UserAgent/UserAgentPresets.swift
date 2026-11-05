@@ -394,15 +394,15 @@ struct UserAgentPresets {
         allPresets.filter { $0.browser == browser && $0.platform == platform }
     }
 
-    static func search(_ query: String) -> [UserAgentPreset] {
-        guard !query.isEmpty else { return allPresets }
+    static func search(_ query: String, browser: UserAgentBrowser? = nil) -> [UserAgentPreset] {
         let lowercasedQuery = query.lowercased()
         return allPresets.filter {
+            (browser == nil || $0.browser == browser) && (lowercasedQuery.isEmpty ||
             $0.name.lowercased().contains(lowercasedQuery) ||
             $0.description.lowercased().contains(lowercasedQuery) ||
             $0.userAgent.lowercased().contains(lowercasedQuery) ||
             $0.browser.rawValue.lowercased().contains(lowercasedQuery) ||
-            $0.os.rawValue.lowercased().contains(lowercasedQuery)
+            $0.os.rawValue.lowercased().contains(lowercasedQuery))
         }
     }
 }

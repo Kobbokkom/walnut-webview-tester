@@ -219,13 +219,16 @@ struct WebViewInfo: Sendable {
         }
 
         // Initialize shared WebView (or use live WebView if available)
+        let generation = shared.cacheGeneration
         await shared.initialize(onStatusUpdate: onStatusUpdate)
 
         onStatusUpdate("Detecting capabilities...")
         let allData = await shared.evaluateJavaScript(detectionScript) as? [String: Any] ?? [:]
 
         let result = parseResult(from: allData)
-        shared.cachedWebViewInfo = result
+        if shared.cacheGeneration == generation {
+            shared.cachedWebViewInfo = result
+        }
         return result
     }
 

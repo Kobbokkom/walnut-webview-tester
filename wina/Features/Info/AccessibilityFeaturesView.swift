@@ -109,6 +109,7 @@ struct AccessibilityInfo: Sendable {
         }
 
         // Initialize shared WebView (or use live WebView if available)
+        let generation = shared.cacheGeneration
         await shared.initialize(onStatusUpdate: onStatusUpdate)
 
         onStatusUpdate("Detecting accessibility preferences...")
@@ -185,7 +186,9 @@ struct AccessibilityInfo: Sendable {
         )
 
         // Cache result
-        shared.cachedAccessibilityInfo = a11yResult
+        if shared.cacheGeneration == generation {
+            shared.cachedAccessibilityInfo = a11yResult
+        }
         return a11yResult
     }
 }

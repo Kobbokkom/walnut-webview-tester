@@ -46,7 +46,7 @@ struct EmulationSettingsView: View {
                 HStack {
                     Image(systemName: "exclamationmark.triangle.fill")
                         .foregroundStyle(.orange)
-                    Text("Overrides CSS media queries. Requires page reload to apply.")
+                    Text("Overrides JavaScript matchMedia with limited visual effects. CSS @media rules keep system preferences. Applying reloads the page.")
                         .font(.subheadline)
                 }
             }
@@ -58,7 +58,7 @@ struct EmulationSettingsView: View {
                             Text(scheme.label).tag(scheme)
                         }
                     }
-                    InfoPopoverButton(text: "prefers-color-scheme\n\nEmulates dark/light mode for CSS media queries.")
+                    InfoPopoverButton(text: "prefers-color-scheme\n\nOverrides JavaScript color scheme detection and the CSS color-scheme property. CSS @media rules keep system preferences.")
                 }
 
                 HStack {
@@ -68,7 +68,7 @@ struct EmulationSettingsView: View {
 
                 HStack {
                     Toggle("High Contrast", isOn: $highContrast)
-                    InfoPopoverButton(text: "prefers-contrast\n\nRequests higher contrast colors.")
+                    InfoPopoverButton(text: "prefers-contrast\n\nOverrides JavaScript contrast detection. Does not recolor the page or override CSS @media rules.")
                 }
 
                 HStack {
@@ -149,10 +149,7 @@ struct EmulationSettingsView: View {
             highContrast: highContrast,
             reducedTransparency: reducedTransparency
         )
-        Task {
-            _ = await navigator.evaluateJavaScript(configScript)
-            navigator.reload()
-        }
+        navigator.applyEmulation(configScript: configScript)
         dismiss()
     }
 
@@ -162,27 +159,6 @@ struct EmulationSettingsView: View {
         reducedMotion = false
         highContrast = false
         reducedTransparency = false
-
-        // If emulation was active, also clear storage and reload
-        if isEmulationActive {
-            storedColorScheme = "system"
-            storedReducedMotion = false
-            storedHighContrast = false
-            storedReducedTransparency = false
-
-            // Clear config and reload
-            let configScript = WebViewScripts.emulationConfigScript(
-                colorScheme: "system",
-                reducedMotion: false,
-                highContrast: false,
-                reducedTransparency: false
-            )
-            Task {
-                _ = await navigator.evaluateJavaScript(configScript)
-                navigator.reload()
-            }
-            dismiss()
-        }
     }
 }
 

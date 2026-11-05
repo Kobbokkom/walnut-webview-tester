@@ -194,6 +194,15 @@ struct UserAgentParser {
         }
 
         var osName: String {
+            switch platform.lowercased() {
+            case "android": return "Android"
+            case "ios": return isTablet ? "iPadOS" : "iOS"
+            case "ipados": return "iPadOS"
+            case "mac os", "macos": return "macOS"
+            default: break
+            }
+            if platform.contains("iPhone") { return "iOS" }
+            if platform.contains("iPad") { return "iPadOS" }
             if platform.contains("Windows") { return "Windows" }
             if platform.contains("Mac OS X") { return "macOS" }
             if platform.contains("Linux") && platform.contains("Android") { return "Android" }

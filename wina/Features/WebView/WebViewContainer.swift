@@ -341,6 +341,7 @@ struct WKWebViewRepresentable: UIViewRepresentable {
         webView.isInspectable = true
 
         webView.configuration.ignoresViewportScaleLimits = allowZoom
+        webView.configuration.preferences.isTextInteractionEnabled = textInteractionEnabled
 
         // Page zoom
         webView.pageZoom = pageZoom
@@ -386,6 +387,7 @@ struct WKWebViewRepresentable: UIViewRepresentable {
         webView.allowsBackForwardNavigationGestures = allowsBackForwardGestures
         webView.allowsLinkPreview = allowsLinkPreview
         webView.configuration.ignoresViewportScaleLimits = allowZoom
+        webView.configuration.preferences.isTextInteractionEnabled = textInteractionEnabled
 
         // Page zoom
         webView.pageZoom = pageZoom

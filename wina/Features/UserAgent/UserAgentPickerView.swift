@@ -208,17 +208,7 @@ private struct AllPresetsView: View {
     @State private var selectedBrowser: UserAgentBrowser?
 
     private var filteredPresets: [UserAgentPreset] {
-        var presets = UserAgentPresets.allPresets
-
-        if let browser = selectedBrowser {
-            presets = presets.filter { $0.browser == browser }
-        }
-
-        if !searchText.isEmpty {
-            presets = UserAgentPresets.search(searchText)
-        }
-
-        return presets
+        UserAgentPresets.search(searchText, browser: selectedBrowser)
     }
 
     private var groupedPresets: [(browser: UserAgentBrowser, presets: [UserAgentPreset])] {

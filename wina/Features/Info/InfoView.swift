@@ -94,12 +94,15 @@ struct InfoView: View {
                 }
             }
         }
-        .task {
+        .task(id: showSettings) {
+            guard !showSettings else { return }
             // Show interstitial ad (30% probability, once per session)
             await AdManager.shared.showInterstitialAd(
                 options: AdOptions(id: "info_sheet"),
                 adUnitId: AdManager.interstitialAdUnitId
             )
+
+            guard !Task.isCancelled else { return }
 
             // Set navigator for live page testing (or nil for test WebView)
             SharedInfoWebView.shared.setNavigator(navigator)
@@ -298,6 +301,8 @@ struct InfoView: View {
     // MARK: - Data Loading
 
     private func loadAllInfo() async {
+        let generation = SharedInfoWebView.shared.cacheGeneration
+        isLoading = true
         // Start device info loading in parallel with WebView init (no WebView needed)
         async let device = DeviceInfo.load()
 
@@ -313,15 +318,17 @@ struct InfoView: View {
         async let accessibility = AccessibilityInfo.load { _ in }
 
         // Await all results (device likely already completed)
-        deviceInfo = await device
-        webViewInfo = await webView
-        codecInfo = await codec
-        displayInfo = await display
-        accessibilityInfo = await accessibility
+        let results = await (device, webView, codec, display, accessibility)
+        guard !Task.isCancelled, SharedInfoWebView.shared.cacheGeneration == generation else { return }
+        deviceInfo = results.0
+        webViewInfo = results.1
+        codecInfo = results.2
+        displayInfo = results.3
+        accessibilityInfo = results.4
         isLoading = false
 
         // Cache system user agent for UserAgentPickerView
-        if let ua = webViewInfo?.userAgent, !ua.isEmpty, ua != "Unknown" {
+        if customUserAgent.isEmpty, let ua = webViewInfo?.userAgent, !ua.isEmpty, ua != "Unknown" {
             cachedSystemUserAgent = ua
         }
     }
