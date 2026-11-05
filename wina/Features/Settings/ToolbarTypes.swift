@@ -38,7 +38,11 @@ enum DevToolsMenuItem: String, CaseIterable, Identifiable {
         }
     }
 
-    var label: LocalizedStringKey {
+    var label: LocalizedStringKey { LocalizedStringKey(titleKey.key) }
+
+    var description: LocalizedStringKey { LocalizedStringKey(descriptionKey.key) }
+
+    var titleKey: LocalizedStringResource {
         switch self {
         case .console: return "Console"
         case .sources: return "Sources"
@@ -53,7 +57,7 @@ enum DevToolsMenuItem: String, CaseIterable, Identifiable {
         }
     }
 
-    var description: LocalizedStringKey {
+    var descriptionKey: LocalizedStringResource {
         switch self {
         case .console: return "JavaScript console logs"
         case .sources: return "DOM tree, stylesheets, scripts"
@@ -152,14 +156,18 @@ enum SafariVCToolbarMenuItem: String, CaseIterable, Identifiable, Codable {
         }
     }
 
-    var label: LocalizedStringKey {
+    var label: LocalizedStringKey { LocalizedStringKey(titleKey.key) }
+
+    var description: LocalizedStringKey { LocalizedStringKey(descriptionKey.key) }
+
+    var titleKey: LocalizedStringResource {
         switch self {
         case .screenshot: return "Screenshot"
         case .recording: return "Recording"
         }
     }
 
-    var description: LocalizedStringKey {
+    var descriptionKey: LocalizedStringResource {
         switch self {
         case .screenshot: return "Capture page screenshot"
         case .recording: return "Record page video"
@@ -223,13 +231,17 @@ enum SafariVCAppBarMenuItem: String, CaseIterable, Identifiable, Codable {
         }
     }
 
-    var label: LocalizedStringKey {
+    var label: LocalizedStringKey { LocalizedStringKey(titleKey.key) }
+
+    var description: LocalizedStringKey { LocalizedStringKey(descriptionKey.key) }
+
+    var titleKey: LocalizedStringResource {
         switch self {
         case .home: return "Home"
         }
     }
 
-    var description: LocalizedStringKey {
+    var descriptionKey: LocalizedStringResource {
         switch self {
         case .home: return "Return to home screen"
         }

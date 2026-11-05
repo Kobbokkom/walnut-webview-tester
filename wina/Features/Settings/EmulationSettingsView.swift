@@ -11,6 +11,8 @@ import SwiftUI
 // MARK: - Emulation Settings View
 
 struct EmulationSettingsView: View {
+    @State var settingsSearch = SettingsSearch()
+    @State private var didLoadFromStorage = false
     @Environment(\.dismiss) private var dismiss
     let navigator: WebViewNavigator
 
@@ -41,7 +43,7 @@ struct EmulationSettingsView: View {
     }
 
     var body: some View {
-        List {
+        SettingsSearchList(screen: .emulation, search: $settingsSearch) {
             Section {
                 HStack {
                     Image(systemName: "exclamationmark.triangle.fill")
@@ -49,6 +51,7 @@ struct EmulationSettingsView: View {
                     Text("Overrides JavaScript matchMedia with limited visual effects. CSS @media rules keep system preferences. Applying reloads the page.")
                         .font(.subheadline)
                 }
+                .containerValue(\.settingsSearchRole, .notice)
             }
 
             Section {
@@ -60,21 +63,25 @@ struct EmulationSettingsView: View {
                     }
                     InfoPopoverButton(text: "prefers-color-scheme\n\nOverrides JavaScript color scheme detection and the CSS color-scheme property. CSS @media rules keep system preferences.")
                 }
+                .settingsSearchItem("emulationColorScheme")
 
                 HStack {
                     Toggle("Reduced Motion", isOn: $reducedMotion)
                     InfoPopoverButton(text: "prefers-reduced-motion\n\nDisables animations and transitions.")
                 }
+                .settingsSearchItem("emulationReducedMotion")
 
                 HStack {
                     Toggle("High Contrast", isOn: $highContrast)
                     InfoPopoverButton(text: "prefers-contrast\n\nOverrides JavaScript contrast detection. Does not recolor the page or override CSS @media rules.")
                 }
+                .settingsSearchItem("emulationHighContrast")
 
                 HStack {
                     Toggle("Reduced Transparency", isOn: $reducedTransparency)
                     InfoPopoverButton(text: "prefers-reduced-transparency\n\nDisables blur and transparency effects.")
                 }
+                .settingsSearchItem("emulationReducedTransparency")
             }
 
             Section {
@@ -124,6 +131,8 @@ struct EmulationSettingsView: View {
         }
         .animation(.easeInOut(duration: 0.2), value: hasChanges)
         .onAppear {
+            guard !didLoadFromStorage else { return }
+            didLoadFromStorage = true
             loadFromStorage()
         }
     }

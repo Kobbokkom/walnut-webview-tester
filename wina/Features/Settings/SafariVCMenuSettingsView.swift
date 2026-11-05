@@ -10,6 +10,8 @@ import SwiftUI
 // MARK: - SafariVC Menu Settings View
 
 struct SafariVCMenuSettingsView: View {
+    @State var settingsSearch = SettingsSearch()
+    @State private var didLoadFromStorage = false
     @Environment(\.dismiss) private var dismiss
     @Environment(\.editMode) private var editMode
 
@@ -46,7 +48,7 @@ struct SafariVCMenuSettingsView: View {
     }
 
     var body: some View {
-        List {
+        SettingsSearchList(screen: .safariMenu, search: $settingsSearch) {
             // MARK: - Toolbar Section
             Section {
                 ForEach(toolbarItems) { item in
@@ -57,12 +59,14 @@ struct SafariVCMenuSettingsView: View {
                         isVisible: item.isVisible,
                         onToggle: { toggleToolbarItem(item) }
                     )
+                    .settingsSearchItem("toolbar.\(item.menuItem.rawValue)")
                 }
                 .onMove(perform: moveToolbarItems)
             } header: {
                 SafariVCSectionHeader(
                     title: "Toolbar",
                     subtitle: "Screenshot and recording. Long press to reorder.",
+                    isSearching: settingsSearch.isActive,
                     onAll: { enableAllToolbar() },
                     onNone: { disableAllToolbar() }
                 )
@@ -78,12 +82,14 @@ struct SafariVCMenuSettingsView: View {
                         isVisible: item.isVisible,
                         onToggle: { toggleAppBarItem(item) }
                     )
+                    .settingsSearchItem("appBar.\(item.menuItem.rawValue)")
                 }
                 .onMove(perform: moveAppBarItems)
             } header: {
                 SafariVCSectionHeader(
                     title: "App Bar",
                     subtitle: "Home button. Info and Settings are always visible.",
+                    isSearching: settingsSearch.isActive,
                     onAll: { enableAllAppBar() },
                     onNone: { disableAllAppBar() }
                 )
@@ -126,6 +132,8 @@ struct SafariVCMenuSettingsView: View {
         }
         .animation(.easeInOut(duration: 0.2), value: hasChanges)
         .onAppear {
+            guard !didLoadFromStorage else { return }
+            didLoadFromStorage = true
             loadFromStorage()
             editMode?.wrappedValue = .active
         }
@@ -183,6 +191,7 @@ struct SafariVCMenuSettingsView: View {
     }
 
     private func moveToolbarItems(from source: IndexSet, to destination: Int) {
+        guard !settingsSearch.isActive else { return }
         toolbarItems.move(fromOffsets: source, toOffset: destination)
     }
 
@@ -210,6 +219,7 @@ struct SafariVCMenuSettingsView: View {
     }
 
     private func moveAppBarItems(from source: IndexSet, to destination: Int) {
+        guard !settingsSearch.isActive else { return }
         appBarItems.move(fromOffsets: source, toOffset: destination)
     }
 
@@ -248,6 +258,7 @@ struct SafariVCMenuSettingsView: View {
 private struct SafariVCSectionHeader: View {
     let title: LocalizedStringKey
     let subtitle: LocalizedStringKey
+    let isSearching: Bool
     let onAll: () -> Void
     let onNone: () -> Void
 
@@ -256,16 +267,20 @@ private struct SafariVCSectionHeader: View {
             HStack {
                 Text(title)
                 Spacer()
-                Button("All") { onAll() }
-                    .font(.caption)
-                Text("/")
-                    .foregroundStyle(.tertiary)
-                Button("None") { onNone() }
-                    .font(.caption)
+                if !isSearching {
+                    Button("All") { onAll() }
+                        .font(.caption)
+                    Text("/")
+                        .foregroundStyle(.tertiary)
+                    Button("None") { onNone() }
+                        .font(.caption)
+                }
             }
-            Text(subtitle)
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            if !isSearching {
+                Text(subtitle)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
         }
         .textCase(nil)
     }

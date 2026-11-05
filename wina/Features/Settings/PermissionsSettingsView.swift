@@ -13,13 +13,14 @@ import SwiftUI
 // MARK: - Permissions Settings
 
 struct PermissionsSettingsView: View {
+    @State var settingsSearch = SettingsSearch()
     @State private var cameraStatus: AVAuthorizationStatus = .notDetermined
     @State private var microphoneStatus: AVAuthorizationStatus = .notDetermined
     @State private var locationStatus: CLAuthorizationStatus = .notDetermined
     @StateObject private var locationDelegate = LocationManagerDelegate()
 
     var body: some View {
-        List {
+        SettingsSearchList(screen: .permissions, search: $settingsSearch) {
             Section {
                 HStack {
                     Image(systemName: "exclamationmark.triangle.fill")
@@ -27,6 +28,7 @@ struct PermissionsSettingsView: View {
                     Text("Changing permissions in Settings may restart the app")
                         .font(.subheadline)
                 }
+                .containerValue(\.settingsSearchRole, .notice)
             }
 
             Section {
@@ -37,6 +39,7 @@ struct PermissionsSettingsView: View {
                 ) {
                     requestCameraPermission()
                 }
+                .settingsSearchItem("camera")
 
                 PermissionRow(
                     title: "Microphone",
@@ -45,6 +48,7 @@ struct PermissionsSettingsView: View {
                 ) {
                     requestMicrophonePermission()
                 }
+                .settingsSearchItem("microphone")
 
                 PermissionRow(
                     title: "Location",
@@ -53,6 +57,7 @@ struct PermissionsSettingsView: View {
                 ) {
                     requestLocationPermission()
                 }
+                .settingsSearchItem("location")
             }
         }
         .navigationTitle(Text(verbatim: "Permissions"))

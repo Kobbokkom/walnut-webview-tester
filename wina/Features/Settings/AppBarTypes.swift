@@ -28,7 +28,11 @@ enum AppBarMenuItem: String, CaseIterable, Identifiable {
         }
     }
 
-    var label: LocalizedStringKey {
+    var label: LocalizedStringKey { LocalizedStringKey(titleKey.key) }
+
+    var description: LocalizedStringKey { LocalizedStringKey(descriptionKey.key) }
+
+    var titleKey: LocalizedStringResource {
         switch self {
         case .home: return "Home"
         case .initialURL: return "Initial URL"
@@ -38,7 +42,7 @@ enum AppBarMenuItem: String, CaseIterable, Identifiable {
         }
     }
 
-    var description: LocalizedStringKey {
+    var descriptionKey: LocalizedStringResource {
         switch self {
         case .home: return "Return to home screen"
         case .initialURL: return "Go to first loaded URL"

@@ -10,6 +10,8 @@ import SwiftUI
 // MARK: - SafariVC Settings View (Menu Style - Unified)
 
 struct SafariVCSettingsView: View {
+    @State var settingsSearch = SettingsSearch()
+    @Environment(\.locale) private var locale
     @Environment(\.dismiss) private var dismiss
     @Binding var webViewID: UUID
 
@@ -19,7 +21,10 @@ struct SafariVCSettingsView: View {
 
     var body: some View {
         NavigationStack {
-            List {
+            SettingsSearchList(screen: .safari, search: $settingsSearch) {
+                SettingsSearchResults(results: settingsSearch.results(in: .safari, locale: locale)) { result in
+                    searchDestination(result)
+                }
                 Section {
                     NavigationLink {
                         AppSettingsView()
@@ -83,11 +88,24 @@ struct SafariVCSettingsView: View {
             }
         }
     }
+
+    @ViewBuilder
+    private func searchDestination(_ result: SettingsSearchResult) -> some View {
+        let search = SettingsSearch(item: result.item, locale: locale)
+        switch result.screen {
+        case .app: AppSettingsView(settingsSearch: search)
+        case .safariMenu: SafariVCMenuSettingsView(settingsSearch: search)
+        case .safariConfiguration: SafariVCConfigurationSettingsView(settingsSearch: search, webViewID: $webViewID)
+        default: EmptyView()
+        }
+    }
 }
 
 // MARK: - SafariVC Configuration Settings
 
 struct SafariVCConfigurationSettingsView: View {
+    @State var settingsSearch = SettingsSearch()
+    @State private var didLoadFromStorage = false
     @Environment(\.dismiss) private var dismiss
     @Binding var webViewID: UUID
 
@@ -120,7 +138,7 @@ struct SafariVCConfigurationSettingsView: View {
     }
 
     var body: some View {
-        List {
+        SettingsSearchList(screen: .safariConfiguration, search: $settingsSearch) {
             behaviorSection
             uiStyleSection
             colorsSection
@@ -151,7 +169,11 @@ struct SafariVCConfigurationSettingsView: View {
             }
         }
         .animation(.easeInOut(duration: 0.2), value: hasChanges)
-        .onAppear { loadFromStorage() }
+        .onAppear {
+            guard !didLoadFromStorage else { return }
+            loadFromStorage()
+            didLoadFromStorage = true
+        }
     }
 
     private func loadFromStorage() {
@@ -186,11 +208,13 @@ struct SafariVCConfigurationSettingsView: View {
                 isOn: $entersReaderIfAvailable,
                 info: "Automatically enters Reader mode if available for the page."
             )
+            .settingsSearchItem("safariEntersReaderIfAvailable")
             SettingToggleRow(
                 title: "Bar Collapsing",
                 isOn: $barCollapsingEnabled,
                 info: "Allows the navigation bar to collapse when scrolling down."
             )
+            .settingsSearchItem("safariBarCollapsingEnabled")
         } header: {
             Text("Behavior")
         }
@@ -204,6 +228,7 @@ struct SafariVCConfigurationSettingsView: View {
                 Text("Close").tag(1)
                 Text("Cancel").tag(2)
             }
+            .settingsSearchItem("safariDismissButtonStyle")
         } header: {
             Text("UI Style")
         }
@@ -218,12 +243,14 @@ struct SafariVCConfigurationSettingsView: View {
                 info: "Tint color for buttons and other controls.",
                 deprecatedInfo: "Deprecated in iOS 26. Preserved for iOS 18.4-25 compatibility."
             )
+            .settingsSearchItem("safariControlTintColorHex")
             ColorPickerRow(
                 title: "Bar Tint",
                 colorHex: $barTintColorHex,
                 info: "Background color of the navigation bar.",
                 deprecatedInfo: "Deprecated in iOS 26. Preserved for iOS 18.4-25 compatibility."
             )
+            .settingsSearchItem("safariBarTintColorHex")
         } header: {
             Text("Colors")
         } footer: {
@@ -238,6 +265,7 @@ struct SafariVCConfigurationSettingsView: View {
                 widthRatio: $widthRatio,
                 heightRatio: $heightRatio
             )
+            .settingsSearchItem("webViewSize")
         } header: {
             Text("Size")
         }

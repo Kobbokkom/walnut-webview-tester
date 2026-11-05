@@ -10,6 +10,8 @@ import SwiftUI
 // MARK: - Menu Settings View (Unified Toolbar + AppBar)
 
 struct MenuSettingsView: View {
+    @State var settingsSearch = SettingsSearch()
+    @State private var didLoadFromStorage = false
     @Environment(\.dismiss) private var dismiss
     @Environment(\.editMode) private var editMode
 
@@ -42,7 +44,7 @@ struct MenuSettingsView: View {
     }
 
     var body: some View {
-        List {
+        SettingsSearchList(screen: .menu, search: $settingsSearch) {
             // MARK: - Toolbar Section
             Section {
                 ForEach(toolbarItems) { item in
@@ -53,12 +55,14 @@ struct MenuSettingsView: View {
                         isVisible: item.isVisible,
                         onToggle: { toggleToolbarItem(item) }
                     )
+                    .settingsSearchItem("toolbar.\(item.menuItem.rawValue)")
                 }
                 .onMove(perform: moveToolbarItems)
             } header: {
                 SectionHeader(
                     title: "Toolbar",
                     subtitle: "DevTools menu items. Long press to reorder.",
+                    isSearching: settingsSearch.isActive,
                     onAll: { enableAllToolbar() },
                     onNone: { disableAllToolbar() }
                 )
@@ -74,12 +78,14 @@ struct MenuSettingsView: View {
                         isVisible: item.isVisible,
                         onToggle: { toggleAppBarItem(item) }
                     )
+                    .settingsSearchItem("appBar.\(item.menuItem.rawValue)")
                 }
                 .onMove(perform: moveAppBarItems)
             } header: {
                 SectionHeader(
                     title: "App Bar",
                     subtitle: "Navigation buttons. Info and Settings are always visible.",
+                    isSearching: settingsSearch.isActive,
                     onAll: { enableAllAppBar() },
                     onNone: { disableAllAppBar() }
                 )
@@ -122,6 +128,8 @@ struct MenuSettingsView: View {
         }
         .animation(.easeInOut(duration: 0.2), value: hasChanges)
         .onAppear {
+            guard !didLoadFromStorage else { return }
+            didLoadFromStorage = true
             loadFromStorage()
             editMode?.wrappedValue = .active
         }
@@ -175,6 +183,7 @@ struct MenuSettingsView: View {
     }
 
     private func moveToolbarItems(from source: IndexSet, to destination: Int) {
+        guard !settingsSearch.isActive else { return }
         toolbarItems.move(fromOffsets: source, toOffset: destination)
     }
 
@@ -202,6 +211,7 @@ struct MenuSettingsView: View {
     }
 
     private func moveAppBarItems(from source: IndexSet, to destination: Int) {
+        guard !settingsSearch.isActive else { return }
         appBarItems.move(fromOffsets: source, toOffset: destination)
     }
 
@@ -236,6 +246,7 @@ struct MenuSettingsView: View {
 private struct SectionHeader: View {
     let title: LocalizedStringKey
     let subtitle: LocalizedStringKey
+    let isSearching: Bool
     let onAll: () -> Void
     let onNone: () -> Void
 
@@ -244,16 +255,20 @@ private struct SectionHeader: View {
             HStack {
                 Text(title)
                 Spacer()
-                Button("All") { onAll() }
-                    .font(.caption)
-                Text("/")
-                    .foregroundStyle(.tertiary)
-                Button("None") { onNone() }
-                    .font(.caption)
+                if !isSearching {
+                    Button("All") { onAll() }
+                        .font(.caption)
+                    Text("/")
+                        .foregroundStyle(.tertiary)
+                    Button("None") { onNone() }
+                        .font(.caption)
+                }
             }
-            Text(subtitle)
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            if !isSearching {
+                Text(subtitle)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
         }
         .textCase(nil)
     }

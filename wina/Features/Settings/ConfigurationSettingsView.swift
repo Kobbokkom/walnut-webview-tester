@@ -10,6 +10,8 @@ import SwiftUI
 // MARK: - Configuration Settings View (Requires WebView Reload)
 
 struct ConfigurationSettingsView: View {
+    @State var settingsSearch = SettingsSearch()
+    @State private var didLoadFromStorage = false
     @Environment(\.dismiss) private var dismiss
     @Binding var webViewID: UUID
     @Binding var loadedURL: String
@@ -81,7 +83,7 @@ struct ConfigurationSettingsView: View {
     }
 
     var body: some View {
-        List {
+        SettingsSearchList(screen: .configuration, search: $settingsSearch) {
             configCoreSection
             configMediaSection
             configContentModeSection
@@ -114,7 +116,11 @@ struct ConfigurationSettingsView: View {
             }
         }
         .animation(.easeInOut(duration: 0.2), value: hasChanges)
-        .onAppear { loadFromStorage() }
+        .onAppear {
+            guard !didLoadFromStorage else { return }
+            loadFromStorage()
+            didLoadFromStorage = true
+        }
     }
 
     private func loadFromStorage() {
@@ -191,11 +197,13 @@ struct ConfigurationSettingsView: View {
                 isOn: $enableJavaScript,
                 info: "Master switch for all JavaScript execution in WebView."
             )
+            .settingsSearchItem("enableJavaScript")
             SettingToggleRow(
                 title: "Content JavaScript",
                 isOn: $allowsContentJavaScript,
                 info: "Controls scripts from web pages only. App-injected scripts still work when disabled."
             )
+            .settingsSearchItem("allowsContentJavaScript")
             HStack {
                 Text("Minimum Font Size")
                 Spacer()
@@ -206,6 +214,7 @@ struct ConfigurationSettingsView: View {
                 Text("pt")
                     .foregroundStyle(.secondary)
             }
+            .settingsSearchItem("minimumFontSize")
         } header: {
             Text(verbatim: "Core")
         }
@@ -219,21 +228,25 @@ struct ConfigurationSettingsView: View {
                 isOn: $mediaAutoplay,
                 info: "Allows videos with autoplay attribute to start without user interaction."
             )
+            .settingsSearchItem("mediaAutoplay")
             SettingToggleRow(
                 title: "Inline Playback",
                 isOn: $inlineMediaPlayback,
                 info: "Plays videos inline instead of fullscreen. Required for background video effects."
             )
+            .settingsSearchItem("inlineMediaPlayback")
             SettingToggleRow(
                 title: "AirPlay",
                 isOn: $allowsAirPlay,
                 info: "Enables streaming media to Apple TV and other AirPlay devices."
             )
+            .settingsSearchItem("allowsAirPlay")
             SettingToggleRow(
                 title: "Picture in Picture",
                 isOn: $allowsPictureInPicture,
                 info: "Allows videos to continue playing in a floating window."
             )
+            .settingsSearchItem("allowsPictureInPicture")
         } header: {
             Text("Media")
         }
@@ -249,6 +262,7 @@ struct ConfigurationSettingsView: View {
             }
             .pickerStyle(.inline)
             .labelsHidden()
+            .settingsSearchItem("preferredContentMode")
         } header: {
             Text(verbatim: "Content Mode")
         }
@@ -262,22 +276,26 @@ struct ConfigurationSettingsView: View {
                 isOn: $javaScriptCanOpenWindows,
                 info: "Allows window.open() without user gesture. Disable to block pop-ups."
             )
+            .settingsSearchItem("javaScriptCanOpenWindows")
             SettingToggleRow(
                 title: "Fraudulent Website Warning",
                 isOn: $fraudulentWebsiteWarning,
                 info: "Shows warning for suspected phishing or malware sites."
             )
+            .settingsSearchItem("fraudulentWebsiteWarning")
             SettingToggleRow(
                 title: "Element Fullscreen API",
                 isOn: $elementFullscreenEnabled,
                 info: "Allows elements to enter fullscreen mode. Full API available on iPad only; iPhone is limited to video elements.",
                 disabled: !isIPad
             )
+            .settingsSearchItem("elementFullscreenEnabled")
             SettingToggleRow(
                 title: "Suppress Incremental Rendering",
                 isOn: $suppressesIncrementalRendering,
                 info: "Waits for full page load before displaying. May feel slower but cleaner."
             )
+            .settingsSearchItem("suppressesIncrementalRendering")
         } header: {
             Text("Behavior")
         }
@@ -291,21 +309,25 @@ struct ConfigurationSettingsView: View {
                 isOn: $detectPhoneNumbers,
                 info: "Makes phone numbers tappable to call."
             )
+            .settingsSearchItem("detectPhoneNumbers")
             SettingToggleRow(
                 title: "Links",
                 isOn: $detectLinks,
                 info: "Converts URL-like text to tappable links."
             )
+            .settingsSearchItem("detectLinks")
             SettingToggleRow(
                 title: "Addresses",
                 isOn: $detectAddresses,
                 info: "Makes addresses tappable to open in Maps."
             )
+            .settingsSearchItem("detectAddresses")
             SettingToggleRow(
                 title: "Calendar Events",
                 isOn: $detectCalendarEvents,
                 info: "Detects dates and times, allowing to add to Calendar."
             )
+            .settingsSearchItem("detectCalendarEvents")
         } header: {
             Text("Data Detectors")
         }
@@ -319,11 +341,13 @@ struct ConfigurationSettingsView: View {
                 isOn: $privateBrowsing,
                 info: "Uses non-persistent data store. No cookies or cache saved after session."
             )
+            .settingsSearchItem("privateBrowsing")
             SettingToggleRow(
                 title: "Upgrade to HTTPS",
                 isOn: $upgradeToHTTPS,
                 info: "Automatically upgrades HTTP requests to HTTPS for known secure hosts."
             )
+            .settingsSearchItem("upgradeToHTTPS")
         } header: {
             Text("Privacy & Security")
         }

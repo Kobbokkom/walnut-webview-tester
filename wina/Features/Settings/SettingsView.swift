@@ -17,6 +17,7 @@ enum SettingsCopy {
 
 struct LiveSettingsView: View {
     @Environment(\.webViewContainerSize) private var containerSize
+    @State var settingsSearch = SettingsSearch()
     @Environment(\.dismiss) private var dismiss
 
     // AppStorage (persistent)
@@ -58,33 +59,38 @@ struct LiveSettingsView: View {
     }
 
     var body: some View {
-        List {
+        SettingsSearchList(screen: .live, search: $settingsSearch) {
             Section {
                 SettingToggleRow(
                     title: "Back/Forward Gestures",
                     isOn: $allowsBackForwardGestures,
                     info: "Enables swipe from edge to navigate history."
                 )
+                .settingsSearchItem("allowsBackForwardGestures")
                 SettingToggleRow(
                     title: "Link Preview",
                     isOn: $allowsLinkPreview,
                     info: "Shows page preview on long-press or 3D Touch on links."
                 )
+                .settingsSearchItem("allowsLinkPreview")
                 SettingToggleRow(
                     title: "Ignore Viewport Scale Limits",
                     isOn: $allowZoom,
                     info: "Allows pinch-to-zoom even when the page disables it via viewport meta tag."
                 )
+                .settingsSearchItem("allowZoom")
                 SettingToggleRow(
                     title: "Text Interaction",
                     isOn: $textInteractionEnabled,
                     info: "Enables text selection, copy, and other text interactions."
                 )
+                .settingsSearchItem("textInteractionEnabled")
                 SettingToggleRow(
                     title: "Find Interaction",
                     isOn: $findInteractionEnabled,
                     info: "Enables the system find panel (Cmd+F on iPad with keyboard)."
                 )
+                .settingsSearchItem("findInteractionEnabled")
             } header: {
                 Text("Navigation & Interaction")
             }
@@ -99,12 +105,14 @@ struct LiveSettingsView: View {
                     }
                     Slider(value: $pageZoom, in: 0.5...3.0, step: 0.1)
                 }
+                .settingsSearchItem("pageZoom")
 
                 ColorPickerRow(
                     title: "Under Page Background",
                     colorHex: $underPageBackgroundColorHex,
                     info: "Background color shown when scrolling beyond page bounds."
                 )
+                .settingsSearchItem("underPageBackgroundColor")
             } header: {
                 Text("Display")
             }
@@ -121,6 +129,7 @@ struct LiveSettingsView: View {
                             .lineLimit(1)
                     }
                 }
+                .settingsSearchItem("customUserAgent")
             } header: {
                 Text(verbatim: "Identity")
             }
@@ -130,6 +139,7 @@ struct LiveSettingsView: View {
                     widthRatio: $webViewWidthRatio,
                     heightRatio: $webViewHeightRatio
                 )
+                .settingsSearchItem("webViewSize")
             } header: {
                 Text("WebView Size")
             }
@@ -220,6 +230,8 @@ struct LiveSettingsView: View {
 // MARK: - Loaded Settings View (WebView Active - Menu Style)
 
 struct LoadedSettingsView: View {
+    @State var settingsSearch = SettingsSearch()
+    @Environment(\.locale) private var locale
     @Environment(\.dismiss) private var dismiss
     @Binding var webViewID: UUID
     @Binding var loadedURL: String
@@ -230,7 +242,10 @@ struct LoadedSettingsView: View {
 
     var body: some View {
         NavigationStack {
-            List {
+            SettingsSearchList(screen: .loaded, search: $settingsSearch) {
+                SettingsSearchResults(results: settingsSearch.results(in: .loaded, locale: locale)) { result in
+                    searchDestination(result)
+                }
                 Section {
                     NavigationLink {
                         AppSettingsView()
@@ -348,6 +363,7 @@ struct LoadedSettingsView: View {
                             }
                         }
                     }
+                    .settingsSearchItem("erudaModeEnabled")
                     .tint(.mint)
                 } header: {
                     Text("Third-Party Tools")
@@ -393,6 +409,21 @@ struct LoadedSettingsView: View {
             }
         }
     }
+
+    @ViewBuilder
+    private func searchDestination(_ result: SettingsSearchResult) -> some View {
+        let search = SettingsSearch(item: result.item, locale: locale)
+        switch result.screen {
+        case .app: AppSettingsView(settingsSearch: search)
+        case .menu: MenuSettingsView(settingsSearch: search)
+        case .live: LiveSettingsView(settingsSearch: search)
+        case .configuration:
+            ConfigurationSettingsView(settingsSearch: search, webViewID: $webViewID, loadedURL: $loadedURL, navigator: navigator)
+        case .emulation: EmulationSettingsView(settingsSearch: search, navigator: navigator)
+        case .permissions: PermissionsSettingsView(settingsSearch: search)
+        default: EmptyView()
+        }
+    }
 }
 
 // MARK: - Settings Category Row (Shared)
@@ -428,6 +459,8 @@ struct SettingsCategoryRow: View {
 
 struct SettingsView: View {
     @Environment(\.webViewContainerSize) private var containerSize
+    @State var settingsSearch = SettingsSearch()
+    @Environment(\.locale) private var locale
     @Environment(\.dismiss) private var dismiss
 
     // Core Settings
@@ -491,7 +524,10 @@ struct SettingsView: View {
 
     var body: some View {
         NavigationStack {
-            List {
+            SettingsSearchList(screen: .settings, search: $settingsSearch) {
+                SettingsSearchResults(results: settingsSearch.results(in: .settings, locale: locale)) { result in
+                    searchDestination(result)
+                }
                 appSection
                 coreSection
                 mediaSection
@@ -579,6 +615,7 @@ struct SettingsView: View {
                     }
                 }
             }
+            .settingsSearchItem("erudaModeEnabled")
             .tint(.mint)
         } header: {
             Text("Third-Party Tools")
@@ -633,11 +670,13 @@ struct SettingsView: View {
                 isOn: $enableJavaScript,
                 info: "Master switch for all JavaScript execution in WebView."
             )
+            .settingsSearchItem("enableJavaScript")
             SettingToggleRow(
                 title: "Content JavaScript",
                 isOn: $allowsContentJavaScript,
                 info: "Controls scripts from web pages only. App-injected scripts still work when disabled."
             )
+            .settingsSearchItem("allowsContentJavaScript")
             HStack {
                 Text("Minimum Font Size")
                 Spacer()
@@ -648,6 +687,7 @@ struct SettingsView: View {
                 Text("pt")
                     .foregroundStyle(.secondary)
             }
+            .settingsSearchItem("minimumFontSize")
         } header: {
             Text(verbatim: "Core")
         }
@@ -661,21 +701,25 @@ struct SettingsView: View {
                 isOn: $mediaAutoplay,
                 info: "Allows videos with autoplay attribute to start without user interaction."
             )
+            .settingsSearchItem("mediaAutoplay")
             SettingToggleRow(
                 title: "Inline Playback",
                 isOn: $inlineMediaPlayback,
                 info: "Plays videos inline instead of fullscreen. Required for background video effects."
             )
+            .settingsSearchItem("inlineMediaPlayback")
             SettingToggleRow(
                 title: "AirPlay",
                 isOn: $allowsAirPlay,
                 info: "Enables streaming media to Apple TV and other AirPlay devices."
             )
+            .settingsSearchItem("allowsAirPlay")
             SettingToggleRow(
                 title: "Picture in Picture",
                 isOn: $allowsPictureInPicture,
                 info: "Allows videos to continue playing in a floating window."
             )
+            .settingsSearchItem("allowsPictureInPicture")
         } header: {
             Text("Media")
         }
@@ -691,6 +735,7 @@ struct SettingsView: View {
             }
             .pickerStyle(.inline)
             .labelsHidden()
+            .settingsSearchItem("preferredContentMode")
         } header: {
             Text(verbatim: "Content Mode")
         }
@@ -704,11 +749,13 @@ struct SettingsView: View {
                 isOn: $javaScriptCanOpenWindows,
                 info: "Allows window.open() without user gesture. Disable to block pop-ups."
             )
+            .settingsSearchItem("javaScriptCanOpenWindows")
             SettingToggleRow(
                 title: "Fraudulent Website Warning",
                 isOn: $fraudulentWebsiteWarning,
                 info: "Shows warning for suspected phishing or malware sites."
             )
+            .settingsSearchItem("fraudulentWebsiteWarning")
             SettingToggleRow(
                 title: "Element Fullscreen API",
                 isOn: $elementFullscreenEnabled,
@@ -716,11 +763,13 @@ struct SettingsView: View {
                 disabled: !isIPad,
                 disabledLabel: "(iPad only)"
             )
+            .settingsSearchItem("elementFullscreenEnabled")
             SettingToggleRow(
                 title: "Suppress Incremental Rendering",
                 isOn: $suppressesIncrementalRendering,
                 info: "Waits for full page load before displaying. May feel slower but cleaner."
             )
+            .settingsSearchItem("suppressesIncrementalRendering")
         } header: {
             Text("Behavior")
         }
@@ -734,21 +783,25 @@ struct SettingsView: View {
                 isOn: $detectPhoneNumbers,
                 info: "Makes phone numbers tappable to call."
             )
+            .settingsSearchItem("detectPhoneNumbers")
             SettingToggleRow(
                 title: "Links",
                 isOn: $detectLinks,
                 info: "Converts URL-like text to tappable links."
             )
+            .settingsSearchItem("detectLinks")
             SettingToggleRow(
                 title: "Addresses",
                 isOn: $detectAddresses,
                 info: "Makes addresses tappable to open in Maps."
             )
+            .settingsSearchItem("detectAddresses")
             SettingToggleRow(
                 title: "Calendar Events",
                 isOn: $detectCalendarEvents,
                 info: "Detects dates and times, allowing to add to Calendar."
             )
+            .settingsSearchItem("detectCalendarEvents")
         } header: {
             Text("Data Detectors")
         }
@@ -762,11 +815,13 @@ struct SettingsView: View {
                 isOn: $privateBrowsing,
                 info: "Uses non-persistent data store. No cookies or cache saved after session."
             )
+            .settingsSearchItem("privateBrowsing")
             SettingToggleRow(
                 title: "Upgrade to HTTPS",
                 isOn: $upgradeToHTTPS,
                 info: "Automatically upgrades HTTP requests to HTTPS for known secure hosts."
             )
+            .settingsSearchItem("upgradeToHTTPS")
         } header: {
             Text("Privacy & Security")
         }
@@ -780,26 +835,31 @@ struct SettingsView: View {
                 isOn: $allowsBackForwardGestures,
                 info: "Enables swipe from edge to navigate history."
             )
+            .settingsSearchItem("allowsBackForwardGestures")
             SettingToggleRow(
                 title: "Link Preview",
                 isOn: $allowsLinkPreview,
                 info: "Shows page preview on long-press or 3D Touch on links."
             )
+            .settingsSearchItem("allowsLinkPreview")
             SettingToggleRow(
                 title: "Ignore Viewport Scale Limits",
                 isOn: $allowZoom,
                 info: "Allows pinch-to-zoom even when the page disables it via viewport meta tag."
             )
+            .settingsSearchItem("allowZoom")
             SettingToggleRow(
                 title: "Text Interaction",
                 isOn: $textInteractionEnabled,
                 info: "Enables text selection, copy, and other text interactions."
             )
+            .settingsSearchItem("textInteractionEnabled")
             SettingToggleRow(
                 title: "Find Interaction",
                 isOn: $findInteractionEnabled,
                 info: "Enables the system find panel (Cmd+F on iPad with keyboard)."
             )
+            .settingsSearchItem("findInteractionEnabled")
         } header: {
             Text("Navigation & Interaction")
         }
@@ -817,12 +877,14 @@ struct SettingsView: View {
                 }
                 Slider(value: $pageZoom, in: 0.5...3.0, step: 0.1)
             }
+            .settingsSearchItem("pageZoom")
 
             ColorPickerRow(
                 title: "Under Page Background",
                 colorHex: $underPageBackgroundColorHex,
                 info: "Background color shown when scrolling beyond page bounds."
             )
+            .settingsSearchItem("underPageBackgroundColor")
         } header: {
             Text("Display")
         }
@@ -842,6 +904,7 @@ struct SettingsView: View {
                         .lineLimit(1)
                 }
             }
+            .settingsSearchItem("customUserAgent")
         } header: {
             Text(verbatim: "Identity")
         }
@@ -854,6 +917,7 @@ struct SettingsView: View {
                 widthRatio: $webViewWidthRatio,
                 heightRatio: $webViewHeightRatio
             )
+            .settingsSearchItem("webViewSize")
         } header: {
             Text("WebView Size")
         }
@@ -906,6 +970,10 @@ struct SettingsView: View {
 
         // Third-Party Tools
         erudaModeEnabled = false
+    }
+
+    private func searchDestination(_ result: SettingsSearchResult) -> some View {
+        AppSettingsView(settingsSearch: SettingsSearch(item: result.item, locale: locale))
     }
 }
 

@@ -95,6 +95,7 @@ enum AppLanguage: String, CaseIterable, Identifiable {
 // MARK: - App Settings View
 
 struct AppSettingsView: View {
+    @State var settingsSearch = SettingsSearch()
     @Environment(\.dismiss) private var dismiss
     @Environment(\.presentationMode) private var presentationMode
 
@@ -120,7 +121,7 @@ struct AppSettingsView: View {
     }
 
     var body: some View {
-        List {
+        SettingsSearchList(screen: .app, search: $settingsSearch) {
             Section {
                 Picker(selection: $colorScheme) {
                     Text("System").tag("")
@@ -129,6 +130,7 @@ struct AppSettingsView: View {
                 } label: {
                     Text("Theme")
                 }
+                .settingsSearchItem("colorSchemeOverride")
             } header: {
                 Text("Appearance")
             }
@@ -146,6 +148,7 @@ struct AppSettingsView: View {
                             .foregroundStyle(.secondary)
                     }
                 }
+                .settingsSearchItem("appLanguage")
             } header: {
                 Text(verbatim: "Language")
             }
