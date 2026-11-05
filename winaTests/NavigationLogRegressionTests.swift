@@ -8,6 +8,8 @@ import XCTest
 final class NavigationLogRegressionTests: XCTestCase {
     private final class Coordinator: WKWebViewCoordinator {
         var onFinish: (() -> Void)?
+        var onCommit: (() -> Void)?
+        var onFailure: ((Error) -> Void)?
         var httpResponseCount = 0
 
         override func webView(_ webView: WKWebView, decidePolicyFor response: WKNavigationResponse,
@@ -19,6 +21,16 @@ final class NavigationLogRegressionTests: XCTestCase {
         override func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
             super.webView(webView, didFinish: navigation)
             onFinish?()
+        }
+
+        override func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
+            super.webView(webView, didCommit: navigation)
+            onCommit?()
+        }
+
+        override func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+            super.webView(webView, didFail: navigation, withError: error)
+            onFailure?(error)
         }
     }
 
@@ -107,7 +119,88 @@ final class NavigationLogRegressionTests: XCTestCase {
         }
     }
 
-    private func startHTTPServer() async throws -> NWListener {
+    func testCancelingOldDocumentDoesNotClearPreservedLogsDuringReload() async throws {
+        let server = try await startHTTPServer(delayBody: true)
+        defer { server.cancel() }
+        let port = try XCTUnwrap(server.port)
+        let url = try XCTUnwrap(URL(string: "http://127.0.0.1:\(port.rawValue)/slow"))
+        let defaults = UserDefaults.standard
+        let keys = [LogClearStrategy.consoleDefaultsKey, LogClearStrategy.migrationFlagKey, "consolePreserveLog"]
+        let previous = keys.map { defaults.object(forKey: $0) }
+        defaults.set(LogClearStrategy.page.rawValue, forKey: keys[0])
+        defaults.set(true, forKey: keys[1])
+        defaults.set(true, forKey: keys[2])
+        defer {
+            for (key, value) in zip(keys, previous) { defaults.set(value, forKey: key) }
+        }
+
+        let navigator = WebViewNavigator()
+        let webView = WKWebView(frame: .zero)
+        let coordinator = Coordinator(isLoading: .constant(false), navigator: navigator)
+        webView.navigationDelegate = coordinator
+        let loaded = expectation(description: "Slow document committed")
+        coordinator.onCommit = { loaded.fulfill() }
+        webView.load(URLRequest(url: url))
+        await fulfillment(of: [loaded], timeout: 5)
+
+        navigator.consoleManager.logs.append(ConsoleLog(type: .log, message: "keep this log", source: nil, timestamp: Date()))
+        let canceled = expectation(description: "First document canceled")
+        coordinator.onFailure = { error in
+            if (error as? URLError)?.code == .cancelled { canceled.fulfill() }
+        }
+        let reloaded = expectation(description: "Reload committed")
+        coordinator.onCommit = { reloaded.fulfill() }
+        XCTAssertNotNil(webView.reload())
+        await fulfillment(of: [canceled, reloaded], timeout: 5)
+        XCTAssertEqual(navigator.consoleManager.logs.map(\.message), ["keep this log"])
+        webView.navigationDelegate = nil
+        webView.stopLoading()
+    }
+
+    func testNetworkHookPreservesFetchAndXHRHeaderValues() async throws {
+        let server = try await startHTTPServer()
+        defer { server.cancel() }
+        let port = try XCTUnwrap(server.port)
+        let url = try XCTUnwrap(URL(string: "http://127.0.0.1:\(port.rawValue)/page"))
+        let navigator = WebViewNavigator()
+        let coordinator = WKWebViewCoordinator(isLoading: .constant(false), navigator: navigator)
+        let configuration = WKWebViewConfiguration()
+        let controller = configuration.userContentController
+        controller.add(coordinator, name: "networkRequest")
+        controller.addUserScript(WKUserScript(
+            source: WebViewScripts.networkHook, injectionTime: .atDocumentStart, forMainFrameOnly: true
+        ))
+        defer { controller.removeScriptMessageHandler(forName: "networkRequest") }
+        let webView = WKWebView(frame: .zero, configuration: configuration)
+        await webView.loadHTMLStringAsync("<html><body>header fixture</body></html>", baseURL: url)
+
+        _ = try await webView.callAsyncJavaScript("""
+        await fetch('/fetch', { headers: [['X-Walnut-Detail', 'first: second']] });
+        await new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open('GET', '/xhr');
+            xhr.onload = resolve;
+            xhr.onerror = reject;
+            xhr.send();
+        });
+        """, arguments: [:], in: nil, contentWorld: .page)
+        let iteratorResponse = try await webView.callAsyncJavaScript("""
+        function* pair() { yield 'X-One-Shot'; yield 'keep'; }
+        const response = await fetch('/iterator', { headers: [pair()] });
+        return response.status;
+        """, arguments: [:], in: nil, contentWorld: .page) as? Int
+        XCTAssertEqual(iteratorResponse, 200)
+        let captured = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+            let requests = navigator.networkManager.requests
+            let fetch = requests.first { $0.requestType == .fetch && $0.url.hasSuffix("/fetch") }
+            let xhr = requests.first { $0.requestType == .xhr }
+            return fetch?.requestHeaders?["x-walnut-detail"] == "first: second"
+                && xhr?.responseHeaders?["x-walnut-detail"] == "first: second"
+        }, object: nil)
+        await fulfillment(of: [captured], timeout: 3)
+    }
+
+    private func startHTTPServer(delayBody: Bool = false) async throws -> NWListener {
         let parameters = NWParameters.tcp
         parameters.requiredLocalEndpoint = .hostPort(host: "127.0.0.1", port: .any)
         let listener = try NWListener(using: parameters)
@@ -119,8 +212,17 @@ final class NavigationLogRegressionTests: XCTestCase {
             connection.start(queue: .main)
             connection.receive(minimumIncompleteLength: 1, maximumLength: 65536) { _, _, _, _ in
                 let body = "<html><body>navigation fixture</body></html>"
-                let response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: \(body.utf8.count)\r\nConnection: close\r\n\r\n" + body
-                connection.send(content: Data(response.utf8), completion: .contentProcessed { _ in connection.cancel() })
+                let trailing = delayBody ? String(repeating: " ", count: 4096) : ""
+                let response = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nX-Walnut-Detail: first: second\r\nContent-Length: \(body.utf8.count + trailing.utf8.count)\r\nConnection: close\r\n\r\n" + body
+                connection.send(content: Data(response.utf8), completion: .contentProcessed { _ in
+                    if delayBody {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                            connection.send(content: Data(trailing.utf8), completion: .contentProcessed { _ in connection.cancel() })
+                        }
+                    } else {
+                        connection.cancel()
+                    }
+                })
             }
         }
         listener.start(queue: .main)

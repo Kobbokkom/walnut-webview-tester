@@ -104,17 +104,22 @@ extension WebViewScripts {
             // Safely stringify headers
             function headersToObject(headers) {
                 if (!headers) return null;
-                var obj = {};
-                if (headers.forEach) {
-                    headers.forEach(function(value, key) {
-                        obj[key] = value;
-                    });
-                } else if (typeof headers === 'object') {
-                    for (var key in headers) {
-                        if (headers.hasOwnProperty(key)) {
-                            obj[key] = headers[key];
-                        }
+                var obj = Object.create(null);
+                if (Array.isArray(headers)) {
+                    // Do not consume a custom iterator before the native fetch reads it.
+                    var pairs = [];
+                    for (var i = 0; i < headers.length; i++) {
+                        var pair = headers[i];
+                        if (!Array.isArray(pair) || pair.length !== 2 ||
+                            typeof pair[0] !== 'string' || typeof pair[1] !== 'string') return null;
+                        pairs.push([pair[0], pair[1]]);
                     }
+                    headers = new Headers(pairs);
+                }
+                if (typeof headers.forEach === 'function') {
+                    headers.forEach(function(value, key) { obj[key] = value; });
+                } else if (typeof headers === 'object') {
+                    Object.keys(headers).forEach(function(key) { obj[key] = headers[key]; });
                 }
                 return Object.keys(obj).length > 0 ? obj : null;
             }
@@ -365,13 +370,13 @@ extension WebViewScripts {
 
                 function onLoad() {
                     removeListeners();
-                    var responseHeaders = {};
+                    var responseHeaders = Object.create(null);
                     var headerString = xhr.getAllResponseHeaders();
                     if (headerString) {
                         headerString.split('\\r\\n').forEach(function(line) {
-                            var parts = line.split(': ');
-                            if (parts.length === 2) {
-                                responseHeaders[parts[0]] = parts[1];
+                            var separator = line.indexOf(':');
+                            if (separator > 0) {
+                                responseHeaders[line.slice(0, separator)] = line.slice(separator + 1).trim();
                             }
                         });
                     }

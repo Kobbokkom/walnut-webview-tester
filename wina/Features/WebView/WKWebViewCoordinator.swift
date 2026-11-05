@@ -20,8 +20,9 @@ class WKWebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
     private weak var webView: WKWebView?
     // 마지막으로 커밋된 메인 프레임 URL을 기준점으로 사용합니다.
     private var lastCommittedMainFrameURL: URL?
-    // reload 직후 didCommit에서 clear 전략 중복 실행을 막습니다.
-    private var shouldSkipNextCommitClearStrategy: Bool = false
+    // Apply the reload exception only to the navigation started by that policy decision.
+    private var nextNavigationIsReload = false
+    private var reloadNavigation: WKNavigation?
     // reload 직후 Eruda init을 다시 실행해야 하는지를 추적합니다.
     private var shouldForceErudaInitOnNextFinish: Bool = false
     // didFinish 연속 호출 시 이전 Eruda 동기화 작업을 취소하고 최신 작업만 유지합니다.
@@ -292,6 +293,8 @@ class WKWebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
         erudaSyncTask?.cancel()
         erudaSyncTask = nil
         shouldForceErudaInitOnNextFinish = false
+        nextNavigationIsReload = false
+        reloadNavigation = nil
     }
 
     // MARK: - Clear Strategy
@@ -320,7 +323,6 @@ class WKWebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
         navigator?.networkManager.clearIfNotPreserved()
         navigator?.resourceManager.clearIfNotPreserved()
         resetActiveSnippets()
-        shouldSkipNextCommitClearStrategy = true
         scheduleForceErudaInitOnNextFinish()
     }
 
@@ -344,8 +346,9 @@ class WKWebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
         }
 
         // Handle reload: use preserveLog setting
-        if navigationAction.navigationType == .reload, isMainFrameNavigation {
-            prepareForManualReloadRequest()
+        if navigationAction.targetFrame?.isMainFrame == true {
+            nextNavigationIsReload = navigationAction.navigationType == .reload
+            if nextNavigationIsReload { prepareForManualReloadRequest() }
         }
 
         // Track document navigation for main frame only
@@ -381,6 +384,11 @@ class WKWebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
 
         // Allow default WKWebView behavior (including universal links opening external apps)
         decisionHandler(.allow)
+    }
+
+    func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
+        if nextNavigationIsReload { reloadNavigation = navigation }
+        nextNavigationIsReload = false
     }
 
     // Get response status and headers for document navigation
@@ -431,8 +439,8 @@ class WKWebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
         cancelPendingBridgeResponses()
         let committedURL = webView.url
 
-        if shouldSkipNextCommitClearStrategy {
-            shouldSkipNextCommitClearStrategy = false
+        if let navigation, navigation === reloadNavigation {
+            reloadNavigation = nil
             lastCommittedMainFrameURL = committedURL
             return
         }
@@ -459,7 +467,7 @@ class WKWebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
         }
         pendingDocumentRequestId = nil
         // reload 실패 시 다음 정상 탐색에 force-init이 남지 않도록 정리합니다.
-        shouldSkipNextCommitClearStrategy = false
+        if let navigation, navigation === reloadNavigation { reloadNavigation = nil }
         shouldForceErudaInitOnNextFinish = false
     }
 
@@ -477,7 +485,7 @@ class WKWebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
         }
         pendingDocumentRequestId = nil
         // provisional 실패도 동일하게 force-init 플래그를 정리합니다.
-        shouldSkipNextCommitClearStrategy = false
+        if let navigation, navigation === reloadNavigation { reloadNavigation = nil }
         shouldForceErudaInitOnNextFinish = false
     }
 
