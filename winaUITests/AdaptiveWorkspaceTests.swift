@@ -22,7 +22,9 @@ final class AdaptiveWorkspaceTests: XCTestCase {
         input.tap()
         input.typeText("https://example.com\n")
         let console = app.buttons["devTools.console"]
-        XCTAssertTrue(console.waitForExistence(timeout: 30))
+        let foundConsole = console.waitForExistence(timeout: 30)
+        capture("URL-submitted", app: app)
+        XCTAssertTrue(foundConsole)
         console.tap()
         XCTAssertTrue(app.buttons["closeDevTools"].firstMatch.waitForExistence(timeout: 10))
         capture("DevTools-initial", app: app)

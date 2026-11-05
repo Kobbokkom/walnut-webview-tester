@@ -86,6 +86,7 @@ extension ContentView {
                             .disabled(useCallbackTestPage)
                             .foregroundStyle(useCallbackTestPage ? .secondary : .primary)
                             .onSubmit {
+                                validateURL()
                                 if urlValidationState == .valid || useCallbackTestPage {
                                     textFieldFocused = false
                                     showDropdown = false
