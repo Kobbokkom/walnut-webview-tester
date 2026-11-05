@@ -327,6 +327,7 @@ struct StorageEditSheet: View {
 struct StorageAddSheet: View {
     let storageManager: StorageManager
     let storageType: StorageItem.StorageType
+    let pageURL: URL
     let onSave: () -> Void
 
     @Environment(\.dismiss) private var dismiss
@@ -335,6 +336,7 @@ struct StorageAddSheet: View {
     @State private var isSaving: Bool = false
     @State private var showJsonEditor: Bool = false
     @State private var didSave: Bool = false
+    @State private var showSaveFailure = false
 
     private var isValueJson: Bool {
         JsonParser.isValidJson(value)
@@ -420,6 +422,11 @@ struct StorageAddSheet: View {
             .sheet(isPresented: $showJsonEditor) {
                 JsonEditorSheet(jsonText: $value)
             }
+            .alert("Could not add item", isPresented: $showSaveFailure) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text("Check the current page, key and available storage, then try again.")
+            }
         }
     }
 
@@ -428,10 +435,12 @@ struct StorageAddSheet: View {
         Task {
             // Minify JSON before saving (storage typically stores compact JSON)
             let valueToSave = JsonParser.minify(value) ?? value
-            if await storageManager.setItem(key: key, value: valueToSave, type: storageType) {
+            if await storageManager.addItem(key: key, value: valueToSave, type: storageType, pageURL: pageURL) {
                 didSave = true
                 onSave()
                 dismiss()
+            } else {
+                showSaveFailure = true
             }
             isSaving = false
         }

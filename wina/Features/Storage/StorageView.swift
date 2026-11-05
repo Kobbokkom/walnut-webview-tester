@@ -9,113 +9,6 @@
 import SwiftUI
 import SwiftUIBackports
 
-// MARK: - Storage Item Model
-
-struct StorageItem: Identifiable, Equatable {
-    let id = UUID()
-    var key: String
-    var value: String
-    let storageType: StorageType
-    var cookieMetadata: CookieMetadata?
-    var origin: String?
-
-    enum StorageType: String, CaseIterable {
-        case localStorage
-        case sessionStorage
-        case cookies
-
-        var icon: String {
-            switch self {
-            case .localStorage: return "internaldrive"
-            case .sessionStorage: return "clock"
-            case .cookies: return "birthday.cake"
-            }
-        }
-
-        var label: String {
-            switch self {
-            case .localStorage: return "Local"
-            case .sessionStorage: return "Session"
-            case .cookies: return "Cookies"
-            }
-        }
-
-        var sortOrder: Int {
-            switch self {
-            case .localStorage: return 0
-            case .sessionStorage: return 1
-            case .cookies: return 2
-            }
-        }
-
-        var tintColor: Color {
-            switch self {
-            case .localStorage: return .blue
-            case .sessionStorage: return .orange
-            case .cookies: return .green
-            }
-        }
-    }
-
-    static func == (lhs: StorageItem, rhs: StorageItem) -> Bool {
-        lhs.id == rhs.id &&
-        lhs.key == rhs.key &&
-        lhs.value == rhs.value &&
-        lhs.storageType == rhs.storageType &&
-        lhs.cookieMetadata == rhs.cookieMetadata &&
-        lhs.origin == rhs.origin
-    }
-}
-
-// MARK: - Storage Value Type
-
-enum StorageValueType {
-    case json, number, bool, string, empty
-
-    static func detect(from value: String) -> StorageValueType {
-        if value.isEmpty { return .empty }
-        if JsonParser.isValidJson(value) { return .json }
-        if value.lowercased() == "true" || value.lowercased() == "false" { return .bool }
-        if Double(value) != nil { return .number }
-        return .string
-    }
-
-    var color: Color {
-        switch self {
-        case .json: return .purple
-        case .number: return .blue
-        case .bool: return .green
-        case .string: return .gray
-        case .empty: return .gray.opacity(0.5)
-        }
-    }
-
-    var badge: TypeBadge? {
-        switch self {
-        case .json:
-            return TypeBadge(text: "JSON", color: .purple, icon: "curlybraces")
-        case .number:
-            return TypeBadge(text: "Number", color: .blue, icon: "number")
-        case .bool:
-            return TypeBadge(text: "Boolean", color: .green, icon: "checkmark")
-        case .string:
-            return TypeBadge(text: "Text", color: .gray, icon: "textformat")
-        case .empty:
-            return nil
-        }
-    }
-
-    var label: String {
-        switch self {
-        case .json: return "JSON"
-        case .number: return "Number"
-        case .bool: return "Boolean"
-        case .string: return "Text"
-        case .empty: return "Empty"
-        }
-    }
-}
-
 // MARK: - Storage Manager
 
 protocol StorageNavigator: AnyObject {
@@ -270,55 +163,40 @@ class StorageManager {
         }
     }
 
-    // Set item in storage
     @MainActor
-    func setItem(
+    func addItem(
         key: String,
         value: String,
         type: StorageItem.StorageType,
-        cookieMetadata: CookieMetadata? = nil
+        pageURL: URL
     ) async -> Bool {
         guard let navigator else { return false }
 
-        // Use JSON encoding for safe JavaScript string escaping
-        guard let keyData = try? JSONSerialization.data(withJSONObject: key, options: .fragmentsAllowed),
-              let valueData = try? JSONSerialization.data(withJSONObject: value, options: .fragmentsAllowed),
-              let jsonKey = String(data: keyData, encoding: .utf8),
-              let jsonValue = String(data: valueData, encoding: .utf8)
-        else { return false }
-
-        let script: String
+        let operation: String
+        let arguments: [String]
         switch type {
-        case .localStorage:
-            script = "localStorage.setItem(\(jsonKey), \(jsonValue)); true;"
-        case .sessionStorage:
-            script = "sessionStorage.setItem(\(jsonKey), \(jsonValue)); true;"
+        case .localStorage, .sessionStorage:
+            arguments = [key, value]
+            let storage = type == .localStorage ? "localStorage" : "sessionStorage"
+            operation = """
+            const [key, value] = args;
+            if (\(storage).getItem(key) !== null) return false;
+            \(storage).setItem(key, value);
+            """
         case .cookies:
-            // Prefer native cookie set when we know domain/path metadata.
-            if let cookieMetadata,
-               let cookie = makeCookie(
-                name: key,
-                value: value,
-                metadata: cookieMetadata
-               ) {
-                await navigator.setCookie(cookie)
-                return true
-            }
             let escapedKey = key.replacingOccurrences(of: "=", with: "%3D")
             let escapedValue = value.replacingOccurrences(of: ";", with: "%3B")
-            let cookieString = "\(escapedKey)=\(escapedValue)"
-            guard let cookieData = try? JSONSerialization.data(
-                withJSONObject: cookieString,
-                options: .fragmentsAllowed
-            ),
-            let jsonCookie = String(data: cookieData, encoding: .utf8) else {
-                return false
-            }
-            script = "document.cookie = \(jsonCookie); true;"
+            let path = URLComponents(url: pageURL, resolvingAgainstBaseURL: false)?.percentEncodedPath ?? ""
+            arguments = [path.isEmpty ? "/" : path, "\(escapedKey)=\(escapedValue)"]
+            operation = """
+            const [path, cookie] = args;
+            if (location.pathname !== path) return false;
+            document.cookie = cookie;
+            """
         }
 
-        let result = await navigator.evaluateJavaScript(script)
-        return result as? Bool == true
+        guard let script = pageStorageScript(pageURL: pageURL, arguments: arguments, operation: operation) else { return false }
+        return await navigator.evaluateJavaScript(script) as? Bool == true
     }
 
     @MainActor
@@ -355,8 +233,9 @@ class StorageManager {
             // Keep the rename in one document and retain the original if the write fails.
             let script = """
             (function() {
-                const [origin, oldKey, newKey, value] = \(arguments);
-                if (location.origin !== origin) return false;
+                const args = \(arguments);
+                if (location.origin !== args[0]) return false;
+                const oldKey = args[1], newKey = args[2], value = args[3];
                 const storage = \(storage);
                 if (oldKey !== newKey && storage.getItem(newKey) !== null) return false;
                 storage.setItem(newKey, value);
@@ -390,9 +269,9 @@ class StorageManager {
         let storage = item.storageType == .localStorage ? "localStorage" : "sessionStorage"
         let script = """
         (function() {
-            const [origin, key] = \(arguments);
-            if (location.origin !== origin) return false;
-            \(storage).removeItem(key);
+            const args = \(arguments);
+            if (location.origin !== args[0]) return false;
+            \(storage).removeItem(args[1]);
             return true;
         })();
         """
@@ -403,7 +282,7 @@ class StorageManager {
 
     // Clear all items of a type
     @MainActor
-    func clearStorage(type: StorageItem.StorageType) async -> Bool {
+    func clearStorage(type: StorageItem.StorageType, pageURL: URL? = nil) async -> Bool {
         guard let navigator else { return false }
 
         // Use native WKHTTPCookieStore for cookies (more reliable)
@@ -412,18 +291,33 @@ class StorageManager {
             return true
         }
 
-        let script: String
-        switch type {
-        case .localStorage:
-            script = "localStorage.clear(); true;"
-        case .sessionStorage:
-            script = "sessionStorage.clear(); true;"
-        case .cookies:
-            return false  // Handled above
-        }
+        let storage = type == .localStorage ? "localStorage" : "sessionStorage"
+        guard let pageURL, let script = pageStorageScript(pageURL: pageURL, operation: "\(storage).clear();") else { return false }
+        return await navigator.evaluateJavaScript(script) as? Bool == true
+    }
 
-        let result = await navigator.evaluateJavaScript(script)
-        return result as? Bool == true
+    private func pageStorageScript(pageURL: URL, arguments: [String] = [], operation: String) -> String? {
+        let originURL = pageURL.scheme?.lowercased() == "blob"
+            ? URL(string: String(pageURL.absoluteString.dropFirst("blob:".count)))
+            : pageURL
+        guard let originURL, let scheme = originURL.scheme?.lowercased(), scheme == "https" || scheme == "http",
+              let host = originURL.host?.lowercased(), !host.isEmpty else { return nil }
+        let originHost = host.contains(":") ? "[\(host)]" : host
+        var origin = "\(scheme)://\(originHost)"
+        if let port = originURL.port, port != (scheme == "https" ? 443 : 80) {
+            origin += ":\(port)"
+        }
+        guard let data = try? JSONSerialization.data(withJSONObject: [origin, arguments]),
+              let json = String(data: data, encoding: .utf8) else { return nil }
+        return """
+        (function() {
+            const values = \(json);
+            if (location.origin !== values[0]) return false;
+            const args = values[1];
+            \(operation)
+            return true;
+        })();
+        """
     }
 
     @MainActor
@@ -484,6 +378,12 @@ private struct StorageScrollMetrics: Equatable {
     let viewportHeight: CGFloat
 }
 
+private struct StorageAddTarget: Identifiable {
+    let id = UUID()
+    let type: StorageItem.StorageType
+    let pageURL: URL
+}
+
 struct StorageView: View {
     let storageManager: StorageManager
     let navigator: WebViewNavigator?
@@ -494,7 +394,8 @@ struct StorageView: View {
     @State private var searchText: String = ""
     @State private var shareItem: StorageShareContent?
     @State private var selectedItem: StorageItem?
-    @State private var showAddSheet: Bool = false
+    @State private var addTarget: StorageAddTarget?
+    @State private var showClearFailure = false
     @State private var lastObservedURL: URL?
     @State private var urlCheckTimer: Timer?
     @State private var scrollOffset: CGFloat = 0
@@ -600,14 +501,20 @@ struct StorageView: View {
                 }
             )
         }
-        .sheet(isPresented: $showAddSheet) {
+        .sheet(item: $addTarget) { target in
             StorageAddSheet(
                 storageManager: storageManager,
-                storageType: selectedType,
+                storageType: target.type,
+                pageURL: target.pageURL,
                 onSave: {
                     Task { await storageManager.refresh(pageURL: navigator?.currentURL) }
                 }
             )
+        }
+        .alert("Could not clear storage", isPresented: $showClearFailure) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Refresh storage for the current page and try again.")
         }
         .task {
             await AdManager.shared.showInterstitialAd(
@@ -652,17 +559,21 @@ struct StorageView: View {
                 icon: "trash",
                 isDisabled: filteredItems.isEmpty || showsAllStorage
             ) {
+                let type = selectedType
+                let pageURL = storageManager.currentURL
                 Task {
-                    if selectedType == .cookies {
+                    if type == .cookies {
                         // For cookies: clear current domain only
-                        guard let host = currentHost else { return }
+                        guard let host = pageURL?.host else { return }
                         if await storageManager.clearCookies(forDomain: host) {
                             await storageManager.refresh(pageURL: navigator?.currentURL)
                         }
                     } else {
                         // For localStorage/sessionStorage: clear all
-                        if await storageManager.clearStorage(type: selectedType) {
+                        if await storageManager.clearStorage(type: type, pageURL: pageURL) {
                             await storageManager.refresh(pageURL: navigator?.currentURL)
+                        } else {
+                            showClearFailure = true
                         }
                     }
                 }
@@ -713,9 +624,10 @@ struct StorageView: View {
                 },
                 .init(
                     icon: "plus",
-                    isDisabled: showsAllStorage
+                    isDisabled: showsAllStorage || navigator?.currentURL == nil
                 ) {
-                    showAddSheet = true
+                    guard let pageURL = navigator?.currentURL else { return }
+                    addTarget = StorageAddTarget(type: selectedType, pageURL: pageURL)
                 },
                 .init(icon: "arrow.clockwise") {
                     Task { await storageManager.refresh(pageURL: navigator?.currentURL) }

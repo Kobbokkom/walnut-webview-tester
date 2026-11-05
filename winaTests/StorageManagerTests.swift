@@ -7,6 +7,7 @@
 
 import Foundation
 import JavaScriptCore
+import WebKit
 import XCTest
 @testable import wina
 
@@ -210,7 +211,7 @@ final class StorageManagerTests: XCTestCase {
         mock.jsResult = true
 
         manager.setNavigator(mock)
-        let result = await manager.clearStorage(type: .localStorage)
+        let result = await manager.clearStorage(type: .localStorage, pageURL: URL(string: "https://example.com"))
 
         XCTAssertTrue(result)
         XCTAssertTrue(mock.scripts.last?.contains("localStorage.clear()") ?? false)
@@ -252,16 +253,73 @@ final class StorageManagerTests: XCTestCase {
     // MARK: - Set Item Tests
 
     @MainActor
-    func testSetItemForLocalStorage() async {
+    func testSetItemForLocalStorage() async throws {
         let manager = StorageManager()
         let mock = MockStorageNavigator()
         mock.jsResult = true
 
         manager.setNavigator(mock)
-        let result = await manager.setItem(key: "newKey", value: "newValue", type: .localStorage)
+        let url = try XCTUnwrap(URL(string: "https://example.com"))
+        let result = await manager.addItem(key: "newKey", value: "newValue", type: .localStorage, pageURL: url)
 
         XCTAssertTrue(result)
         XCTAssertTrue(mock.scripts.last?.contains("localStorage.setItem") ?? false)
+    }
+
+    @MainActor
+    func testAddAndClearRespectDraftOriginAndLiveKeys() async throws {
+        let configuration = WKWebViewConfiguration()
+        configuration.websiteDataStore = .nonPersistent()
+        let webView = WKWebView(frame: .zero, configuration: configuration)
+        let oldURL = try XCTUnwrap(URL(string: "https://old.example"))
+        let pageURL = try XCTUnwrap(URL(string: "https://current.example:443/page"))
+        await webView.loadHTMLStringAsync("<html><body>storage fixture</body></html>", baseURL: pageURL)
+        _ = try await webView.evaluateJavaScript("localStorage.setItem('late', 'existing'); sessionStorage.setItem('late', 'existing');")
+        let navigator = WebViewNavigator()
+        navigator.attach(to: webView)
+        defer { navigator.detach() }
+        let manager = StorageManager()
+        manager.setNavigator(navigator)
+
+        for type in [StorageItem.StorageType.localStorage, .sessionStorage] {
+            let wrongOrigin = await manager.addItem(key: "new", value: "wrong", type: type, pageURL: oldURL)
+            let duplicate = await manager.addItem(key: "late", value: "overwrite", type: type, pageURL: pageURL)
+            let wrongClear = await manager.clearStorage(type: type, pageURL: oldURL)
+            XCTAssertFalse(wrongOrigin)
+            XCTAssertFalse(duplicate)
+            XCTAssertFalse(wrongClear)
+            let storage = type.rawValue
+            let untouched = try await webView.evaluateJavaScript("[\(storage).getItem('late'), \(storage).getItem('new') === null]") as? [NSObject]
+            XCTAssertEqual(untouched, ["existing" as NSString, NSNumber(value: true)])
+
+            let added = await manager.addItem(key: "new", value: "saved", type: type, pageURL: pageURL)
+            XCTAssertTrue(added)
+            let value = try await webView.evaluateJavaScript("\(storage).getItem('new')") as? String
+            XCTAssertEqual(value, "saved")
+            let cleared = await manager.clearStorage(type: type, pageURL: pageURL)
+            XCTAssertTrue(cleared)
+            let count = try await webView.evaluateJavaScript("\(storage).length") as? Int
+            XCTAssertEqual(count, 0)
+        }
+
+        webView.navigationDelegate = nil
+        _ = try await webView.evaluateJavaScript("""
+        location.href = URL.createObjectURL(new Blob(['<title>Blob Storage Fixture</title>'], {type: 'text/html'}));
+        true;
+        """)
+        let loaded = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+            webView.url?.scheme == "blob" && webView.title == "Blob Storage Fixture"
+        }, object: nil)
+        await fulfillment(of: [loaded], timeout: 5)
+        let blobURL = try XCTUnwrap(webView.url)
+        for type in [StorageItem.StorageType.localStorage, .sessionStorage] {
+            let added = await manager.addItem(key: "blob", value: "kept", type: type, pageURL: blobURL)
+            XCTAssertTrue(added)
+            let value = try await webView.evaluateJavaScript("\(type.rawValue).getItem('blob')") as? String
+            XCTAssertEqual(value, "kept")
+            let cleared = await manager.clearStorage(type: type, pageURL: blobURL)
+            XCTAssertTrue(cleared)
+        }
     }
 
     @MainActor
@@ -326,10 +384,11 @@ final class StorageManagerTests: XCTestCase {
     }
 
     @MainActor
-    func testSetItemWithoutNavigatorReturnsFalse() async {
+    func testSetItemWithoutNavigatorReturnsFalse() async throws {
         let manager = StorageManager()
 
-        let result = await manager.setItem(key: "key", value: "value", type: .localStorage)
+        let url = try XCTUnwrap(URL(string: "https://example.com"))
+        let result = await manager.addItem(key: "key", value: "value", type: .localStorage, pageURL: url)
 
         XCTAssertFalse(result)
     }
