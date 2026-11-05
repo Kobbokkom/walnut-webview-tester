@@ -68,6 +68,32 @@ final class URLStorageManagerTests: XCTestCase {
 
     // MARK: - Bookmark Tests
 
+    func testEveryBookmarkMutationPersistsTheCurrentSnapshot() throws {
+        for index in 0..<20 {
+            let url = "https://persist\(index).example"
+            manager.addBookmark(url)
+            var data = try XCTUnwrap(UserDefaults.standard.data(forKey: bookmarksKey))
+            XCTAssertEqual(try JSONDecoder().decode([String].self, from: data), manager.bookmarks)
+            manager.removeBookmark(url)
+            data = try XCTUnwrap(UserDefaults.standard.data(forKey: bookmarksKey))
+            XCTAssertEqual(try JSONDecoder().decode([String].self, from: data), manager.bookmarks)
+        }
+    }
+
+    func testEveryHistoryMutationPersistsTheCurrentSnapshot() throws {
+        for index in 0..<20 {
+            manager.addToHistory("https://persist\(index).example")
+            let data = try XCTUnwrap(UserDefaults.standard.data(forKey: historyKey))
+            XCTAssertEqual(try JSONDecoder().decode([String].self, from: data), manager.history)
+        }
+        manager.removeFromHistory("https://persist19.example")
+        var data = try XCTUnwrap(UserDefaults.standard.data(forKey: historyKey))
+        XCTAssertEqual(try JSONDecoder().decode([String].self, from: data), manager.history)
+        manager.clearHistory()
+        data = try XCTUnwrap(UserDefaults.standard.data(forKey: historyKey))
+        XCTAssertEqual(try JSONDecoder().decode([String].self, from: data), [])
+    }
+
     func testAddBookmark() {
         let url = "https://example.com"
 

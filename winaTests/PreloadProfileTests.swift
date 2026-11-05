@@ -551,29 +551,6 @@ final class PreloadProfileTests: XCTestCase {
             context.evaluateScript("pageObserved[1].__winaPreloadNativePostMessageToken === undefined").toBool())
     }
 
-    func testNativePostMessageTokenIsNotEnumerable() throws {
-        let profile = WebViewPreloadProfile(
-            isEnabled: true,
-            capturesWindowPostMessage: true
-        )
-        let context = makeJavaScriptContext()
-
-        context.evaluateScript("var window = this; window.addEventListener = function() {};")
-        context.evaluateScript(PreloadScriptBuilder.bootstrapScript(for: profile))
-        context.evaluateScript(
-            """
-            var message = { type: 'nativeResponse' };
-            window.__winaPreloadMarkNativePostMessage(message);
-            var tokenKey = window.__winaPreloadNativePostMessageTokenKey;
-            var hasToken = message[tokenKey] !== undefined;
-            var enumerableKeys = Object.keys(message);
-            """
-        )
-
-        XCTAssertTrue(context.evaluateScript("hasToken").toBool())
-        XCTAssertFalse(context.evaluateScript("enumerableKeys.indexOf(tokenKey) !== -1").toBool())
-    }
-
     func testPostMessageCaptureSkipsNativePrimitiveResponses() throws {
         let profile = WebViewPreloadProfile(
             isEnabled: true,
@@ -664,29 +641,6 @@ final class PreloadProfileTests: XCTestCase {
 
         XCTAssertEqual(context.evaluateScript("captured.length").toInt32(), 1)
         XCTAssertEqual(context.evaluateScript("captured[0].data.type").toString(), "pageMessage")
-    }
-
-    func testNativeArrayResponseMarkerQueueIsCapped() throws {
-        let profile = WebViewPreloadProfile(
-            isEnabled: true,
-            capturesWindowPostMessage: true
-        )
-        let context = makeJavaScriptContext()
-
-        context.evaluateScript("var window = this; window.addEventListener = function() {};")
-        context.evaluateScript(PreloadScriptBuilder.bootstrapScript(for: profile))
-        context.evaluateScript(
-            """
-            for (var i = 0; i < 25; i += 1) {
-                window.__winaPreloadMarkNativePostMessage([{ index: i }]);
-            }
-            """
-        )
-
-        XCTAssertEqual(
-            context.evaluateScript("window.__winaPreloadNativePostMessagePrimitiveQueue.length").toInt32(),
-            20
-        )
     }
 
     func testPreloadBridgeLogTruncatesLargeBodies() {

@@ -71,11 +71,8 @@ final class URLStorageManager {
     }
 
     private func saveBookmarks() {
-        let toSave = bookmarks
-        Task.detached(priority: .utility) {
-            if let data = try? JSONEncoder().encode(toSave) {
-                UserDefaults.standard.set(data, forKey: self.bookmarksKey)
-            }
+        if let data = try? JSONEncoder().encode(bookmarks) {
+            UserDefaults.standard.set(data, forKey: bookmarksKey)
         }
     }
 
@@ -109,11 +106,8 @@ final class URLStorageManager {
     }
 
     private func saveHistory() {
-        let toSave = history
-        Task.detached(priority: .utility) {
-            if let data = try? JSONEncoder().encode(toSave) {
-                UserDefaults.standard.set(data, forKey: self.historyKey)
-            }
+        if let data = try? JSONEncoder().encode(history) {
+            UserDefaults.standard.set(data, forKey: historyKey)
         }
     }
 

@@ -73,10 +73,11 @@ enum PreloadScriptBuilder {
             return """
                 (function() {
                 var response = \(responseLiteral);
-                if (typeof window.__winaPreloadMarkNativePostMessage === 'function') {
-                    window.__winaPreloadMarkNativePostMessage(response);
+                if (typeof window.__winaPreloadPostNativeMessage === 'function') {
+                    window.__winaPreloadPostNativeMessage(response);
+                } else {
+                    window.postMessage(response, '*');
                 }
-                window.postMessage(response, '*');
                 })();
                 """
 
@@ -164,92 +165,33 @@ enum PreloadScriptBuilder {
                 return target;
             };
 
-            window.__winaPreloadNativePostMessageTokenKey = '__winaPreloadNativePostMessageToken';
-            window.__winaPreloadNativePostMessageTokens = window.__winaPreloadNativePostMessageTokens || {};
-            window.__winaPreloadNativePostMessagePrimitiveQueue = window.__winaPreloadNativePostMessagePrimitiveQueue || [];
-
-            window.__winaPreloadSerializePostMessageValue = function(value) {
-                try {
-                    return JSON.stringify(value);
-                } catch (_) {
-                    return String(value);
-                }
-            };
-
-            window.__winaPreloadPushNativePostMessagePrimitive = function(value) {
-                window.__winaPreloadNativePostMessagePrimitiveQueue.push(
-                    window.__winaPreloadSerializePostMessageValue(value)
-                );
-                if (window.__winaPreloadNativePostMessagePrimitiveQueue.length > 20) {
-                    window.__winaPreloadNativePostMessagePrimitiveQueue.shift();
-                }
-            };
-
-            window.__winaPreloadMarkNativePostMessage = function(value) {
-                if (Array.isArray(value)) {
-                    window.__winaPreloadPushNativePostMessagePrimitive(value);
-                    return;
-                }
-
-                if (value !== null && (typeof value === 'object' || typeof value === 'function')) {
-                    var token = String(Date.now()) + ':' + String(Math.random());
-                    window.__winaPreloadNativePostMessageTokens[token] = true;
-                    try {
-                        Object.defineProperty(value, window.__winaPreloadNativePostMessageTokenKey, {
-                            value: token,
-                            enumerable: false,
-                            configurable: true
-                        });
-                    } catch (_) {
-                        value[window.__winaPreloadNativePostMessageTokenKey] = token;
-                    }
-                    return;
-                }
-
-                window.__winaPreloadPushNativePostMessagePrimitive(value);
-            };
-
-            window.__winaPreloadConsumeNativePostMessage = function(value) {
-                if (value !== null && (typeof value === 'object' || typeof value === 'function')) {
-                    var token = value[window.__winaPreloadNativePostMessageTokenKey];
-                    if (token && window.__winaPreloadNativePostMessageTokens[token]) {
-                        delete window.__winaPreloadNativePostMessageTokens[token];
-                        try {
-                            delete value[window.__winaPreloadNativePostMessageTokenKey];
-                        } catch (_) {}
-                        return true;
-                    }
-                    if (!Array.isArray(value)) {
-                        return false;
-                    }
-                }
-
-                var serialized = window.__winaPreloadSerializePostMessageValue(value);
-                var index = window.__winaPreloadNativePostMessagePrimitiveQueue.indexOf(serialized);
-                if (index !== -1) {
-                    window.__winaPreloadNativePostMessagePrimitiveQueue.splice(index, 1);
-                    return true;
-                }
-                return false;
-            };
         """
 
     private static let postMessageCaptureScript = """
-            window.addEventListener('message', function(event) {
-                try {
-                    if (typeof window.__winaPreloadConsumeNativePostMessage === 'function'
-                        && window.__winaPreloadConsumeNativePostMessage(event.data)) {
-                        return;
-                    }
-                    if (!window.webkit || !window.webkit.messageHandlers || !window.webkit.messageHandlers.winaPostMessage) {
-                        return;
-                    }
-                    window.webkit.messageHandlers.winaPostMessage.postMessage({
-                        origin: event.origin,
-                        data: event.data
-                    });
-                } catch (_) {}
-            });
+            (function() {
+                const tokenKey = '__winaPreloadNativePostMessageToken';
+                const token = String(Date.now()) + ':' + String(Math.random());
+                window.__winaPreloadPostNativeMessage = function(value) {
+                    window.postMessage({ [tokenKey]: token, payload: value }, '*');
+                };
+                // Unwrap transport metadata before page listeners, without altering the payload.
+                window.addEventListener('message', function(event) {
+                    try {
+                        const data = event.data;
+                        if (data && data[tokenKey] === token) {
+                            Object.defineProperty(event, 'data', { value: data.payload });
+                            return;
+                        }
+                        if (!window.webkit || !window.webkit.messageHandlers || !window.webkit.messageHandlers.winaPostMessage) {
+                            return;
+                        }
+                        window.webkit.messageHandlers.winaPostMessage.postMessage({
+                            origin: event.origin,
+                            data: data
+                        });
+                    } catch (_) {}
+                }, true);
+            })();
         """
 }
 

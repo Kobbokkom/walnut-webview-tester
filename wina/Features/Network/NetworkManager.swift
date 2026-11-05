@@ -374,6 +374,16 @@ class NetworkManager {
         requests.removeAll()
     }
 
+    func clearForNavigation(preserving requestID: String?) {
+        let preservedID = requestID.flatMap(UUID.init(uuidString:))
+        // Queue behind request insertion/response updates from the committing navigation.
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            self.bodyStorage.delete(ids: self.requests.filter { $0.id != preservedID }.map(\.id))
+            self.requests.removeAll { $0.id != preservedID }
+        }
+    }
+
     func clearIfNotPreserved() {
         guard !preserveLog else { return }
         clear()

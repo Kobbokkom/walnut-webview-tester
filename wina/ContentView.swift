@@ -319,6 +319,8 @@ struct ContentView: View {
                     erudaModeEnabled: erudaModeEnabled,
                     hasDockedDevTools: shouldDockDevTools && devToolsState.selectedTool != nil,
                     onHome: {
+                        screenRecorder.stopRecording()
+                        webViewNavigator.recorder.stopRecording()
                         // Close all DevTools overlays with single call
                         devToolsState.closeAll()
 

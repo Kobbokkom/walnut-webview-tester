@@ -24,7 +24,7 @@ struct WebViewContainer: View {
     // Core Settings
     @AppStorage("enableJavaScript") private var enableJavaScript: Bool = true
     @AppStorage("allowsContentJavaScript") private var allowsContentJavaScript: Bool = true
-    @AppStorage("allowZoom") private var allowZoom: Bool = true
+    @AppStorage("allowZoom") private var allowZoom: Bool = false
     @AppStorage("minimumFontSize") private var minimumFontSize: Double = 0
 
     // Media Settings
@@ -34,7 +34,7 @@ struct WebViewContainer: View {
     @AppStorage("allowsPictureInPicture") private var allowsPictureInPicture: Bool = true
 
     // Navigation & Gestures
-    @AppStorage("allowsBackForwardGestures") private var allowsBackForwardGestures: Bool = true
+    @AppStorage("allowsBackForwardGestures") private var allowsBackForwardGestures: Bool = false
     @AppStorage("allowsLinkPreview") private var allowsLinkPreview: Bool = true
 
     // Content Settings
@@ -141,11 +141,6 @@ struct WebViewContainer: View {
                             CopiedFeedbackToast(message: "Saved to Photos")
                                 .transition(.move(edge: .bottom).combined(with: .opacity))
                         }
-                        // Recording saved toast
-                        if navigator?.showRecordingSavedToast == true {
-                            CopiedFeedbackToast(message: "Recording Saved")
-                                .transition(.move(edge: .bottom).combined(with: .opacity))
-                        }
                     }
                 }
             }
@@ -165,6 +160,7 @@ struct WebViewContainer: View {
         // Core
         prefs.allowsContentJavaScript = enableJavaScript && allowsContentJavaScript
         config.defaultWebpagePreferences = prefs
+        config.ignoresViewportScaleLimits = allowZoom
         config.preferences.javaScriptCanOpenWindowsAutomatically = javaScriptCanOpenWindows
         config.preferences.isFraudulentWebsiteWarningEnabled = fraudulentWebsiteWarning
         config.preferences.minimumFontSize = CGFloat(minimumFontSize)
@@ -219,9 +215,8 @@ struct WKWebViewRepresentable: UIViewRepresentable {
     let navigator: WebViewNavigator?
 
     // Navigation & Gestures
-    @AppStorage("allowsBackForwardGestures") private var allowsBackForwardGestures: Bool = true
+    @AppStorage("allowsBackForwardGestures") private var allowsBackForwardGestures: Bool = false
     @AppStorage("allowsLinkPreview") private var allowsLinkPreview: Bool = true
-    @AppStorage("allowZoom") private var allowZoom: Bool = true
     @AppStorage("textInteractionEnabled") private var textInteractionEnabled: Bool = true
 
     // Display
@@ -340,7 +335,6 @@ struct WKWebViewRepresentable: UIViewRepresentable {
 
         webView.isInspectable = true
 
-        webView.configuration.ignoresViewportScaleLimits = allowZoom
         webView.configuration.preferences.isTextInteractionEnabled = textInteractionEnabled
 
         // Page zoom
@@ -386,7 +380,6 @@ struct WKWebViewRepresentable: UIViewRepresentable {
         // Dynamic properties - can be updated without recreating WebView
         webView.allowsBackForwardNavigationGestures = allowsBackForwardGestures
         webView.allowsLinkPreview = allowsLinkPreview
-        webView.configuration.ignoresViewportScaleLimits = allowZoom
         webView.configuration.preferences.isTextInteractionEnabled = textInteractionEnabled
 
         // Page zoom

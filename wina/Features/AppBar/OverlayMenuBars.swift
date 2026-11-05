@@ -36,6 +36,9 @@ struct OverlayMenuBars: View {
     @State private var showPhotoPermissionAlert: Bool = false
     @State private var showRecordingFailedAlert: Bool = false
     @State private var showRecordingSavedToast: Bool = false
+    @State private var recordingStartTask: Task<Void, Never>?
+    @State private var showRecordingSaveFailedAlert = false
+    @State private var recordingSaveError = ""
     // Local screenshot states for SafariVC mode (since navigator is nil)
     @State private var showScreenshotFlash: Bool = false
     @State private var showScreenshotSavedToast: Bool = false
@@ -65,6 +68,23 @@ struct OverlayMenuBars: View {
         .animation(.easeInOut(duration: 0.25), value: isKeyboardVisible)
         .onAppear {
             isExpanded = !isOverlayMode  // Expanded by default in fixed mode
+        }
+        .onDisappear {
+            recordingStartTask?.cancel()
+            activeRecorder.stopRecording()
+        }
+        .onChange(of: activeRecorder.lastResult) { _, result in
+            switch result {
+            case .success:
+                showRecordingSavedFeedback()
+            case .permissionDenied:
+                showPhotoPermissionAlert = true
+            case .failed(let error):
+                recordingSaveError = error
+                showRecordingSaveFailedAlert = true
+            case nil:
+                break
+            }
         }
         .onChange(of: isOverlayMode) { _, newValue in
             isExpanded = !newValue
@@ -110,6 +130,11 @@ struct OverlayMenuBars: View {
         } message: {
             Text("Screen recording was denied or is not available. Please enable screen recording permission in Settings.")
         }
+        .alert("Recording Not Saved", isPresented: $showRecordingSaveFailedAlert) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(recordingSaveError)
+        }
         // SafariVC mode: Screenshot flash overlay (full screen)
         .overlay {
             if useSafariVC && showScreenshotFlash {
@@ -119,21 +144,19 @@ struct OverlayMenuBars: View {
                     .allowsHitTesting(false)
             }
         }
-        // SafariVC mode: Screenshot/Recording saved toasts
+        // Recording feedback is shared by WKWebView and SafariVC.
         .overlay(alignment: .bottom) {
-            if useSafariVC {
-                VStack(spacing: 8) {
-                    if showScreenshotSavedToast {
-                        CopiedFeedbackToast(message: "Saved to Photos")
-                            .transition(.move(edge: .bottom).combined(with: .opacity))
-                    }
-                    if showRecordingSavedToast {
-                        CopiedFeedbackToast(message: "Recording Saved")
-                            .transition(.move(edge: .bottom).combined(with: .opacity))
-                    }
+            VStack(spacing: 8) {
+                if useSafariVC && showScreenshotSavedToast {
+                    CopiedFeedbackToast(message: "Saved to Photos")
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
-                .padding(.bottom, 100)  // Above bottom bar
+                if showRecordingSavedToast {
+                    CopiedFeedbackToast(message: "Recording Saved")
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
             }
+            .padding(.bottom, 100)  // Above bottom bar
         }
     }
 }
@@ -428,6 +451,7 @@ private extension OverlayMenuBars {
             BottomBarIconButton(icon: "record.circle") {
                 toggleRecording()
             }
+            .disabled(activeRecorder.state != .idle || recordingStartTask != nil)
         }
     }
 
@@ -612,10 +636,10 @@ private extension OverlayMenuBars {
         if activeRecorder.isRecording {
             // Stop recording
             activeRecorder.stopRecording()
-            showRecordingSavedFeedback()
         } else {
-            // Start recording
-            Task {
+            guard activeRecorder.state == .idle, recordingStartTask == nil else { return }
+            recordingStartTask = Task {
+                defer { recordingStartTask = nil }
                 // Check permission first
                 let permission = checkPhotoLibraryPermission()
 
@@ -633,7 +657,7 @@ private extension OverlayMenuBars {
                     break
                 }
 
-                // Start recording
+                guard !Task.isCancelled else { return }
                 let started = await activeRecorder.startRecording()
                 if started {
                     // Haptic feedback for start
@@ -650,9 +674,6 @@ private extension OverlayMenuBars {
         Task {
             // Haptic feedback for stop
             AudioServicesPlaySystemSound(1519)
-
-            // Wait for video to be saved
-            try? await Task.sleep(for: .milliseconds(500))
 
             await MainActor.run {
                 withAnimation(.easeOut(duration: 0.2)) {

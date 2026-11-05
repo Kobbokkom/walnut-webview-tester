@@ -14,24 +14,24 @@ import WebKit
 
 private enum TestWebViewLoader {
     static let baseURL = URL(string: "https://example.com")!
-    static let loadTimeoutSeconds: Double = 5
+    static let loadTimeoutSeconds: Double = 30
 }
 
 /// Proper async WKWebView loading delegate (replaces flaky Task.sleep)
 @MainActor
 private final class TestNavigationDelegate: NSObject, WKNavigationDelegate {
-    private var continuation: CheckedContinuation<Void, Never>?
+    private var continuation: CheckedContinuation<Void, Error>?
     private var timeoutTask: Task<Void, Never>?
 
-    func waitForLoad(webView: WKWebView, html: String) async {
-        await withCheckedContinuation { continuation in
+    func waitForLoad(webView: WKWebView, html: String) async throws {
+        try await withCheckedThrowingContinuation { continuation in
             self.continuation = continuation
             timeoutTask?.cancel()
             timeoutTask = Task { [weak self] in
-                try? await Task.sleep(for: .seconds(TestWebViewLoader.loadTimeoutSeconds))
-                await MainActor.run {
-                    self?.finishIfNeeded()
-                }
+                do { try await Task.sleep(for: .seconds(TestWebViewLoader.loadTimeoutSeconds)) }
+                catch { return }
+                self?.finishIfNeeded(error: NSError(domain: "SearchFixture", code: 1,
+                    userInfo: [NSLocalizedDescriptionKey: "Timed out loading search fixture HTML"]))
             }
             webView.loadHTMLString(html, baseURL: TestWebViewLoader.baseURL)
         }
@@ -42,7 +42,7 @@ private final class TestNavigationDelegate: NSObject, WKNavigationDelegate {
     }
 
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
-        finishIfNeeded()
+        finishIfNeeded(error: error)
     }
 
     func webView(
@@ -50,15 +50,16 @@ private final class TestNavigationDelegate: NSObject, WKNavigationDelegate {
         didFailProvisionalNavigation navigation: WKNavigation!,
         withError error: Error
     ) {
-        finishIfNeeded()
+        finishIfNeeded(error: error)
     }
 
-    private func finishIfNeeded() {
+    private func finishIfNeeded(error: Error? = nil) {
         timeoutTask?.cancel()
         timeoutTask = nil
         if let continuation {
-            continuation.resume()
             self.continuation = nil
+            if let error { continuation.resume(throwing: error) }
+            else { continuation.resume() }
         }
     }
 }
@@ -231,8 +232,9 @@ final class SearchTextDOMIntegrationTests: XCTestCase {
 
     // MARK: - Helper Methods
 
-    private func loadTestHTML(_ html: String) async {
-        await navigationDelegate?.waitForLoad(webView: webView, html: html)
+    private func loadTestHTML(_ html: String) async throws {
+        let delegate = try XCTUnwrap(navigationDelegate)
+        try await delegate.waitForLoad(webView: webView, html: html)
     }
 
     private func executeScript(_ script: String) async -> Any? {
@@ -307,13 +309,13 @@ final class SearchTextDOMIntegrationTests: XCTestCase {
 
     // MARK: - Basic Search Tests
 
-    func testSearchFindsExactMatch() async {
+    func testSearchFindsExactMatch() async throws {
         let testHTML = """
         <html><body>
             <p>Hello World</p>
         </body></html>
         """
-        await loadTestHTML(testHTML)
+        try await loadTestHTML(testHTML)
 
         let result = await executeScript(createSearchScript(keyword: "Hello")) as? String
         let data = result?.data(using: .utf8)
@@ -322,13 +324,13 @@ final class SearchTextDOMIntegrationTests: XCTestCase {
         XCTAssertEqual(json?["count"] as? Int, 1)
     }
 
-    func testSearchFindsMultipleMatches() async {
+    func testSearchFindsMultipleMatches() async throws {
         let testHTML = """
         <html><body>
             <p>Hello Hello Hello</p>
         </body></html>
         """
-        await loadTestHTML(testHTML)
+        try await loadTestHTML(testHTML)
 
         let result = await executeScript(createSearchScript(keyword: "Hello")) as? String
         let data = result?.data(using: .utf8)
@@ -337,13 +339,13 @@ final class SearchTextDOMIntegrationTests: XCTestCase {
         XCTAssertEqual(json?["count"] as? Int, 3)
     }
 
-    func testSearchIsCaseInsensitive() async {
+    func testSearchIsCaseInsensitive() async throws {
         let testHTML = """
         <html><body>
             <p>Hello HELLO hello HeLLo</p>
         </body></html>
         """
-        await loadTestHTML(testHTML)
+        try await loadTestHTML(testHTML)
 
         let result = await executeScript(createSearchScript(keyword: "hello")) as? String
         let data = result?.data(using: .utf8)
@@ -352,13 +354,13 @@ final class SearchTextDOMIntegrationTests: XCTestCase {
         XCTAssertEqual(json?["count"] as? Int, 4)
     }
 
-    func testSearchReturnsZeroForNoMatch() async {
+    func testSearchReturnsZeroForNoMatch() async throws {
         let testHTML = """
         <html><body>
             <p>Hello World</p>
         </body></html>
         """
-        await loadTestHTML(testHTML)
+        try await loadTestHTML(testHTML)
 
         let result = await executeScript(createSearchScript(keyword: "xyz123")) as? String
         let data = result?.data(using: .utf8)
@@ -367,9 +369,9 @@ final class SearchTextDOMIntegrationTests: XCTestCase {
         XCTAssertEqual(json?["count"] as? Int, 0)
     }
 
-    func testSearchWithEmptyKeyword() async {
+    func testSearchWithEmptyKeyword() async throws {
         let testHTML = "<html><body><p>Test</p></body></html>"
-        await loadTestHTML(testHTML)
+        try await loadTestHTML(testHTML)
 
         let result = await executeScript(createSearchScript(keyword: "")) as? String
         let data = result?.data(using: .utf8)
@@ -378,8 +380,8 @@ final class SearchTextDOMIntegrationTests: XCTestCase {
         XCTAssertEqual(json?["count"] as? Int, 0)
     }
 
-    func testSearchPreservesMarkupLikeText() async {
-        await loadTestHTML("<html><body><p id='text'>foo &lt;b&gt;bar&lt;/b&gt; &amp;amp;</p></body></html>")
+    func testSearchPreservesMarkupLikeText() async throws {
+        try await loadTestHTML("<html><body><p id='text'>foo &lt;b&gt;bar&lt;/b&gt; &amp;amp;</p></body></html>")
         let before = await executeScript("document.getElementById('text').textContent") as? String
         _ = await executeScript(createSearchScript(keyword: "foo"))
         let after = await executeScript("document.getElementById('text').textContent") as? String
@@ -392,7 +394,7 @@ final class SearchTextDOMIntegrationTests: XCTestCase {
     }
 
     func testSourcesLookupKeepsSelectedSiblingWithWhitespaceAndSpecialID() async throws {
-        await loadTestHTML("""
+        try await loadTestHTML("""
         <html><body>
           <p class="item">first</p>
           <!-- comment -->
@@ -415,8 +417,8 @@ final class SearchTextDOMIntegrationTests: XCTestCase {
         navigator.detach()
     }
 
-    func testAccessibilityAuditFailureDoesNotReportPass() async {
-        await loadTestHTML("<html><body>test</body></html>")
+    func testAccessibilityAuditFailureDoesNotReportPass() async throws {
+        try await loadTestHTML("<html><body>test</body></html>")
         let navigator = WebViewNavigator()
         navigator.attach(to: webView)
         let manager = navigator.accessibilityManager
@@ -433,8 +435,8 @@ final class SearchTextDOMIntegrationTests: XCTestCase {
         navigator.detach()
     }
 
-    func testFailedAccessibilityRescanClearsPreviousFindings() async {
-        await loadTestHTML("<html><body><img src='missing.png'></body></html>")
+    func testFailedAccessibilityRescanClearsPreviousFindings() async throws {
+        try await loadTestHTML("<html><body><img src='missing.png'></body></html>")
         let navigator = WebViewNavigator()
         navigator.attach(to: webView)
         let manager = navigator.accessibilityManager
@@ -458,13 +460,13 @@ final class SearchTextDOMIntegrationTests: XCTestCase {
 
     // MARK: - Highlight Element Tests
 
-    func testHighlightElementsAreCreated() async {
+    func testHighlightElementsAreCreated() async throws {
         let testHTML = """
         <html><body>
             <p>Find this word</p>
         </body></html>
         """
-        await loadTestHTML(testHTML)
+        try await loadTestHTML(testHTML)
 
         _ = await executeScript(createSearchScript(keyword: "this"))
 
@@ -475,9 +477,9 @@ final class SearchTextDOMIntegrationTests: XCTestCase {
         XCTAssertEqual(highlightCount, 1)
     }
 
-    func testHighlightElementsHaveCorrectClass() async {
+    func testHighlightElementsHaveCorrectClass() async throws {
         let testHTML = "<html><body><p>test word</p></body></html>"
-        await loadTestHTML(testHTML)
+        try await loadTestHTML(testHTML)
 
         _ = await executeScript(createSearchScript(keyword: "test"))
 
@@ -488,9 +490,9 @@ final class SearchTextDOMIntegrationTests: XCTestCase {
         XCTAssertEqual(hasClass, true)
     }
 
-    func testFirstMatchHasActiveHighlightColor() async {
+    func testFirstMatchHasActiveHighlightColor() async throws {
         let testHTML = "<html><body><p>test test</p></body></html>"
-        await loadTestHTML(testHTML)
+        try await loadTestHTML(testHTML)
 
         _ = await executeScript(createSearchScript(keyword: "test"))
 
@@ -503,9 +505,9 @@ final class SearchTextDOMIntegrationTests: XCTestCase {
                       firstBgColor?.contains("#FF9800") ?? false)
     }
 
-    func testOtherMatchesHaveDefaultHighlightColor() async {
+    func testOtherMatchesHaveDefaultHighlightColor() async throws {
         let testHTML = "<html><body><p>test test test</p></body></html>"
-        await loadTestHTML(testHTML)
+        try await loadTestHTML(testHTML)
 
         _ = await executeScript(createSearchScript(keyword: "test"))
 
@@ -520,9 +522,9 @@ final class SearchTextDOMIntegrationTests: XCTestCase {
 
     // MARK: - Clear Highlights Tests
 
-    func testClearRemovesAllHighlights() async {
+    func testClearRemovesAllHighlights() async throws {
         let testHTML = "<html><body><p>test test test</p></body></html>"
-        await loadTestHTML(testHTML)
+        try await loadTestHTML(testHTML)
 
         _ = await executeScript(createSearchScript(keyword: "test"))
 
@@ -539,9 +541,9 @@ final class SearchTextDOMIntegrationTests: XCTestCase {
         XCTAssertEqual(afterCount, 0)
     }
 
-    func testClearRestoresOriginalText() async {
+    func testClearRestoresOriginalText() async throws {
         let testHTML = "<html><body><p id='test'>Hello World</p></body></html>"
-        await loadTestHTML(testHTML)
+        try await loadTestHTML(testHTML)
 
         let originalText = await executeScript(
             "document.getElementById('test').textContent"
@@ -557,9 +559,9 @@ final class SearchTextDOMIntegrationTests: XCTestCase {
         XCTAssertEqual(originalText, restoredText)
     }
 
-    func testClearOnEmptyDoesNothing() async {
+    func testClearOnEmptyDoesNothing() async throws {
         let testHTML = "<html><body><p>No search yet</p></body></html>"
-        await loadTestHTML(testHTML)
+        try await loadTestHTML(testHTML)
 
         // Clear without searching first
         _ = await executeScript(createClearScript())
@@ -573,9 +575,9 @@ final class SearchTextDOMIntegrationTests: XCTestCase {
 
     // MARK: - Navigation Tests
 
-    func testNavigateNextUpdatesIndex() async {
+    func testNavigateNextUpdatesIndex() async throws {
         let testHTML = "<html><body><p>a b c a b c a</p></body></html>"
-        await loadTestHTML(testHTML)
+        try await loadTestHTML(testHTML)
 
         _ = await executeScript(createSearchScript(keyword: "a"))
 
@@ -587,9 +589,9 @@ final class SearchTextDOMIntegrationTests: XCTestCase {
         XCTAssertEqual(json?["index"] as? Int, 1)
     }
 
-    func testNavigateNextWrapsAround() async {
+    func testNavigateNextWrapsAround() async throws {
         let testHTML = "<html><body><p>x y x</p></body></html>"
-        await loadTestHTML(testHTML)
+        try await loadTestHTML(testHTML)
 
         _ = await executeScript(createSearchScript(keyword: "x"))
 
@@ -603,9 +605,9 @@ final class SearchTextDOMIntegrationTests: XCTestCase {
         XCTAssertEqual(json?["index"] as? Int, 0)
     }
 
-    func testNavigatePreviousUpdatesIndex() async {
+    func testNavigatePreviousUpdatesIndex() async throws {
         let testHTML = "<html><body><p>a b a b a</p></body></html>"
-        await loadTestHTML(testHTML)
+        try await loadTestHTML(testHTML)
 
         _ = await executeScript(createSearchScript(keyword: "a"))
 
@@ -620,9 +622,9 @@ final class SearchTextDOMIntegrationTests: XCTestCase {
         XCTAssertEqual(json?["index"] as? Int, 0)
     }
 
-    func testNavigatePreviousWrapsAround() async {
+    func testNavigatePreviousWrapsAround() async throws {
         let testHTML = "<html><body><p>x y x y x</p></body></html>"
-        await loadTestHTML(testHTML)
+        try await loadTestHTML(testHTML)
 
         _ = await executeScript(createSearchScript(keyword: "x"))
 
@@ -634,9 +636,9 @@ final class SearchTextDOMIntegrationTests: XCTestCase {
         XCTAssertEqual(json?["index"] as? Int, 2) // 3 matches, last index is 2
     }
 
-    func testNavigateOnEmptyResultsReturnsZero() async {
+    func testNavigateOnEmptyResultsReturnsZero() async throws {
         let testHTML = "<html><body><p>no match</p></body></html>"
-        await loadTestHTML(testHTML)
+        try await loadTestHTML(testHTML)
 
         _ = await executeScript(createSearchScript(keyword: "xyz"))
 
@@ -649,9 +651,9 @@ final class SearchTextDOMIntegrationTests: XCTestCase {
 
     // MARK: - Active Highlight Color Tests
 
-    func testNavigateNextChangesActiveHighlight() async {
+    func testNavigateNextChangesActiveHighlight() async throws {
         let testHTML = "<html><body><p>a b a</p></body></html>"
-        await loadTestHTML(testHTML)
+        try await loadTestHTML(testHTML)
 
         _ = await executeScript(createSearchScript(keyword: "a"))
         _ = await executeScript(createNavigateNextScript())
@@ -672,14 +674,14 @@ final class SearchTextDOMIntegrationTests: XCTestCase {
 
     // MARK: - Edge Case Tests
 
-    func testSearchIgnoresScriptTags() async {
+    func testSearchIgnoresScriptTags() async throws {
         let testHTML = """
         <html><body>
             <script>var test = 'test';</script>
             <p>visible test</p>
         </body></html>
         """
-        await loadTestHTML(testHTML)
+        try await loadTestHTML(testHTML)
 
         let result = await executeScript(createSearchScript(keyword: "test")) as? String
         let data = result?.data(using: .utf8)
@@ -689,7 +691,7 @@ final class SearchTextDOMIntegrationTests: XCTestCase {
         XCTAssertEqual(json?["count"] as? Int, 1)
     }
 
-    func testSearchIgnoresStyleTags() async {
+    func testSearchIgnoresStyleTags() async throws {
         let testHTML = """
         <html><head>
             <style>.test { color: red; }</style>
@@ -697,7 +699,7 @@ final class SearchTextDOMIntegrationTests: XCTestCase {
             <p class="test">visible test</p>
         </body></html>
         """
-        await loadTestHTML(testHTML)
+        try await loadTestHTML(testHTML)
 
         let result = await executeScript(createSearchScript(keyword: "test")) as? String
         let data = result?.data(using: .utf8)
@@ -707,7 +709,7 @@ final class SearchTextDOMIntegrationTests: XCTestCase {
         XCTAssertEqual(json?["count"] as? Int, 1)
     }
 
-    func testSearchAcrossNestedElements() async {
+    func testSearchAcrossNestedElements() async throws {
         let testHTML = """
         <html><body>
             <div>
@@ -717,7 +719,7 @@ final class SearchTextDOMIntegrationTests: XCTestCase {
             </div>
         </body></html>
         """
-        await loadTestHTML(testHTML)
+        try await loadTestHTML(testHTML)
 
         let result = await executeScript(createSearchScript(keyword: "test")) as? String
         let data = result?.data(using: .utf8)
@@ -726,13 +728,13 @@ final class SearchTextDOMIntegrationTests: XCTestCase {
         XCTAssertEqual(json?["count"] as? Int, 1)
     }
 
-    func testSearchPreservesTextContent() async {
+    func testSearchPreservesTextContent() async throws {
         let testHTML = """
         <html><body>
             <p id="target">The quick brown fox</p>
         </body></html>
         """
-        await loadTestHTML(testHTML)
+        try await loadTestHTML(testHTML)
 
         _ = await executeScript(createSearchScript(keyword: "quick"))
 
@@ -743,9 +745,9 @@ final class SearchTextDOMIntegrationTests: XCTestCase {
         XCTAssertEqual(content, "The quick brown fox")
     }
 
-    func testNewSearchClearsPreviousHighlights() async {
+    func testNewSearchClearsPreviousHighlights() async throws {
         let testHTML = "<html><body><p>apple banana cherry</p></body></html>"
-        await loadTestHTML(testHTML)
+        try await loadTestHTML(testHTML)
 
         // First search
         _ = await executeScript(createSearchScript(keyword: "apple"))
@@ -767,9 +769,9 @@ final class SearchTextDOMIntegrationTests: XCTestCase {
         XCTAssertFalse(appleHighlighted)
     }
 
-    func testSearchWithSpecialRegexCharacters() async {
+    func testSearchWithSpecialRegexCharacters() async throws {
         let testHTML = "<html><body><p>test (with) [brackets] and $special</p></body></html>"
-        await loadTestHTML(testHTML)
+        try await loadTestHTML(testHTML)
 
         // Note: This test might fail if regex special chars aren't properly escaped
         // The current implementation uses 'gi' flags which might handle some cases
@@ -780,9 +782,9 @@ final class SearchTextDOMIntegrationTests: XCTestCase {
         XCTAssertEqual(json?["count"] as? Int, 1)
     }
 
-    func testSearchUnicodeText() async {
+    func testSearchUnicodeText() async throws {
         let testHTML = "<html><body><p>한글 테스트 한글</p></body></html>"
-        await loadTestHTML(testHTML)
+        try await loadTestHTML(testHTML)
 
         let result = await executeScript(createSearchScript(keyword: "한글")) as? String
         let data = result?.data(using: .utf8)
@@ -791,9 +793,9 @@ final class SearchTextDOMIntegrationTests: XCTestCase {
         XCTAssertEqual(json?["count"] as? Int, 2)
     }
 
-    func testSearchEmoji() async {
+    func testSearchEmoji() async throws {
         let testHTML = "<html><body><p>Hello 🌍 World 🌍</p></body></html>"
-        await loadTestHTML(testHTML)
+        try await loadTestHTML(testHTML)
 
         let result = await executeScript(createSearchScript(keyword: "🌍")) as? String
         let data = result?.data(using: .utf8)
@@ -804,9 +806,9 @@ final class SearchTextDOMIntegrationTests: XCTestCase {
 
     // MARK: - Global Variable Tests
 
-    func testSearchSetsGlobalElementsArray() async {
+    func testSearchSetsGlobalElementsArray() async throws {
         let testHTML = "<html><body><p>x y x</p></body></html>"
-        await loadTestHTML(testHTML)
+        try await loadTestHTML(testHTML)
 
         _ = await executeScript(createSearchScript(keyword: "x"))
 
@@ -817,9 +819,9 @@ final class SearchTextDOMIntegrationTests: XCTestCase {
         XCTAssertEqual(elementsCount, 2)
     }
 
-    func testSearchSetsGlobalIndex() async {
+    func testSearchSetsGlobalIndex() async throws {
         let testHTML = "<html><body><p>test</p></body></html>"
-        await loadTestHTML(testHTML)
+        try await loadTestHTML(testHTML)
 
         _ = await executeScript(createSearchScript(keyword: "test"))
 
@@ -828,9 +830,9 @@ final class SearchTextDOMIntegrationTests: XCTestCase {
         XCTAssertEqual(index, 0)
     }
 
-    func testClearResetsGlobalVariables() async {
+    func testClearResetsGlobalVariables() async throws {
         let testHTML = "<html><body><p>test test</p></body></html>"
-        await loadTestHTML(testHTML)
+        try await loadTestHTML(testHTML)
 
         _ = await executeScript(createSearchScript(keyword: "test"))
         _ = await executeScript(createClearScript())
@@ -867,7 +869,7 @@ final class SearchTextPerformanceTests: XCTestCase {
         try await super.tearDown()
     }
 
-    func testSearchOnLargePage() async {
+    func testSearchOnLargePage() async throws {
         // Create a page with many paragraphs
         var paragraphs = ""
         for i in 0..<100 {
@@ -875,7 +877,7 @@ final class SearchTextPerformanceTests: XCTestCase {
         }
         let testHTML = "<html><body>\(paragraphs)</body></html>"
 
-        await navigationDelegate?.waitForLoad(webView: webView, html: testHTML)
+        try await navigationDelegate?.waitForLoad(webView: webView, html: testHTML)
 
         let searchScript = """
         (function() {
@@ -902,9 +904,9 @@ final class SearchTextPerformanceTests: XCTestCase {
         XCTAssertEqual(count, 100) // Should find "test" in each paragraph
     }
 
-    func testMultipleSearchesDoNotLeak() async {
+    func testMultipleSearchesDoNotLeak() async throws {
         let testHTML = "<html><body><p>word word word</p></body></html>"
-        await navigationDelegate?.waitForLoad(webView: webView, html: testHTML)
+        try await navigationDelegate?.waitForLoad(webView: webView, html: testHTML)
 
         let searchScript = """
         (function() {

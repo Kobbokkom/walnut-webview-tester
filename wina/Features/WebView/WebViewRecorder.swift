@@ -12,7 +12,7 @@ import UIKit
 
 // MARK: - Recording Types
 
-enum RecordingResult {
+enum RecordingResult: Equatable {
     case success
     case permissionDenied
     case failed(String)
@@ -20,6 +20,7 @@ enum RecordingResult {
 
 enum RecordingState: Sendable {
     case idle
+    case starting
     case recording
     case finishing
 }
@@ -135,6 +136,24 @@ private final class WriterState {
 final class WebViewRecorder {
     private(set) var state: RecordingState = .idle
     private(set) var recordingDuration: TimeInterval = 0
+    private(set) var lastResult: RecordingResult?
+    private(set) var failedOutputURL: URL?
+    private var stopRequested = false
+
+    typealias CaptureHandler = (CMSampleBuffer, RPSampleBufferType, Error?) -> Void
+    private let captureStart: (@escaping CaptureHandler) async throws -> Void
+    private let captureStop: () async throws -> Void
+    private let photoSave: (URL) async throws -> Void
+
+    init(
+        startCapture: ((@escaping CaptureHandler) async throws -> Void)? = nil,
+        stopCapture: (() async throws -> Void)? = nil,
+        saveToPhotos: ((URL) async throws -> Void)? = nil
+    ) {
+        captureStart = startCapture ?? Self.startSystemCapture
+        captureStop = stopCapture ?? Self.stopSystemCapture
+        photoSave = saveToPhotos ?? Self.saveSystemVideo
+    }
 
     var isRecording: Bool { state == .recording }
 
@@ -165,12 +184,6 @@ final class WebViewRecorder {
         // Note: Photo library permission should be checked by caller before calling this method
         // This avoids race conditions where permission was just granted but status hasn't propagated
 
-        // Check ReplayKit availability
-        let recorder = RPScreenRecorder.shared()
-        guard recorder.isAvailable else {
-            return false
-        }
-
         // Setup output URL
         let fileName = "ScreenRecording_\(Date().timeIntervalSince1970).mov"
         guard let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
@@ -191,6 +204,10 @@ final class WebViewRecorder {
             writerState.isRecording = true
         }
 
+        state = .starting
+        stopRequested = false
+        lastResult = nil
+        failedOutputURL = nil
         startTime = Date()
         recordingDuration = 0
 
@@ -199,17 +216,24 @@ final class WebViewRecorder {
             try await startReplayKitCapture(outputURL: url)
             state = .recording
 
-            // Start duration timer on main actor
-            startDurationTimer()
-
+            if stopRequested {
+                stopRecording()
+            } else {
+                startDurationTimer()
+            }
             return true
         } catch {
             cleanupWriter()
+            state = .idle
             return false
         }
     }
 
     func stopRecording() {
+        if state == .starting {
+            stopRequested = true
+            return
+        }
         guard state == .recording else { return }
         state = .finishing
 
@@ -222,47 +246,60 @@ final class WebViewRecorder {
         durationTimer?.invalidate()
         durationTimer = nil
 
-        // Stop ReplayKit capture
-        RPScreenRecorder.shared().stopCapture { [weak self] _ in
-            Task { @MainActor in
-                guard let self else { return }
-                await self.finishRecording()
-            }
+        // Retain the recorder until its writer and Photos operation have completed.
+        Task {
+            var captureError: Error?
+            do { try await captureStop() } catch { captureError = error }
+            await finishRecording(captureError: captureError)
         }
     }
 
     // MARK: - ReplayKit Capture
 
     private func startReplayKitCapture(outputURL: URL?) async throws {
-        let recorder = RPScreenRecorder.shared()
-
         let writerState = writerState
+        let queue = writerQueue
+        try await captureStart { sampleBuffer, sampleBufferType, _ in
+            queue.async {
+                guard writerState.isRecording else { return }
+                switch sampleBufferType {
+                case .video:
+                    writerState.processVideoSample(sampleBuffer, outputURL: outputURL)
+                case .audioApp:
+                    writerState.processAudioSample(sampleBuffer)
+                case .audioMic:
+                    break
+                @unknown default:
+                    break
+                }
+            }
+        }
+    }
+
+    private static func startSystemCapture(handler: @escaping CaptureHandler) async throws {
+        let recorder = RPScreenRecorder.shared()
+        guard recorder.isAvailable else {
+            throw NSError(domain: "ScreenRecording", code: 1,
+                          userInfo: [NSLocalizedDescriptionKey: "Screen recording is unavailable."])
+        }
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            recorder.startCapture(handler: { [weak self] sampleBuffer, sampleBufferType, _ in
-                guard let self else { return }
+            recorder.startCapture(handler: handler) { error in
+                if let error { continuation.resume(throwing: error) } else { continuation.resume() }
+            }
+        }
+    }
 
-                // Process sample buffer on dedicated queue (nonisolated)
-                self.writerQueue.async {
-                    guard writerState.isRecording else { return }
+    private static func stopSystemCapture() async throws {
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            RPScreenRecorder.shared().stopCapture { error in
+                if let error { continuation.resume(throwing: error) } else { continuation.resume() }
+            }
+        }
+    }
 
-                    switch sampleBufferType {
-                    case .video:
-                        writerState.processVideoSample(sampleBuffer, outputURL: outputURL)
-                    case .audioApp:
-                        writerState.processAudioSample(sampleBuffer)
-                    case .audioMic:
-                        break
-                    @unknown default:
-                        break
-                    }
-                }
-            }, completionHandler: { error in
-                if let error {
-                    continuation.resume(throwing: error)
-                } else {
-                    continuation.resume(returning: ())
-                }
-            })
+    private static func saveSystemVideo(url: URL) async throws {
+        try await PHPhotoLibrary.shared().performChanges {
+            PHAssetCreationRequest.forAsset().addResource(with: .video, fileURL: url, options: nil)
         }
     }
 
@@ -289,44 +326,36 @@ final class WebViewRecorder {
 
     // MARK: - Finish Recording
 
-    private func finishRecording() async {
+    private func finishRecording(captureError: Error?) async {
+        defer {
+            cleanupWriter()
+            startTime = nil
+            state = .idle
+        }
         let writerState = writerState
         let writer = writerQueue.sync { writerState.assetWriter }
-
-        guard let writer else {
-            state = .idle
+        guard let writer, let url = outputURL else {
+            lastResult = .failed("No video frames were recorded.")
             return
         }
-
-        // Mark inputs as finished on writer queue
-        writerQueue.sync {
-            writerState.markInputsFinished()
-        }
-
-        // Finish writing
-        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
-            writer.finishWriting {
-                continuation.resume()
+        if writer.status == .writing {
+            writerQueue.sync { writerState.markInputsFinished() }
+            await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+                writer.finishWriting { continuation.resume() }
             }
         }
-
-        if writer.status == .completed, let url = outputURL {
-            await saveToPhotos(url: url)
+        guard writer.status == .completed, captureError == nil else {
+            failedOutputURL = url
+            lastResult = .failed(captureError?.localizedDescription ?? writer.error?.localizedDescription ?? "Could not finish the recording.")
+            return
         }
-
-        cleanupWriter()
-        state = .idle
-    }
-
-    private func saveToPhotos(url: URL) async {
         do {
-            try await PHPhotoLibrary.shared().performChanges {
-                PHAssetCreationRequest.forAsset().addResource(with: .video, fileURL: url, options: nil)
-            }
-            // Clean up temp file after saving
+            try await photoSave(url)
             try? FileManager.default.removeItem(at: url)
+            lastResult = .success
         } catch {
-            // Keep file on error for debugging
+            failedOutputURL = url
+            lastResult = .failed("Could not save to Photos. The recording file was kept. \(error.localizedDescription)")
         }
     }
 
@@ -336,17 +365,20 @@ final class WebViewRecorder {
             writerState.reset()
         }
     }
-
-    private func cleanup() {
-        cleanupWriter()
-        startTime = nil
-        durationTimer?.invalidate()
-        durationTimer = nil
-    }
 }
 
 #if DEBUG
 extension WebViewRecorder {
+    func test_prepareRecording(writer: AVAssetWriter, input: AVAssetWriterInput, url: URL) {
+        outputURL = url
+        writerQueue.sync {
+            writerState.assetWriter = writer
+            writerState.videoInput = input
+            writerState.isRecording = true
+        }
+        state = .recording
+    }
+
     func test_setStartTime(_ date: Date?) {
         startTime = date
     }

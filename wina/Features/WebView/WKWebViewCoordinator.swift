@@ -305,7 +305,7 @@ class WKWebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
         }
 
         if LogClearStrategyResolver.shouldClear(strategy: strategies.network, currentURL: currentURL, newURL: newURL) {
-            navigator?.networkManager.clear()
+            navigator?.networkManager.clearForNavigation(preserving: pendingDocumentRequestId)
             navigator?.resourceManager.clear()
         }
     }

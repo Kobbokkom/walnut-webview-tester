@@ -34,7 +34,6 @@ class WebViewNavigator {
     private(set) var initialURL: URL?
     var showScreenshotFlash: Bool = false
     var showScreenshotSavedToast: Bool = false
-    var showRecordingSavedToast: Bool = false
     let consoleManager = ConsoleManager()
     let networkManager = NetworkManager()
     let performanceManager = PerformanceManager()
