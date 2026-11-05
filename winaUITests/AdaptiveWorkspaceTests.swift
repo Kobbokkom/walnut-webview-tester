@@ -20,14 +20,18 @@ final class AdaptiveWorkspaceTests: XCTestCase {
         let input = app.textFields["Enter URL"]
         XCTAssertTrue(input.waitForExistence(timeout: 15))
         input.tap()
-        input.typeText("https://example.com\n")
+        let testURL = ProcessInfo.processInfo.environment["WALNUT_QA_URL"] ?? "https://example.com"
+        let pageTitle = ProcessInfo.processInfo.environment["WALNUT_QA_TITLE"] ?? "Example Domain"
+        input.typeText(testURL + "\n")
+        let pageHeading = app.webViews.firstMatch.staticTexts[pageTitle]
+        XCTAssertTrue(pageHeading.waitForExistence(timeout: 30))
         let console = app.buttons["devTools.console"]
         let foundConsole = console.waitForExistence(timeout: 30)
-        capture("URL-submitted", app: app)
+        capture("URL-submitted")
         XCTAssertTrue(foundConsole)
         console.tap()
         XCTAssertTrue(app.buttons["closeDevTools"].firstMatch.waitForExistence(timeout: 10))
-        capture("DevTools-initial", app: app)
+        capture("DevTools-initial")
 
         let panel = app.otherElements["devToolsPanel"]
         if app.frame.width >= 600 { XCTAssertTrue(panel.exists) }
@@ -43,16 +47,16 @@ final class AdaptiveWorkspaceTests: XCTestCase {
         // Let the system rotation animation settle before capturing the rendered layout.
         Thread.sleep(forTimeInterval: 2)
         XCTAssertTrue(app.buttons["closeDevTools"].firstMatch.waitForExistence(timeout: 10))
-        capture("DevTools-landscape", app: app)
+        capture("DevTools-landscape")
         app.buttons["closeDevTools"].firstMatch.tap()
-        XCTAssertTrue(app.webViews.firstMatch.waitForExistence(timeout: 10))
+        XCTAssertTrue(pageHeading.waitForExistence(timeout: 15))
         XCTAssertFalse(app.otherElements["devToolsPanel"].exists)
         XCTAssertTrue(console.exists)
         XCUIDevice.shared.orientation = .portrait
     }
 
-    private func capture(_ name: String, app: XCUIApplication) {
-        let attachment = XCTAttachment(screenshot: app.screenshot())
+    private func capture(_ name: String) {
+        let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
         attachment.name = name
         attachment.lifetime = .keepAlways
         add(attachment)
