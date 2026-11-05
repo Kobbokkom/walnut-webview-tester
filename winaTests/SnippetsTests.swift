@@ -376,8 +376,8 @@ final class SnippetScriptSyntaxTests: XCTestCase {
         XCTAssertNotNil(editSnippet?.undoScript)
 
         let undoScript = editSnippet!.undoScript!
-        XCTAssertTrue(undoScript.contains("contentEditable = 'false'"))
-        XCTAssertTrue(undoScript.contains("designMode = 'off'"))
+        XCTAssertTrue(undoScript.contains("removeAttribute('contenteditable')"))
+        XCTAssertTrue(undoScript.contains("designMode = state.designMode"))
     }
 
     func testDisableCssScriptStoresStylesForRestoration() {
@@ -541,11 +541,21 @@ final class SnippetDOMIntegrationTests: XCTestCase {
 
         // Disable editing
         _ = await executeScript(editSnippet.undoScript!)
-        let disabledEditable = await executeScript("document.body.contentEditable") as? String
-        XCTAssertEqual(disabledEditable, "false")
+        let disabledEditable = await executeScript("document.body.hasAttribute('contenteditable')") as? Bool
+        XCTAssertEqual(disabledEditable, false)
 
         let designMode = await executeScript("document.designMode") as? String
         XCTAssertEqual(designMode, "off")
+    }
+
+    func testEditPageUndoPreservesExistingEditablePage() async throws {
+        await loadTestHTML("<html><body contenteditable='plaintext-only'>Editable</body></html>")
+        let snippet = try XCTUnwrap(SnippetsManager.defaultSnippets.first { $0.id == "edit_page" })
+        _ = await executeScript("document.designMode = 'on'")
+        _ = await executeScript(snippet.script)
+        _ = await executeScript(try XCTUnwrap(snippet.undoScript))
+        let state = await executeScript("[document.body.getAttribute('contenteditable'), document.designMode]") as? [String]
+        XCTAssertEqual(state, ["plaintext-only", "on"])
     }
 
     // MARK: - Show Hidden Elements Tests
@@ -674,6 +684,15 @@ final class SnippetDOMIntegrationTests: XCTestCase {
         _ = await executeScript(cssSnippet.undoScript!)
         let restoredCount = await executeScript("document.querySelectorAll('style').length") as? Int
         XCTAssertEqual(restoredCount, 1)
+    }
+
+    func testDisableCssUndoPreservesAdjacentStylesheetOrder() async throws {
+        await loadTestHTML("<html><head><style>p{color:red}</style><style>p{color:blue}</style><meta name='fixture'></head><body><p>Test</p></body></html>")
+        let snippet = try XCTUnwrap(SnippetsManager.defaultSnippets.first { $0.id == "disable_css" })
+        _ = await executeScript(snippet.script)
+        _ = await executeScript(try XCTUnwrap(snippet.undoScript))
+        let color = await executeScript("getComputedStyle(document.querySelector('p')).color") as? String
+        XCTAssertEqual(color, "rgb(0, 0, 255)")
     }
 
     // MARK: - Highlight Headings Tests

@@ -116,15 +116,24 @@ class SnippetsManager {
             category: .content,
             script: """
                 (function() {
-                    document.body.contentEditable = 'true';
+                    const body = document.body;
+                    if (!body) return 'No page body to edit';
+                    if (!window.__wina_edit_page__) {
+                        window.__wina_edit_page__ = { body, editable: body.getAttribute('contenteditable'), designMode: document.designMode };
+                    }
+                    body.contentEditable = 'true';
                     document.designMode = 'on';
                     return 'Page is now editable';
                 })();
                 """,
             undoScript: """
                 (function() {
-                    document.body.contentEditable = 'false';
-                    document.designMode = 'off';
+                    const state = window.__wina_edit_page__;
+                    if (!state) return 'Page editing disabled';
+                    if (state.editable === null) state.body.removeAttribute('contenteditable');
+                    else state.body.setAttribute('contenteditable', state.editable);
+                    document.designMode = state.designMode;
+                    delete window.__wina_edit_page__;
                     return 'Page editing disabled';
                 })();
                 """
@@ -187,17 +196,19 @@ class SnippetsManager {
             undoScript: """
                 (function() {
                     if (!window.__wina_disabled_styles__) return 'No styles to restore';
-                    window.__wina_disabled_styles__.forEach(({el, parent, next}) => {
-                        const targetParent = parent && parent.isConnected
-                            ? parent
-                            : (document.head || document.documentElement);
-                        if (next && next.parentNode === targetParent) {
-                            targetParent.insertBefore(el, next);
+                    const styles = window.__wina_disabled_styles__;
+                    // Restore each saved next sibling before the stylesheet that preceded it.
+                    styles.slice().reverse().forEach(({el, parent, next}) => {
+                        if (!parent || !parent.isConnected) return;
+                        if (next && next.parentNode === parent) {
+                            parent.insertBefore(el, next);
                         } else {
-                            targetParent.appendChild(el);
+                            parent.appendChild(el);
                         }
                     });
-                    const count = window.__wina_disabled_styles__.length;
+                    const fallback = document.head || document.documentElement;
+                    styles.forEach(({el}) => { if (!el.isConnected) fallback.appendChild(el); });
+                    const count = styles.length;
                     window.__wina_disabled_styles__ = null;
                     return 'CSS restored (' + count + ' stylesheets)';
                 })();
