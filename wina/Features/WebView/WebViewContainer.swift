@@ -22,7 +22,6 @@ struct WebViewContainer: View {
     @State private var isLoading: Bool = true
 
     // Core Settings
-    @AppStorage("enableJavaScript") private var enableJavaScript: Bool = true
     @AppStorage("allowsContentJavaScript") private var allowsContentJavaScript: Bool = true
     @AppStorage("allowZoom") private var allowZoom: Bool = false
     @AppStorage("minimumFontSize") private var minimumFontSize: Double = 0
@@ -158,7 +157,7 @@ struct WebViewContainer: View {
         let prefs = WKWebpagePreferences()
 
         // Core
-        prefs.allowsContentJavaScript = enableJavaScript && allowsContentJavaScript
+        prefs.allowsContentJavaScript = allowsContentJavaScript
         config.defaultWebpagePreferences = prefs
         config.ignoresViewportScaleLimits = allowZoom
         config.preferences.javaScriptCanOpenWindowsAutomatically = javaScriptCanOpenWindows

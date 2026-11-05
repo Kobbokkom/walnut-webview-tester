@@ -19,7 +19,6 @@ struct ActiveSettingsView: View {
     @State private var locationStatus: CLAuthorizationStatus = .notDetermined
 
     // Configuration Settings (require WebView reload)
-    @AppStorage("enableJavaScript") private var enableJavaScript: Bool = true
     @AppStorage("allowsContentJavaScript") private var allowsContentJavaScript: Bool = true
     @AppStorage("minimumFontSize") private var minimumFontSize: Double = 0
     @AppStorage("mediaAutoplay") private var mediaAutoplay: Bool = false
@@ -161,9 +160,6 @@ struct ActiveSettingsView: View {
 
             // MARK: - Configuration Settings
             Section {
-                ActiveSettingRow(
-                    label: "JavaScript", enabled: enableJavaScript,
-                    info: "Enable/disable all JavaScript.\nOff = No scripts run at all.\nMost websites won't work.")
                 ActiveSettingRow(
                     label: "Content JavaScript", enabled: allowsContentJavaScript,
                     info: "Scripts from web pages.\nOff = Block page scripts only.\nApp features still work.")

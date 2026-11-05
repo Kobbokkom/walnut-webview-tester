@@ -25,7 +25,6 @@ struct InfoView: View {
     @State private var showSettings = false
 
     // Instance Settings from AppStorage (internal for extension access)
-    @AppStorage("enableJavaScript") var enableJavaScript: Bool = true
     @AppStorage("allowsContentJavaScript") var allowsContentJavaScript: Bool = true
     @AppStorage("allowZoom") var allowZoom: Bool = false
     @AppStorage("minimumFontSize") var minimumFontSize: Double = 0

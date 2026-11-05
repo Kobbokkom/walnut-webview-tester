@@ -12,7 +12,6 @@ import SwiftUI
 extension InfoView {
     var activeSettingsItems: [InfoSearchItem] {
         [
-            InfoSearchItem(category: "Active Settings", label: "JavaScript", value: enableJavaScript ? "Enabled" : "Disabled"),
             InfoSearchItem(category: "Active Settings", label: "Content JavaScript", value: allowsContentJavaScript ? "Enabled" : "Disabled"),
             InfoSearchItem(category: "Active Settings", label: "Ignore Viewport Scale Limits", value: allowZoom ? "Enabled" : "Disabled"),
             InfoSearchItem(category: "Active Settings", label: "Minimum Font Size", value: minimumFontSize == 0 ? "Default" : "\(Int(minimumFontSize)) pt"),

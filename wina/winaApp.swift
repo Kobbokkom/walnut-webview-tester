@@ -28,6 +28,8 @@ struct winaApp: App {
     }
 
     init() {
+        Self.migrateContentJavaScriptPreference()
+
         // Clear network body cache from previous session (unless preserveLog is enabled)
         NetworkBodyStorage.shared.clearOnLaunchIfNeeded()
 
@@ -56,6 +58,16 @@ struct winaApp: App {
             try? await Task.sleep(nanoseconds: 300_000_000) // 0.3 seconds after ATT
             await AdManager.shared.loadInterstitialAd(adUnitId: AdManager.interstitialAdUnitId)
         }
+    }
+
+    static func migrateContentJavaScriptPreference(in defaults: UserDefaults = .standard) {
+        let legacyKey = "enableJavaScript"
+        guard defaults.object(forKey: legacyKey) != nil else { return }
+
+        let contentKey = "allowsContentJavaScript"
+        let contentEnabled = defaults.object(forKey: contentKey) == nil || defaults.bool(forKey: contentKey)
+        defaults.set(defaults.bool(forKey: legacyKey) && contentEnabled, forKey: contentKey)
+        defaults.removeObject(forKey: legacyKey)
     }
 
     /// Initialize WebView size ratios to "App" preset on first launch

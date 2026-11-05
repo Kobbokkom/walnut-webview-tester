@@ -1,3 +1,4 @@
+import WebKit
 import XCTest
 
 @testable import wina
@@ -57,15 +58,15 @@ final class SettingsSearchTests: XCTestCase {
 
     func testSelectedResultShowsOnlyThatSettingUntilQueryChanges() throws {
         let items = SettingsSearchCatalog.items(for: .configuration)
-        let item = try XCTUnwrap(items.first { $0.id == "enableJavaScript" })
+        let item = try XCTUnwrap(items.first { $0.id == "allowsContentJavaScript" })
         var search = SettingsSearch(item: item, locale: english)
 
         XCTAssertEqual(items.filter { search.matches($0, screen: .configuration, locale: english) }.map(\.id), [item.id])
 
-        search.query = "Content JavaScript"
+        search.query = "Minimum Font Size"
         XCTAssertNil(search.selectedID)
         XCTAssertTrue(items.filter { search.matches($0, screen: .configuration, locale: english) }
-            .contains { $0.id == "allowsContentJavaScript" })
+            .contains { $0.id == "minimumFontSize" })
 
         search.query = " \n "
         XCTAssertFalse(search.isActive)
@@ -81,6 +82,14 @@ final class SettingsSearchTests: XCTestCase {
         search.query = "Reader"
         XCTAssertEqual(search.results(in: .safari, locale: english).map(\.item.id), ["safariEntersReaderIfAvailable"])
         XCTAssertTrue(search.results(in: .loaded, locale: english).isEmpty)
+    }
+
+    func testOldJavaScriptSearchFindsOneContentSwitch() {
+        var search = SettingsSearch()
+        search.query = "JavaScript"
+        let matches = search.results(in: .loaded, locale: english).map(\.item.id)
+        XCTAssertEqual(matches.filter { $0 == "allowsContentJavaScript" }.count, 1)
+        XCTAssertFalse(matches.contains("enableJavaScript"))
     }
 
     func testCategorySearchAndMenuItemsHaveDistinctStableIDs() {
@@ -114,5 +123,44 @@ final class SettingsSearchTests: XCTestCase {
         XCTAssertTrue(search.results(in: .loaded, locale: english).isEmpty)
         search.query = "no-such-setting-7A28"
         XCTAssertTrue(search.results(in: .loaded, locale: english).isEmpty)
+    }
+}
+
+@MainActor
+final class ContentJavaScriptPreferenceTests: XCTestCase {
+    func testMigrationPreservesEffectiveSettingAndLaterChanges() throws {
+        let name = "walnut-content-javascript-\(UUID())"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: name))
+        defer { defaults.removePersistentDomain(forName: name) }
+
+        let values: [Bool?] = [nil, false, true]
+        for legacy in values {
+            for content in values {
+                defaults.set(legacy, forKey: "enableJavaScript")
+                defaults.set(content, forKey: "allowsContentJavaScript")
+                winaApp.migrateContentJavaScriptPreference(in: defaults)
+
+                let effective = (legacy ?? true) && (content ?? true)
+                let migrated = defaults.object(forKey: "allowsContentJavaScript") as? Bool
+                XCTAssertEqual(migrated ?? true, effective)
+                XCTAssertNil(defaults.object(forKey: "enableJavaScript"))
+
+                defaults.set(!effective, forKey: "allowsContentJavaScript")
+                winaApp.migrateContentJavaScriptPreference(in: defaults)
+                XCTAssertEqual(defaults.bool(forKey: "allowsContentJavaScript"), !effective)
+            }
+        }
+    }
+
+    func testPageJavaScriptOffStillAllowsWalnutScripts() async throws {
+        let configuration = WKWebViewConfiguration()
+        configuration.defaultWebpagePreferences.allowsContentJavaScript = false
+        configuration.userContentController.addUserScript(WKUserScript(
+            source: "window.walnutScriptRan = true;", injectionTime: .atDocumentStart, forMainFrameOnly: true
+        ))
+        let webView = WKWebView(frame: .zero, configuration: configuration)
+        await webView.loadHTMLStringAsync("<script>window.pageScriptRan = true;</script>", baseURL: nil)
+        let state = try await webView.evaluateJavaScript("[window.pageScriptRan === true, window.walnutScriptRan === true]") as? [Bool]
+        XCTAssertEqual(state, [false, true])
     }
 }

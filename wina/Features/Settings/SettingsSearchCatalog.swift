@@ -37,8 +37,7 @@ enum SettingsSearchCatalog {
     ]
 
     private static let configuration: [SettingsSearchItem] = [
-        SettingsSearchItem("enableJavaScript", "JavaScript", "Core", "Master switch for all JavaScript execution in WebView."),
-        SettingsSearchItem("allowsContentJavaScript", "Content JavaScript", "Core", "Controls scripts from web pages only. App-injected scripts still work when disabled."),
+        SettingsSearchItem("allowsContentJavaScript", "Content JavaScript", "Core", "Controls scripts from web pages only. App-injected scripts still work when disabled.", keywords: ["JavaScript"]),
         SettingsSearchItem("minimumFontSize", "Minimum Font Size", "Core"),
         SettingsSearchItem("mediaAutoplay", "Auto-play Media", "Media", "Allows videos with autoplay attribute to start without user interaction."),
         SettingsSearchItem("inlineMediaPlayback", "Inline Playback", "Media", "Plays videos inline instead of fullscreen. Required for background video effects."),

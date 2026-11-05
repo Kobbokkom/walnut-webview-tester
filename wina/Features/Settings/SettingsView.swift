@@ -445,7 +445,6 @@ struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
 
     // Core Settings
-    @AppStorage("enableJavaScript") private var enableJavaScript: Bool = true
     @AppStorage("allowsContentJavaScript") private var allowsContentJavaScript: Bool = true
     @AppStorage("minimumFontSize") private var minimumFontSize: Double = 0
 
@@ -646,12 +645,6 @@ struct SettingsView: View {
     @ViewBuilder
     private var coreSection: some View {
         Section {
-            SettingToggleRow(
-                title: "JavaScript",
-                isOn: $enableJavaScript,
-                info: "Master switch for all JavaScript execution in WebView."
-            )
-            .settingsSearchItem("enableJavaScript")
             SettingToggleRow(
                 title: "Content JavaScript",
                 isOn: $allowsContentJavaScript,
@@ -890,7 +883,6 @@ struct SettingsView: View {
 
     private func resetAllToDefaults() {
         // Core
-        enableJavaScript = true
         allowsContentJavaScript = true
         minimumFontSize = 0
 

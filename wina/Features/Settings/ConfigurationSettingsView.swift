@@ -18,7 +18,6 @@ struct ConfigurationSettingsView: View {
     let navigator: WebViewNavigator
 
     // AppStorage (persistent)
-    @AppStorage("enableJavaScript") private var storedEnableJavaScript: Bool = true
     @AppStorage("allowsContentJavaScript") private var storedAllowsContentJavaScript: Bool = true
     @AppStorage("minimumFontSize") private var storedMinimumFontSize: Double = 0
     @AppStorage("mediaAutoplay") private var storedMediaAutoplay: Bool = false
@@ -39,7 +38,6 @@ struct ConfigurationSettingsView: View {
     @AppStorage("upgradeToHTTPS") private var storedUpgradeToHTTPS: Bool = true
 
     // Local state (editable)
-    @State private var enableJavaScript: Bool = true
     @State private var allowsContentJavaScript: Bool = true
     @State private var minimumFontSize: Double = 0
     @State private var mediaAutoplay: Bool = false
@@ -64,7 +62,6 @@ struct ConfigurationSettingsView: View {
     }
 
     private var hasChanges: Bool {
-        enableJavaScript != storedEnableJavaScript ||
         allowsContentJavaScript != storedAllowsContentJavaScript ||
         minimumFontSize != storedMinimumFontSize ||
         mediaAutoplay != storedMediaAutoplay ||
@@ -127,7 +124,6 @@ struct ConfigurationSettingsView: View {
     }
 
     private func loadFromStorage() {
-        enableJavaScript = storedEnableJavaScript
         allowsContentJavaScript = storedAllowsContentJavaScript
         minimumFontSize = storedMinimumFontSize
         mediaAutoplay = storedMediaAutoplay
@@ -149,7 +145,6 @@ struct ConfigurationSettingsView: View {
     }
 
     private func applyChanges() {
-        storedEnableJavaScript = enableJavaScript
         storedAllowsContentJavaScript = allowsContentJavaScript
         storedMinimumFontSize = minimumFontSize
         storedMediaAutoplay = mediaAutoplay
@@ -197,12 +192,6 @@ struct ConfigurationSettingsView: View {
     @ViewBuilder
     private var configCoreSection: some View {
         Section {
-            SettingToggleRow(
-                title: "JavaScript",
-                isOn: $enableJavaScript,
-                info: "Master switch for all JavaScript execution in WebView."
-            )
-            .settingsSearchItem("enableJavaScript")
             SettingToggleRow(
                 title: "Content JavaScript",
                 isOn: $allowsContentJavaScript,
@@ -350,7 +339,6 @@ struct ConfigurationSettingsView: View {
 
     private func resetAllToDefaults() {
         // Core
-        enableJavaScript = true
         allowsContentJavaScript = true
         minimumFontSize = 0
 
