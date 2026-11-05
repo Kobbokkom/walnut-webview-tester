@@ -276,10 +276,12 @@ struct AccessibilityAuditView: View {
         // Header
         lines.append("# Accessibility Audit Report")
         lines.append("")
-        if let url = navigator?.currentURL?.absoluteString {
+        if let url = manager?.auditedURL {
             lines.append("URL: \(url)")
         }
-        lines.append("Date: \(Date().formatted(date: .abbreviated, time: .shortened))")
+        if let date = manager?.auditedAt {
+            lines.append("Date: \(date.formatted(date: .abbreviated, time: .shortened))")
+        }
         lines.append("")
 
         // Summary

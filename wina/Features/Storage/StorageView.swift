@@ -17,6 +17,7 @@ struct StorageItem: Identifiable, Equatable {
     var value: String
     let storageType: StorageType
     var cookieMetadata: CookieMetadata?
+    var origin: String?
 
     enum StorageType: String, CaseIterable {
         case localStorage
@@ -61,7 +62,8 @@ struct StorageItem: Identifiable, Equatable {
         lhs.key == rhs.key &&
         lhs.value == rhs.value &&
         lhs.storageType == rhs.storageType &&
-        lhs.cookieMetadata == rhs.cookieMetadata
+        lhs.cookieMetadata == rhs.cookieMetadata &&
+        lhs.origin == rhs.origin
     }
 }
 
@@ -133,8 +135,10 @@ class StorageManager {
     var currentURL: URL?
 
     private weak var navigator: StorageNavigator?
+    private var refreshID = UUID()
 
     func setNavigator(_ navigator: StorageNavigator?) {
+        if self.navigator !== navigator { refreshID = UUID() }
         self.navigator = navigator
     }
 
@@ -146,6 +150,8 @@ class StorageManager {
             return
         }
 
+        let id = UUID()
+        refreshID = id
         let previousItems = items
         let didChangeURL = pageURL != currentURL
 
@@ -185,7 +191,7 @@ class StorageManager {
             newItems.append(contentsOf: previousItems.filter { $0.storageType == .cookies })
         }
 
-        // Update items atomically
+        guard refreshID == id else { return }
         items = newItems
         lastRefreshTime = Date()
     }
@@ -202,7 +208,7 @@ class StorageManager {
                     for (var i = 0; i < \(storageName).length; i++) {
                         var key = \(storageName).key(i);
                         var value = \(storageName).getItem(key);
-                        result.push({ key: key, value: value });
+                        result.push({ key: key, value: value, origin: location.origin });
                     }
                     return JSON.stringify(result);
                 } catch(e) {
@@ -231,7 +237,7 @@ class StorageManager {
 
         return items.compactMap { dict in
             guard let key = dict["key"], let value = dict["value"] else { return nil }
-            return StorageItem(key: key, value: value, storageType: type)
+            return StorageItem(key: key, value: value, storageType: type, origin: dict["origin"])
         }
     }
 
@@ -342,13 +348,15 @@ class StorageManager {
                 success = false
             }
         } else {
-            guard let data = try? JSONSerialization.data(withJSONObject: [item.key, key, value]),
+            guard let origin = item.origin,
+                  let data = try? JSONSerialization.data(withJSONObject: [origin, item.key, key, value]),
                   let arguments = String(data: data, encoding: .utf8) else { return false }
             let storage = item.storageType == .localStorage ? "localStorage" : "sessionStorage"
             // Keep the rename in one document and retain the original if the write fails.
             let script = """
             (function() {
-                const [oldKey, newKey, value] = \(arguments);
+                const [origin, oldKey, newKey, value] = \(arguments);
+                if (location.origin !== origin) return false;
                 const storage = \(storage);
                 if (oldKey !== newKey && storage.getItem(newKey) !== null) return false;
                 storage.setItem(newKey, value);
@@ -366,41 +374,31 @@ class StorageManager {
 
     // Remove item from storage
     @MainActor
-    func removeItem(
-        key: String,
-        type: StorageItem.StorageType,
-        cookieMetadata: CookieMetadata? = nil
-    ) async -> Bool {
+    func removeItem(_ item: StorageItem) async -> Bool {
         guard let navigator else { return false }
+        errorMessage = nil
 
-        // Use native WKHTTPCookieStore for cookies (more reliable)
-        if type == .cookies {
-            // Match by name + optional domain/path to avoid cross-domain deletes.
-            await navigator.deleteCookie(
-                name: key,
-                domain: cookieMetadata?.domain,
-                path: cookieMetadata?.path
-            )
+        if item.storageType == .cookies {
+            guard let metadata = item.cookieMetadata else { return false }
+            await navigator.deleteCookie(name: item.key, domain: metadata.domain, path: metadata.path)
             return true
         }
 
-        guard let keyData = try? JSONSerialization.data(withJSONObject: key, options: .fragmentsAllowed),
-              let jsonKey = String(data: keyData, encoding: .utf8) else {
-            return false
-        }
-
-        let script: String
-        switch type {
-        case .localStorage:
-            script = "localStorage.removeItem(\(jsonKey)); true;"
-        case .sessionStorage:
-            script = "sessionStorage.removeItem(\(jsonKey)); true;"
-        case .cookies:
-            return false  // Handled above
-        }
-
-        let result = await navigator.evaluateJavaScript(script)
-        return result as? Bool == true
+        guard let origin = item.origin,
+              let data = try? JSONSerialization.data(withJSONObject: [origin, item.key]),
+              let arguments = String(data: data, encoding: .utf8) else { return false }
+        let storage = item.storageType == .localStorage ? "localStorage" : "sessionStorage"
+        let script = """
+        (function() {
+            const [origin, key] = \(arguments);
+            if (location.origin !== origin) return false;
+            \(storage).removeItem(key);
+            return true;
+        })();
+        """
+        let success = await navigator.evaluateJavaScript(script) as? Bool == true
+        if !success { errorMessage = "Could not delete the item. Refresh and try again." }
+        return success
     }
 
     // Clear all items of a type
@@ -436,6 +434,7 @@ class StorageManager {
     }
 
     func clear() {
+        refreshID = UUID()
         items.removeAll()
         lastRefreshTime = nil
         errorMessage = nil
@@ -968,11 +967,7 @@ struct StorageView: View {
 
     private func deleteItem(_ item: StorageItem) {
         Task {
-            if await storageManager.removeItem(
-                key: item.key,
-                type: item.storageType,
-                cookieMetadata: item.cookieMetadata
-            ) {
+            if await storageManager.removeItem(item) {
                 await storageManager.refresh(pageURL: navigator?.currentURL)
             }
         }

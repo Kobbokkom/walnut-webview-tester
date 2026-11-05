@@ -313,11 +313,7 @@ struct StorageEditSheet: View {
     private func deleteItem() {
         isDeleting = true
         Task {
-            if await storageManager.removeItem(
-                key: item.key,
-                type: item.storageType,
-                cookieMetadata: item.cookieMetadata
-            ) {
+            if await storageManager.removeItem(item) {
                 onDelete()
                 dismiss()
             }

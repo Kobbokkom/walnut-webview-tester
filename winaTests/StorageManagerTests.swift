@@ -184,7 +184,7 @@ final class StorageManagerTests: XCTestCase {
         mock.jsResult = true
 
         manager.setNavigator(mock)
-        let result = await manager.removeItem(key: "test_key", type: .localStorage)
+        let result = await manager.removeItem(StorageItem(key: "test_key", value: "value", storageType: .localStorage, origin: "https://example.com"))
 
         XCTAssertTrue(result)
         XCTAssertTrue(mock.scripts.last?.contains("removeItem") ?? false)
@@ -197,7 +197,7 @@ final class StorageManagerTests: XCTestCase {
         mock.jsResult = true
 
         manager.setNavigator(mock)
-        let result = await manager.removeItem(key: "test_key", type: .sessionStorage)
+        let result = await manager.removeItem(StorageItem(key: "test_key", value: "value", storageType: .sessionStorage, origin: "https://example.com"))
 
         XCTAssertTrue(result)
         XCTAssertTrue(mock.scripts.last?.contains("sessionStorage") ?? false)
@@ -274,12 +274,19 @@ final class StorageManagerTests: XCTestCase {
               setItem:function(k,v){if(v==='too large') throw new Error('QuotaExceededError'); this.values[k]=v;},
               removeItem:function(k){delete this.values[k];}};
             var sessionStorage = localStorage;
+            var location = {origin: 'https://elsewhere.example'};
             """)
             let mock = MockStorageNavigator()
             mock.scriptContext = context
             let manager = StorageManager()
             manager.setNavigator(mock)
-            let item = StorageItem(key: "old", value: "original", storageType: type)
+            let item = StorageItem(key: "old", value: "original", storageType: type, origin: "https://example.com")
+            let wrongOriginSave = await manager.updateItem(item, key: "old", value: "changed")
+            let wrongOriginDelete = await manager.removeItem(item)
+            XCTAssertFalse(wrongOriginSave)
+            XCTAssertFalse(wrongOriginDelete)
+            XCTAssertEqual(context.evaluateScript("localStorage.getItem('old')")?.toString(), "original")
+            context.evaluateScript("location.origin = 'https://example.com';")
             let failed = await manager.updateItem(item, key: "new", value: "too large")
             XCTAssertFalse(failed)
             XCTAssertNotNil(manager.errorMessage)

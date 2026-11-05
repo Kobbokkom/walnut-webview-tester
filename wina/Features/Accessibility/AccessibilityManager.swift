@@ -16,6 +16,8 @@ class AccessibilityManager {
     var issues: [AccessibilityIssue] = []
     var isScanning: Bool = false
     var hasScanned: Bool = false
+    private(set) var auditedURL: String?
+    private(set) var auditedAt: Date?
     var errorMessage: String?
     var filterSeverity: AccessibilityIssue.Severity?
     var searchText: String = ""
@@ -24,6 +26,8 @@ class AccessibilityManager {
     func clear() {
         issues = []
         hasScanned = false
+        auditedURL = nil
+        auditedAt = nil
         errorMessage = nil
         filterSeverity = nil
         searchText = ""
@@ -35,6 +39,8 @@ class AccessibilityManager {
         isScanning = true
         issues = []
         hasScanned = false
+        auditedURL = nil
+        auditedAt = nil
         errorMessage = nil
         defer { isScanning = false }
 
@@ -50,15 +56,18 @@ class AccessibilityManager {
 
         let script = """
         const results = await axe.run();
-        return JSON.stringify(results.violations);
+        return JSON.stringify({url: results.url, violations: results.violations});
         """
         guard let result = await navigator.callAsyncJavaScript(script) as? String,
               let data = result.data(using: .utf8),
-              let violations = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
+              let report = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let violations = report["violations"] as? [[String: Any]] else {
             errorMessage = "Could not scan this page. Check that JavaScript is enabled and the page is loaded, then try again."
             return
         }
         issues = parseAxeViolations(violations)
+        auditedURL = report["url"] as? String
+        auditedAt = Date()
         hasScanned = true
     }
 

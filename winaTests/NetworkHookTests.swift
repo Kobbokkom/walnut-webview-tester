@@ -561,6 +561,9 @@ final class XHRCompletionRegressionTests: XCTestCase {
         XMLHttpRequest.prototype.setRequestHeader=function(){};
         XMLHttpRequest.prototype.getAllResponseHeaders=function(){return 'content-type: application/json';};
         XMLHttpRequest.prototype.addEventListener=function(n,f){(this.listeners[n]||(this.listeners[n]=[])).push(f);};
+        XMLHttpRequest.prototype.removeEventListener=function(n,f){
+          this.listeners[n]=(this.listeners[n]||[]).filter(function(listener){return listener!==f;});
+        };
         Object.defineProperty(XMLHttpRequest.prototype,'responseText',{get:function(){
           if(this.responseType && this.responseType!=='text') throw new Error('InvalidStateError');
           return '{"ok":true}';
@@ -568,15 +571,18 @@ final class XHRCompletionRegressionTests: XCTestCase {
         """)
         context.evaluateScript(WebViewScripts.networkHook)
         XCTAssertNil(context.exception)
+        context.evaluateScript("var xhr=new XMLHttpRequest();")
         for type in ["text", "json", "blob", "arraybuffer", "document"] {
             context.evaluateScript("""
             messages=[];
-            var xhr=new XMLHttpRequest();xhr.open('GET','/data');xhr.responseType='\(type)';xhr.send();
+            xhr.open('GET','/data');xhr.responseType='\(type)';xhr.send();
             xhr.listeners.load.forEach(function(listener){listener();});
             """)
             XCTAssertNil(context.exception)
             let completed = context.evaluateScript("messages.filter(function(m){return m.action==='complete' && m.status===200;}).length")?.toInt32()
-            XCTAssertEqual(completed, 1, "Missing completion for \(type)")
+            XCTAssertEqual(completed, 1, "Expected one completion for \(type)")
+            XCTAssertTrue(context.evaluateScript("messages[0].id === messages[1].id")?.toBool() == true)
+            XCTAssertTrue(context.evaluateScript("Object.values(xhr.listeners).every(function(list){return list.length===0;})")?.toBool() == true)
         }
     }
 }

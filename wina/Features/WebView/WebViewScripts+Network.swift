@@ -363,7 +363,8 @@ extension WebViewScripts {
                     });
                 } catch(e) {}
 
-                xhr.addEventListener('load', function() {
+                function onLoad() {
+                    removeListeners();
                     var responseHeaders = {};
                     var headerString = xhr.getAllResponseHeaders();
                     if (headerString) {
@@ -398,9 +399,10 @@ extension WebViewScripts {
                             body: responseBody
                         });
                     } catch(e) {}
-                });
+                }
 
-                xhr.addEventListener('error', function() {
+                function onError() {
+                    removeListeners();
                     try {
                         window.webkit.messageHandlers.networkRequest.postMessage({
                             action: 'error',
@@ -408,9 +410,10 @@ extension WebViewScripts {
                             error: 'Network error'
                         });
                     } catch(e) {}
-                });
+                }
 
-                xhr.addEventListener('abort', function() {
+                function onAbort() {
+                    removeListeners();
                     try {
                         window.webkit.messageHandlers.networkRequest.postMessage({
                             action: 'error',
@@ -418,9 +421,10 @@ extension WebViewScripts {
                             error: 'Request aborted'
                         });
                     } catch(e) {}
-                });
+                }
 
-                xhr.addEventListener('timeout', function() {
+                function onTimeout() {
+                    removeListeners();
                     try {
                         window.webkit.messageHandlers.networkRequest.postMessage({
                             action: 'error',
@@ -428,9 +432,30 @@ extension WebViewScripts {
                             error: 'Request timeout'
                         });
                     } catch(e) {}
-                });
+                }
 
-                return originalSend.apply(this, arguments);
+                function removeListeners() {
+                    xhr.removeEventListener('load', onLoad);
+                    xhr.removeEventListener('error', onError);
+                    xhr.removeEventListener('abort', onAbort);
+                    xhr.removeEventListener('timeout', onTimeout);
+                }
+
+                xhr.addEventListener('load', onLoad);
+                xhr.addEventListener('error', onError);
+                xhr.addEventListener('abort', onAbort);
+                xhr.addEventListener('timeout', onTimeout);
+                try {
+                    return originalSend.apply(this, arguments);
+                } catch (error) {
+                    removeListeners();
+                    try {
+                        window.webkit.messageHandlers.networkRequest.postMessage({
+                            action: 'error', id: requestId, error: String(error)
+                        });
+                    } catch(e) {}
+                    throw error;
+                }
             };
         })();
         """
