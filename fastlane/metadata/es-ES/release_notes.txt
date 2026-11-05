@@ -1,1 +1,1 @@
-Actualizamos el enlace a la política de privacidad.
+Ahora puedes buscar opciones en los ajustes. Mejoramos la disposición de las herramientas de desarrollo en iPad y las pruebas de WebView.

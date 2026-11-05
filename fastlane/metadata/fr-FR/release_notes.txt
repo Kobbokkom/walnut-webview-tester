@@ -1,1 +1,1 @@
-Le lien vers la politique de confidentialité a été mis à jour.
+La recherche dans les réglages est disponible. La disposition des outils de développement sur iPad et les tests WebView ont été améliorés.

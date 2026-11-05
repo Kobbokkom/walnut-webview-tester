@@ -1,1 +1,1 @@
-Linket til privatlivspolitikken er opdateret.
+Forbedret kompatibilitet og stabilitet.

@@ -1,1 +1,1 @@
-Frissítettük az adatvédelmi szabályzat hivatkozását.
+Jobb kompatibilitás és stabilitás.

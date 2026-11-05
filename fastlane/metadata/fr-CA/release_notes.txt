@@ -1,1 +1,1 @@
-Le lien vers la politique de confidentialité a été mis à jour.
+Amélioration de la compatibilité et de la stabilité.

@@ -1,1 +1,1 @@
-Ažurirana je poveznica na pravila privatnosti.
+Poboljšana kompatibilnost i stabilnost.

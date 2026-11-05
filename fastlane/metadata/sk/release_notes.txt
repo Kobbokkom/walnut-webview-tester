@@ -1,1 +1,1 @@
-Aktualizovali sme odkaz na zásady ochrany osobných údajov.
+Vylepšená kompatibilita a stabilita.

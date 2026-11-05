@@ -1,1 +1,1 @@
-Actualizamos el enlace a la política de privacidad.
+Mejoras de compatibilidad y estabilidad.

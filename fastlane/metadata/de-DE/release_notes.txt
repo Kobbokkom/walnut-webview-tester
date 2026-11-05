@@ -1,1 +1,1 @@
-Der Link zur Datenschutzerklärung wurde aktualisiert.
+Einstellungen lassen sich jetzt durchsuchen. Das Layout der Entwicklertools auf dem iPad und WebView-Tests wurden verbessert.

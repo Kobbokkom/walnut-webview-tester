@@ -1,1 +1,1 @@
-Zaktualizowaliśmy link do polityki prywatności.
+Poprawiono zgodność i stabilność.

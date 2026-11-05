@@ -1,1 +1,1 @@
-Hem actualitzat l’enllaç a la política de privacitat.
+Millores de compatibilitat i estabilitat.

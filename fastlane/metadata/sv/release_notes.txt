@@ -1,1 +1,1 @@
-Länken till integritetspolicyn har uppdaterats.
+Förbättrad kompatibilitet och stabilitet.
