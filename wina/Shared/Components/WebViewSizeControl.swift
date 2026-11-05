@@ -28,7 +28,7 @@ struct WebViewSizeControl: View {
     }
 
     private var isAppContainerSelected: Bool {
-        abs(widthRatio - 1.0) < 0.01 && abs(heightRatio - appContainerHeightRatio) < 0.01
+        widthRatio == 1 && heightRatio == appContainerHeightRatio
     }
 
     var body: some View {

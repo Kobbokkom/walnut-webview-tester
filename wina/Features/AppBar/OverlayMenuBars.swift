@@ -210,11 +210,7 @@ private extension OverlayMenuBars {
     }
 
     private var visibleToolbarItems: [DevToolsMenuItem] {
-        guard let items = try? JSONDecoder().decode([ToolbarItemState].self, from: toolbarItemsOrderData),
-              !items.isEmpty else {
-            return DevToolsMenuItem.defaultOrder
-        }
-        return items.filter { $0.isVisible }.map { $0.menuItem }
+        ToolbarSettings.visibleItems(from: toolbarItemsOrderData)
     }
 
     private var visibleAppBarItems: [AppBarMenuItem] {

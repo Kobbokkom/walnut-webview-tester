@@ -6,11 +6,7 @@ struct DevToolsPanel<Content: View>: View {
     @AppStorage("toolbarItemsOrder") private var toolbarItemsOrder = Data()
 
     private var tools: [DevToolsOverlay] {
-        _ = toolbarItemsOrder
-        let visible = ToolbarSettings.getVisibleItems()
-        return DevToolsOverlay.allCases.filter { tool in
-            tool.menuItem.map { visible.contains($0) } == true || tool == state.selectedTool
-        }
+        state.dockedTools(in: ToolbarSettings.visibleItems(from: toolbarItemsOrder))
     }
 
     var body: some View {

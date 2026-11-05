@@ -22,16 +22,6 @@ extension ContentView {
                     showDropdown = false
                 }
 
-            // Banner ad at bottom (only for non-premium users)
-            if !StoreManager.shared.isAdRemoved {
-                let adSize = currentOrientationAnchoredAdaptiveBanner(width: geometry.size.width)
-                VStack {
-                    Spacer()
-                    BannerAdView(adUnitId: AdManager.bannerAdUnitId, availableWidth: geometry.size.width)
-                        .frame(width: adSize.size.width, height: adSize.size.height)
-                }
-            }
-
             ScrollView {
                 VStack(spacing: 16) {
                     // Walnut logo
@@ -157,8 +147,16 @@ extension ContentView {
                         .animation(.easeOut(duration: 0.15), value: useSafariWebView)
                 }
                 .padding(.top, max(72, geometry.size.height * 0.32 - 130))
-                .padding(.bottom, StoreManager.shared.isAdRemoved ? 16 : 80)
+                .padding(.bottom, 16)
                 .frame(maxWidth: .infinity)
+            }
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                if !StoreManager.shared.isAdRemoved {
+                    let adSize = currentOrientationAnchoredAdaptiveBanner(width: geometry.size.width)
+                    BannerAdView(adUnitId: AdManager.bannerAdUnitId, availableWidth: geometry.size.width)
+                        .frame(width: adSize.size.width, height: adSize.size.height)
+                        .background(.background)
+                }
             }
             .scrollDismissesKeyboard(.interactively)
             .onChange(of: textFieldFocused) { _, newValue in

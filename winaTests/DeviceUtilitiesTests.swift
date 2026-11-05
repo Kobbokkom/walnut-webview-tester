@@ -148,6 +148,7 @@ final class AdaptiveWebViewSizeTests: XCTestCase {
         XCTAssertEqual(BarConstants.heightRatioAfterResize(widthRatio: 1, heightRatio: original, from: 900, to: 400),
                        BarConstants.appContainerHeightRatio(for: 400))
         XCTAssertEqual(BarConstants.heightRatioAfterResize(widthRatio: 1, heightRatio: 0.75, from: 900, to: 400), 0.75)
+        XCTAssertEqual(BarConstants.heightRatioAfterResize(widthRatio: 1, heightRatio: 0.79, from: 900, to: 400), 0.79)
         XCTAssertEqual(BarConstants.heightRatioAfterResize(widthRatio: 0.75, heightRatio: original, from: 900, to: 400), original)
         XCTAssertEqual(BarConstants.heightRatioAfterResize(widthRatio: 1, heightRatio: 1, from: 900, to: 400), 1)
         XCTAssertEqual(BarConstants.heightRatioAfterResize(widthRatio: 1, heightRatio: original, from: 0, to: 400), original)
@@ -182,6 +183,21 @@ final class NetworkTextResizeTests: XCTestCase {
 
 @MainActor
 final class AdaptiveDevToolsPresentationTests: XCTestCase {
+    func testDockedToolsKeepToolbarOrderAndRetainActiveTool() throws {
+        let data = try JSONEncoder().encode([
+            ToolbarItemState(menuItem: .storage, isVisible: true),
+            ToolbarItemState(menuItem: .searchInPage, isVisible: true),
+            ToolbarItemState(menuItem: .sources, isVisible: true),
+            ToolbarItemState(menuItem: .console, isVisible: false)
+        ])
+        let state = DevToolsOverlayState()
+        let order = ToolbarSettings.visibleItems(from: data)
+        XCTAssertEqual(state.dockedTools(in: order), [.storage, .editor])
+
+        state.open(.console)
+        XCTAssertEqual(state.dockedTools(in: order), [.storage, .editor, .console])
+    }
+
     func testDockingPreservesSelectedToolWhenSheetDismisses() {
         let state = DevToolsOverlayState()
         state.open(.network)

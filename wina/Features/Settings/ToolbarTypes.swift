@@ -129,9 +129,9 @@ struct ToolbarItemState: Identifiable, Codable, Equatable {
 // MARK: - Helper for Reading Toolbar Settings
 
 struct ToolbarSettings {
-    static func getVisibleItems() -> [DevToolsMenuItem] {
-        guard let data = UserDefaults.standard.data(forKey: "toolbarItemsOrder"),
-              let items = try? JSONDecoder().decode([ToolbarItemState].self, from: data) else {
+    static func visibleItems(from data: Data) -> [DevToolsMenuItem] {
+        guard let items = try? JSONDecoder().decode([ToolbarItemState].self, from: data),
+              !items.isEmpty else {
             // Default: all items visible
             return DevToolsMenuItem.defaultOrder
         }

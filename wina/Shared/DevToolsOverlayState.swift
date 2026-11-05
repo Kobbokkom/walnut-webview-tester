@@ -31,6 +31,14 @@ final class DevToolsOverlayState {
         DevToolsOverlay.allCases.first { $0 != .searchText && active.contains($0) }
     }
 
+    func dockedTools(in order: [DevToolsMenuItem]) -> [DevToolsOverlay] {
+        var tools = order.compactMap { item in DevToolsOverlay.allCases.first { $0.menuItem == item } }
+        if let selectedTool, !tools.contains(selectedTool) {
+            tools.append(selectedTool)
+        }
+        return tools
+    }
+
     func open(_ overlay: DevToolsOverlay) {
         if overlay != .searchText {
             active = active.intersection([.searchText])

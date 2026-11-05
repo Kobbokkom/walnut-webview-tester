@@ -49,8 +49,8 @@ enum BarConstants {
         widthRatio: Double, heightRatio: Double, from oldHeight: CGFloat, to newHeight: CGFloat
     ) -> Double {
         guard oldHeight > 0, newHeight > 0,
-              abs(widthRatio - 1) < 0.01,
-              abs(heightRatio - appContainerHeightRatio(for: oldHeight)) < 0.01 else { return heightRatio }
+              widthRatio == 1,
+              heightRatio == appContainerHeightRatio(for: oldHeight) else { return heightRatio }
         return appContainerHeightRatio(for: newHeight)
     }
 
