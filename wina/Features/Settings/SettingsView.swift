@@ -512,7 +512,7 @@ struct SettingsView: View {
                 appSection
                 coreSection
                 mediaSection
-                contentModeSection
+                ContentModeSection(selection: $preferredContentMode)
                 behaviorSection
                 dataDetectorsSection
                 privacySection
@@ -703,22 +703,6 @@ struct SettingsView: View {
             .settingsSearchItem("allowsPictureInPicture")
         } header: {
             Text("Media")
-        }
-    }
-
-    @ViewBuilder
-    private var contentModeSection: some View {
-        Section {
-            Picker("Content Mode", selection: $preferredContentMode) {
-                Text("Recommended").tag(0)
-                Text("Mobile").tag(1)
-                Text("Desktop").tag(2)
-            }
-            .pickerStyle(.inline)
-            .labelsHidden()
-            .settingsSearchItem("preferredContentMode")
-        } header: {
-            Text(verbatim: "Content Mode")
         }
     }
 

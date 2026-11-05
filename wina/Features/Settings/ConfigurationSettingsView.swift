@@ -89,7 +89,7 @@ struct ConfigurationSettingsView: View {
         SettingsSearchList(screen: .configuration, search: $settingsSearch) {
             configCoreSection
             configMediaSection
-            configContentModeSection
+            ContentModeSection(selection: $preferredContentMode)
             configBehaviorSection
             configDataDetectorsSection
             configPrivacySection
@@ -258,22 +258,6 @@ struct ConfigurationSettingsView: View {
     }
 
     @ViewBuilder
-    private var configContentModeSection: some View {
-        Section {
-            Picker("Content Mode", selection: $preferredContentMode) {
-                Text("Recommended").tag(0)
-                Text("Mobile").tag(1)
-                Text("Desktop").tag(2)
-            }
-            .pickerStyle(.inline)
-            .labelsHidden()
-            .settingsSearchItem("preferredContentMode")
-        } header: {
-            Text(verbatim: "Content Mode")
-        }
-    }
-
-    @ViewBuilder
     private var configBehaviorSection: some View {
         Section {
             SettingToggleRow(
@@ -395,6 +379,41 @@ struct ConfigurationSettingsView: View {
 
         // Content Mode
         preferredContentMode = 0
+    }
+}
+
+struct ContentModeSection: View {
+    @Binding var selection: Int
+
+    var body: some View {
+        Section {
+            // Keep each option a list row when search rebuilds the section.
+            option("Recommended", value: 0)
+            option("Mobile", value: 1)
+            option("Desktop", value: 2)
+        } header: {
+            Text(verbatim: "Content Mode")
+        }
+    }
+
+    private func option(_ title: LocalizedStringKey, value: Int) -> some View {
+        Button {
+            selection = value
+        } label: {
+            HStack {
+                Text(title)
+                Spacer()
+                if selection == value {
+                    Image(systemName: "checkmark")
+                        .foregroundStyle(.tint)
+                        .accessibilityHidden(true)
+                }
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(selection == value ? .isSelected : [])
+        .settingsSearchItem("preferredContentMode")
     }
 }
 
