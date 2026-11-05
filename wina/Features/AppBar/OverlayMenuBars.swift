@@ -16,6 +16,7 @@ struct OverlayMenuBars: View {
     let useSafariVC: Bool
     let isOverlayMode: Bool  // true: pull menu, false: fixed position
     let erudaModeEnabled: Bool
+    let hasDockedDevTools: Bool
     let onHome: () -> Void
     let onURLChange: (String) -> Void
     let navigator: WebViewNavigator?
@@ -315,7 +316,7 @@ private extension OverlayMenuBars {
                             // Eruda mode hides DevTools except Search and Screenshot
                             ForEach(visibleToolbarItems) { item in
                                 // Skip DevTools items when Eruda mode is enabled
-                                if erudaModeEnabled && !item.isAlwaysVisible {
+                                if (erudaModeEnabled || hasDockedDevTools) && !item.isAlwaysVisible {
                                     EmptyView()
                                 } else if item == .recording {
                                     // Recording button with dynamic state and time display
@@ -762,6 +763,7 @@ private struct BottomBarIconButton: View {
             useSafariVC: false,
             isOverlayMode: true,
             erudaModeEnabled: false,
+            hasDockedDevTools: false,
             onHome: {},
             onURLChange: { _ in },
             navigator: nil,
@@ -788,6 +790,7 @@ private struct BottomBarIconButton: View {
             useSafariVC: false,
             isOverlayMode: false,
             erudaModeEnabled: false,
+            hasDockedDevTools: false,
             onHome: {},
             onURLChange: { _ in },
             navigator: nil,

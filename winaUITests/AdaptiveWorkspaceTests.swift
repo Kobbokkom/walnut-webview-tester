@@ -44,6 +44,7 @@ final class AdaptiveWorkspaceTests: XCTestCase {
         app.buttons["closeDevTools"].firstMatch.tap()
         XCTAssertTrue(app.webViews.firstMatch.waitForExistence(timeout: 10))
         XCTAssertFalse(app.otherElements["devToolsPanel"].exists)
+        XCTAssertTrue(console.exists)
         XCUIDevice.shared.orientation = .portrait
     }
 

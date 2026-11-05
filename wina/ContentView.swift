@@ -306,6 +306,7 @@ struct ContentView: View {
                     useSafariVC: useSafariWebView,
                     isOverlayMode: !shouldBarsBeExpanded,
                     erudaModeEnabled: erudaModeEnabled,
+                    hasDockedDevTools: shouldDockDevTools && devToolsState.selectedTool != nil,
                     onHome: {
                         // Close all DevTools overlays with single call
                         devToolsState.closeAll()

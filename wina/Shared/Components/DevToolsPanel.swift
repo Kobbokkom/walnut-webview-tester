@@ -43,6 +43,7 @@ struct DevToolsPanel<Content: View>: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .background(Color(uiColor: .systemBackground))
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("devToolsPanel")
     }
 }
