@@ -251,9 +251,10 @@ enum JSONNode: Identifiable {
         switch json {
         case is NSNull:
             return .null(key: key, path: path)
-        case let bool as Bool:
-            return .bool(key: key, value: bool, path: path)
         case let number as NSNumber:
+            if CFGetTypeID(number) == CFBooleanGetTypeID() {
+                return .bool(key: key, value: number.boolValue, path: path)
+            }
             return .number(key: key, value: number.doubleValue, path: path)
         case let string as String:
             return .string(key: key, value: string, path: path)

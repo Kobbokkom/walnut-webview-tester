@@ -6,6 +6,7 @@
 //
 
 import XCTest
+import JavaScriptCore
 @testable import wina
 
 // MARK: - Metric Thresholds Tests
@@ -368,10 +369,11 @@ final class NavigationTimingTests: XCTestCase {
             responseTime: 50,
             domProcessingTime: 200,
             domContentLoadedTime: 500,
-            loadEventTime: 1000
+            loadEventTime: 1000,
+            timeToFirstByte: 120
         )
 
-        XCTAssertEqual(timing.ttfb, 150)  // requestTime + responseTime
+        XCTAssertEqual(timing.ttfb, 120)
     }
 
     func testConnectionTimeCalculation() {
@@ -500,6 +502,7 @@ final class PerformanceDataTests: XCTestCase {
             loadEventTime: 2000  // Good LCP
         )
 
+        data.largestContentfulPaint = 2000
         XCTAssertEqual(data.lcpRating, .good)
     }
 
@@ -551,6 +554,7 @@ final class PerformanceDataTests: XCTestCase {
             loadEventTime: 2000
         )
 
+        data.largestContentfulPaint = 2000
         // Good CLS (< 0.1)
         data.cls = 0.05
 
@@ -574,6 +578,7 @@ final class PerformanceDataTests: XCTestCase {
             loadEventTime: 5000
         )
 
+        data.largestContentfulPaint = 5000
         data.cls = 0.05
 
         XCTAssertFalse(data.coreWebVitalsPass)
@@ -597,6 +602,8 @@ final class PerformanceDataTests: XCTestCase {
             domContentLoadedTime: 0,
             loadEventTime: 1500  // Good LCP
         )
+        data.largestContentfulPaint = 1500
+        data.navigation?.timeToFirstByte = 100
         data.cls = 0.05  // Good CLS
         data.paints = [PaintTiming(name: "first-contentful-paint", startTime: 1000)]  // Good FCP
 
@@ -628,5 +635,54 @@ final class PerformanceRatingTests: XCTestCase {
         XCTAssertEqual(PerformanceRating.needsImprovement.rawValue, "Needs Improvement")
         XCTAssertEqual(PerformanceRating.poor.rawValue, "Poor")
         XCTAssertEqual(PerformanceRating.unknown.rawValue, "N/A")
+    }
+}
+
+final class PerformanceCollectionRegressionTests: XCTestCase {
+    func testCollectedMeasurementsReachDisplayedValues() {
+        let manager = PerformanceManager()
+        manager.parseData(from: """
+        {"navigation":{"startTime":0,"redirectTime":0,"dnsTime":100,"tcpTime":200,"tlsTime":100,
+        "requestTime":100,"responseTime":5000,"domProcessingTime":100,"domContentLoadedTime":6500,
+        "loadEventTime":7000,"timeToFirstByte":1200},"resources":[],"paints":[],"lcp":2100,"cls":0.05,"tbt":0}
+        """)
+        XCTAssertNil(manager.lastError)
+        XCTAssertEqual(manager.data.largestContentfulPaint, 2100)
+        XCTAssertEqual(manager.data.navigation?.ttfb, 1200)
+        XCTAssertEqual(manager.data.lcpRating, .good)
+    }
+
+    func testCollectionUsesFirstByteTimestampBeforeBodyDownload() throws {
+        let context = try XCTUnwrap(JSContext())
+        context.evaluateScript("""
+        var window = {__webVitals_lcp: 2100, __webVitals_cls: 0};
+        var performance = {getEntriesByType: function(type) {
+          return type === 'navigation' ? [{startTime: 50, responseStart: 1250, requestStart: 1150,
+            responseEnd: 6250, redirectStart: 0, redirectEnd: 0, domainLookupStart: 50,
+            domainLookupEnd: 150, connectStart: 150, connectEnd: 350, secureConnectionStart: 250,
+            domComplete: 7000, domInteractive: 6500, domContentLoadedEventEnd: 7100, loadEventEnd: 7200}] : [];
+        }};
+        """)
+        let json = try XCTUnwrap(context.evaluateScript(PerformanceManager.collectionScript)?.toString())
+        XCTAssertNil(context.exception)
+        let manager = PerformanceManager()
+        manager.parseData(from: json)
+        XCTAssertNil(manager.lastError)
+        XCTAssertEqual(manager.data.navigation?.ttfb, 1200)
+        XCTAssertEqual(manager.data.largestContentfulPaint, 2100)
+        context.evaluateScript("window.__webVitals_lcp = -1")
+        let unavailableJSON = try XCTUnwrap(context.evaluateScript(PerformanceManager.collectionScript)?.toString())
+        manager.parseData(from: unavailableJSON)
+        XCTAssertNil(manager.data.largestContentfulPaint)
+        XCTAssertEqual(manager.data.lcpRating, .unknown)
+    }
+
+    func testUnavailableLCPIsNotReplacedByLoadCompletion() {
+        let manager = PerformanceManager()
+        manager.parseData(from: """
+        {"navigation":null,"resources":[],"paints":[],"lcp":-1,"cls":-1,"tbt":-1}
+        """)
+        XCTAssertNil(manager.data.largestContentfulPaint)
+        XCTAssertEqual(manager.data.lcpRating, .unknown)
     }
 }

@@ -206,6 +206,14 @@ struct AccessibilityAuditView: View {
 
             if isScanning {
                 scanningState
+            } else if let error = manager?.errorMessage {
+                ContentUnavailableView {
+                    Label("Audit Failed", systemImage: "exclamationmark.triangle")
+                } description: {
+                    Text(error)
+                } actions: {
+                    Button("Try Again") { Task { await runAudit() } }
+                }
             } else if !hasScanned {
                 initialState
             } else if filteredIssues.isEmpty {
@@ -526,40 +534,9 @@ struct AccessibilityAuditView: View {
 
     private func runAudit() async {
         guard let navigator, let manager else { return }
-
-        manager.isScanning = true
-        manager.issues = []
-
-        // Step 1: axe-core 로드 확인
-        let checkAxe = "typeof axe !== 'undefined'"
-        let axeLoaded = await navigator.evaluateJavaScript(checkAxe) as? Bool ?? false
-
-        if !axeLoaded {
-            guard let axeURL = Bundle.main.url(forResource: "axe.min", withExtension: "js"),
-                  let axeScript = try? String(contentsOf: axeURL, encoding: .utf8) else {
-                // axe.min.js not found
-                manager.isScanning = false
-                manager.hasScanned = true
-                return
-            }
-            _ = await navigator.evaluateJavaScript(axeScript)
-        }
-
-        // Step 2: axe-core audit 실행 (Promise 지원)
-        let auditScript = """
-            const results = await axe.run();
-            return JSON.stringify(results.violations);
-        """
-
-        if let result = await navigator.callAsyncJavaScript(auditScript) as? String,
-           let data = result.data(using: .utf8),
-           let violations = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] {
-            manager.issues = manager.parseAxeViolations(violations)
-        }
-
-        manager.isScanning = false
-        manager.hasScanned = true
+        await manager.runAudit(navigator: navigator)
     }
+
 }
 
 // MARK: - Filter Tab

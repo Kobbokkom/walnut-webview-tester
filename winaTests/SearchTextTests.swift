@@ -240,62 +240,7 @@ final class SearchTextDOMIntegrationTests: XCTestCase {
     }
 
     private func createSearchScript(keyword: String) -> String {
-        let escapedText = keyword
-            .replacingOccurrences(of: "\\", with: "\\\\")
-            .replacingOccurrences(of: "'", with: "\\'")
-            .replacingOccurrences(of: "\"", with: "\\\"")
-
-        return """
-        (function() {
-            document.querySelectorAll('.__wina_search_highlight__').forEach(el => {
-                const parent = el.parentNode;
-                parent.replaceChild(document.createTextNode(el.textContent), el);
-                parent.normalize();
-            });
-
-            const keyword = '\(escapedText)';
-            if (!keyword) return JSON.stringify({count: 0, index: 0});
-
-            const regex = new RegExp(keyword, 'gi');
-            let matchCount = 0;
-            const elements = [];
-
-            function traverse(node) {
-                if (node.nodeType === 3) {
-                    const text = node.nodeValue;
-                    if (regex.test(text)) {
-                        regex.lastIndex = 0;
-                        const span = document.createElement('span');
-                        span.innerHTML = text.replace(regex, match => {
-                            matchCount++;
-                            return '<span class="__wina_search_highlight__" style="background-color: #FFEB3B;">' + match + '</span>';
-                        });
-                        const frag = document.createDocumentFragment();
-                        while (span.firstChild) {
-                            if (span.firstChild.className === '__wina_search_highlight__') {
-                                elements.push(span.firstChild);
-                            }
-                            frag.appendChild(span.firstChild);
-                        }
-                        node.parentNode.replaceChild(frag, node);
-                    }
-                } else if (node.nodeType === 1 && !['SCRIPT', 'STYLE', 'NOSCRIPT'].includes(node.tagName)) {
-                    Array.from(node.childNodes).forEach(traverse);
-                }
-            }
-
-            traverse(document.body);
-
-            if (elements.length > 0) {
-                elements[0].style.backgroundColor = '#FF9800';
-            }
-
-            window.__wina_search_elements__ = elements;
-            window.__wina_search_index__ = 0;
-
-            return JSON.stringify({count: matchCount, index: 0});
-        })();
-        """
+        SearchTextOverlay.searchScript(for: keyword)!
     }
 
     private func createClearScript() -> String {
@@ -431,6 +376,84 @@ final class SearchTextDOMIntegrationTests: XCTestCase {
         let json = try? JSONSerialization.jsonObject(with: data ?? Data()) as? [String: Any]
 
         XCTAssertEqual(json?["count"] as? Int, 0)
+    }
+
+    func testSearchPreservesMarkupLikeText() async {
+        await loadTestHTML("<html><body><p id='text'>foo &lt;b&gt;bar&lt;/b&gt; &amp;amp;</p></body></html>")
+        let before = await executeScript("document.getElementById('text').textContent") as? String
+        _ = await executeScript(createSearchScript(keyword: "foo"))
+        let after = await executeScript("document.getElementById('text').textContent") as? String
+        let insertedMarkup = await executeScript("document.querySelectorAll('#text b').length") as? Int
+        XCTAssertEqual(after, before)
+        XCTAssertEqual(insertedMarkup, 0)
+        _ = await executeScript(createClearScript())
+        let cleared = await executeScript("document.getElementById('text').textContent") as? String
+        XCTAssertEqual(cleared, before)
+    }
+
+    func testSourcesLookupKeepsSelectedSiblingWithWhitespaceAndSpecialID() async throws {
+        await loadTestHTML("""
+        <html><body>
+          <p class="item">first</p>
+          <!-- comment -->
+          <p class="item" id="second'item">second</p>
+        </body></html>
+        """)
+        let navigator = WebViewNavigator()
+        navigator.attach(to: webView)
+        let manager = SourcesManager()
+        manager.setNavigator(navigator)
+        await manager.fetchDOMTree()
+        func findSecond(_ node: DOMNode) -> DOMNode? {
+            if node.attributes["id"] == "second'item" { return node }
+            return node.children.lazy.compactMap(findSecond).first
+        }
+        let root = try XCTUnwrap(manager.domTree)
+        let selected = try XCTUnwrap(findSecond(root))
+        let result = await executeScript("(\(SourcesManager.nodeLookupScript(path: selected.path))).textContent") as? String
+        XCTAssertEqual(result, "second")
+        navigator.detach()
+    }
+
+    func testAccessibilityAuditFailureDoesNotReportPass() async {
+        await loadTestHTML("<html><body>test</body></html>")
+        let navigator = WebViewNavigator()
+        navigator.attach(to: webView)
+        let manager = navigator.accessibilityManager
+        _ = await executeScript("window.axe = {run: function(){ return Promise.reject(new Error('audit failed')); }}")
+        await manager.runAudit(navigator: navigator)
+        XCTAssertNotNil(manager.errorMessage)
+        XCTAssertFalse(manager.hasScanned)
+        XCTAssertFalse(manager.isScanning)
+        _ = await executeScript("window.axe = {run: function(){ return Promise.resolve({violations: []}); }}")
+        await manager.runAudit(navigator: navigator)
+        XCTAssertNil(manager.errorMessage)
+        XCTAssertTrue(manager.hasScanned)
+        XCTAssertTrue(manager.issues.isEmpty)
+        navigator.detach()
+    }
+
+    func testFailedAccessibilityRescanClearsPreviousFindings() async {
+        await loadTestHTML("<html><body><img src='missing.png'></body></html>")
+        let navigator = WebViewNavigator()
+        navigator.attach(to: webView)
+        let manager = navigator.accessibilityManager
+        _ = await executeScript("""
+        window.axe = {run: function(){return Promise.resolve({violations: [{
+          id:'image-alt', impact:'serious', help:'Images need alternative text',
+          nodes:[{html:'<img src="missing.png">', target:['img']}]
+        }]});}};
+        """)
+        await manager.runAudit(navigator: navigator)
+        XCTAssertTrue(manager.hasScanned)
+        XCTAssertEqual(manager.issues.count, 1)
+        _ = await executeScript("window.axe = {run: function(){return Promise.reject(new Error('rescan failed'));}}")
+        await manager.runAudit(navigator: navigator)
+        XCTAssertTrue(manager.issues.isEmpty)
+        XCTAssertFalse(manager.hasScanned)
+        XCTAssertNotNil(manager.errorMessage)
+        XCTAssertFalse(manager.isScanning)
+        navigator.detach()
     }
 
     // MARK: - Highlight Element Tests

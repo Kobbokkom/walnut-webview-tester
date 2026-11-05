@@ -242,7 +242,7 @@ struct NetworkView: View {
             NetworkSettingsSheet()
         }
         .sheet(item: $selectedRequest) { request in
-            NetworkDetailView(request: request)
+            LiveNetworkDetailView(manager: networkManager, requestID: request.id)
         }
         .sheet(item: $selectedResource) { resource in
             ResourceDetailView(resource: resource)

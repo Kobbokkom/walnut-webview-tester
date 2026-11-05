@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import JavaScriptCore
 import XCTest
 @testable import wina
 
@@ -544,5 +545,38 @@ final class NetworkHookTests: XCTestCase {
     func testXHRHookSetsTypeToXHR() {
         let script = getNetworkHookScript()
         XCTAssertTrue(script.contains("type: 'xhr'"), "XHR hook should set request type to 'xhr'")
+    }
+}
+
+final class XHRCompletionRegressionTests: XCTestCase {
+    func testTypedResponsesAlwaysCompleteMetadata() throws {
+        let context = try XCTUnwrap(JSContext())
+        context.evaluateScript("""
+        var messages = [];
+        var window = {fetch: function(){}, webkit:{messageHandlers:{networkRequest:{postMessage:function(m){messages.push(m);}}}}};
+        var document = {baseURI:'https://example.com'};
+        function XMLHttpRequest(){this.listeners={};this.status=200;this.statusText='OK';this.responseType='';this.response={ok:true};}
+        XMLHttpRequest.prototype.open=function(){};
+        XMLHttpRequest.prototype.send=function(){};
+        XMLHttpRequest.prototype.setRequestHeader=function(){};
+        XMLHttpRequest.prototype.getAllResponseHeaders=function(){return 'content-type: application/json';};
+        XMLHttpRequest.prototype.addEventListener=function(n,f){(this.listeners[n]||(this.listeners[n]=[])).push(f);};
+        Object.defineProperty(XMLHttpRequest.prototype,'responseText',{get:function(){
+          if(this.responseType && this.responseType!=='text') throw new Error('InvalidStateError');
+          return '{"ok":true}';
+        }});
+        """)
+        context.evaluateScript(WebViewScripts.networkHook)
+        XCTAssertNil(context.exception)
+        for type in ["text", "json", "blob", "arraybuffer", "document"] {
+            context.evaluateScript("""
+            messages=[];
+            var xhr=new XMLHttpRequest();xhr.open('GET','/data');xhr.responseType='\(type)';xhr.send();
+            xhr.listeners.load.forEach(function(listener){listener();});
+            """)
+            XCTAssertNil(context.exception)
+            let completed = context.evaluateScript("messages.filter(function(m){return m.action==='complete' && m.status===200;}).length")?.toInt32()
+            XCTAssertEqual(completed, 1, "Missing completion for \(type)")
+        }
     }
 }

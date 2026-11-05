@@ -375,6 +375,19 @@ extension WebViewScripts {
                         });
                     }
 
+                    var responseBody = null;
+                    try {
+                        if (!xhr.responseType || xhr.responseType === 'text') {
+                            responseBody = truncateBody(xhr.responseText);
+                        } else if (xhr.responseType === 'json') {
+                            responseBody = truncateBody(JSON.stringify(xhr.response));
+                        } else if (xhr.responseType === 'document') {
+                            responseBody = xhr.responseXML ? truncateBody(new XMLSerializer().serializeToString(xhr.responseXML)) : null;
+                        } else {
+                            responseBody = truncateBody(xhr.response);
+                        }
+                    } catch(e) {}
+
                     try {
                         window.webkit.messageHandlers.networkRequest.postMessage({
                             action: 'complete',
@@ -382,7 +395,7 @@ extension WebViewScripts {
                             status: xhr.status,
                             statusText: xhr.statusText,
                             headers: Object.keys(responseHeaders).length > 0 ? responseHeaders : null,
-                            body: truncateBody(xhr.responseText)
+                            body: responseBody
                         });
                     } catch(e) {}
                 });

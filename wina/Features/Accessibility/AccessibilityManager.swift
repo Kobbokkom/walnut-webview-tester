@@ -16,6 +16,7 @@ class AccessibilityManager {
     var issues: [AccessibilityIssue] = []
     var isScanning: Bool = false
     var hasScanned: Bool = false
+    var errorMessage: String?
     var filterSeverity: AccessibilityIssue.Severity?
     var searchText: String = ""
 
@@ -23,8 +24,42 @@ class AccessibilityManager {
     func clear() {
         issues = []
         hasScanned = false
+        errorMessage = nil
         filterSeverity = nil
         searchText = ""
+    }
+
+    @MainActor
+    func runAudit(navigator: WebViewNavigator) async {
+        guard !isScanning else { return }
+        isScanning = true
+        issues = []
+        hasScanned = false
+        errorMessage = nil
+        defer { isScanning = false }
+
+        let axeLoaded = await navigator.evaluateJavaScript("typeof axe !== 'undefined'") as? Bool ?? false
+        if !axeLoaded {
+            guard let url = Bundle.main.url(forResource: "axe.min", withExtension: "js"),
+                  let script = try? String(contentsOf: url, encoding: .utf8) else {
+                errorMessage = "Could not load the accessibility checker. Try again."
+                return
+            }
+            _ = await navigator.evaluateJavaScript(script)
+        }
+
+        let script = """
+        const results = await axe.run();
+        return JSON.stringify(results.violations);
+        """
+        guard let result = await navigator.callAsyncJavaScript(script) as? String,
+              let data = result.data(using: .utf8),
+              let violations = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
+            errorMessage = "Could not scan this page. Check that JavaScript is enabled and the page is loaded, then try again."
+            return
+        }
+        issues = parseAxeViolations(violations)
+        hasScanned = true
     }
 
     // axe-core violations 파싱

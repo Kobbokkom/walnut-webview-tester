@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import JavaScriptCore
 import XCTest
 @testable import wina
 
@@ -264,6 +265,60 @@ final class StorageManagerTests: XCTestCase {
     }
 
     @MainActor
+    func testRenameKeepsOriginalOnWriteFailureAndCollision() async throws {
+        for type in [StorageItem.StorageType.localStorage, .sessionStorage] {
+            let context = try XCTUnwrap(JSContext())
+            context.evaluateScript("""
+            var localStorage = {values: {old:'original', taken:'occupied'},
+              getItem:function(k){return Object.prototype.hasOwnProperty.call(this.values,k) ? this.values[k] : null;},
+              setItem:function(k,v){if(v==='too large') throw new Error('QuotaExceededError'); this.values[k]=v;},
+              removeItem:function(k){delete this.values[k];}};
+            var sessionStorage = localStorage;
+            """)
+            let mock = MockStorageNavigator()
+            mock.scriptContext = context
+            let manager = StorageManager()
+            manager.setNavigator(mock)
+            let item = StorageItem(key: "old", value: "original", storageType: type)
+            let failed = await manager.updateItem(item, key: "new", value: "too large")
+            XCTAssertFalse(failed)
+            XCTAssertNotNil(manager.errorMessage)
+            XCTAssertEqual(context.evaluateScript("localStorage.getItem('old')")?.toString(), "original")
+            let collision = await manager.updateItem(item, key: "taken", value: "changed")
+            XCTAssertFalse(collision)
+            XCTAssertEqual(context.evaluateScript("localStorage.getItem('taken')")?.toString(), "occupied")
+            let saved = await manager.updateItem(item, key: "new'key", value: "new value")
+            XCTAssertTrue(saved)
+            XCTAssertNil(manager.errorMessage)
+            XCTAssertTrue(context.evaluateScript("localStorage.getItem('old')")?.isNull == true)
+            XCTAssertEqual(context.evaluateScript("localStorage.getItem(\"new'key\")")?.toString(), "new value")
+        }
+    }
+
+    @MainActor
+    func testCookieRenameVerifiesWriteBeforeDeletingOriginal() async {
+        let manager = StorageManager()
+        let mock = MockStorageNavigator()
+        let cookie = makeCookie(name: "old", value: "original", domain: ".example.com")
+        mock.cookies = [cookie]
+        mock.acceptsCookieWrites = false
+        manager.setNavigator(mock)
+        let item = StorageItem(key: "old", value: "original", storageType: .cookies, cookieMetadata: CookieMetadata(from: cookie))
+        let failed = await manager.updateItem(item, key: "new", value: "updated")
+        XCTAssertFalse(failed)
+        XCTAssertNotNil(manager.errorMessage)
+        XCTAssertTrue(mock.deletedCookies.isEmpty)
+        XCTAssertEqual(mock.cookies.first?.name, "old")
+        mock.acceptsCookieWrites = true
+        let saved = await manager.updateItem(item, key: "new", value: "updated")
+        XCTAssertTrue(saved)
+        XCTAssertNil(manager.errorMessage)
+        XCTAssertEqual(mock.deletedCookies.last?.name, "old")
+        XCTAssertEqual(mock.setCookies.last?.domain, cookie.domain)
+        XCTAssertEqual(mock.setCookies.last?.path, cookie.path)
+    }
+
+    @MainActor
     func testSetItemWithoutNavigatorReturnsFalse() async {
         let manager = StorageManager()
 
@@ -275,6 +330,8 @@ final class StorageManagerTests: XCTestCase {
 
 private final class MockStorageNavigator: StorageNavigator {
     var jsResult: Any?
+    var scriptContext: JSContext?
+    var acceptsCookieWrites = true
     var cookies: [HTTPCookie] = []
     private(set) var scripts: [String] = []
     private(set) var deletedCookies: [(name: String, domain: String?, path: String?)] = []
@@ -283,6 +340,11 @@ private final class MockStorageNavigator: StorageNavigator {
 
     func evaluateJavaScript(_ script: String) async -> Any? {
         scripts.append(script)
+        if let context = scriptContext {
+            context.exception = nil
+            let result = context.evaluateScript(script)
+            return context.exception == nil ? result?.toObject() : nil
+        }
         return jsResult
     }
 
@@ -292,6 +354,10 @@ private final class MockStorageNavigator: StorageNavigator {
 
     func setCookie(_ cookie: HTTPCookie) async {
         setCookies.append(cookie)
+        if acceptsCookieWrites {
+            cookies.removeAll { $0.name == cookie.name && $0.domain == cookie.domain && $0.path == cookie.path }
+            cookies.append(cookie)
+        }
     }
 
     func deleteCookie(name: String, domain: String?, path: String?) async {

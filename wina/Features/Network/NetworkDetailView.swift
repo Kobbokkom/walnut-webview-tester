@@ -9,6 +9,21 @@ import SwiftSoup
 import SwiftUI
 import SwiftUIBackports
 
+struct LiveNetworkDetailView: View {
+    let manager: NetworkManager
+    let requestID: UUID
+
+    var request: NetworkRequest? { manager.requests.first { $0.id == requestID } }
+
+    var body: some View {
+        if let request {
+            NetworkDetailView(request: request)
+        } else {
+            ContentUnavailableView("Request No Longer Available", systemImage: "network.slash")
+        }
+    }
+}
+
 // MARK: - Network Detail View
 
 struct NetworkDetailView: View {

@@ -38,6 +38,24 @@ final class JSONNodeTests: XCTestCase {
         XCTAssertTrue(ids.contains("root.items.[0].name"))
     }
 
+    func testNumbersZeroAndOneRemainNumbers() throws {
+        let values = try XCTUnwrap(JSONSerialization.jsonObject(with: Data("[0,1,true,false]".utf8)) as? [Any])
+        for (index, value) in values.enumerated() {
+            let node = JSONNode.parse(value)
+            if index < 2 {
+                guard case .number(_, let number, _) = node else {
+                    return XCTFail("JSON number became Boolean")
+                }
+                XCTAssertEqual(number, Double(index))
+            } else {
+                guard case .bool(_, let flag, _) = node else {
+                    return XCTFail("JSON Boolean became number")
+                }
+                XCTAssertEqual(flag, index == 2)
+            }
+        }
+    }
+
     private func collectIDs(from node: JSONNode) -> [String] {
         var result = [node.id]
         switch node {

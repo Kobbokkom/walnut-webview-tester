@@ -518,13 +518,13 @@ struct ElementDetailView: View {
             return
         }
 
-        let selector = buildSelector()
+        let path = node.path
 
         // Execute all JavaScript fetches concurrently
-        async let stylesResult = navigator.evaluateJavaScript(ElementDetailScripts.computedStyles(selector: selector))
-        async let allStylesResult = navigator.evaluateJavaScript(ElementDetailScripts.allComputedStyles(selector: selector))
-        async let htmlResult = navigator.evaluateJavaScript(ElementDetailScripts.htmlContent(selector: selector))
-        async let matchedResult = navigator.evaluateJavaScript(ElementDetailScripts.matchedRules(selector: selector))
+        async let stylesResult = navigator.evaluateJavaScript(ElementDetailScripts.computedStyles(path: path))
+        async let allStylesResult = navigator.evaluateJavaScript(ElementDetailScripts.allComputedStyles(path: path))
+        async let htmlResult = navigator.evaluateJavaScript(ElementDetailScripts.htmlContent(path: path))
+        async let matchedResult = navigator.evaluateJavaScript(ElementDetailScripts.matchedRules(path: path))
 
         // Parse computed styles (non-default)
         if let stylesJSON = await stylesResult as? String,
@@ -620,22 +620,6 @@ struct ElementDetailView: View {
         }
     }
 
-    private func buildSelector() -> String {
-        // Prefer ID selector (most specific)
-        if let id = node.attributes["id"], !id.isEmpty {
-            return "#\(id)"
-        }
-        // Use tag + first class if available
-        if let className = node.attributes["class"], !className.isEmpty {
-            let firstClass = className.split(separator: " ").first.map(String.init) ?? ""
-            if !firstClass.isEmpty {
-                return "\(node.nodeName.lowercased()).\(firstClass)"
-            }
-        }
-        // Fallback to tag name only
-        return node.nodeName.lowercased()
-    }
-
     private func copyToClipboard() {
         switch selectedSection {
         case .attributes:
@@ -659,10 +643,10 @@ struct ElementDetailView: View {
 private enum ElementDetailScripts {
     /// Script to fetch computed styles that differ from defaults (Chrome DevTools style)
     /// Uses isolated iframe to get true initial values without inheritance
-    static func computedStyles(selector: String) -> String {
+    static func computedStyles(path: [Int]) -> String {
         """
         (function() {
-            const el = document.querySelector('\(selector)');
+            const el = \(SourcesManager.nodeLookupScript(path: path));
             if (!el) return '{}';
 
             const tagName = el.tagName.toLowerCase();
@@ -710,10 +694,10 @@ private enum ElementDetailScripts {
     }
 
     /// Script to fetch ALL computed styles (for "Show all" mode)
-    static func allComputedStyles(selector: String) -> String {
+    static func allComputedStyles(path: [Int]) -> String {
         """
         (function() {
-            const el = document.querySelector('\(selector)');
+            const el = \(SourcesManager.nodeLookupScript(path: path));
             if (!el) return '{}';
             const styles = window.getComputedStyle(el);
             const result = {};
@@ -728,10 +712,10 @@ private enum ElementDetailScripts {
     }
 
     /// Script to fetch HTML content
-    static func htmlContent(selector: String) -> String {
+    static func htmlContent(path: [Int]) -> String {
         """
         (function() {
-            const el = document.querySelector('\(selector)');
+            const el = \(SourcesManager.nodeLookupScript(path: path));
             if (!el) return '{}';
             return JSON.stringify({
                 outer: el.outerHTML.substring(0, 5000),
@@ -742,14 +726,14 @@ private enum ElementDetailScripts {
     }
 
     /// Script to fetch matched CSS rules (with @layer support)
-    static func matchedRules(selector: String) -> String {
-        "(function() { \(matchedRulesSetup(selector: selector)) \(matchedRulesProcessing) })();"
+    static func matchedRules(path: [Int]) -> String {
+        "(function() { \(matchedRulesSetup(path: path)) \(matchedRulesProcessing) })();"
     }
 
     /// Setup part of matchedRules script
-    private static func matchedRulesSetup(selector: String) -> String {
+    private static func matchedRulesSetup(path: [Int]) -> String {
         """
-        const el = document.querySelector('\(selector)');
+        const el = \(SourcesManager.nodeLookupScript(path: path));
         if (!el) return '[]';
         const rules = []; let ruleId = 0;
         function calcSpecificity(sel) {

@@ -706,7 +706,8 @@ private struct ResourceTypeRow: View {
                     responseTime: 89,
                     domProcessingTime: 234,
                     domContentLoadedTime: 567,
-                    loadEventTime: 1234
+                    loadEventTime: 1234,
+                    timeToFirstByte: 150
                 ),
                 resources: [
                     ResourceTiming(
@@ -725,7 +726,8 @@ private struct ResourceTypeRow: View {
                     PaintTiming(name: "first-contentful-paint", startTime: 456)
                 ],
                 cls: 0.05,
-                tbt: 150
+                tbt: 150,
+                largestContentfulPaint: 1000
             )
             return manager
         }(),

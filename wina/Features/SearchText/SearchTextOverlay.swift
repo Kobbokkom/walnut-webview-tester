@@ -191,20 +191,23 @@ struct SearchTextOverlay: View {
             function traverse(node) {
                 if (node.nodeType === 3) { // Text node
                     const text = node.nodeValue;
-                    if (regex.test(text)) {
-                        regex.lastIndex = 0;
-                        const span = document.createElement('span');
-                        span.innerHTML = text.replace(regex, match => {
-                            matchCount++;
-                            return '<span class="__wina_search_highlight__" style="background-color: #FFEB3B; color: #000; padding: 1px 2px; border-radius: 2px;">' + match + '</span>';
-                        });
+                    regex.lastIndex = 0;
+                    const matches = Array.from(text.matchAll(regex));
+                    if (matches.length > 0) {
                         const frag = document.createDocumentFragment();
-                        while (span.firstChild) {
-                            if (span.firstChild.className === '__wina_search_highlight__') {
-                                elements.push(span.firstChild);
-                            }
-                            frag.appendChild(span.firstChild);
+                        let offset = 0;
+                        for (const match of matches) {
+                            frag.appendChild(document.createTextNode(text.slice(offset, match.index)));
+                            const highlight = document.createElement('span');
+                            highlight.className = '__wina_search_highlight__';
+                            highlight.style.cssText = 'background-color: #FFEB3B; color: #000; padding: 1px 2px; border-radius: 2px;';
+                            highlight.textContent = match[0];
+                            frag.appendChild(highlight);
+                            elements.push(highlight);
+                            offset = match.index + match[0].length;
                         }
+                        frag.appendChild(document.createTextNode(text.slice(offset)));
+                        matchCount += matches.length;
                         node.parentNode.replaceChild(frag, node);
                     }
                 } else if (node.nodeType === 1 && !['SCRIPT', 'STYLE', 'NOSCRIPT'].includes(node.tagName)) {

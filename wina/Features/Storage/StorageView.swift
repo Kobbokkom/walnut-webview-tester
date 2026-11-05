@@ -9,32 +9,6 @@
 import SwiftUI
 import SwiftUIBackports
 
-// MARK: - Cookie Metadata
-
-struct CookieMetadata: Equatable {
-    let domain: String
-    let path: String
-    let expiresDate: Date?
-    let isSecure: Bool
-    let isHTTPOnly: Bool
-    let sameSitePolicy: String?
-
-    var isSession: Bool { expiresDate == nil }
-
-    init(from cookie: HTTPCookie) {
-        self.domain = cookie.domain
-        self.path = cookie.path
-        self.expiresDate = cookie.expiresDate
-        self.isSecure = cookie.isSecure
-        self.isHTTPOnly = cookie.isHTTPOnly
-        if let policy = cookie.sameSitePolicy {
-            self.sameSitePolicy = policy.rawValue
-        } else {
-            self.sameSitePolicy = nil
-        }
-    }
-}
-
 // MARK: - Storage Item Model
 
 struct StorageItem: Identifiable, Equatable {
@@ -339,6 +313,55 @@ class StorageManager {
 
         let result = await navigator.evaluateJavaScript(script)
         return result as? Bool == true
+    }
+
+    @MainActor
+    func updateItem(_ item: StorageItem, key: String, value: String) async -> Bool {
+        guard let navigator else { return false }
+        errorMessage = nil
+        let success: Bool
+        if item.storageType == .cookies {
+            if let metadata = item.cookieMetadata,
+               let cookie = makeCookie(name: key, value: value, metadata: metadata) {
+                let cookies = await navigator.getAllCookies()
+                let collision = key != item.key && cookies.contains {
+                    $0.name == key && $0.domain == metadata.domain && $0.path == metadata.path
+                }
+                if collision {
+                    success = false
+                } else {
+                    await navigator.setCookie(cookie)
+                    success = await navigator.getAllCookies().contains {
+                        $0.name == key && $0.value == value && $0.domain == metadata.domain && $0.path == metadata.path
+                    }
+                    if success, key != item.key {
+                        await navigator.deleteCookie(name: item.key, domain: metadata.domain, path: metadata.path)
+                    }
+                }
+            } else {
+                success = false
+            }
+        } else {
+            guard let data = try? JSONSerialization.data(withJSONObject: [item.key, key, value]),
+                  let arguments = String(data: data, encoding: .utf8) else { return false }
+            let storage = item.storageType == .localStorage ? "localStorage" : "sessionStorage"
+            // Keep the rename in one document and retain the original if the write fails.
+            let script = """
+            (function() {
+                const [oldKey, newKey, value] = \(arguments);
+                const storage = \(storage);
+                if (oldKey !== newKey && storage.getItem(newKey) !== null) return false;
+                storage.setItem(newKey, value);
+                if (oldKey !== newKey) storage.removeItem(oldKey);
+                return true;
+            })();
+            """
+            success = await navigator.evaluateJavaScript(script) as? Bool == true
+        }
+        if !success {
+            errorMessage = "Could not save the item. The original item was kept. Check the key and available storage, then try again."
+        }
+        return success
     }
 
     // Remove item from storage

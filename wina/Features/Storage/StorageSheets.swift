@@ -234,6 +234,13 @@ struct StorageEditSheet: View {
                     }
                 }
 
+                if let error = storageManager.errorMessage {
+                    Section {
+                        Text(error)
+                            .foregroundStyle(.red)
+                    }
+                }
+
                 Section {
                     HStack {
                         Spacer()
@@ -282,8 +289,6 @@ struct StorageEditSheet: View {
     private func saveItem() {
         isSaving = true
         Task {
-            var success = false
-
             // If viewing decoded, re-encode before saving
             var finalValue = editedValue
             if isURLDecoded, isCookie {
@@ -295,30 +300,7 @@ struct StorageEditSheet: View {
             // Minify JSON before saving (storage typically stores compact JSON)
             let valueToSave = JsonParser.minify(finalValue) ?? finalValue
 
-            if keyChanged {
-                // Key changed: remove old key first, then set new key
-                let removed = await storageManager.removeItem(
-                    key: item.key,
-                    type: item.storageType,
-                    cookieMetadata: item.cookieMetadata
-                )
-                if removed {
-                    success = await storageManager.setItem(
-                        key: editedKey,
-                        value: valueToSave,
-                        type: item.storageType,
-                        cookieMetadata: item.cookieMetadata
-                    )
-                }
-            } else {
-                // Only value changed
-                success = await storageManager.setItem(
-                    key: editedKey,
-                    value: valueToSave,
-                    type: item.storageType,
-                    cookieMetadata: item.cookieMetadata
-                )
-            }
+            let success = await storageManager.updateItem(item, key: editedKey, value: valueToSave)
 
             if success {
                 onSave()

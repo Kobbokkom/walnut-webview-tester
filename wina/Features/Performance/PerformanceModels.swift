@@ -116,9 +116,11 @@ struct NavigationTiming: Codable, Equatable {
     let domContentLoadedTime: Double
     let loadEventTime: Double
 
+    var timeToFirstByte: Double?
+
     // TTFB = time from navigation start to first byte of response
     var ttfb: Double {
-        requestTime + responseTime
+        timeToFirstByte ?? -1
     }
 
     // Connection time = TCP + TLS
@@ -249,10 +251,7 @@ struct PerformanceData: Equatable {
         paints.first { $0.name == "first-paint" }?.startTime
     }
 
-    // LCP approximation from load event (real LCP requires PerformanceObserver)
-    var largestContentfulPaint: Double? {
-        navigation?.loadEventTime
-    }
+    var largestContentfulPaint: Double?
 
     // MARK: - Core Web Vitals Scores
 
@@ -387,6 +386,7 @@ class PerformanceManager {
                 dnsTime: nav.domainLookupEnd - nav.domainLookupStart,
                 tcpTime: nav.connectEnd - nav.connectStart,
                 tlsTime: nav.secureConnectionStart > 0 ? nav.connectEnd - nav.secureConnectionStart : 0,
+                timeToFirstByte: nav.responseStart - nav.startTime,
                 requestTime: nav.responseStart - nav.requestStart,
                 responseTime: nav.responseEnd - nav.responseStart,
                 domProcessingTime: nav.domComplete - nav.domInteractive,
@@ -486,7 +486,8 @@ class PerformanceManager {
                 paints: decoded.paints,
                 timestamp: Date(),
                 cls: decoded.cls,
-                tbt: decoded.tbt
+                tbt: decoded.tbt,
+                largestContentfulPaint: decoded.lcp >= 0 ? decoded.lcp : nil
             )
             lastError = nil
         } catch {

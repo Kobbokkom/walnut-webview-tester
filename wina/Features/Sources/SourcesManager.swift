@@ -116,6 +116,24 @@ class SourcesManager {
     })();
     """
 
+    static func nodeLookupScript(path: [Int]) -> String {
+        """
+        (function() {
+            const path = [\(path.map(String.init).joined(separator: ","))];
+            if (path[0] !== 0) return null;
+            let node = document.documentElement;
+            for (const index of path.slice(1)) {
+                if (!node) return null;
+                // Match serializeNode's omission of whitespace-only text nodes.
+                const children = Array.from(node.childNodes).filter(child =>
+                    child.nodeType !== 3 || child.textContent.trim().length > 0);
+                node = children[index];
+            }
+            return node || null;
+        })()
+        """
+    }
+
     func fetchDOMTree() async {
         guard let navigator else {
             errorMessage = "Navigator not available"

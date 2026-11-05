@@ -23,6 +23,26 @@ final class NetworkManagerTests: XCTestCase {
         super.tearDown()
     }
 
+    @MainActor
+    func testOpenDetailTracksRequestReplacementAndRemoval() async throws {
+        let id = UUID()
+        manager.addRequest(id: id.uuidString, method: "GET", url: "https://example.com", requestType: "fetch", headers: nil, body: nil)
+        await withCheckedContinuation { continuation in
+            DispatchQueue.main.async { continuation.resume() }
+        }
+        let detail = LiveNetworkDetailView(manager: manager, requestID: id)
+        XCTAssertTrue(try XCTUnwrap(detail.request).isPending)
+        manager.updateRequest(id: id.uuidString, status: 200, statusText: "OK", responseHeaders: ["content-type": "text/plain"], responseBody: "done", error: nil)
+        await withCheckedContinuation { continuation in
+            DispatchQueue.main.async { continuation.resume() }
+        }
+        XCTAssertEqual(detail.request?.status, 200)
+        XCTAssertEqual(detail.request?.responseBody, "done")
+        XCTAssertFalse(try XCTUnwrap(detail.request).isPending)
+        manager.clear()
+        XCTAssertNil(detail.request)
+    }
+
     // MARK: - Request Lifecycle Tests
 
     func testAddRequestCreatesNewEntry() {
