@@ -97,15 +97,15 @@ struct CallbackTestSettingsView: View {
                         }
 
                         ForEach(
-                            Array(manager.callbackParameters.sorted(by: { $0.key < $1.key })),
-                            id: \.key
-                        ) { key, value in
+                            Array(manager.callbackParameters.enumerated()),
+                            id: \.offset
+                        ) { _, item in
                             HStack {
-                                Text(key)
+                                Text(item.name)
                                     .font(.system(.caption, design: .monospaced))
                                     .foregroundStyle(.secondary)
                                 Spacer()
-                                Text(value)
+                                Text(item.value ?? "—")
                                     .font(.system(.caption, design: .monospaced))
                                     .foregroundStyle(.primary)
                                     .textSelection(.enabled)

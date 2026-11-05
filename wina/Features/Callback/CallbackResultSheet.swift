@@ -104,10 +104,10 @@ struct CallbackResultSheet: View {
 
             VStack(spacing: 8) {
                 ForEach(
-                    manager.callbackParameters.sorted(by: { $0.key < $1.key }),
-                    id: \.key
-                ) { key, value in
-                    parameterRow(key: key, value: value)
+                    Array(manager.callbackParameters.enumerated()),
+                    id: \.offset
+                ) { _, item in
+                    parameterRow(key: item.name, value: item.value ?? "—")
                 }
             }
             .padding(12)

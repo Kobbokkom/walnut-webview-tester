@@ -20,7 +20,7 @@ final class CallbackTestManager {
     var lastCallbackURL: URL?
 
     /// Parsed parameters from callback
-    var callbackParameters: [String: String] = [:]
+    var callbackParameters: [URLQueryItem] = []
 
     /// Timestamp of last callback
     var lastCallbackTime: Date?
@@ -51,19 +51,7 @@ final class CallbackTestManager {
         lastCallbackURL = url
         lastCallbackTime = Date()
 
-        // Parse query parameters
-        if let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
-            let queryItems = components.queryItems
-        {
-            callbackParameters = Dictionary(
-                uniqueKeysWithValues: queryItems.compactMap { item in
-                    guard let value = item.value else { return nil }
-                    return (item.name, value)
-                }
-            )
-        } else {
-            callbackParameters = [:]
-        }
+        callbackParameters = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
 
         // Trigger alert
         showResultAlert = true
@@ -92,8 +80,8 @@ final class CallbackTestManager {
         if !callbackParameters.isEmpty {
             lines.append("")
             lines.append("▸ Parameters:")
-            for (key, value) in callbackParameters.sorted(by: { $0.key < $1.key }) {
-                lines.append("   • \(key): \(value)")
+            for item in callbackParameters {
+                lines.append("   • \(item.name): \(item.value ?? "—")")
             }
         }
 
@@ -123,7 +111,7 @@ final class CallbackTestManager {
     /// Clear callback history
     func clearHistory() {
         lastCallbackURL = nil
-        callbackParameters = [:]
+        callbackParameters = []
         lastCallbackTime = nil
     }
 }
