@@ -51,7 +51,6 @@ final class InfoSettingsSheetTests: XCTestCase {
     }
 }
 
-
 @MainActor
 final class EmulationRegressionTests: XCTestCase {
     func testEmulationUsesNativeBooleanMediaQueryEvaluation() async throws {
@@ -91,7 +90,6 @@ final class EmulationRegressionTests: XCTestCase {
     }
 }
 
-
 @MainActor
 final class SharedInfoCacheRegressionTests: XCTestCase {
     private final class InfoNavigator: WebViewNavigator {
@@ -100,7 +98,7 @@ final class SharedInfoCacheRegressionTests: XCTestCase {
 
         override func evaluateJavaScript(_ script: String) async -> Any? {
             if invalidatesDuringEvaluation {
-                SharedInfoWebView.shared.setNavigator(self)
+                await SharedInfoWebView.shared.setNavigator(self)
             }
             return ["browser": ["userAgent": userAgent]]
         }
