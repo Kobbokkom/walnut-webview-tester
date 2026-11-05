@@ -44,6 +44,17 @@ final class SettingsSearchTests: XCTestCase {
         XCTAssertEqual(SettingsSearchCatalog.items(for: .settings).filter { $0.id == "allowZoom" }.count, 1)
     }
 
+    func testMenuDescriptionMatchesInEnglishAndAppLanguage() {
+        let description = "Dark mode, Reduced motion, Contrast"
+        var search = SettingsSearch()
+        search.query = "  DARK MODE  "
+        XCTAssertTrue(search.matchesMenuDescription(description, locale: korean))
+
+        search.query = "다크 모드"
+        XCTAssertTrue(search.matchesMenuDescription(description, locale: korean))
+        XCTAssertFalse(search.matchesMenuDescription(description, locale: english))
+    }
+
     func testSelectedResultShowsOnlyThatSettingUntilQueryChanges() throws {
         let items = SettingsSearchCatalog.items(for: .configuration)
         let item = try XCTUnwrap(items.first { $0.id == "enableJavaScript" })

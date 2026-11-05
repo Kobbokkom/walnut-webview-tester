@@ -1,7 +1,7 @@
 import SwiftUI
 
 enum SettingsSearchRole {
-    case item(String), result, notice
+    case item(String), menuDescription(String), result, notice
 }
 
 extension ContainerValues {
@@ -57,6 +57,8 @@ struct SettingsSearchList<Content: View>: View {
         case .item(let id):
             guard let item = SettingsSearchCatalog.items(for: screen).first(where: { $0.id == id }) else { return false }
             return search.matches(item, screen: screen, locale: locale)
+        case .menuDescription(let description):
+            return search.matchesMenuDescription(description, locale: locale)
         case .result, .notice: return true
         case nil: return false
         }

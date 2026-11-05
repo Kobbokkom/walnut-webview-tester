@@ -8,7 +8,7 @@
 import SwiftUI
 
 enum SettingsCopy {
-    static let liveSettingsDescription: LocalizedStringKey = "Apply to save changes"
+    static let liveSettingsDescription: LocalizedStringResource = "Apply to save changes"
 }
 
 // ConfigurationSettingsView moved to ConfigurationSettingsView.swift
@@ -235,82 +235,70 @@ struct LoadedSettingsView: View {
                     searchDestination(result)
                 }
                 Section {
-                    NavigationLink {
+                    SettingsCategoryRow(
+                        icon: "app.badge.fill",
+                        iconColor: .cyan,
+                        title: "App Settings",
+                        description: "Language, preferences"
+                    ).link {
                         AppSettingsView()
-                    } label: {
-                        SettingsCategoryRow(
-                            icon: "app.badge.fill",
-                            iconColor: .cyan,
-                            title: "App Settings",
-                            description: "Language, preferences"
-                        )
                     }
                 } header: {
                     Text("App")
                 }
 
                 Section {
-                    NavigationLink {
+                    SettingsCategoryRow(
+                        icon: "menubar.rectangle",
+                        iconColor: .indigo,
+                        title: "Menu",
+                        description: "Customize toolbar & app bar"
+                    ).link {
                         MenuSettingsView()
-                    } label: {
-                        SettingsCategoryRow(
-                            icon: "menubar.rectangle",
-                            iconColor: .indigo,
-                            title: "Menu",
-                            description: "Customize toolbar & app bar"
-                        )
                     }
                 } header: {
                     Text("Developer Tools Settings")
                 }
 
                 Section {
-                    NavigationLink {
+                    SettingsCategoryRow(
+                        icon: "bolt.fill",
+                        iconColor: .green,
+                        title: "Live Settings",
+                        description: SettingsCopy.liveSettingsDescription
+                    ).link {
                         LiveSettingsView()
-                    } label: {
-                        SettingsCategoryRow(
-                            icon: "bolt.fill",
-                            iconColor: .green,
-                            title: "Live Settings",
-                            description: SettingsCopy.liveSettingsDescription
-                        )
                     }
 
-                    NavigationLink {
+                    SettingsCategoryRow(
+                        icon: "gearshape.fill",
+                        iconColor: .orange,
+                        title: "Configuration",
+                        description: "Changes reload WebView"
+                    ).link {
                         ConfigurationSettingsView(
                             webViewID: $webViewID,
                             loadedURL: $loadedURL,
                             navigator: navigator
                         )
-                    } label: {
-                        SettingsCategoryRow(
-                            icon: "gearshape.fill",
-                            iconColor: .orange,
-                            title: "Configuration",
-                            description: "Changes reload WebView"
-                        )
                     }
 
-                    NavigationLink {
+                    SettingsCategoryRow(
+                        icon: "wand.and.stars",
+                        iconColor: .purple,
+                        title: "Emulation",
+                        description: "Dark mode, Reduced motion, Contrast"
+                    ).link {
                         EmulationSettingsView(navigator: navigator)
-                    } label: {
-                        SettingsCategoryRow(
-                            icon: "wand.and.stars",
-                            iconColor: .purple,
-                            title: "Emulation",
-                            description: "Dark mode, Reduced motion, Contrast"
-                        )
                     }
 
-                    NavigationLink {
+                    SettingsCategoryRow(
+                        icon: "lock.shield.fill",
+                        iconColor: .blue,
+                        title: "Permissions",
+                        description: "Camera, Microphone, Location"
+                    ).link {
                         PermissionsSettingsView()
-                    } label: {
-                        SettingsCategoryRow(
-                            icon: "lock.shield.fill",
-                            iconColor: .blue,
-                            title: "Permissions",
-                            description: "Camera, Microphone, Location"
-                        )
                     }
                 } header: {
                     Text("WebView Settings")
@@ -420,7 +408,12 @@ struct SettingsCategoryRow: View {
     var icon: String?
     var iconColor = Color.accentColor
     let title: LocalizedStringKey
-    let description: LocalizedStringKey
+    let description: LocalizedStringResource
+
+    func link<Destination: View>(@ViewBuilder _ destination: () -> Destination) -> some View {
+        NavigationLink(destination: destination) { self }
+            .containerValue(\.settingsSearchRole, .menuDescription(description.key))
+    }
 
     var body: some View {
         HStack(spacing: 12) {
@@ -434,7 +427,7 @@ struct SettingsCategoryRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .font(.body)
-                Text(description)
+                Text(LocalizedStringKey(description.key))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

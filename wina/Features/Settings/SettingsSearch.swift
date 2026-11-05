@@ -54,11 +54,14 @@ struct SettingsSearchItem: Identifiable, Hashable {
 
     func matches(_ query: String, screen: SettingsSearchScreen, locale: Locale) -> Bool {
         ([title, section, details, screen.title] + keywords).contains { key in
-            key.range(of: query, options: [.caseInsensitive, .diacriticInsensitive], locale: locale) != nil ||
-            Self.localized(key, locale: locale).range(
-                of: query, options: [.caseInsensitive, .diacriticInsensitive], locale: locale
-            ) != nil
+            Self.matches(key, query: query, locale: locale)
         }
+    }
+
+    static func matches(_ key: String, query: String, locale: Locale) -> Bool {
+        let options: String.CompareOptions = [.caseInsensitive, .diacriticInsensitive]
+        return key.range(of: query, options: options, locale: locale) != nil ||
+            localized(key, locale: locale).range(of: query, options: options, locale: locale) != nil
     }
 }
 
@@ -82,6 +85,10 @@ struct SettingsSearch {
         guard isActive else { return true }
         if let selectedID { return item.id == selectedID }
         return item.matches(normalizedQuery, screen: screen, locale: locale)
+    }
+
+    func matchesMenuDescription(_ description: String, locale: Locale) -> Bool {
+        isActive && SettingsSearchItem.matches(description, query: normalizedQuery, locale: locale)
     }
 
     func results(in root: SettingsSearchScreen, locale: Locale) -> [SettingsSearchResult] {

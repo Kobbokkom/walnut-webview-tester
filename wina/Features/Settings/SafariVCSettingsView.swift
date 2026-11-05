@@ -26,45 +26,39 @@ struct SafariVCSettingsView: View {
                     searchDestination(result)
                 }
                 Section {
-                    NavigationLink {
+                    SettingsCategoryRow(
+                        icon: "app.badge.fill",
+                        iconColor: .cyan,
+                        title: "App Settings",
+                        description: "Language, preferences"
+                    ).link {
                         AppSettingsView()
-                    } label: {
-                        SettingsCategoryRow(
-                            icon: "app.badge.fill",
-                            iconColor: .cyan,
-                            title: "App Settings",
-                            description: "Language, preferences"
-                        )
                     }
                 } header: {
                     Text("App")
                 }
 
                 Section {
-                    NavigationLink {
+                    SettingsCategoryRow(
+                        icon: "menubar.rectangle",
+                        iconColor: .indigo,
+                        title: "Menu",
+                        description: "Customize toolbar & app bar"
+                    ).link {
                         SafariVCMenuSettingsView()
-                    } label: {
-                        SettingsCategoryRow(
-                            icon: "menubar.rectangle",
-                            iconColor: .indigo,
-                            title: "Menu",
-                            description: "Customize toolbar & app bar"
-                        )
                     }
                 } header: {
                     Text("Developer Tools Settings")
                 }
 
                 Section {
-                    NavigationLink {
+                    SettingsCategoryRow(
+                        icon: "gearshape.fill",
+                        iconColor: .orange,
+                        title: "Configuration",
+                        description: "All changes reload SafariVC"
+                    ).link {
                         SafariVCConfigurationSettingsView(webViewID: $webViewID)
-                    } label: {
-                        SettingsCategoryRow(
-                            icon: "gearshape.fill",
-                            iconColor: .orange,
-                            title: "Configuration",
-                            description: "All changes reload SafariVC"
-                        )
                     }
                 } header: {
                     Text("SafariVC Settings")

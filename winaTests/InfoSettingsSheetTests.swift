@@ -5,16 +5,6 @@ import XCTest
 @testable import wina
 
 final class InfoSettingsSheetTests: XCTestCase {
-    private func localizedKeyValue(_ key: LocalizedStringKey) -> String {
-        let mirror = Mirror(reflecting: key)
-        for child in mirror.children {
-            if child.label == "key", let value = child.value as? String {
-                return value
-            }
-        }
-        return String(describing: key)
-    }
-
     func testSafariVCInfoViewUsesBindingForWebViewID() {
         var id = UUID()
         let binding = Binding(get: { id }, set: { id = $0 })
@@ -47,7 +37,7 @@ final class InfoSettingsSheetTests: XCTestCase {
     }
 
     func testLiveSettingsDescriptionCopy() {
-        XCTAssertEqual(localizedKeyValue(SettingsCopy.liveSettingsDescription), "Apply to save changes")
+        XCTAssertEqual(SettingsCopy.liveSettingsDescription.key, "Apply to save changes")
     }
 }
 
