@@ -28,7 +28,8 @@ class WKWebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
     // didFinish 연속 호출 시 이전 Eruda 동기화 작업을 취소하고 최신 작업만 유지합니다.
     private var erudaSyncTask: Task<Void, Never>?
     private var bridgeResponseGeneration = 0
-    private var pendingBridgeResponseWorkItems: [UUID: DispatchWorkItem] = [:]
+    private var subframeBridgeResponseGeneration = 0
+    private var pendingBridgeResponseWorkItems: [UUID: (workItem: DispatchWorkItem, isSubframe: Bool)] = [:]
     let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "wina", category: "ConsoleBridge")
 
     var pendingBridgeResponseWorkItemCount: Int {
@@ -94,7 +95,9 @@ class WKWebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
                     message: message.body,
                     channel: message.name
                 )
-                schedulePreloadBridgeResponse(script, channel: message.name, delayMilliseconds: rule.delayMilliseconds)
+                schedulePreloadBridgeResponse(
+                    script, channel: message.name, delayMilliseconds: rule.delayMilliseconds, in: message.frameInfo
+                )
             }
         }
     }
@@ -118,28 +121,33 @@ class WKWebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
     func schedulePreloadBridgeResponse(
         _ script: String,
         channel: String,
-        delayMilliseconds: Int
+        delayMilliseconds: Int,
+        in frame: WKFrameInfo? = nil
     ) {
         guard !script.isEmpty else { return }
         let generation = bridgeResponseGeneration
+        let subframeGeneration = subframeBridgeResponseGeneration
+        let isSubframe = frame?.isMainFrame == false
         let workItemID = UUID()
 
         let execute = { [weak self] in
             guard let self else { return }
             defer { self.pendingBridgeResponseWorkItems[workItemID] = nil }
-            guard self.bridgeResponseGeneration == generation else { return }
-            self.webView?.evaluateJavaScript(script)
-            self.navigator?.preloadBridgeLogManager.add(
-                channel: channel,
-                direction: .responded,
-                body: script
-            )
-            self.emitPreloadConsoleBadge(label: "📤 bridge", background: "#16A34A", trailing: "responded on \(channel)", source: channel)
+            guard self.bridgeResponseGeneration == generation, let webView = self.webView else { return }
+            guard !isSubframe || self.subframeBridgeResponseGeneration == subframeGeneration else { return }
+            if let frameWebView = frame?.webView, frameWebView !== webView { return }
+            // A custom response may execute successfully and leave a non-serializable value.
+            webView.evaluateJavaScript(script + "\n;void 0;", in: frame, in: .page) { [weak self] result in
+                guard let self, self.bridgeResponseGeneration == generation, case .success = result else { return }
+                guard !isSubframe || self.subframeBridgeResponseGeneration == subframeGeneration else { return }
+                self.navigator?.preloadBridgeLogManager.add(channel: channel, direction: .responded, body: script)
+                self.emitPreloadConsoleBadge(label: "📤 bridge", background: "#16A34A", trailing: "responded on \(channel)", source: channel)
+            }
         }
 
         if delayMilliseconds > 0 {
             let workItem = DispatchWorkItem(block: execute)
-            pendingBridgeResponseWorkItems[workItemID] = workItem
+            pendingBridgeResponseWorkItems[workItemID] = (workItem, isSubframe)
             DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(delayMilliseconds), execute: workItem)
         } else {
             execute()
@@ -148,8 +156,17 @@ class WKWebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
 
     private func cancelPendingBridgeResponses() {
         bridgeResponseGeneration += 1
-        pendingBridgeResponseWorkItems.values.forEach { $0.cancel() }
+        pendingBridgeResponseWorkItems.values.forEach { $0.workItem.cancel() }
         pendingBridgeResponseWorkItems.removeAll()
+    }
+
+    private func cancelPendingSubframeBridgeResponses() {
+        subframeBridgeResponseGeneration += 1
+        // shortcut: WebKit exposes no stable public frame identity across these delegate calls.
+        for (id, pending) in pendingBridgeResponseWorkItems where pending.isSubframe {
+            pending.workItem.cancel()
+            pendingBridgeResponseWorkItems[id] = nil
+        }
     }
 
     func handleMainFrameNavigationStarted(from currentURL: URL?, to targetURL: URL?) {
@@ -343,6 +360,8 @@ class WKWebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
         let isMainFrameNavigation = navigationAction.targetFrame?.isMainFrame ?? true
         if isMainFrameNavigation {
             handleMainFrameNavigationStarted(from: webView.url, to: navigationAction.request.url)
+        } else {
+            cancelPendingSubframeBridgeResponses()
         }
 
         // Handle reload: use preserveLog setting
