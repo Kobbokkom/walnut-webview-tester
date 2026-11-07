@@ -8,6 +8,7 @@ import SwiftUI
 import SwiftUIBackports
 
 struct SafariVCInfoView: View {
+    @Environment(\.webViewContainerSize) private var containerSize
     @Environment(\.dismiss) private var dismiss
     @Binding var webViewID: UUID
 
@@ -28,6 +29,10 @@ struct SafariVCInfoView: View {
     @AppStorage("safariWidthRatio") private var widthRatio: Double = 1.0
     @AppStorage("safariHeightRatio") private var heightRatio: Double = 0.82
 
+    private var effectiveHeightRatio: Double {
+        BarConstants.effectiveHeightRatio(heightRatio, for: containerSize.height)
+    }
+
     private var allItems: [SafariInfoSearchItem] {
         var items: [SafariInfoSearchItem] = []
 
@@ -39,7 +44,7 @@ struct SafariVCInfoView: View {
             SafariInfoSearchItem(category: "Active Settings", label: "Control Tint", value: controlTintColorHex.isEmpty ? "System" : "\(controlTintColorHex) (iOS 18.4-25)"),
             SafariInfoSearchItem(category: "Active Settings", label: "Bar Tint", value: barTintColorHex.isEmpty ? "System" : "\(barTintColorHex) (iOS 18.4-25)"),
             SafariInfoSearchItem(category: "Active Settings", label: "SafariVC Width", value: "\(Int(widthRatio * 100))%"),
-            SafariInfoSearchItem(category: "Active Settings", label: "SafariVC Height", value: "\(Int(heightRatio * 100))%")
+            SafariInfoSearchItem(category: "Active Settings", label: "SafariVC Height", value: "\(Int(effectiveHeightRatio * 100))%")
         ])
 
         // Safari Features
@@ -281,6 +286,10 @@ private struct SafariActiveSettingsDetailView: View {
     @AppStorage("safariWidthRatio") private var widthRatio: Double = 1.0
     @AppStorage("safariHeightRatio") private var heightRatio: Double = 0.82
 
+    private var effectiveHeightRatio: Double {
+        BarConstants.effectiveHeightRatio(heightRatio, for: containerSize.height)
+    }
+
     @Environment(\.webViewContainerSize) private var containerSize
 
     var body: some View {
@@ -348,7 +357,7 @@ private struct SafariActiveSettingsDetailView: View {
 
             Section {
                 let w = Int(containerSize.width * widthRatio)
-                let h = Int(containerSize.height * heightRatio)
+                let h = Int(containerSize.height * effectiveHeightRatio)
 
                 SafariInfoRow(
                     label: "Width",
@@ -357,7 +366,7 @@ private struct SafariActiveSettingsDetailView: View {
                 )
                 SafariInfoRow(
                     label: "Height",
-                    value: "\(Int(heightRatio * 100))%",
+                    value: "\(Int(effectiveHeightRatio * 100))%",
                     info: "SafariVC height ratio.\n100% = Full screen height."
                 )
                 SafariInfoRow(

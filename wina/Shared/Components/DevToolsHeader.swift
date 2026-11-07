@@ -86,24 +86,22 @@ struct DevToolsHeader: View {
                 .font(.system(size: 18, weight: .semibold))
                 .foregroundStyle(.primary)
 
-            // Row 2: Button groups
-            HStack(spacing: 16) {
-                // Left button group
-                if !leftButtons.isEmpty {
-                    buttonGroup(leftButtons)
-                }
-
-                Spacer()
-
-                // Right button group
-                if !rightButtons.isEmpty {
-                    buttonGroup(rightButtons)
-                }
+            ViewThatFits(in: .horizontal) {
+                buttonRow
+                ScrollView(.horizontal) { buttonRow }
             }
         }
         .padding(.horizontal, 16)
         .padding(.top, 16)
         .padding(.bottom, 8)
+    }
+
+    private var buttonRow: some View {
+        HStack(spacing: 16) {
+            buttonGroup(leftButtons)
+            Spacer(minLength: 0)
+            buttonGroup(rightButtons)
+        }
     }
 
     @ViewBuilder

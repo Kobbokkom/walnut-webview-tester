@@ -13,8 +13,8 @@ struct WebViewSizeControl: View {
     @Binding var widthRatio: Double
     @Binding var heightRatio: Double
 
-    private var appContainerHeightRatio: Double {
-        BarConstants.appContainerHeightRatio(for: containerSize.height)
+    private var effectiveHeightRatio: Double {
+        BarConstants.effectiveHeightRatio(heightRatio, for: containerSize.height)
     }
 
     @Environment(\.webViewContainerSize) private var containerSize
@@ -24,11 +24,11 @@ struct WebViewSizeControl: View {
     }
 
     private var currentHeight: Int {
-        Int(containerSize.height * heightRatio)
+        Int(containerSize.height * effectiveHeightRatio)
     }
 
     private var isAppContainerSelected: Bool {
-        widthRatio == 1 && heightRatio == appContainerHeightRatio
+        heightRatio == BarConstants.appHeightPreset
     }
 
     var body: some View {
@@ -43,7 +43,7 @@ struct WebViewSizeControl: View {
                 PresetButton(label: "App", isSelected: isAppContainerSelected) {
                     withAnimation(.easeInOut(duration: 0.2)) {
                         widthRatio = 1.0
-                        heightRatio = appContainerHeightRatio
+                        heightRatio = BarConstants.appHeightPreset
                     }
                 }
                 PresetButton(label: "75%", isSelected: widthRatio == 0.75 && heightRatio == 0.75) {
@@ -63,7 +63,12 @@ struct WebViewSizeControl: View {
                         .font(.subheadline.monospacedDigit())
                         .foregroundStyle(.secondary)
                 }
-                Slider(value: $widthRatio, in: 0.25...1.0, step: 0.01)
+                Slider(value: Binding(get: { widthRatio }, set: { width in
+                    if isAppContainerSelected, width != widthRatio {
+                        heightRatio = effectiveHeightRatio
+                    }
+                    widthRatio = width
+                }), in: 0.25...1.0, step: 0.01)
             }
 
             VStack(alignment: .leading, spacing: 4) {
@@ -75,7 +80,8 @@ struct WebViewSizeControl: View {
                         .font(.subheadline.monospacedDigit())
                         .foregroundStyle(.secondary)
                 }
-                Slider(value: $heightRatio, in: 0.25...1.0, step: 0.01)
+                Slider(value: Binding(get: { effectiveHeightRatio }, set: { heightRatio = $0 }),
+                       in: 0.25...1.0, step: 0.01)
             }
 
             HStack {

@@ -34,6 +34,8 @@ struct ContentView: View {
     @State private var webViewNavigator = WebViewNavigator()
     @State private var screenRecorder = WebViewRecorder()
     @State private var storageManager = StorageManager()
+    @State private var storageEditor: StorageEditorTarget?
+    @State private var consoleSession = ConsoleSession()
     @State private var showSafariUnsupportedAlert = false
     @State private var safariUnsupportedURL = ""
     @FocusState var textFieldFocused: Bool
@@ -105,35 +107,29 @@ struct ContentView: View {
     ]
     @Environment(\.webViewContainerSize) private var containerSize
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
     @State private var browserSize: CGSize = .zero
-
-    private var shouldDockDevTools: Bool {
-        horizontalSizeClass == .regular && showWebView && !useSafariWebView && !erudaModeEnabled
-    }
 
     var inputWidth: CGFloat { min(340, max(0, containerSize.width - 32)) }
 
     var body: some View {
         GeometryReader { geometry in
-            let frames = DevToolsWorkspaceLayout.frames(in: geometry.size, division: activeDivision(in: geometry))
-            let hasPanel = shouldDockDevTools && devToolsState.selectedTool != nil
+            let fold = foldRegion(in: geometry)
+            let hasRoomForPanel = UIDevice.current.isIPad || verticalSizeClass == .regular || fold.isPresent
+            let canDock = horizontalSizeClass == .regular && hasRoomForPanel
+                && showWebView && !useSafariWebView && !erudaModeEnabled
+            // The editor belongs to the current presentation until the user saves or cancels.
+            let docked = storageEditor == nil ? canDock : devToolsState.isDocked
+            let frames = DevToolsWorkspaceLayout.frames(in: geometry.size, division: fold.activeFrame)
+            let hasPanel = docked && devToolsState.selectedTool != nil
             let browserFrame = hasPanel ? frames.browser : CGRect(origin: .zero, size: geometry.size)
             ZStack(alignment: .topLeading) {
-                browserContent
+                browserContent(hasDockedDevTools: hasPanel)
                     .frame(width: browserFrame.width, height: browserFrame.height)
                     .onGeometryChange(for: CGSize.self) { proxy in
                         CGSize(width: proxy.size.width, height: proxy.size.height + proxy.safeAreaInsets.bottom)
                     } action: { size in
-                        let previousHeight = browserSize.height
                         browserSize = size
-                        webViewHeightRatio = BarConstants.heightRatioAfterResize(
-                            widthRatio: webViewWidthRatio, heightRatio: webViewHeightRatio,
-                            from: previousHeight, to: size.height
-                        )
-                        safariHeightRatio = BarConstants.heightRatioAfterResize(
-                            widthRatio: safariWidthRatio, heightRatio: safariHeightRatio,
-                            from: previousHeight, to: size.height
-                        )
                     }
                     .position(x: browserFrame.midX, y: browserFrame.midY)
                 if hasPanel, let tool = devToolsState.selectedTool {
@@ -145,15 +141,14 @@ struct ContentView: View {
                     .position(x: frames.tools.midX, y: frames.tools.midY)
                 }
             }
+            .onChange(of: docked, initial: true) { _, newValue in
+                devToolsState.isDocked = newValue
+            }
         }
-        .environment(\.webViewContainerSize, browserSize == .zero ? containerSize : browserSize)
         .alert("Browser options changed", isPresented: $showCleanStartOptionsChanged) {
             Button("OK", role: .cancel) {}
         } message: {
             Text("Check your browsing options and open the URL again.")
-        }
-        .onChange(of: shouldDockDevTools, initial: true) { _, docked in
-            devToolsState.isDocked = docked
         }
         .sheet(isPresented: $showSettings) {
             if useSafariWebView {
@@ -290,18 +285,23 @@ struct ContentView: View {
                 }
             }
         }
+        .onChange(of: devToolsState.selectedTool) { _, tool in
+            if tool == nil { consoleSession = ConsoleSession() }
+        }
+        .environment(\.webViewContainerSize, browserSize == .zero ? containerSize : browserSize)
     }
 
-    private func activeDivision(in geometry: GeometryProxy) -> CGRect? {
+    private func foldRegion(in geometry: GeometryProxy) -> (isPresent: Bool, activeFrame: CGRect?) {
         #if compiler(>=6.4)
         if #available(iOS 27.1, *) {
-            return geometry.reservedRegions(kind: .division).first?.frame
+            let regions = geometry.reservedRegions(kind: .division, options: .includeInactive)
+            return (!regions.isEmpty, regions.first(where: \.isActive)?.frame)
         }
         #endif
-        return nil
+        return (false, nil)
     }
 
-    private var browserContent: some View {
+    private func browserContent(hasDockedDevTools: Bool) -> some View {
         ZStack {
             if showWebView {
                 // WebView screen
@@ -325,7 +325,7 @@ struct ContentView: View {
                     useSafariVC: useSafariWebView,
                     isOverlayMode: !shouldBarsBeExpanded,
                     erudaModeEnabled: erudaModeEnabled,
-                    hasDockedDevTools: shouldDockDevTools && devToolsState.selectedTool != nil,
+                    hasDockedDevTools: hasDockedDevTools,
                     onHome: {
                         screenRecorder.stopRecording()
                         webViewNavigator.recorder.stopRecording()
@@ -391,11 +391,11 @@ struct ContentView: View {
     private func devToolsContent(for tool: DevToolsOverlay) -> some View {
         switch tool {
         case .console:
-            ConsoleView(consoleManager: webViewNavigator.consoleManager, navigator: webViewNavigator)
+            ConsoleView(consoleManager: webViewNavigator.consoleManager, navigator: webViewNavigator, session: consoleSession)
         case .network:
             NetworkView(networkManager: webViewNavigator.networkManager, resourceManager: webViewNavigator.resourceManager)
         case .storage:
-            StorageView(storageManager: storageManager, navigator: webViewNavigator)
+            StorageView(storageManager: storageManager, navigator: webViewNavigator, editor: $storageEditor)
         case .performance:
             PerformanceView(
                 performanceManager: webViewNavigator.performanceManager,

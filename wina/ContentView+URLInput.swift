@@ -146,6 +146,7 @@ extension ContentView {
                     .zIndex(1)
 
                     quickOptionsOverlay
+                        .frame(minHeight: showDropdown ? dropdownHeight : 0, alignment: .top)
                         .animation(.easeOut(duration: 0.15), value: useSafariWebView)
                 }
                 .padding(.top, max(72, geometry.size.height * 0.32 - 130))
@@ -176,6 +177,10 @@ extension ContentView {
         }
     }
 
+    private var dropdownHeight: CGFloat {
+        min(CGFloat(filteredURLs.count) * 40, 160)
+    }
+
     @ViewBuilder
     var dropdownOverlay: some View {
         if showDropdown && !filteredURLs.isEmpty {
@@ -187,7 +192,7 @@ extension ContentView {
                 }
             }
             .scrollBounceBehavior(.basedOnSize)
-            .frame(width: inputWidth, height: min(CGFloat(filteredURLs.count) * 40, 160))
+            .frame(width: inputWidth, height: dropdownHeight)
             .backport.glassEffect(in: .rect(cornerRadius: 16))
             .padding(.top, 8)
             .transition(.opacity)

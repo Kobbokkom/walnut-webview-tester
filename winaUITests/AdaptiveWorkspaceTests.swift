@@ -16,6 +16,7 @@ final class AdaptiveWorkspaceTests: XCTestCase {
             }
             return false
         }
+        XCUIDevice.shared.orientation = .portrait
         app.launch()
         let input = app.textFields["Enter URL"]
         XCTAssertTrue(input.waitForExistence(timeout: 15))
@@ -31,6 +32,14 @@ final class AdaptiveWorkspaceTests: XCTestCase {
         XCTAssertTrue(foundConsole)
         console.tap()
         XCTAssertTrue(app.buttons["closeDevTools"].firstMatch.waitForExistence(timeout: 10))
+        let textView = app.textViews["JavaScript to execute..."].firstMatch
+        let prompt = textView.exists ? textView : app.textFields["JavaScript to execute..."].firstMatch
+        XCTAssertTrue(prompt.exists)
+        prompt.tap()
+        prompt.typeText("window.innerWidth")
+        let draft = app.descendants(matching: .any).matching(NSPredicate(format: "value == %@", "window.innerWidth")).firstMatch
+        XCTAssertTrue(draft.exists)
+        app.staticTexts["Console"].firstMatch.tap()
         capture("DevTools-initial")
 
         let panel = app.otherElements["devToolsPanel"]
@@ -41,12 +50,17 @@ final class AdaptiveWorkspaceTests: XCTestCase {
             network.tap()
             XCTAssertTrue(app.buttons["closeDevTools"].firstMatch.exists)
             app.buttons["devToolsTab.console"].tap()
+            XCTAssertTrue(draft.exists, "Switching docked tabs discarded unexecuted Console input")
         }
 
         XCUIDevice.shared.orientation = .landscapeLeft
         // Let the system rotation animation settle before capturing the rendered layout.
         Thread.sleep(forTimeInterval: 2)
         XCTAssertTrue(app.buttons["closeDevTools"].firstMatch.waitForExistence(timeout: 10))
+        XCTAssertTrue(draft.exists, "A layout change discarded unexecuted Console input")
+        if ProcessInfo.processInfo.environment["WALNUT_QA_EXPECT_PHONE_SHEET"] == "YES" {
+            XCTAssertFalse(panel.exists)
+        }
         capture("DevTools-landscape")
         app.buttons["closeDevTools"].firstMatch.tap()
         XCTAssertTrue(pageHeading.waitForExistence(timeout: 15))

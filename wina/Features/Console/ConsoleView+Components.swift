@@ -15,25 +15,25 @@ extension ConsoleView {
     var filterTabs: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 0) {
-                ConsoleFilterTab(label: "All", count: consoleManager.logs.count, isSelected: filterType == nil) {
-                    filterType = nil
+                ConsoleFilterTab(label: "All", count: consoleManager.logs.count, isSelected: session.filterType == nil) {
+                    session.filterType = nil
                 }
 
-                ConsoleFilterTab(label: "Errors", count: consoleManager.errorCount, isSelected: filterType == .error, color: .red) {
-                    filterType = .error
+                ConsoleFilterTab(label: "Errors", count: consoleManager.errorCount, isSelected: session.filterType == .error, color: .red) {
+                    session.filterType = .error
                 }
 
-                ConsoleFilterTab(label: "Warnings", count: consoleManager.warnCount, isSelected: filterType == .warn, color: .orange) {
-                    filterType = .warn
+                ConsoleFilterTab(label: "Warnings", count: consoleManager.warnCount, isSelected: session.filterType == .warn, color: .orange) {
+                    session.filterType = .warn
                 }
 
                 ForEach([ConsoleLog.LogType.info, .log, .debug], id: \.self) { type in
                     ConsoleFilterTab(
                         label: type.label,
                         count: consoleManager.logs.filter { $0.type == type }.count,
-                        isSelected: filterType == type
+                        isSelected: session.filterType == type
                     ) {
-                        filterType = type
+                        session.filterType = type
                     }
                 }
             }

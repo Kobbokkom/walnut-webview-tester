@@ -45,13 +45,22 @@ enum BarConstants {
         return min(1.0, max(0.25, 1.0 - (totalUIHeight / screenHeight)))
     }
 
-    static func heightRatioAfterResize(
-        widthRatio: Double, heightRatio: Double, from oldHeight: CGFloat, to newHeight: CGFloat
-    ) -> Double {
-        guard oldHeight > 0, newHeight > 0,
-              widthRatio == 1,
-              heightRatio == appContainerHeightRatio(for: oldHeight) else { return heightRatio }
-        return appContainerHeightRatio(for: newHeight)
+    // Stored as zero so the App preset cannot be confused with a custom 25–100% ratio.
+    static let appHeightPreset = 0.0
+
+    static func effectiveHeightRatio(_ storedRatio: Double, for height: CGFloat) -> Double {
+        storedRatio == appHeightPreset ? appContainerHeightRatio(for: height) : storedRatio
+    }
+
+    static func migratedHeightRatio(widthRatio: Double, heightRatio: Double, knownHeights: [CGFloat]) -> Double {
+        // Older builds stored resolved ratios. Whole percentages can also come from the slider.
+        let percent = heightRatio * 100
+        guard widthRatio == 1, heightRatio > 0.25, heightRatio < 1,
+              abs(percent - percent.rounded()) > 0.000_001,
+              knownHeights.contains(where: { appContainerHeightRatio(for: $0) == heightRatio }) else {
+            return heightRatio
+        }
+        return appHeightPreset
     }
 
     // MARK: - Sheet Presentation

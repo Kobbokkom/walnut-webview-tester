@@ -9,25 +9,28 @@ import SwiftUI
 
 // MARK: - Console View
 
+@Observable
+final class ConsoleSession {
+    var filterType: ConsoleLog.LogType?
+    var searchText: String = ""
+    var useRegex: Bool = false
+    var enabledLogTypes: Set<ConsoleLog.LogType> = Set(ConsoleLog.LogType.displayableTypes)
+    var jsInput: String = ""
+    var commandHistory: [String] = []
+    var historyIndex: Int = -1
+}
+
 struct ConsoleView: View {
     let consoleManager: ConsoleManager
     var navigator: WebViewNavigator?  // Optional - for JS execution
     @Environment(\.closeDevTools) private var closeDevTools
     @Environment(\.dismiss) private var dismiss
-    @State var filterType: ConsoleLog.LogType?
-    @State var searchText: String = ""
-    @State var useRegex: Bool = false
+    @Bindable var session = ConsoleSession()
     @State var shareItem: ShareContent?
     @State var showSettings: Bool = false
-    // Log types to show in "All" tab (user configurable)
-    @State var enabledLogTypes: Set<ConsoleLog.LogType> = Set(ConsoleLog.LogType.displayableTypes)
     // AppStorage for settings indicator (matches ConsoleSettingsSheet)
     @AppStorage("consolePreserveLog") private var preserveLog: Bool = false
     @AppStorage(LogClearStrategy.consoleDefaultsKey) private var clearStrategyRaw: String = LogClearStrategy.keep.rawValue
-    // JavaScript input
-    @State var jsInput: String = ""
-    @State var commandHistory: [String] = []
-    @State var historyIndex: Int = -1
     let maxCommandHistory = 100
     @FocusState var isInputFocused: Bool
     @FocusState var isFilterFocused: Bool
@@ -52,22 +55,22 @@ struct ConsoleView: View {
             return true
         }
 
-        if let filterType {
+        if let filterType = session.filterType {
             result = result.filter { $0.type == filterType }
         } else {
             // "All" tab - filter by user-selected log types
-            result = result.filter { enabledLogTypes.contains($0.type) }
+            result = result.filter { session.enabledLogTypes.contains($0.type) }
         }
 
-        if !searchText.isEmpty {
-            if useRegex, case .success(let regex) = RegexFilter.compile(searchText) {
+        if !session.searchText.isEmpty {
+            if session.useRegex, case .success(let regex) = RegexFilter.compile(session.searchText) {
                 result = result.filter { log in
                     RegexFilter.matchesLog(message: log.message, source: log.source, regex: regex)
                 }
-            } else if !useRegex {
+            } else if !session.useRegex {
                 result = result.filter {
-                    $0.message.localizedCaseInsensitiveContains(searchText)
-                    || ($0.source?.localizedCaseInsensitiveContains(searchText) ?? false)
+                    $0.message.localizedCaseInsensitiveContains(session.searchText)
+                    || ($0.source?.localizedCaseInsensitiveContains(session.searchText) ?? false)
                 }
             }
         }
@@ -77,9 +80,9 @@ struct ConsoleView: View {
 
     // Settings button highlight when any setting is active
     private var settingsActive: Bool {
-        useRegex || preserveLog ||
+        session.useRegex || preserveLog ||
         clearStrategyRaw != LogClearStrategy.keep.rawValue ||
-        enabledLogTypes.count != ConsoleLog.LogType.displayableTypes.count
+        session.enabledLogTypes.count != ConsoleLog.LogType.displayableTypes.count
     }
 
     var body: some View {
@@ -113,8 +116,8 @@ struct ConsoleView: View {
         }
         .sheet(isPresented: $showSettings) {
             ConsoleSettingsSheet(
-                useRegex: $useRegex,
-                enabledLogTypes: $enabledLogTypes
+                useRegex: $session.useRegex,
+                enabledLogTypes: $session.enabledLogTypes
             )
         }
         .task {
@@ -174,12 +177,12 @@ struct ConsoleView: View {
         HStack {
             Image(systemName: "magnifyingglass")
                 .foregroundStyle(.secondary)
-            TextField(useRegex ? "Regex" : "Filter", text: $searchText)
+            TextField(session.useRegex ? "Regex" : "Filter", text: $session.searchText)
                 .textFieldStyle(.plain)
                 .focused($isFilterFocused)
-            if !searchText.isEmpty {
+            if !session.searchText.isEmpty {
                 Button {
-                    searchText = ""
+                    session.searchText = ""
                 } label: {
                     Image(systemName: "xmark.circle.fill")
                         .foregroundStyle(.secondary)

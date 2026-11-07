@@ -384,10 +384,14 @@ private struct StorageScrollMetrics: Equatable {
     let viewportHeight: CGFloat
 }
 
-private struct StorageAddTarget: Identifiable {
+struct StorageEditorTarget: Identifiable {
+    enum Action {
+        case edit(StorageItem)
+        case add(StorageItem.StorageType, URL)
+    }
+
     let id = UUID()
-    let type: StorageItem.StorageType
-    let pageURL: URL
+    let action: Action
 }
 
 struct StorageView: View {
@@ -399,8 +403,7 @@ struct StorageView: View {
     @State private var showsAllStorage: Bool = false
     @State private var searchText: String = ""
     @State private var shareItem: StorageShareContent?
-    @State private var selectedItem: StorageItem?
-    @State private var addTarget: StorageAddTarget?
+    @Binding var editor: StorageEditorTarget?
     @State private var showClearFailure = false
     @State private var lastObservedURL: URL?
     @State private var urlCheckTimer: Timer?
@@ -495,27 +498,19 @@ struct StorageView: View {
         .sheet(item: $shareItem) { item in
             ShareSheet(content: item.content)
         }
-        .sheet(item: $selectedItem) { item in
-            StorageEditSheet(
-                item: item,
-                storageManager: storageManager,
-                onSave: {
-                    Task { await storageManager.refresh(pageURL: navigator?.currentURL) }
-                },
-                onDelete: {
-                    Task { await storageManager.refresh(pageURL: navigator?.currentURL) }
-                }
-            )
-        }
-        .sheet(item: $addTarget) { target in
-            StorageAddSheet(
-                storageManager: storageManager,
-                storageType: target.type,
-                pageURL: target.pageURL,
-                onSave: {
-                    Task { await storageManager.refresh(pageURL: navigator?.currentURL) }
-                }
-            )
+        .sheet(item: $editor) { target in
+            switch target.action {
+            case .edit(let item):
+                StorageEditSheet(
+                    item: item, storageManager: storageManager,
+                    onSave: refreshStorage, onDelete: refreshStorage
+                )
+            case .add(let type, let pageURL):
+                StorageAddSheet(
+                    storageManager: storageManager, storageType: type,
+                    pageURL: pageURL, onSave: refreshStorage
+                )
+            }
         }
         .alert("Could not clear storage", isPresented: $showClearFailure) {
             Button("OK", role: .cancel) {}
@@ -552,6 +547,10 @@ struct StorageView: View {
             urlCheckTimer = nil
         }
         .copiedFeedbackOverlay($feedbackState.message)
+    }
+
+    private func refreshStorage() {
+        Task { await storageManager.refresh(pageURL: navigator?.currentURL) }
     }
 
     // MARK: - Storage Header
@@ -633,7 +632,7 @@ struct StorageView: View {
                     isDisabled: showsAllStorage || navigator?.currentURL == nil
                 ) {
                     guard let pageURL = navigator?.currentURL else { return }
-                    addTarget = StorageAddTarget(type: selectedType, pageURL: pageURL)
+                    editor = StorageEditorTarget(action: .add(selectedType, pageURL))
                 },
                 .init(icon: "arrow.clockwise") {
                     Task { await storageManager.refresh(pageURL: navigator?.currentURL) }
@@ -816,7 +815,7 @@ struct StorageView: View {
                                     typeColumnWidth: typeColumnWidth,
                                     keyColumnWidth: keyColumnWidth,
                                     searchText: searchText,
-                                    onEdit: { selectedItem = $0 },
+                                    onEdit: { editor = StorageEditorTarget(action: .edit($0)) },
                                     onDelete: { deleteItem($0) },
                                     onCopy: { copyToClipboard($0) },
                                     onCopyKeyValue: { copyKeyValue($0) },
@@ -840,7 +839,7 @@ struct StorageView: View {
                             typeColumnWidth: typeColumnWidth,
                             keyColumnWidth: keyColumnWidth,
                             searchText: searchText,
-                            onEdit: { selectedItem = $0 },
+                            onEdit: { editor = StorageEditorTarget(action: .edit($0)) },
                             onDelete: { deleteItem($0) },
                             onCopy: { copyToClipboard($0) },
                             onCopyKeyValue: { copyKeyValue($0) },
@@ -1085,6 +1084,6 @@ private struct StorageItemRow: View {
 
 #Preview {
     let manager = StorageManager()
-    return StorageView(storageManager: manager, navigator: nil)
+    return StorageView(storageManager: manager, navigator: nil, editor: .constant(nil))
         .devToolsSheet()
 }

@@ -23,7 +23,7 @@ extension ConsoleView {
                     .foregroundStyle(.cyan)
 
                 // Input field
-                TextField("JavaScript to execute...", text: $jsInput, axis: .vertical)
+                TextField("JavaScript to execute...", text: $session.jsInput, axis: .vertical)
                     .font(.system(size: 13, design: .monospaced))
                     .textFieldStyle(.plain)
                     .lineLimit(1...5)
@@ -34,7 +34,7 @@ extension ConsoleView {
                     .submitLabel(.send)
 
                 // History navigation buttons (only when there's history)
-                if !commandHistory.isEmpty {
+                if !session.commandHistory.isEmpty {
                     HStack(spacing: 4) {
                         Button {
                             navigateHistory(direction: -1)
@@ -42,7 +42,7 @@ extension ConsoleView {
                             Image(systemName: "chevron.up")
                                 .font(.system(size: 12, weight: .medium))
                         }
-                        .disabled(historyIndex >= commandHistory.count - 1)
+                        .disabled(session.historyIndex >= session.commandHistory.count - 1)
 
                         Button {
                             navigateHistory(direction: 1)
@@ -50,7 +50,7 @@ extension ConsoleView {
                             Image(systemName: "chevron.down")
                                 .font(.system(size: 12, weight: .medium))
                         }
-                        .disabled(historyIndex <= 0)
+                        .disabled(session.historyIndex <= 0)
                     }
                     .foregroundStyle(.secondary)
                     .buttonStyle(.plain)
@@ -64,9 +64,9 @@ extension ConsoleView {
                         .font(.system(size: 12))
                         .foregroundStyle(.white)
                         .frame(width: 28, height: 28)
-                        .background(jsInput.isEmpty ? Color.gray : Color.cyan, in: Circle())
+                        .background(session.jsInput.isEmpty ? Color.gray : Color.cyan, in: Circle())
                 }
-                .disabled(jsInput.isEmpty)
+                .disabled(session.jsInput.isEmpty)
                 .buttonStyle(.plain)
             }
             .padding(.horizontal, 12)
@@ -87,24 +87,24 @@ extension ConsoleView {
     }
 
     func executeJavaScript() {
-        let rawCommand = jsInput.trimmingCharacters(in: .whitespacesAndNewlines)
+        let rawCommand = session.jsInput.trimmingCharacters(in: .whitespacesAndNewlines)
         let command = sanitizeSmartQuotes(rawCommand)
         guard !command.isEmpty, let nav = navigator else { return }
 
         // Add to history (with max limit)
-        if commandHistory.last != command {
-            commandHistory.append(command)
-            if commandHistory.count > maxCommandHistory {
-                commandHistory.removeFirst()
+        if session.commandHistory.last != command {
+            session.commandHistory.append(command)
+            if session.commandHistory.count > maxCommandHistory {
+                session.commandHistory.removeFirst()
             }
         }
-        historyIndex = -1
+        session.historyIndex = -1
 
         // Log the command
         consoleManager.addLog(type: "command", message: command, source: "user input")
 
         // Clear input
-        jsInput = ""
+        session.jsInput = ""
 
         // Execute and log result
         Task {
@@ -146,13 +146,13 @@ extension ConsoleView {
     }
 
     func navigateHistory(direction: Int) {
-        let newIndex = historyIndex - direction
-        if newIndex >= 0 && newIndex < commandHistory.count {
-            historyIndex = newIndex
-            jsInput = commandHistory[commandHistory.count - 1 - historyIndex]
+        let newIndex = session.historyIndex - direction
+        if newIndex >= 0 && newIndex < session.commandHistory.count {
+            session.historyIndex = newIndex
+            session.jsInput = session.commandHistory[session.commandHistory.count - 1 - session.historyIndex]
         } else if newIndex < 0 {
-            historyIndex = -1
-            jsInput = ""
+            session.historyIndex = -1
+            session.jsInput = ""
         }
     }
 }

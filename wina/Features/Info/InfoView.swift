@@ -14,6 +14,7 @@ struct InfoView: View {
     var loadedURL: Binding<String>?
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.webViewContainerSize) var containerSize
     @State private var searchText = ""
     @State private var webViewInfo: WebViewInfo?
     @State private var deviceInfo: DeviceInfo?

@@ -82,7 +82,7 @@ struct WebViewContainer: View {
     var body: some View {
         GeometryReader { geometry in
             let webViewWidth = geometry.size.width * currentWidthRatio
-            let webViewHeight = geometry.size.height * currentHeightRatio
+            let webViewHeight = geometry.size.height * BarConstants.effectiveHeightRatio(currentHeightRatio, for: geometry.size.height)
 
             ZStack {
                 // Background (only shown when size is less than 100%)

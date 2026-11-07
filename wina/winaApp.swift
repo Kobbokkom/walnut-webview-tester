@@ -70,23 +70,26 @@ struct winaApp: App {
         defaults.removeObject(forKey: legacyKey)
     }
 
-    /// Initialize WebView size ratios to "App" preset on first launch
-    /// Must be called after Scene is ready (UIWindowScene available)
-    static func initializeWebViewSizeIfNeeded(containerHeight: CGFloat) {
-        let defaults = UserDefaults.standard
-        let hasInitializedKey = "hasInitializedWebViewSize"
+    static func initializeWebViewSizeIfNeeded(knownHeights: [CGFloat], in defaults: UserDefaults = .standard) {
+        let initializedKey = "hasInitializedWebViewSize"
+        let migrationKey = "hasMigratedWebViewAppSize"
+        guard !defaults.bool(forKey: migrationKey) else { return }
 
-        guard containerHeight > 0, !defaults.bool(forKey: hasInitializedKey) else { return }
-
-        let appContainerHeightRatio = BarConstants.appContainerHeightRatio(for: containerHeight)
-
-        // Set both WKWebView and SafariVC to "App" preset
-        defaults.set(1.0, forKey: "webViewWidthRatio")
-        defaults.set(appContainerHeightRatio, forKey: "webViewHeightRatio")
-        defaults.set(1.0, forKey: "safariWidthRatio")
-        defaults.set(appContainerHeightRatio, forKey: "safariHeightRatio")
-
-        defaults.set(true, forKey: hasInitializedKey)
+        for browser in ["webView", "safari"] {
+            let widthKey = browser + "WidthRatio"
+            let heightKey = browser + "HeightRatio"
+            if defaults.bool(forKey: initializedKey) {
+                guard let height = defaults.object(forKey: heightKey) as? Double else { continue }
+                let width = defaults.object(forKey: widthKey) as? Double ?? 1
+                let migrated = BarConstants.migratedHeightRatio(widthRatio: width, heightRatio: height, knownHeights: knownHeights)
+                defaults.set(migrated, forKey: heightKey)
+            } else {
+                defaults.set(1.0, forKey: widthKey)
+                defaults.set(BarConstants.appHeightPreset, forKey: heightKey)
+            }
+        }
+        defaults.set(true, forKey: initializedKey)
+        defaults.set(true, forKey: migrationKey)
     }
 
     var body: some Scene {
@@ -96,12 +99,17 @@ struct winaApp: App {
                     width: geometry.size.width,
                     height: geometry.size.height + geometry.safeAreaInsets.bottom
                 )
+                let fullSize = CGSize(
+                    width: containerSize.width + geometry.safeAreaInsets.leading + geometry.safeAreaInsets.trailing,
+                    height: containerSize.height + geometry.safeAreaInsets.top
+                )
                 ContentView()
                     .environment(\.webViewContainerSize, containerSize)
                     .preferredColorScheme(preferredScheme)
                     .environment(\.locale, resolvedLocale)
-                    .onChange(of: containerSize, initial: true) { _, size in
-                        Self.initializeWebViewSizeIfNeeded(containerHeight: size.height)
+                    .onChange(of: fullSize, initial: true) { _, size in
+                        guard size.height > 0, size.width > 0 else { return }
+                        Self.initializeWebViewSizeIfNeeded(knownHeights: [containerSize.height, size.height, size.width])
                     }
                     .onOpenURL { url in
                         CallbackTestManager.shared.handleIncomingURL(url)

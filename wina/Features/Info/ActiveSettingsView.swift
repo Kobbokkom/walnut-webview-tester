@@ -68,9 +68,13 @@ struct ActiveSettingsView: View {
 
     @Environment(\.webViewContainerSize) private var containerSize
 
+    private var effectiveHeightRatio: Double {
+        BarConstants.effectiveHeightRatio(webViewHeightRatio, for: containerSize.height)
+    }
+
     private var webViewSizeText: String {
         let w = Int(containerSize.width * webViewWidthRatio)
-        let h = Int(containerSize.height * webViewHeightRatio)
+        let h = Int(containerSize.height * effectiveHeightRatio)
         return "\(w) × \(h)"
     }
 
@@ -149,7 +153,7 @@ struct ActiveSettingsView: View {
                     label: "Width", value: "\(Int(webViewWidthRatio * 100))%",
                     info: "WebView width ratio.\n100% = Full screen width.")
                 InfoRow(
-                    label: "Height", value: "\(Int(webViewHeightRatio * 100))%",
+                    label: "Height", value: "\(Int(effectiveHeightRatio * 100))%",
                     info: "WebView height ratio.\n100% = Full screen height.")
                 InfoRow(
                     label: "Dimensions", value: webViewSizeText,

@@ -35,7 +35,7 @@ extension InfoView {
             InfoSearchItem(category: "Active Settings", label: "Page Zoom", value: "\(Int(pageZoom * 100))%"),
             InfoSearchItem(category: "Active Settings", label: "Under Page Background", value: underPageBackgroundColorHex.isEmpty ? "Default" : underPageBackgroundColorHex),
             InfoSearchItem(category: "Active Settings", label: "WebView Width", value: "\(Int(webViewWidthRatio * 100))%"),
-            InfoSearchItem(category: "Active Settings", label: "WebView Height", value: "\(Int(webViewHeightRatio * 100))%")
+            InfoSearchItem(category: "Active Settings", label: "WebView Height", value: "\(Int(BarConstants.effectiveHeightRatio(webViewHeightRatio, for: containerSize.height) * 100))%")
         ]
     }
 
