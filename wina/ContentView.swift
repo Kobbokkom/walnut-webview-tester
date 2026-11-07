@@ -287,9 +287,6 @@ struct ContentView: View {
                 }
             }
         }
-        .onChange(of: devToolsState.selectedTool) { _, tool in
-            if tool == nil { consoleSession = ConsoleSession() }
-        }
         .environment(\.webViewContainerSize, browserSize == .zero ? containerSize : browserSize)
     }
 
@@ -333,6 +330,7 @@ struct ContentView: View {
                         webViewNavigator.recorder.stopRecording()
                         // Close all DevTools overlays with single call
                         devToolsState.closeAll()
+                        consoleSession = ConsoleSession()
 
                         // Close other sheets
                         showSettings = false
