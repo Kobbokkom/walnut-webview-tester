@@ -138,6 +138,8 @@ struct ContentView: View {
                             .environment(\.closeDevTools, { devToolsState.close(tool) })
                     }
                     .frame(width: frames.tools.width, height: frames.tools.height)
+                    .clipped()
+                    .contentShape(Rectangle())
                     .position(x: frames.tools.midX, y: frames.tools.midY)
                 }
             }
