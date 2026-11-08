@@ -115,8 +115,8 @@ struct ContentView: View {
     var body: some View {
         GeometryReader { geometry in
             let fold = foldRegion(in: geometry)
-            let hasRoomForPanel = UIDevice.current.isIPad || verticalSizeClass == .regular || fold.isPresent
-            let canDock = horizontalSizeClass == .regular && hasRoomForPanel
+            let hasRoomForPanel = verticalSizeClass == .regular || fold.isPresent
+            let canDock = !UIDevice.current.isIPad && horizontalSizeClass == .regular && hasRoomForPanel
                 && showWebView && !useSafariWebView && !erudaModeEnabled
             // The editor belongs to the current presentation until the user saves or cancels.
             let docked = storageEditor == nil ? canDock : devToolsState.isDocked

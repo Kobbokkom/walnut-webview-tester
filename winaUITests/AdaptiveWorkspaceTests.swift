@@ -1,3 +1,4 @@
+import UIKit
 import XCTest
 
 @MainActor
@@ -43,7 +44,13 @@ final class AdaptiveWorkspaceTests: XCTestCase {
         capture("DevTools-initial")
 
         let panel = app.otherElements["devToolsPanel"]
-        if app.frame.width >= 600 { XCTAssertTrue(panel.exists) }
+        let expectsSheet = UIDevice.current.userInterfaceIdiom == .pad
+            || ProcessInfo.processInfo.environment["WALNUT_QA_EXPECT_PHONE_SHEET"] == "YES"
+        if expectsSheet {
+            XCTAssertFalse(panel.exists)
+        } else if app.frame.width >= 600 {
+            XCTAssertTrue(panel.exists)
+        }
         if panel.exists {
             let network = app.buttons["devToolsTab.network"]
             XCTAssertTrue(network.exists)
@@ -58,7 +65,7 @@ final class AdaptiveWorkspaceTests: XCTestCase {
         Thread.sleep(forTimeInterval: 2)
         XCTAssertTrue(app.buttons["closeDevTools"].firstMatch.waitForExistence(timeout: 10))
         XCTAssertTrue(draft.exists, "A layout change discarded unexecuted Console input")
-        if ProcessInfo.processInfo.environment["WALNUT_QA_EXPECT_PHONE_SHEET"] == "YES" {
+        if expectsSheet {
             XCTAssertFalse(panel.exists)
         }
         capture("DevTools-landscape")
