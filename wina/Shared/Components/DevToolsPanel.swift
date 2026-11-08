@@ -1,12 +1,14 @@
 import SwiftUI
 
 struct DevToolsPanel<Content: View>: View {
+    @Environment(\.agentBrowserSettings) private var agentSettings
     let state: DevToolsOverlayState
     @ViewBuilder let content: () -> Content
     @AppStorage("toolbarItemsOrder") private var toolbarItemsOrder = Data()
 
     private var tools: [DevToolsOverlay] {
-        state.dockedTools(in: ToolbarSettings.visibleItems(from: toolbarItemsOrder))
+        let order = agentSettings?.value("toolbarItemsOrder", fallback: toolbarItemsOrder) ?? toolbarItemsOrder
+        return state.dockedTools(in: ToolbarSettings.visibleItems(from: order))
     }
 
     var body: some View {

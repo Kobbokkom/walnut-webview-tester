@@ -92,7 +92,7 @@ struct DisplayFeaturesView: View {
 
 // MARK: - Display Info Model
 
-struct DisplayInfo: Sendable {
+struct DisplayInfo: Sendable, Encodable {
     // Screen
     let screenWidth: String
     let screenHeight: String
@@ -130,9 +130,10 @@ struct DisplayInfo: Sendable {
     // MARK: - Load Function
 
     @MainActor
-    static func load(onStatusUpdate: @escaping (String) -> Void) async -> DisplayInfo {
-        let shared = SharedInfoWebView.shared
-
+    static func load(
+        using shared: SharedInfoWebView = .shared,
+        onStatusUpdate: @escaping (String) -> Void
+    ) async -> DisplayInfo {
         if let cached = shared.cachedDisplayInfo {
             onStatusUpdate("Using cached data...")
             return cached

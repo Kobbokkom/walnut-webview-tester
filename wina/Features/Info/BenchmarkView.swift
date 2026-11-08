@@ -141,7 +141,7 @@ struct BenchmarkView: View {
 
 // MARK: - Performance Info Model
 
-struct PerformanceInfo: Sendable {
+struct PerformanceInfo: Sendable, Encodable {
     // System
     let hardwareConcurrency: String
     let timerResolution: String

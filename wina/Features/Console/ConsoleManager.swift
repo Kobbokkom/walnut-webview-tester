@@ -13,6 +13,7 @@ import Foundation
 class ConsoleManager {
     var logs: [ConsoleLog] = []
     var isCapturing: Bool = true
+    var agentDocumentID: UUID?
     var collapsedGroups: Set<UUID> = []
     private var currentGroupLevel: Int = 0
     private var groupStack: [UUID] = []
@@ -49,9 +50,11 @@ class ConsoleManager {
         }
 
         let logType = ConsoleLog.LogType(rawValue: type) ?? .log
+        let document = agentDocumentID
 
         DispatchQueue.main.async {
             var log = ConsoleLog(type: logType, message: message, source: source, timestamp: Date())
+            log.agentDocumentID = document
             log.tableData = tableData
             log.objectValue = objectValue
             log.styledSegments = styledSegments
@@ -88,7 +91,7 @@ class ConsoleManager {
 
             if self.shouldCollapseRepeat(log: log), let lastIndex = self.logs.indices.last {
                 var updated = self.logs[lastIndex]
-                if self.isSameRepeat(lhs: updated, rhs: log) {
+                if updated.agentDocumentID == document, self.isSameRepeat(lhs: updated, rhs: log) {
                     updated.repeatCount += 1
                     updated.timestamp = log.timestamp
                     self.logs[lastIndex] = updated
@@ -151,9 +154,11 @@ class ConsoleManager {
 
     /// console.time(label) - 타이머 시작
     func time(label: String = "default") {
+        let document = agentDocumentID
         DispatchQueue.main.async {
             self.timerContexts[label] = Date()
             var log = ConsoleLog(type: .time, message: "Timer '\(label)' started", source: nil, timestamp: Date())
+            log.agentDocumentID = document
             log.timerLabel = label
             self.logs.append(log)
         }
@@ -161,6 +166,7 @@ class ConsoleManager {
 
     /// console.timeLog(label) - 현재까지 경과 시간 로깅
     func timeLog(label: String = "default") {
+        let document = agentDocumentID
         DispatchQueue.main.async {
             guard let startTime = self.timerContexts[label] else {
                 self.addLog(type: "error", message: "Timer '\(label)' not found")
@@ -168,6 +174,7 @@ class ConsoleManager {
             }
             let elapsed = Date().timeIntervalSince(startTime) * 1000  // milliseconds
             var log = ConsoleLog(type: .timeLog, message: "\(label): \(String(format: "%.3f", elapsed))ms", source: nil, timestamp: Date())
+            log.agentDocumentID = document
             log.timerLabel = label
             log.timerElapsed = elapsed / 1000
             self.logs.append(log)
@@ -176,6 +183,7 @@ class ConsoleManager {
 
     /// console.timeEnd(label) - 타이머 종료 및 결과 로깅
     func timeEnd(label: String = "default") {
+        let document = agentDocumentID
         DispatchQueue.main.async {
             guard let startTime = self.timerContexts[label] else {
                 self.addLog(type: "error", message: "Timer '\(label)' not found")
@@ -184,6 +192,7 @@ class ConsoleManager {
             let elapsed = Date().timeIntervalSince(startTime) * 1000  // milliseconds
             self.timerContexts.removeValue(forKey: label)
             var log = ConsoleLog(type: .timeEnd, message: "\(label): \(String(format: "%.3f", elapsed))ms", source: nil, timestamp: Date())
+            log.agentDocumentID = document
             log.timerLabel = label
             log.timerElapsed = elapsed / 1000
             self.logs.append(log)
@@ -194,10 +203,12 @@ class ConsoleManager {
 
     /// console.count(label) - 카운트 증가 및 로깅
     func count(label: String = "default") {
+        let document = agentDocumentID
         DispatchQueue.main.async {
             let newCount = (self.countContexts[label] ?? 0) + 1
             self.countContexts[label] = newCount
             var log = ConsoleLog(type: .count, message: "\(label): \(newCount)", source: nil, timestamp: Date())
+            log.agentDocumentID = document
             log.countLabel = label
             log.countValue = newCount
             self.logs.append(log)

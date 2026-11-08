@@ -11,6 +11,7 @@ import SwiftUI
 import SwiftUIBackports
 
 struct OverlayMenuBars: View {
+    @Environment(\.agentBrowserSettings) private var agentSettings
     let showWebView: Bool
     let hasBookmarks: Bool
     let useSafariVC: Bool
@@ -210,11 +211,11 @@ private extension OverlayMenuBars {
     }
 
     private var visibleToolbarItems: [DevToolsMenuItem] {
-        ToolbarSettings.visibleItems(from: toolbarItemsOrderData)
+        ToolbarSettings.visibleItems(from: agentSettings?.value("toolbarItemsOrder", fallback: toolbarItemsOrderData) ?? toolbarItemsOrderData)
     }
 
     private var visibleAppBarItems: [AppBarMenuItem] {
-        guard let items = try? JSONDecoder().decode([AppBarItemState].self, from: appBarItemsOrderData),
+        guard let items = try? JSONDecoder().decode([AppBarItemState].self, from: agentSettings?.value("appBarItemsOrder", fallback: appBarItemsOrderData) ?? appBarItemsOrderData),
               !items.isEmpty else {
             return AppBarMenuItem.defaultOrder
         }
@@ -225,7 +226,7 @@ private extension OverlayMenuBars {
     private var visibleSafariVCToolbarItems: [SafariVCToolbarMenuItem] {
         guard let items = try? JSONDecoder().decode(
             [SafariVCToolbarItemState].self,
-            from: safariToolbarItemsOrderData
+            from: agentSettings?.value("safariToolbarItemsOrder", fallback: safariToolbarItemsOrderData) ?? safariToolbarItemsOrderData
         ), !items.isEmpty else {
             return SafariVCToolbarMenuItem.defaultOrder
         }
@@ -235,7 +236,7 @@ private extension OverlayMenuBars {
     private var visibleSafariVCAppBarItems: [SafariVCAppBarMenuItem] {
         guard let items = try? JSONDecoder().decode(
             [SafariVCAppBarItemState].self,
-            from: safariAppBarItemsOrderData
+            from: agentSettings?.value("safariAppBarItemsOrder", fallback: safariAppBarItemsOrderData) ?? safariAppBarItemsOrderData
         ), !items.isEmpty else {
             return SafariVCAppBarMenuItem.defaultOrder
         }

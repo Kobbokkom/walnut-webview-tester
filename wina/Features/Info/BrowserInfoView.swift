@@ -95,7 +95,7 @@ struct BrowserInfoView: View {
 
 // MARK: - WebView Info Model
 
-struct WebViewInfo: Sendable {
+struct WebViewInfo: Sendable, Encodable {
     // Browser
     let browserType: String
     let vendor: String
@@ -210,9 +210,10 @@ struct WebViewInfo: Sendable {
     // MARK: - Load Function
 
     @MainActor
-    static func load(onStatusUpdate: @escaping (String) -> Void) async -> WebViewInfo {
-        let shared = SharedInfoWebView.shared
-
+    static func load(
+        using shared: SharedInfoWebView = .shared,
+        onStatusUpdate: @escaping (String) -> Void
+    ) async -> WebViewInfo {
         if let cached = shared.cachedWebViewInfo {
             onStatusUpdate("Using cached data...")
             return cached

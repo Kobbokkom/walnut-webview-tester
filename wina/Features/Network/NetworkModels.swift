@@ -54,6 +54,7 @@ struct NetworkRequest: Identifiable, Equatable {
     var requestType: RequestType
     var stackFrames: [StackFrame]?  // JavaScript call stack at request time
     var initiatorFunction: String?  // Top-level function name from stack
+    var agentDocumentID: UUID?
 
     // Preview length for memory storage
     static let previewLength = 500

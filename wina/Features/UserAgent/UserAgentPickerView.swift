@@ -444,22 +444,7 @@ private struct CustomUserAgentEditor: View {
     }
 
     private var builtUserAgent: String {
-        switch selectedBrowser {
-        case .chrome:
-            return UserAgentBuilder.chrome(version: browserVersion, platform: selectedPlatform.platformToken).build()
-        case .safari:
-            return UserAgentBuilder.safari(version: browserVersion, platform: selectedPlatform.platformToken).build()
-        case .firefox:
-            return UserAgentBuilder.firefox(version: browserVersion, platform: selectedPlatform.platformToken).build()
-        case .edge:
-            return UserAgentBuilder.edge(version: browserVersion, platform: selectedPlatform.platformToken).build()
-        case .opera, .brave:
-            var builder = UserAgentBuilder.chrome(version: browserVersion, platform: selectedPlatform.platformToken)
-            if selectedBrowser == .opera {
-                builder.additionalTokens = ["OPR/116.0.0.0"]
-            }
-            return builder.build()
-        }
+        UserAgentBuilder.compose(browser: selectedBrowser, platform: selectedPlatform.platformToken, version: browserVersion)
     }
 
     private var currentOutput: String {

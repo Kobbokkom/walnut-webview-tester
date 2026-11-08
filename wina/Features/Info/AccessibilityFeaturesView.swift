@@ -69,7 +69,7 @@ struct AccessibilityFeaturesView: View {
 
 // MARK: - Accessibility Info Model
 
-struct AccessibilityInfo: Sendable {
+struct AccessibilityInfo: Sendable, Encodable {
     // User Preferences
     let reducedMotion: String
     let reducedTransparency: String
@@ -99,9 +99,10 @@ struct AccessibilityInfo: Sendable {
     )
 
     @MainActor
-    static func load(onStatusUpdate: @escaping (String) -> Void) async -> AccessibilityInfo {
-        let shared = SharedInfoWebView.shared
-
+    static func load(
+        using shared: SharedInfoWebView = .shared,
+        onStatusUpdate: @escaping (String) -> Void
+    ) async -> AccessibilityInfo {
         // Return cached if available
         if let cached = shared.cachedAccessibilityInfo {
             onStatusUpdate("Using cached data...")

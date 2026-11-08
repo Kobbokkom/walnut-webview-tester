@@ -139,6 +139,15 @@ final class WebViewRecorder {
     private(set) var lastResult: RecordingResult?
     private(set) var failedOutputURL: URL?
     private var stopRequested = false
+    private var retainForAgent = false
+    private var shouldSaveToPhotos = true
+    private(set) var agentOutputURL: URL?
+
+    func discardAgentRecording() {
+        retainForAgent = false
+        if let agentOutputURL { try? FileManager.default.removeItem(at: agentOutputURL) }
+        agentOutputURL = nil
+    }
 
     typealias CaptureHandler = (CMSampleBuffer, RPSampleBufferType, Error?) -> Void
     private let captureStart: (@escaping CaptureHandler) async throws -> Void
@@ -178,7 +187,7 @@ final class WebViewRecorder {
 
     // MARK: - Recording Control
 
-    func startRecording() async -> Bool {
+    func startRecording(retainForAgent: Bool = false, saveToPhotos: Bool = true) async -> Bool {
         guard state == .idle else { return false }
 
         // Note: Photo library permission should be checked by caller before calling this method
@@ -204,6 +213,9 @@ final class WebViewRecorder {
             writerState.isRecording = true
         }
 
+        discardAgentRecording()
+        self.retainForAgent = retainForAgent
+        shouldSaveToPhotos = saveToPhotos
         state = .starting
         stopRequested = false
         lastResult = nil
@@ -345,16 +357,24 @@ final class WebViewRecorder {
             }
         }
         guard writer.status == .completed, captureError == nil else {
-            failedOutputURL = url
+            if shouldSaveToPhotos {
+                failedOutputURL = url
+            } else {
+                try? FileManager.default.removeItem(at: url)
+            }
             lastResult = .failed(captureError?.localizedDescription ?? writer.error?.localizedDescription ?? "Could not finish the recording.")
             return
         }
         do {
-            try await photoSave(url)
-            try? FileManager.default.removeItem(at: url)
+            if shouldSaveToPhotos { try await photoSave(url) }
+            if retainForAgent {
+                agentOutputURL = url
+            } else {
+                try? FileManager.default.removeItem(at: url)
+            }
             lastResult = .success
         } catch {
-            failedOutputURL = url
+            if retainForAgent { agentOutputURL = url } else { failedOutputURL = url }
             lastResult = .failed("Could not save to Photos. The recording file was kept. \(error.localizedDescription)")
         }
     }

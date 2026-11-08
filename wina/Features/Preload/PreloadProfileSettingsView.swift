@@ -72,7 +72,7 @@ struct PreloadProfileSettingsState {
     }
 }
 
-private enum PreloadProfileValidation {
+enum PreloadProfileValidation {
     static func message(for profile: WebViewPreloadProfile) -> String? {
         guard profile.isEnabled else { return nil }
 

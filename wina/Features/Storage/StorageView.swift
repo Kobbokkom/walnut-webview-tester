@@ -153,7 +153,11 @@ class StorageManager {
             return host == domain
         }
 
-        return filtered.map { cookie in
+        return Self.storageItems(for: filtered)
+    }
+
+    static func storageItems(for cookies: [HTTPCookie]) -> [StorageItem] {
+        cookies.map { cookie in
             StorageItem(
                 key: cookie.name,
                 value: cookie.value,

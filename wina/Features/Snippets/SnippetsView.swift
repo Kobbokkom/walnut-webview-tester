@@ -71,6 +71,7 @@ struct DebugSnippet: Identifiable {
 @Observable
 class SnippetsManager {
     var activeSnippets: Set<String> = []
+    private var isExecuting = false
 
     static let defaultSnippets: [DebugSnippet] = [
         DebugSnippet(
@@ -369,13 +370,60 @@ class SnippetsManager {
         )
     ]
 
+    static let styleDependentIDs: Set<String> = ["show_elements", "highlight_headings", "border_all"]
+
+    func execute(_ snippet: DebugSnippet, using navigator: WebViewNavigator, enabled: Bool) async throws -> String {
+        guard !isExecuting else { throw SnippetExecutionError.busy }
+        isExecuting = true
+        defer { isExecuting = false }
+        return try await apply(snippet, using: navigator, enable: enabled)
+    }
+
+    private func apply(_ snippet: DebugSnippet, using navigator: WebViewNavigator, enable: Bool) async throws -> String {
+        let document = navigator.documentID
+        let isActive = isActive(snippet.id)
+        if snippet.isToggleable && enable == isActive { return "\(snippet.name) already \(enable ? "enabled" : "disabled")" }
+        if Self.styleDependentIDs.contains(snippet.id), isActive == false, self.isActive("disable_css") {
+            throw SnippetExecutionError.cssDisabled
+        }
+
+        var disabled: [String] = []
+        if snippet.id == "disable_css", enable {
+            for style in Self.defaultSnippets where Self.styleDependentIDs.contains(style.id) && self.isActive(style.id) {
+                _ = try await apply(style, using: navigator, enable: false)
+                disabled.append(style.name)
+            }
+        }
+
+        guard navigator.isAttached, navigator.documentID == document, !Task.isCancelled else {
+            throw SnippetExecutionError.pageChanged
+        }
+        let script = snippet.isToggleable && !enable ? (snippet.undoScript ?? snippet.script) : snippet.script
+        let result = await navigator.evaluateJavaScript(script)
+        guard navigator.documentID == document else { throw SnippetExecutionError.pageChanged }
+        guard let message = result as? String else { throw SnippetExecutionError.executionFailed }
+        if snippet.isToggleable, enable != self.isActive(snippet.id) {
+            toggle(snippet.id)
+        }
+        return disabled.isEmpty ? message : "\(message) (Disabled: \(disabled.joined(separator: ", ")))"
+    }
+
+    func undoAll(using navigator: WebViewNavigator) async throws {
+        guard !isExecuting else { throw SnippetExecutionError.busy }
+        isExecuting = true
+        defer { isExecuting = false }
+        for snippet in Self.defaultSnippets where isActive(snippet.id) {
+            _ = try await apply(snippet, using: navigator, enable: false)
+        }
+    }
+
     func isActive(_ snippetId: String) -> Bool {
         activeSnippets.contains(snippetId)
     }
 
     func toggle(_ snippetId: String) {
-        if activeSnippets.contains(snippetId) {
-            activeSnippets.remove(snippetId)
+        if isActive(snippetId) {
+            deactivate(snippetId)
         } else {
             activeSnippets.insert(snippetId)
         }
@@ -387,6 +435,19 @@ class SnippetsManager {
 
     func resetActiveSnippets() {
         activeSnippets.removeAll()
+    }
+}
+
+private enum SnippetExecutionError: LocalizedError {
+    case cssDisabled, pageChanged, executionFailed, busy
+
+    var errorDescription: String? {
+        switch self {
+        case .cssDisabled: "This snippet is unavailable while Disable CSS is active."
+        case .pageChanged: "The page changed during snippet execution."
+        case .executionFailed: "Could not run this snippet on the page."
+        case .busy: "Another snippet is running."
+        }
     }
 }
 
@@ -408,12 +469,6 @@ struct SnippetsView: View {
     private var snippetsManager: SnippetsManager {
         navigator.snippetsManager
     }
-
-    private let styleDependentIds: Set<String> = [
-        "show_elements",
-        "highlight_headings",
-        "border_all"
-    ]
 
     private var filteredSnippets: [DebugSnippet] {
         var result = SnippetsManager.defaultSnippets
@@ -571,7 +626,7 @@ struct SnippetsView: View {
                                 snippet: snippet,
                                 isActive: snippetsManager.isActive(snippet.id),
                                 isDisabled: snippetsManager.isActive("disable_css")
-                                    && styleDependentIds.contains(snippet.id)
+                                    && SnippetsManager.styleDependentIDs.contains(snippet.id)
                             ) {
                                 executeSnippet(snippet)
                             }
@@ -653,100 +708,33 @@ struct SnippetsView: View {
     // MARK: - Actions
 
     private func executeSnippet(_ snippet: DebugSnippet) {
-        let isCurrentlyActive = snippetsManager.isActive(snippet.id)
-        let script: String
-        var preScripts: [String] = []
-        var extraResultNote: String?
-
-        if styleDependentIds.contains(snippet.id),
-           snippetsManager.isActive("disable_css"),
-           !isCurrentlyActive {
-            executionResult = "This snippet is unavailable while Disable CSS is active"
-            showResult = true
-            Task {
-                try? await Task.sleep(for: .seconds(2))
-                await MainActor.run {
-                    showResult = false
-                }
-            }
-            return
-        }
-
-        if snippet.id == "disable_css",
-           !isCurrentlyActive {
-            let activeStyleIds = styleDependentIds.filter { snippetsManager.isActive($0) }
-            if !activeStyleIds.isEmpty {
-                for styleId in activeStyleIds {
-                    if let styleSnippet = SnippetsManager.defaultSnippets.first(where: { $0.id == styleId }),
-                       let undoScript = styleSnippet.undoScript {
-                        snippetsManager.deactivate(styleId)
-                        preScripts.append(undoScript)
-                    }
-                }
-
-                let activeNames = activeStyleIds.compactMap { styleId in
-                    SnippetsManager.defaultSnippets.first(where: { $0.id == styleId })?.name
-                }
-                if !activeNames.isEmpty {
-                    extraResultNote = "Disabled: \(activeNames.joined(separator: ", "))"
-                }
-            }
-        }
-
-        if snippet.isToggleable {
-            snippetsManager.toggle(snippet.id)
-            script = isCurrentlyActive ? (snippet.undoScript ?? snippet.script) : snippet.script
-        } else {
-            script = snippet.script
-        }
-
         Task {
-            for preScript in preScripts {
-                _ = await navigator.evaluateJavaScript(preScript)
-            }
-            let result = await navigator.evaluateJavaScript(script)
-            await MainActor.run {
-                if let resultStr = result as? String {
-                    if let extraResultNote {
-                        executionResult = "\(resultStr) (\(extraResultNote))"
-                    } else {
-                        executionResult = resultStr
-                    }
-                } else {
-                    executionResult = snippet.isToggleable
-                        ? (isCurrentlyActive ? "\(snippet.name) disabled" : "\(snippet.name) enabled")
-                        : "\(snippet.name) executed"
-                }
-                showResult = true
-
-                Task {
-                    try? await Task.sleep(for: .seconds(2))
-                    await MainActor.run {
-                        showResult = false
-                    }
-                }
+            do {
+                let enable = !snippetsManager.isActive(snippet.id)
+                showSnippetResult(try await snippetsManager.execute(snippet, using: navigator, enabled: enable))
+            } catch {
+                showSnippetResult(error.localizedDescription)
             }
         }
     }
 
     private func resetAllSnippets() {
-        let activeIds = snippetsManager.activeSnippets
-        for snippetId in activeIds {
-            if let snippet = SnippetsManager.defaultSnippets.first(where: { $0.id == snippetId }),
-               let undoScript = snippet.undoScript {
-                Task {
-                    _ = await navigator.evaluateJavaScript(undoScript)
-                }
+        Task {
+            do {
+                try await snippetsManager.undoAll(using: navigator)
+                showSnippetResult("All snippets reset")
+            } catch {
+                showSnippetResult(error.localizedDescription)
             }
-            snippetsManager.deactivate(snippetId)
         }
-        executionResult = "All snippets reset"
+    }
+
+    private func showSnippetResult(_ result: String) {
+        executionResult = result
         showResult = true
         Task {
             try? await Task.sleep(for: .seconds(2))
-            await MainActor.run {
-                showResult = false
-            }
+            showResult = false
         }
     }
 }

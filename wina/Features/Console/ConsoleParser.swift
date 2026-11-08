@@ -159,9 +159,8 @@ enum RegexFilter {
 enum ConsoleExporter {
 
     /// Export logs as formatted text
-    /// - Parameter logs: Array of ConsoleLog
     /// - Returns: Formatted text string with blank lines between entries
-    static func exportAsText(_ logs: [ConsoleLog]) -> String {
+    static func exportAsText(_ logs: [ConsoleLog], includeObjects: Bool = false) -> String {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss.SSS"
 
@@ -170,6 +169,9 @@ enum ConsoleExporter {
                 var line = "[\(dateFormatter.string(from: log.timestamp))] [\(log.type.shortLabel)] \(log.message)"
                 if let source = log.source {
                     line += " (\(source))"
+                }
+                if includeObjects, let object = log.objectValue {
+                    line += "\n" + object.copyableString
                 }
                 return line
             }

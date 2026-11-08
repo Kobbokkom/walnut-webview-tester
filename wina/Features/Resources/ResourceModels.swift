@@ -38,6 +38,7 @@ struct ResourceEntry: Identifiable, Equatable {
     let responseTime: Double  // responseEnd - responseStart
 
     let timestamp: Date
+    var agentDocumentID: UUID?
 
     // Computed properties
     var displayName: String {
