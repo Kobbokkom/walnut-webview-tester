@@ -52,17 +52,6 @@ enum BarConstants {
         storedRatio == appHeightPreset ? appContainerHeightRatio(for: height) : storedRatio
     }
 
-    static func migratedHeightRatio(widthRatio: Double, heightRatio: Double, knownHeights: [CGFloat]) -> Double {
-        // Older builds stored resolved ratios. Whole percentages can also come from the slider.
-        let percent = heightRatio * 100
-        guard widthRatio == 1, heightRatio > 0.25, heightRatio < 1,
-              abs(percent - percent.rounded()) > 0.000_001,
-              knownHeights.contains(where: { appContainerHeightRatio(for: $0) == heightRatio }) else {
-            return heightRatio
-        }
-        return appHeightPreset
-    }
-
     // MARK: - Sheet Presentation
 
     /// Standard sheet detents with compact option

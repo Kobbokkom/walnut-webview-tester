@@ -153,27 +153,36 @@ final class AdaptiveWebViewSizeTests: XCTestCase {
         }
     }
 
-    func testMigrationKeepsLegacyAppAndPreservesCustomRatios() throws {
+    func testUpgradeKeepsStoredPhoneAndTabletHeightRatios() throws {
         let suite = "AdaptiveWebViewSizeTests." + UUID().uuidString
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
 
         defaults.set(true, forKey: "hasInitializedWebViewSize")
         defaults.set(1.0, forKey: "webViewWidthRatio")
-        defaults.set(BarConstants.appContainerHeightRatio(for: 956), forKey: "webViewHeightRatio")
         defaults.set(1.0, forKey: "safariWidthRatio")
-        defaults.set(0.25, forKey: "safariHeightRatio")
-        winaApp.initializeWebViewSizeIfNeeded(knownHeights: [440, 896, 956], in: defaults)
-        XCTAssertEqual(defaults.double(forKey: "webViewHeightRatio"), BarConstants.appHeightPreset)
-        XCTAssertEqual(defaults.double(forKey: "safariHeightRatio"), 0.25)
+        for landscapeHeight: CGFloat in [440, 744] {
+            // A width-only edit can leave the previous landscape App ratio stored as a fixed height.
+            let savedHeight = BarConstants.appContainerHeightRatio(for: landscapeHeight)
+            defaults.set(savedHeight, forKey: "webViewHeightRatio")
+            defaults.set(0.76, forKey: "safariHeightRatio")
+            winaApp.initializeWebViewSizeIfNeeded(in: defaults)
+            XCTAssertEqual(defaults.object(forKey: "webViewHeightRatio") as? Double, savedHeight)
+            XCTAssertEqual(defaults.object(forKey: "safariHeightRatio") as? Double, 0.76)
+        }
+    }
 
-        defaults.set(0.76, forKey: "webViewHeightRatio")
-        winaApp.initializeWebViewSizeIfNeeded(knownHeights: [440, 896, 956], in: defaults)
-        XCTAssertEqual(defaults.double(forKey: "webViewHeightRatio"), 0.76)
-        let oldApp = BarConstants.appContainerHeightRatio(for: 956)
-        XCTAssertEqual(BarConstants.migratedHeightRatio(widthRatio: 0.85, heightRatio: oldApp, knownHeights: [956]), oldApp)
-        XCTAssertEqual(BarConstants.migratedHeightRatio(widthRatio: 1, heightRatio: oldApp, knownHeights: [900]), oldApp)
-        XCTAssertEqual(BarConstants.migratedHeightRatio(widthRatio: 1, heightRatio: 0.75, knownHeights: [768]), 0.75)
+    func testFreshInstallUsesAppPresetAndRelaunchKeepsEdits() throws {
+        let suite = "AdaptiveWebViewSizeTests." + UUID().uuidString
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+
+        winaApp.initializeWebViewSizeIfNeeded(in: defaults)
+        XCTAssertEqual(defaults.object(forKey: "webViewHeightRatio") as? Double, BarConstants.appHeightPreset)
+        XCTAssertEqual(defaults.object(forKey: "safariHeightRatio") as? Double, BarConstants.appHeightPreset)
+        defaults.set(0.63, forKey: "webViewHeightRatio")
+        winaApp.initializeWebViewSizeIfNeeded(in: defaults)
+        XCTAssertEqual(defaults.object(forKey: "webViewHeightRatio") as? Double, 0.63)
     }
 
     func testAppPresetRemainsValidInShortOrUnmeasuredWindows() {
