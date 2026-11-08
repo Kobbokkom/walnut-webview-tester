@@ -1,1 +1,1 @@
-Parannettu yhteensopivuutta ja vakautta.
+DevTools avautuu iPadissa nyt erillisessä paneelissa, jolloin verkkonäkymän asetettu leveys säilyy. Tallennettu korkeus säilyy päivityksissä, ja keskeneräiset Console- ja Storage-muutokset säilyvät asettelun vaihtuessa.

@@ -1,1 +1,1 @@
-Vylepšena kompatibilita a stabilita.
+DevTools se na iPadu nyní otevírají v překryvném panelu a webové zobrazení si zachovává nastavenou šířku. Uložená výška zůstane po aktualizaci a rozpracované úpravy v Console a Storage se při změně rozložení zachovají.

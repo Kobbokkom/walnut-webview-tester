@@ -1,1 +1,1 @@
-Keserasian dan kestabilan dipertingkatkan.
+DevTools kini dibuka dalam panel timbul pada iPad supaya paparan web mengekalkan lebar yang ditetapkan. Ketinggian yang disimpan kekal selepas kemas kini, dan suntingan yang belum selesai dalam Console dan Storage dikekalkan apabila susun atur berubah.

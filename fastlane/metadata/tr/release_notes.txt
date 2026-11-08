@@ -1,1 +1,1 @@
-Uyumluluk ve kararlılık iyileştirildi.
+DevTools artık iPad’de bir açılır panelde açılıyor ve web görünümü ayarlanan genişliği koruyor. Kaydedilen yükseklik güncellemeden sonra, Console ve Storage’daki tamamlanmamış düzenlemeler ise yerleşim değiştiğinde korunuyor.

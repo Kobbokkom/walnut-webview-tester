@@ -1,1 +1,1 @@
-Förbättrad kompatibilitet och stabilitet.
+DevTools öppnas nu i ett överliggande fönster på iPad så att webbvisningen behåller sin inställda bredd. Den sparade höjden bevaras efter uppdateringar och pågående ändringar i Console och Storage bevaras när layouten ändras.

@@ -1,1 +1,1 @@
-Peningkatan kompatibilitas dan stabilitas.
+DevTools kini terbuka dalam panel di iPad sehingga tampilan web mempertahankan lebar yang ditetapkan. Tinggi yang tersimpan tetap ada setelah pembaruan, dan edit yang belum selesai di Console dan Storage dipertahankan saat tata letak berubah.

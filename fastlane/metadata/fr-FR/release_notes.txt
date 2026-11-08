@@ -1,1 +1,1 @@
-La recherche dans les réglages est disponible. La disposition des outils de développement sur iPad et les tests WebView ont été améliorés.
+Sur iPad, DevTools s’ouvre désormais dans un panneau superposé qui préserve la largeur configurée de la vue web. La hauteur enregistrée est conservée après une mise à jour, ainsi que les modifications en cours dans Console et Storage lors d’un changement de disposition.

@@ -1,1 +1,1 @@
-Verbeterde compatibiliteit en stabiliteit.
+Op iPad wordt DevTools nu in een bovenliggend venster geopend, zodat de webweergave de ingestelde breedte behoudt. De opgeslagen hoogte blijft behouden na een update en lopende bewerkingen in Console en Storage blijven bewaard bij een wijziging van de indeling.

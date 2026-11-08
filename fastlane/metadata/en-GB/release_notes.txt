@@ -1,2 +1,1 @@
-Search for options in Settings. This update improves the DevTools layout on iPad and makes WebView testing more reliable.
-Field labels in Page Startup Setup now stay visible while editing cookies and bridge rules.
+DevTools now opens in a sheet on iPad, keeping the web view at its configured width. Saved web view heights survive updates, and unfinished Console and Storage edits are preserved when the layout changes.

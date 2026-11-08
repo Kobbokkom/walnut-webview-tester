@@ -1,1 +1,1 @@
-Jobb kompatibilitás és stabilitás.
+Az iPaden a DevTools most felugró panelen nyílik meg, így a webnézet megtartja a beállított szélességet. A mentett magasság frissítés után is megmarad, ahogy a Console és Storage folyamatban lévő szerkesztései is elrendezésváltáskor.

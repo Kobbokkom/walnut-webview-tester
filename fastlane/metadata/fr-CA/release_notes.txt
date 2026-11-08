@@ -1,1 +1,1 @@
-Amélioration de la compatibilité et de la stabilité.
+Sur iPad, DevTools s’ouvre maintenant dans un panneau superposé qui préserve la largeur configurée de la vue web. La hauteur enregistrée est conservée après une mise à jour, ainsi que les modifications en cours dans Console et Storage lors d’un changement de disposition.

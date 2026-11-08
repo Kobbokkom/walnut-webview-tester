@@ -1,1 +1,1 @@
-Melhorias de compatibilidade e estabilidade.
+No iPad, o DevTools agora abre em um painel sobreposto e a visualização da web mantém a largura configurada. A altura salva é mantida após atualizações, assim como as edições em andamento no Console e no Storage quando o layout muda.

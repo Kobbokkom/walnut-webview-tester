@@ -1,1 +1,1 @@
-Cải thiện khả năng tương thích và độ ổn định.
+Trên iPad, DevTools giờ mở trong bảng nổi để chế độ xem web giữ nguyên chiều rộng đã đặt. Chiều cao đã lưu được giữ lại sau khi cập nhật, và các chỉnh sửa đang thực hiện trong Console và Storage được giữ lại khi bố cục thay đổi.

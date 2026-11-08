@@ -1,1 +1,1 @@
-Forbedret kompatibilitet og stabilitet.
+På iPad åbner DevTools nu i et ark, så webvisningen bevarer den indstillede bredde. Gemte højder bevares efter opdatering, og igangværende ændringer i Console og Storage bevares, når layoutet ændres.

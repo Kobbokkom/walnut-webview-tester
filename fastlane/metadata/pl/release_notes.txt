@@ -1,1 +1,1 @@
-Poprawiono zgodność i stabilność.
+Na iPadzie DevTools otwiera się teraz w nakładanym panelu, dzięki czemu widok WWW zachowuje ustawioną szerokość. Zapisana wysokość pozostaje po aktualizacji, a niezakończone zmiany w Console i Storage są zachowywane przy zmianie układu.

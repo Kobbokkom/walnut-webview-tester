@@ -1,1 +1,1 @@
-Ahora puedes buscar opciones en los ajustes. Mejoramos la disposición de las herramientas de desarrollo en iPad y las pruebas de WebView.
+Ahora DevTools se abre en un panel superpuesto en el iPad y la vista web conserva el ancho configurado. Se mantiene la altura guardada tras actualizar y las ediciones pendientes de Console y Storage al cambiar la disposición.

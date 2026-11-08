@@ -1,1 +1,1 @@
-Poboljšana kompatibilnost i stabilnost.
+DevTools se na iPadu sada otvara u preklopnom panelu pa web-prikaz zadržava postavljenu širinu. Spremljena visina ostaje nakon ažuriranja, a nedovršene izmjene u Console i Storage zadržavaju se pri promjeni rasporeda.

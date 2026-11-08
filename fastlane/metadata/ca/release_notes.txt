@@ -1,1 +1,1 @@
-Millores de compatibilitat i estabilitat.
+Ara les DevTools s’obren en un full a l’iPad i la vista web manté l’amplada configurada. Les actualitzacions conserven l’alçada desada i els canvis pendents de Console i Storage es mantenen quan canvia la disposició.

@@ -1,1 +1,1 @@
-Einstellungen lassen sich jetzt durchsuchen. Das Layout der Entwicklertools auf dem iPad und WebView-Tests wurden verbessert.
+Auf dem iPad werden die DevTools jetzt in einem überlagerten Fenster geöffnet, sodass die Webansicht ihre eingestellte Breite behält. Gespeicherte Höhen bleiben nach Updates erhalten, und laufende Änderungen in Console und Storage bleiben bei Layoutwechseln bestehen.
