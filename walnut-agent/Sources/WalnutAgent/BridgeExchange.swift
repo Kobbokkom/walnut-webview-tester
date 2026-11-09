@@ -17,6 +17,7 @@ final class BridgeExchange: @unchecked Sendable {
     private var closed = false
     private var request: Request?
     private var response = Data()
+    private var closing: CheckedContinuation<Void, Never>?
 
     init(to endpoint: NWEndpoint, using parameters: NWParameters) {
         connection = NWConnection(to: endpoint, using: parameters)
@@ -24,12 +25,30 @@ final class BridgeExchange: @unchecked Sendable {
 
     deinit { connection.cancel() }
 
+    func close() async {
+        await withCheckedContinuation { continuation in
+            queue.async { [self] in
+                guard ready, !closed, closing == nil else {
+                    continuation.resume()
+                    return
+                }
+                closing = continuation
+                let finish = AgentError("The Walnut connection closed.")
+                // An empty NDJSON frame asks the phone to release its peer before the process exits.
+                connection.send(content: Data([0x0A]), completion: .contentProcessed { [weak self] error in
+                    if let error { self?.fail(error) }
+                })
+                queue.asyncAfter(deadline: .now() + 1) { [weak self] in self?.fail(finish) }
+            }
+        }
+    }
+
     func run(_ payload: Data, timeout: TimeInterval) async throws -> Data {
         try await withTaskCancellationHandler {
             try Task.checkCancellation()
             return try await withCheckedThrowingContinuation { continuation in
                 queue.async { [self] in
-                    guard !closed, request == nil else {
+                    guard !closed, closing == nil, request == nil else {
                         continuation.resume(throwing: AgentError("The Walnut connection closed. Retry to connect again."))
                         return
                     }
@@ -119,5 +138,7 @@ final class BridgeExchange: @unchecked Sendable {
         request?.continuation.resume(throwing: error)
         request = nil
         response = Data()
+        closing?.resume()
+        closing = nil
     }
 }
