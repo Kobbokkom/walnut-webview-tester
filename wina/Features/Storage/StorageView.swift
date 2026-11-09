@@ -8,17 +8,23 @@
 
 import SwiftUI
 import SwiftUIBackports
+import WebKit
 
 // MARK: - Storage Manager
 
 protocol StorageNavigator: AnyObject {
     func evaluateJavaScript(_ script: String) async -> Any?
-    func getAllCookies() async -> [HTTPCookie]
-    func setCookie(_ cookie: HTTPCookie) async
-    func deleteCookie(name: String, domain: String?, path: String?) async
-    func deleteCookies(forDomain domain: String) async
-    func deleteAllCookies() async
+    var attachedCookieStore: (any StorageCookieStore)? { get }
 }
+
+@MainActor
+protocol StorageCookieStore: AnyObject {
+    func allCookies() async -> [HTTPCookie]
+    func setCookie(_ cookie: HTTPCookie) async
+    func deleteCookie(_ cookie: HTTPCookie) async
+}
+
+extension WKHTTPCookieStore: StorageCookieStore {}
 
 @Observable
 class StorageManager {
@@ -45,6 +51,7 @@ class StorageManager {
 
         let id = UUID()
         refreshID = id
+        let cookieStore = navigator.attachedCookieStore
         let previousItems = items
         let didChangeURL = pageURL != currentURL
 
@@ -60,39 +67,56 @@ class StorageManager {
         // Fetch new data in background
         var newItems: [StorageItem] = []
 
-        // Fetch localStorage
-        if let localData = await fetchStorage(type: .localStorage, navigator: navigator) {
-            newItems.append(contentsOf: localData)
-        } else if !didChangeURL {
-            newItems.append(contentsOf: previousItems.filter { $0.storageType == .localStorage })
+        var readError: String?
+        for type in [StorageItem.StorageType.localStorage, .sessionStorage] {
+            let result = await Self.fetchStorage(type: type, navigator: navigator)
+            if let entries = result.items {
+                newItems.append(contentsOf: entries)
+            } else if !didChangeURL {
+                newItems.append(contentsOf: previousItems.filter { $0.storageType == type })
+            }
+            if let message = result.error { readError = message }
         }
-
-        // Fetch sessionStorage
-        if let sessionData = await fetchStorage(type: .sessionStorage, navigator: navigator) {
-            newItems.append(contentsOf: sessionData)
-        } else if !didChangeURL {
-            newItems.append(contentsOf: previousItems.filter { $0.storageType == .sessionStorage })
-        }
-
-        // Fetch cookies
-        if let cookieData = await fetchCookies(
-            navigator: navigator,
-            pageURL: pageURL
-        ) {
-            newItems.append(contentsOf: cookieData)
-        } else if !didChangeURL {
-            newItems.append(contentsOf: previousItems.filter { $0.storageType == .cookies })
-        }
+        if let cookieStore { newItems += await Self.fetchCookies(in: cookieStore, pageURL: pageURL) }
 
         guard refreshID == id else { return }
         items = newItems
+        errorMessage = readError
         lastRefreshTime = Date()
     }
 
-    private func fetchStorage(
+    @MainActor
+    static func readItems(
+        type: StorageItem.StorageType?,
+        pageURL: URL,
+        allCookies: Bool,
+        navigator: StorageNavigator
+    ) async throws -> [StorageItem] {
+        var items: [StorageItem] = []
+        let cookieStore = navigator.attachedCookieStore
+        for type in type.map({ [$0] }) ?? StorageItem.StorageType.allCases {
+            if type == .cookies {
+                guard let cookieStore else { throw ReadError(errorDescription: "The active cookie store is unavailable.") }
+                items += await fetchCookies(in: cookieStore, pageURL: pageURL, allCookies: allCookies)
+            } else {
+                let result = await fetchStorage(type: type, navigator: navigator)
+                guard let entries = result.items else {
+                    throw ReadError(errorDescription: "Could not read \(type.rawValue) for the active document.")
+                }
+                items += entries
+            }
+        }
+        return items
+    }
+
+    private struct ReadError: LocalizedError {
+        let errorDescription: String?
+    }
+
+    private static func fetchStorage(
         type: StorageItem.StorageType,
         navigator: StorageNavigator
-    ) async -> [StorageItem]? {
+    ) async -> (items: [StorageItem]?, error: String?) {
         let storageName = type == .localStorage ? "localStorage" : "sessionStorage"
         let script = """
             (function() {
@@ -112,51 +136,48 @@ class StorageManager {
 
         guard let result = await navigator.evaluateJavaScript(script) as? String,
               let data = result.data(using: .utf8) else {
-            return nil
+            return (nil, nil)
         }
 
         // Check for error
         if let errorDict = try? JSONSerialization.jsonObject(with: data) as? [String: String],
            let error = errorDict["error"] {
-            await MainActor.run {
-                self.errorMessage = "\(type.label): \(error)"
-            }
-            return nil
+            return (nil, "\(type.label): \(error)")
         }
 
         guard let items = try? JSONSerialization.jsonObject(with: data) as? [[String: String]] else {
-            return nil
+            return (nil, nil)
         }
 
-        return items.compactMap { dict in
+        let entries = items.compactMap { dict -> StorageItem? in
             guard let key = dict["key"], let value = dict["value"] else { return nil }
             return StorageItem(key: key, value: value, storageType: type, origin: dict["origin"])
         }
+        return (entries, nil)
     }
 
-    private func fetchCookies(
-        navigator: StorageNavigator,
-        pageURL: URL?
-    ) async -> [StorageItem]? {
+    private static func fetchCookies(
+        in cookieStore: any StorageCookieStore,
+        pageURL: URL?,
+        allCookies: Bool = false
+    ) async -> [StorageItem] {
         // Use native WKHTTPCookieStore for full cookie metadata (global cookie list)
-        let cookies = await navigator.getAllCookies()
-        guard let host = pageURL?.host?.lowercased() else {
-            return []
-        }
+        let cookies = await cookieStore.allCookies()
+        if allCookies { return storageItems(for: cookies) }
+        guard let host = pageURL?.host?.lowercased() else { return [] }
 
-        let filtered = cookies.filter { cookie in
-            let domain = cookie.domain.lowercased()
-            if domain.hasPrefix(".") {
-                let trimmed = String(domain.dropFirst())
-                return host == trimmed || host.hasSuffix(".\(trimmed)")
-            }
-            return host == domain
-        }
-
-        return Self.storageItems(for: filtered)
+        return storageItems(for: cookies.filter { cookieMatchesHost($0, host: host) })
     }
 
-    static func storageItems(for cookies: [HTTPCookie]) -> [StorageItem] {
+    private static func cookieMatchesHost(_ cookie: HTTPCookie, host: String) -> Bool {
+        let domain = cookie.domain.lowercased()
+        if domain.hasPrefix(".") {
+            return host == String(domain.dropFirst()) || host.hasSuffix(domain)
+        }
+        return host == domain
+    }
+
+    private static func storageItems(for cookies: [HTTPCookie]) -> [StorageItem] {
         cookies.map { cookie in
             StorageItem(
                 key: cookie.name,
@@ -172,12 +193,17 @@ class StorageManager {
         key: String,
         value: String,
         type: StorageItem.StorageType,
-        pageURL: URL
+        pageURL: URL,
+        cookieAtRoot: Bool = false,
+        isCurrentDocument: () -> Bool = { true }
     ) async -> Bool {
         guard let navigator else { return false }
+        errorMessage = nil
 
         let operation: String
         let arguments: [String]
+        let rootCookieStore = cookieAtRoot && type == .cookies ? navigator.attachedCookieStore : nil
+        var rootCookieMatches: ((HTTPCookie) -> Bool)?
         switch type {
         case .localStorage, .sessionStorage:
             arguments = [key, value]
@@ -193,11 +219,30 @@ class StorageManager {
             guard !cookieKey.isEmpty, !cookieKey.contains(";") else { return false }
             let escapedKey = cookieKey.replacingOccurrences(of: "=", with: "%3D")
             let escapedValue = value.trimmingCharacters(in: cookieWhitespace).replacingOccurrences(of: ";", with: "%3B")
+            if cookieAtRoot {
+                guard let rootCookieStore, let host = pageURL.host?.lowercased() else { return false }
+                let existing = await rootCookieStore.allCookies()
+                guard isCurrentDocument() else { return false }
+                if existing.contains(where: {
+                    $0.name == escapedKey && $0.path == "/" && [host, ".\(host)"].contains($0.domain.lowercased())
+                }) {
+                    errorMessage = "A cookie with this name already exists at /."
+                    return false
+                }
+                rootCookieMatches = { cookie in
+                    cookie.name == escapedKey && cookie.path == "/" &&
+                        cookie.domain.lowercased() == host && cookie.value == escapedValue
+                }
+            }
             let path = URLComponents(url: pageURL, resolvingAgainstBaseURL: false)?.percentEncodedPath ?? ""
-            arguments = [path.isEmpty ? "/" : path, "\(escapedKey)=\(escapedValue)"]
+            arguments = [path.isEmpty ? "/" : path, "\(escapedKey)=\(escapedValue)", cookieAtRoot ? "; Path=/" : ""]
             operation = """
-            const [path, cookie] = args;
+            const [path, cookie, scope] = args;
             if (location.pathname !== path) return false;
+            if (scope) {
+                document.cookie = cookie + scope;
+                return true;
+            }
             const matches = item => item.trimStart() === cookie;
             if (document.cookie.split(';').some(matches)) return false;
             document.cookie = cookie;
@@ -206,7 +251,9 @@ class StorageManager {
         }
 
         guard let script = pageStorageScript(pageURL: pageURL, arguments: arguments, operation: operation) else { return false }
-        return await navigator.evaluateJavaScript(script) as? Bool == true
+        guard await navigator.evaluateJavaScript(script) as? Bool == true else { return false }
+        guard let rootCookieStore, let rootCookieMatches else { return true }
+        return await rootCookieStore.allCookies().contains(where: rootCookieMatches)
     }
 
     @MainActor
@@ -215,23 +262,9 @@ class StorageManager {
         errorMessage = nil
         let success: Bool
         if item.storageType == .cookies {
-            if let metadata = item.cookieMetadata,
+            if let cookieStore = navigator.attachedCookieStore, let metadata = item.cookieMetadata,
                let cookie = makeCookie(name: key, value: value, metadata: metadata) {
-                let cookies = await navigator.getAllCookies()
-                let collision = key != item.key && cookies.contains {
-                    $0.name == key && $0.domain == metadata.domain && $0.path == metadata.path
-                }
-                if collision {
-                    success = false
-                } else {
-                    await navigator.setCookie(cookie)
-                    success = await navigator.getAllCookies().contains {
-                        $0.name == key && $0.value == value && $0.domain == metadata.domain && $0.path == metadata.path
-                    }
-                    if success, key != item.key {
-                        await navigator.deleteCookie(name: item.key, domain: metadata.domain, path: metadata.path)
-                    }
-                }
+                success = await updateCookie(cookie, replacing: item.key, in: cookieStore)
             } else {
                 success = false
             }
@@ -261,6 +294,27 @@ class StorageManager {
         return success
     }
 
+    private func updateCookie(
+        _ replacement: HTTPCookie,
+        replacing oldName: String,
+        in cookieStore: any StorageCookieStore
+    ) async -> Bool {
+        let matchesScope: (HTTPCookie) -> Bool = {
+            $0.domain.caseInsensitiveCompare(replacement.domain) == .orderedSame && $0.path == replacement.path
+        }
+        let cookies = await cookieStore.allCookies().filter(matchesScope)
+        let renamed = replacement.name != oldName
+        guard let original = cookies.first(where: { $0.name == oldName }),
+              !renamed || !cookies.contains(where: { $0.name == replacement.name }) else { return false }
+
+        await cookieStore.setCookie(replacement)
+        let verified = await cookieStore.allCookies().contains {
+            matchesScope($0) && $0.name == replacement.name && $0.value == replacement.value
+        }
+        if verified && renamed { await cookieStore.deleteCookie(original) }
+        return verified
+    }
+
     // Remove item from storage
     @MainActor
     func removeItem(_ item: StorageItem) async -> Bool {
@@ -268,8 +322,12 @@ class StorageManager {
         errorMessage = nil
 
         if item.storageType == .cookies {
-            guard let metadata = item.cookieMetadata else { return false }
-            await navigator.deleteCookie(name: item.key, domain: metadata.domain, path: metadata.path)
+            guard let cookieStore = navigator.attachedCookieStore, let metadata = item.cookieMetadata else { return false }
+            let cookies = await cookieStore.allCookies()
+            for cookie in cookies where cookie.name == item.key && cookie.path == metadata.path &&
+                cookie.domain.caseInsensitiveCompare(metadata.domain) == .orderedSame {
+                await cookieStore.deleteCookie(cookie)
+            }
             return true
         }
 
@@ -297,7 +355,8 @@ class StorageManager {
 
         // Use native WKHTTPCookieStore for cookies (more reliable)
         if type == .cookies {
-            await navigator.deleteAllCookies()
+            guard let cookieStore = navigator.attachedCookieStore else { return false }
+            for cookie in await cookieStore.allCookies() { await cookieStore.deleteCookie(cookie) }
             return true
         }
 
@@ -332,8 +391,12 @@ class StorageManager {
 
     @MainActor
     func clearCookies(forDomain domain: String) async -> Bool {
-        guard let navigator else { return false }
-        await navigator.deleteCookies(forDomain: domain)
+        guard let cookieStore = navigator?.attachedCookieStore else { return false }
+        let host = domain.lowercased()
+        let cookies = await cookieStore.allCookies()
+        for cookie in cookies where Self.cookieMatchesHost(cookie, host: host) {
+            await cookieStore.deleteCookie(cookie)
+        }
         return true
     }
 

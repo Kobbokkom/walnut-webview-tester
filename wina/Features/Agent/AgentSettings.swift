@@ -5,7 +5,7 @@ import Foundation
 enum AgentSettings {
     static let tools: [[String: Any]] = [
         AgentTool.definition("settings_get", "List available browser testing settings and their effective and saved values."),
-        AgentTool.definition("settings_apply", "Apply a validated patch. Session overrides expire when the connection ends. Persistent edits and Eruda activation need iPhone confirmation.", [
+        AgentTool.definition("settings_apply", "Apply a validated patch. Session overrides expire when the connection ends. Persistent edits, enabling Clean Start or Eruda, and disabling private browsing need iPhone confirmation.", [
             "settings": [
                 "type": "object",
                 "properties": AgentSetting.catalog.mapValues(\.schema),
@@ -84,14 +84,20 @@ enum AgentSettings {
         }
         let persist = try input.flag("persist")
         let values = try AgentSetting.validatePatch(raw, persist: persist)
-        let enablingEruda = values["erudaModeEnabled"]?.base as? Bool == true
-        if enablingEruda {
-            let prompt = persist
-                ? "Save the test settings and enable third-party Eruda JavaScript in Walnut?"
-                : "Enable third-party Eruda JavaScript for this Walnut session?"
-            try await input.confirm(prompt)
-        } else if persist {
-            try await input.confirm("Save changes to Walnut's testing settings on this iPhone?")
+        var effects: [String] = []
+        if values["cleanStart"]?.base as? Bool == true {
+            effects.append("With Clean Start on, opening a page from Walnut’s home screen clears all WKWebView website data unless private browsing is on.")
+        }
+        if values["privateBrowsing"]?.base as? Bool == false {
+            effects.append("Turning off private browsing lets Walnut use its persistent WKWebView website data. If Clean Start is on, opening a page from home will clear that data.")
+        }
+        if values["erudaModeEnabled"]?.base as? Bool == true {
+            effects.append("Eruda runs third-party JavaScript on the page.")
+        }
+        if persist || !effects.isEmpty {
+            let question = persist ? "Save changes to Walnut’s testing settings on this iPhone?"
+                : "Apply changes to Walnut’s testing settings for this Mac connection?"
+            try await input.confirm(([question] + effects).joined(separator: "\n\n"))
         }
         AgentBrowserSettings.shared.apply(values, persist: persist)
         return [

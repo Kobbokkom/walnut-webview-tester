@@ -139,6 +139,8 @@ class WebViewNavigator {
         webView != nil
     }
 
+    var attachedPageURL: URL? { webView?.url }
+
     func attach(to webView: WKWebView) {
         self.webView = webView
         documentDidChange(in: webView)
@@ -284,8 +286,13 @@ class WebViewNavigator {
     /// Evaluate JavaScript on the attached WebView
     @MainActor
     func evaluateJavaScript(_ script: String) async -> Any? {
-        guard let webView else { return nil }
-        return try? await webView.evaluateJavaScript(script)
+        try? await evaluateJavaScriptReportingErrors(script)
+    }
+
+    @MainActor
+    func evaluateJavaScriptReportingErrors(_ script: String) async throws -> Any? {
+        guard let webView else { throw AgentError("The WKWebView is disconnected.") }
+        return try await webView.evaluateJavaScript(script)
     }
 
     /// Evaluate async JavaScript (supports Promises)
@@ -366,69 +373,8 @@ class WebViewNavigator {
         }
     }
 
-    /// Set a cookie using native WKHTTPCookieStore
-    func setCookie(_ cookie: HTTPCookie) async {
-        guard let webView else { return }
-        let cookieStore = webView.configuration.websiteDataStore.httpCookieStore
-        await cookieStore.setCookie(cookie)
-    }
-
-    /// Delete a specific cookie by name/domain/path using native WKHTTPCookieStore
-    func deleteCookie(name: String, domain: String?, path: String?) async {
-        guard let webView else { return }
-        let cookieStore = webView.configuration.websiteDataStore.httpCookieStore
-        let cookies = await cookieStore.allCookies()
-        for cookie in cookies where cookie.name == name {
-            // Narrow by domain/path when provided to avoid over-deleting.
-            if let domain, cookie.domain.caseInsensitiveCompare(domain) != .orderedSame {
-                continue
-            }
-            if let path, cookie.path != path {
-                continue
-            }
-            await cookieStore.deleteCookie(cookie)
-        }
-    }
-
-    /// Delete cookies for a specific domain using native WKHTTPCookieStore
-    func deleteCookies(forDomain domain: String) async {
-        guard let webView else { return }
-        let cookieStore = webView.configuration.websiteDataStore.httpCookieStore
-        let cookies = await cookieStore.allCookies()
-        let host = domain.lowercased()
-
-        for cookie in cookies {
-            let cookieDomain = cookie.domain.lowercased()
-            let matches: Bool
-
-            if cookieDomain.hasPrefix(".") {
-                let trimmed = String(cookieDomain.dropFirst())
-                matches = host == trimmed || host.hasSuffix(".\(trimmed)")
-            } else {
-                matches = host == cookieDomain
-            }
-
-            if matches {
-                await cookieStore.deleteCookie(cookie)
-            }
-        }
-    }
-
-    /// Delete all cookies using native WKHTTPCookieStore
-    func deleteAllCookies() async {
-        guard let webView else { return }
-        let cookieStore = webView.configuration.websiteDataStore.httpCookieStore
-        let cookies = await cookieStore.allCookies()
-        for cookie in cookies {
-            await cookieStore.deleteCookie(cookie)
-        }
-    }
-
-    /// Get all cookies with full metadata using native WKHTTPCookieStore
-    func getAllCookies() async -> [HTTPCookie] {
-        guard let webView else { return [] }
-        let cookieStore = webView.configuration.websiteDataStore.httpCookieStore
-        return await cookieStore.allCookies()
+    var attachedCookieStore: (any StorageCookieStore)? {
+        webView?.configuration.websiteDataStore.httpCookieStore
     }
 
     // MARK: - Eruda Console

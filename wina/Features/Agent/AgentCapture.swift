@@ -5,7 +5,7 @@ import UIKit
 @MainActor
 enum AgentCapture {
     static let tools = [
-        AgentTool.definition("walnut_screenshot", "Capture the WKWebView or SafariVC app window after approval on the iPhone.", [
+        AgentTool.definition("walnut_screenshot", "Capture the WKWebView or SafariVC app window after approval on the iPhone. SafariVC sharing also requires approval of the captured preview.", [
             "saveToPhotos": ["type": "boolean"]
         ]),
         AgentTool.definition("walnut_recording", "Start or stop an approved screen recording, query status, or read a completed video in base64 chunks.", [
@@ -15,23 +15,39 @@ enum AgentCapture {
         ], required: ["action"])
     ]
 
-    static func screenshot(navigator: WebViewNavigator?, safariWindow: UIWindow?, saveToPhotos: Bool) async throws -> [String: Any] {
+    static func screenshot(
+        navigator: WebViewNavigator?,
+        safariWindow: UIWindow?,
+        saveToPhotos: Bool,
+        approveSafariPreview: (UIImage) async -> Bool,
+        validateTarget: () throws -> Void
+    ) async throws -> [String: Any] {
+        try validateTarget()
         let image: UIImage?
         if let navigator {
             image = await navigator.agentScreenshot()
         } else {
-            image = safariWindow.map { window in
-                UIGraphicsImageRenderer(size: window.bounds.size).image { _ in
-                    window.drawHierarchy(in: window.bounds, afterScreenUpdates: true)
-                }
+            guard let window = safariWindow, !window.bounds.isEmpty else { throw AgentError("Screenshot unavailable.") }
+            var captured = false
+            let frame = UIGraphicsImageRenderer(size: window.bounds.size).image { _ in
+                captured = window.drawHierarchy(in: window.bounds, afterScreenUpdates: true)
             }
+            image = captured ? frame : nil
         }
-        guard let image, let png = image.pngData() else { throw AgentError("Screenshot unavailable.") }
+        try validateTarget()
+        guard let image else { throw AgentError("Screenshot unavailable.") }
+        if safariWindow != nil {
+            guard await approveSafariPreview(image) else { throw AgentError("Screenshot sharing was denied.") }
+            try validateTarget()
+        }
+        guard let png = image.pngData() else { throw AgentError("Screenshot unavailable.") }
         if saveToPhotos {
             try await requirePhotos()
+            try validateTarget()
             try await PHPhotoLibrary.shared().performChanges {
                 PHAssetCreationRequest.creationRequestForAsset(from: image)
             }
+            try validateTarget()
         }
         return ["mimeType": "image/png", "data": png.base64EncodedString()]
     }

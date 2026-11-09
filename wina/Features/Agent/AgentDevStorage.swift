@@ -23,15 +23,14 @@ extension AgentDevTools {
         _ context: AgentDevContext,
         _ storage: StorageManager
     ) async throws -> Any {
-        guard let pageURL = context.navigator.currentURL, let host = pageURL.host else {
+        guard let pageURL = context.navigator.attachedPageURL, let host = pageURL.host else {
             throw AgentError("Load a page with a host before using Storage.")
         }
         let scope = try input.string("cookieScope") ?? "current"
         guard ["current", "all"].contains(scope) else { throw AgentError("Invalid cookie scope.") }
-        storage.setNavigator(context.navigator)
         switch tool {
         case "storage_list":
-            return try await listStorage(input, context, storage, pageURL, allCookies: scope == "all")
+            return try await listStorage(input, context, pageURL, allCookies: scope == "all")
         case "storage_write":
             return try await writeStorage(input, context, storage, pageURL)
         case "storage_clear":
@@ -40,6 +39,7 @@ extension AgentDevTools {
             }
             let target = type == .cookies && scope == "all" ? "all cookies in this WebView's data store" : "\(type.rawValue) for \(host)"
             try await context.confirm("Clear \(target)?")
+            storage.setNavigator(context.navigator)
             let success = if type == .cookies && scope == "current" {
                 await storage.clearCookies(forDomain: host)
             } else {
@@ -48,6 +48,7 @@ extension AgentDevTools {
             guard success else { throw AgentError("Walnut could not clear the selected storage.") }
             try context.checkDocument()
             await storage.refresh(pageURL: pageURL)
+            try context.checkDocument()
             return ["cleared": true]
         default:
             throw AgentError("Unknown storage tool.")
@@ -57,7 +58,6 @@ extension AgentDevTools {
     private static func listStorage(
         _ input: AgentDevInput,
         _ context: AgentDevContext,
-        _ storage: StorageManager,
         _ pageURL: URL,
         allCookies: Bool
     ) async throws -> [String: Any] {
@@ -70,18 +70,11 @@ extension AgentDevTools {
         if includeContent || allCookies || !query.isEmpty {
             try await context.confirm("Inspect \(allCookies ? "all domains' cookies and" : "the active page's") WebView storage on the Mac?")
         }
-        await storage.refresh(pageURL: pageURL)
-        var candidates = storage.items
-        if allCookies, type == nil || type == .cookies {
-            let cookies = await context.navigator.getAllCookies()
-            candidates = candidates.filter { $0.storageType != .cookies } + StorageManager.storageItems(for: cookies)
-        }
+        let candidates = try await StorageManager.readItems(
+            type: type, pageURL: pageURL, allCookies: allCookies, navigator: context.navigator
+        )
         try context.checkDocument()
         let items = candidates.filter { item in
-            guard type == nil || item.storageType == type else { return false }
-            if let metadata = item.cookieMetadata, !allCookies, !cookieDomainMatches(metadata.domain, pageURL.host ?? "") {
-                return false
-            }
             return query.isEmpty || item.key.localizedCaseInsensitiveContains(query) || item.value.localizedCaseInsensitiveContains(query)
                 || item.cookieMetadata?.domain.localizedCaseInsensitiveContains(query) == true
                 || item.cookieMetadata?.path.localizedCaseInsensitiveContains(query) == true
@@ -143,44 +136,36 @@ extension AgentDevTools {
         try await context.confirm("Allow the Mac to \(action) a \(type.rawValue) entry for \(target ?? "the active page")?")
         let success: Bool
         if action == "add" {
-            success = await storage.addItem(key: key, value: value, type: type, pageURL: pageURL)
-        } else {
-            await storage.refresh(pageURL: pageURL)
-            let candidates: [StorageItem]
-            if type == .cookies, domain != nil {
-                candidates = await StorageManager.storageItems(for: context.navigator.getAllCookies())
-            } else {
-                candidates = storage.items
+            storage.setNavigator(context.navigator)
+            success = await storage.addItem(key: key, value: value, type: type, pageURL: pageURL, cookieAtRoot: true) {
+                (try? context.checkDocument()) != nil
             }
+        } else {
+            let candidates = try await StorageManager.readItems(
+                type: type, pageURL: pageURL, allCookies: domain != nil, navigator: context.navigator
+            )
             try context.checkDocument()
             let matches = candidates.filter { item in
-                guard item.storageType == type, item.key == key else { return false }
+                guard item.key == key else { return false }
                 guard let cookie = item.cookieMetadata else { return true }
                 let matchingDomain = domain.map { cookie.domain.caseInsensitiveCompare($0) == .orderedSame }
-                    ?? cookieDomainMatches(cookie.domain, pageURL.host ?? "")
+                    ?? true
                 return matchingDomain && (path == nil || cookie.path == path)
             }
             guard matches.count == 1, let item = matches.first else {
                 throw AgentError("Storage entry not found or ambiguous. Supply the exact cookie domain and path if needed.")
             }
+            storage.setNavigator(context.navigator)
             success = if action == "edit" {
                 await storage.updateItem(item, key: newKey, value: value)
             } else {
                 await storage.removeItem(item)
             }
         }
-        guard success else { throw AgentError(storage.errorMessage ?? "Walnut could not change the storage entry.") }
         try context.checkDocument()
+        guard success else { throw AgentError(storage.errorMessage ?? "Walnut could not change the storage entry.") }
         await storage.refresh(pageURL: pageURL)
+        try context.checkDocument()
         return ["action": action, "applied": true]
-    }
-
-    private static func cookieDomainMatches(_ domain: String, _ host: String) -> Bool {
-        let domain = domain.lowercased()
-        let host = host.lowercased()
-        if domain.hasPrefix(".") {
-            return host == String(domain.dropFirst()) || host.hasSuffix(domain)
-        }
-        return host == domain
     }
 }

@@ -165,6 +165,55 @@ final class StorageManagerTests: XCTestCase {
         XCTAssertEqual(manager.currentURL?.host, "second.com")
     }
 
+    @MainActor
+    func testAgentStorageReadsOnlyTheCurrentDocument() async throws {
+        let url = try XCTUnwrap(URL(string: "https://example.com/account"))
+        let initialConfiguration = WKWebViewConfiguration()
+        initialConfiguration.websiteDataStore = .nonPersistent()
+        let initialView = WKWebView(frame: .zero, configuration: initialConfiguration)
+        await initialView.loadHTMLStringAsync("<html></html>", baseURL: url)
+        _ = try await initialView.evaluateJavaScript("localStorage.setItem('previous', 'sensitive')")
+
+        let navigator = WebViewNavigator()
+        let storage = StorageManager()
+        navigator.attach(to: initialView)
+        defer { navigator.detach() }
+        storage.setNavigator(navigator)
+        await storage.refresh(pageURL: url)
+        XCTAssertTrue(storage.items.contains { $0.key == "previous" })
+
+        let currentConfiguration = WKWebViewConfiguration()
+        currentConfiguration.websiteDataStore = .nonPersistent()
+        let currentView = WKWebView(frame: .zero, configuration: currentConfiguration)
+        await currentView.loadHTMLStringAsync("<html></html>", baseURL: url)
+        _ = try await currentView.evaluateJavaScript("""
+        Object.defineProperty(window, 'localStorage', { get: () => { throw new Error('page-supplied text'); } });
+        true;
+        """)
+        navigator.attach(to: currentView)
+
+        for (tool, arguments) in [
+            ("storage_list", ["type": "localStorage", "raw": true] as [String: Any]),
+            ("storage_write", ["type": "localStorage", "action": "remove", "key": "previous"])
+        ] {
+            do {
+                _ = try await AgentDevTools.call(
+                    tool, arguments: arguments, navigator: navigator, storage: storage, console: ConsoleSession(),
+                    authorize: { _ in true }
+                )
+                XCTFail("Unavailable storage should not fall back to the previous document")
+            } catch {
+                XCTAssertEqual(error.localizedDescription, "Could not read localStorage for the active document.")
+            }
+        }
+        let session = try await AgentDevTools.call(
+            "storage_list", arguments: ["type": "sessionStorage"], navigator: navigator, storage: storage,
+            console: ConsoleSession(), authorize: { _ in false }
+        ) as? [String: Any]
+        XCTAssertEqual(session?["total"] as? Int, 0)
+        XCTAssertTrue(storage.items.contains { $0.key == "previous" })
+    }
+
     // MARK: - Navigator Not Set Tests
 
     @MainActor
@@ -218,15 +267,21 @@ final class StorageManagerTests: XCTestCase {
     }
 
     @MainActor
-    func testClearCookiesForDomainCallsNavigator() async {
+    func testClearCookiesForDomainLeavesOtherDomainsIntact() async {
         let manager = StorageManager()
         let mock = MockStorageNavigator()
+        mock.cookies = [
+            makeCookie(name: "parent", value: "1", domain: ".example.com"),
+            makeCookie(name: "current", value: "2", domain: "sub.example.com"),
+            makeCookie(name: "other", value: "3", domain: "other.example.com")
+        ]
 
         manager.setNavigator(mock)
-        let result = await manager.clearCookies(forDomain: "example.com")
+        let result = await manager.clearCookies(forDomain: "sub.example.com")
 
         XCTAssertTrue(result)
-        XCTAssertEqual(mock.deletedCookieDomains, ["example.com"])
+        XCTAssertEqual(mock.deletedCookies.map(\.name), ["parent", "current"])
+        XCTAssertEqual(mock.cookies.map(\.name), ["other"])
     }
 
     @MainActor
@@ -384,6 +439,29 @@ final class StorageManagerTests: XCTestCase {
     }
 
     @MainActor
+    func testCookieRenamePinsTheOriginalStoreWhenTheViewChanges() async {
+        let manager = StorageManager()
+        let navigator = MockStorageNavigator()
+        let original = makeCookie(name: "old", value: "original", domain: ".example.com")
+        navigator.cookies = [original]
+        let replacementStore = MockStorageNavigator()
+        replacementStore.cookies = [makeCookie(name: "old", value: "separate", domain: ".example.com")]
+        navigator.afterReadingCookies = { navigator.cookieStoreOverride = replacementStore }
+        manager.setNavigator(navigator)
+
+        let item = StorageItem(key: original.name, value: original.value, storageType: .cookies, cookieMetadata: CookieMetadata(from: original))
+        let saved = await manager.updateItem(item, key: "new", value: "updated")
+
+        XCTAssertTrue(saved)
+        XCTAssertEqual(navigator.cookies.map(\.name), ["new"])
+        XCTAssertEqual(navigator.cookies.map(\.value), ["updated"])
+        XCTAssertEqual(replacementStore.cookies.map(\.name), ["old"])
+        XCTAssertEqual(replacementStore.cookies.map(\.value), ["separate"])
+        XCTAssertTrue(replacementStore.setCookies.isEmpty)
+        XCTAssertTrue(replacementStore.deletedCookies.isEmpty)
+    }
+
+    @MainActor
     func testSetItemWithoutNavigatorReturnsFalse() async throws {
         let manager = StorageManager()
 
@@ -394,14 +472,17 @@ final class StorageManagerTests: XCTestCase {
     }
 }
 
-private final class MockStorageNavigator: StorageNavigator {
+@MainActor
+private final class MockStorageNavigator: StorageNavigator, StorageCookieStore {
     var jsResult: Any?
     var scriptContext: JSContext?
     var acceptsCookieWrites = true
     var cookies: [HTTPCookie] = []
+    var cookieStoreOverride: (any StorageCookieStore)?
+    var afterReadingCookies: (() -> Void)?
+    var attachedCookieStore: (any StorageCookieStore)? { cookieStoreOverride ?? self }
     private(set) var scripts: [String] = []
-    private(set) var deletedCookies: [(name: String, domain: String?, path: String?)] = []
-    private(set) var deletedCookieDomains: [String] = []
+    private(set) var deletedCookies: [HTTPCookie] = []
     private(set) var setCookies: [HTTPCookie] = []
 
     func evaluateJavaScript(_ script: String) async -> Any? {
@@ -414,8 +495,11 @@ private final class MockStorageNavigator: StorageNavigator {
         return jsResult
     }
 
-    func getAllCookies() async -> [HTTPCookie] {
-        cookies
+    func allCookies() async -> [HTTPCookie] {
+        let afterRead = afterReadingCookies
+        afterReadingCookies = nil
+        afterRead?()
+        return cookies
     }
 
     func setCookie(_ cookie: HTTPCookie) async {
@@ -426,15 +510,9 @@ private final class MockStorageNavigator: StorageNavigator {
         }
     }
 
-    func deleteCookie(name: String, domain: String?, path: String?) async {
-        deletedCookies.append((name: name, domain: domain, path: path))
-    }
-
-    func deleteCookies(forDomain domain: String) async {
-        deletedCookieDomains.append(domain)
-    }
-
-    func deleteAllCookies() async {
+    func deleteCookie(_ cookie: HTTPCookie) async {
+        deletedCookies.append(cookie)
+        cookies.removeAll { $0.name == cookie.name && $0.domain == cookie.domain && $0.path == cookie.path }
     }
 }
 

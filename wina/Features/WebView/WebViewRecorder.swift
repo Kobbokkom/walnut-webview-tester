@@ -139,6 +139,7 @@ final class WebViewRecorder {
     private(set) var lastResult: RecordingResult?
     private(set) var failedOutputURL: URL?
     private var stopRequested = false
+    private var isAgentCapture = false
     private var retainForAgent = false
     private var shouldSaveToPhotos = true
     private(set) var agentOutputURL: URL?
@@ -195,10 +196,10 @@ final class WebViewRecorder {
 
         // Setup output URL
         let fileName = "ScreenRecording_\(Date().timeIntervalSince1970).mov"
-        guard let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
-            return false
-        }
-        outputURL = documentsPath.appendingPathComponent(fileName)
+        let directory = retainForAgent ? FileManager.default.temporaryDirectory
+            : FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
+        guard let directory else { return false }
+        outputURL = directory.appendingPathComponent(fileName)
 
         // Remove existing file if any
         if let url = outputURL {
@@ -214,6 +215,7 @@ final class WebViewRecorder {
         }
 
         discardAgentRecording()
+        isAgentCapture = retainForAgent
         self.retainForAgent = retainForAgent
         shouldSaveToPhotos = saveToPhotos
         state = .starting
@@ -236,6 +238,7 @@ final class WebViewRecorder {
             return true
         } catch {
             cleanupWriter()
+            if let url { try? FileManager.default.removeItem(at: url) }
             state = .idle
             return false
         }
@@ -357,7 +360,7 @@ final class WebViewRecorder {
             }
         }
         guard writer.status == .completed, captureError == nil else {
-            if shouldSaveToPhotos {
+            if shouldSaveToPhotos && !isAgentCapture {
                 failedOutputURL = url
             } else {
                 try? FileManager.default.removeItem(at: url)
@@ -374,8 +377,15 @@ final class WebViewRecorder {
             }
             lastResult = .success
         } catch {
-            if retainForAgent { agentOutputURL = url } else { failedOutputURL = url }
-            lastResult = .failed("Could not save to Photos. The recording file was kept. \(error.localizedDescription)")
+            if retainForAgent {
+                agentOutputURL = url
+            } else if isAgentCapture {
+                try? FileManager.default.removeItem(at: url)
+            } else {
+                failedOutputURL = url
+            }
+            let kept = retainForAgent || !isAgentCapture ? " The recording file was kept." : ""
+            lastResult = .failed("Could not save to Photos.\(kept) \(error.localizedDescription)")
         }
     }
 
@@ -389,8 +399,10 @@ final class WebViewRecorder {
 
 #if DEBUG
 extension WebViewRecorder {
-    func test_prepareRecording(writer: AVAssetWriter, input: AVAssetWriterInput, url: URL) {
+    func test_prepareRecording(writer: AVAssetWriter, input: AVAssetWriterInput, url: URL, retainForAgent: Bool = false) {
         outputURL = url
+        isAgentCapture = retainForAgent
+        self.retainForAgent = retainForAgent
         writerQueue.sync {
             writerState.assetWriter = writer
             writerState.videoInput = input
