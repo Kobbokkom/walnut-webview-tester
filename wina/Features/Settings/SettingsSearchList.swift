@@ -49,7 +49,12 @@ struct SettingsSearchList<Content: View>: View {
                 List { content }
             }
         }
-        .searchable(text: $search.query, prompt: "Search")
+        .searchable(text: $search.query, placement: searchPlacement, prompt: "Search")
+    }
+
+    private var searchPlacement: SearchFieldPlacement {
+        if #available(iOS 26, *) { return .automatic }
+        return .navigationBarDrawer(displayMode: .always)
     }
 
     private func isVisible(_ row: Subview) -> Bool {
