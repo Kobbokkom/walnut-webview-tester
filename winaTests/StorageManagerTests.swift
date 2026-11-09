@@ -187,9 +187,13 @@ final class StorageManagerTests: XCTestCase {
         let currentView = WKWebView(frame: .zero, configuration: currentConfiguration)
         await currentView.loadHTMLStringAsync("<html></html>", baseURL: url)
         _ = try await currentView.evaluateJavaScript("""
+        sessionStorage.setItem('current', 'visible');
         Object.defineProperty(window, 'localStorage', { get: () => { throw new Error('page-supplied text'); } });
         true;
         """)
+        await currentConfiguration.websiteDataStore.httpCookieStore.setCookie(
+            makeCookie(name: "current-cookie", value: "available", domain: "example.com")
+        )
         navigator.attach(to: currentView)
 
         for (tool, arguments) in [
@@ -210,8 +214,45 @@ final class StorageManagerTests: XCTestCase {
             "storage_list", arguments: ["type": "sessionStorage"], navigator: navigator, storage: storage,
             console: ConsoleSession(), authorize: { _ in false }
         ) as? [String: Any]
-        XCTAssertEqual(session?["total"] as? Int, 0)
+        XCTAssertEqual(session?["total"] as? Int, 1)
+        let all = try await AgentDevTools.call(
+            "storage_list", arguments: ["raw": true], navigator: navigator, storage: storage,
+            console: ConsoleSession(), authorize: { _ in true }
+        ) as? [String: Any]
+        let entries = try XCTUnwrap(all?["entries"] as? [[String: Any]])
+        XCTAssertEqual(entries.compactMap { $0["key"] as? String }, ["current", "current-cookie"])
+        XCTAssertEqual(all?["errors"] as? [String: String], ["localStorage": "Could not read localStorage for the active document."])
         XCTAssertTrue(storage.items.contains { $0.key == "previous" })
+    }
+
+    @MainActor
+    func testAgentStorageReportsCommittedCookieDeletionAfterDocumentChanges() async throws {
+        let url = try XCTUnwrap(URL(string: "https://example.com/account"))
+        let configuration = WKWebViewConfiguration()
+        configuration.websiteDataStore = .nonPersistent()
+        let webView = WKWebView(frame: .zero, configuration: configuration)
+        await webView.loadHTMLStringAsync("<html></html>", baseURL: url)
+        let navigator = CookieStoreTestNavigator()
+        navigator.attach(to: webView)
+        defer { navigator.detach() }
+        let storage = StorageManager()
+
+        let cases: [(String, [String: Any], String)] = [
+            ("storage_write", ["type": "cookies", "action": "remove", "key": "target"], "applied"),
+            ("storage_clear", ["type": "cookies"], "cleared")
+        ]
+        for (tool, arguments, resultKey) in cases {
+            let document = navigator.documentID
+            navigator.cookieStore.cookies = [makeCookie(name: "target", value: "one", domain: "example.com")]
+            navigator.cookieStore.afterDeletingCookie = { navigator.documentDidChange(in: webView) }
+            let result = try await AgentDevTools.call(
+                tool, arguments: arguments, navigator: navigator, storage: storage, console: ConsoleSession(), authorize: { _ in true }
+            ) as? [String: Any]
+            XCTAssertEqual(result?[resultKey] as? Bool, true)
+            XCTAssertNotEqual(navigator.documentID, document)
+            XCTAssertTrue(navigator.cookieStore.cookies.isEmpty)
+        }
+        XCTAssertNil(storage.lastRefreshTime)
     }
 
     // MARK: - Navigator Not Set Tests
@@ -473,6 +514,12 @@ final class StorageManagerTests: XCTestCase {
 }
 
 @MainActor
+private final class CookieStoreTestNavigator: WebViewNavigator {
+    let cookieStore = MockStorageNavigator()
+    override var attachedCookieStore: (any StorageCookieStore)? { cookieStore }
+}
+
+@MainActor
 private final class MockStorageNavigator: StorageNavigator, StorageCookieStore {
     var jsResult: Any?
     var scriptContext: JSContext?
@@ -480,6 +527,7 @@ private final class MockStorageNavigator: StorageNavigator, StorageCookieStore {
     var cookies: [HTTPCookie] = []
     var cookieStoreOverride: (any StorageCookieStore)?
     var afterReadingCookies: (() -> Void)?
+    var afterDeletingCookie: (() -> Void)?
     var attachedCookieStore: (any StorageCookieStore)? { cookieStoreOverride ?? self }
     private(set) var scripts: [String] = []
     private(set) var deletedCookies: [HTTPCookie] = []
@@ -513,6 +561,9 @@ private final class MockStorageNavigator: StorageNavigator, StorageCookieStore {
     func deleteCookie(_ cookie: HTTPCookie) async {
         deletedCookies.append(cookie)
         cookies.removeAll { $0.name == cookie.name && $0.domain == cookie.domain && $0.path == cookie.path }
+        let afterDelete = afterDeletingCookie
+        afterDeletingCookie = nil
+        afterDelete?()
     }
 }
 

@@ -96,9 +96,10 @@ struct MCPServer: Sendable {
 
     private func toolResult(_ result: Any, name: String) throws -> [String: Any] {
         if name == "walnut_screenshot", var envelope = result as? [String: Any],
-           let image = envelope["data"] as? [String: Any], image["mimeType"] as? String == "image/png",
+           var image = envelope["data"] as? [String: Any], image["mimeType"] as? String == "image/png",
            let base64 = image["data"] as? String {
-            envelope["data"] = ["mimeType": "image/png"]
+            image.removeValue(forKey: "data")
+            envelope["data"] = image
             return ["content": [
                 ["type": "image", "mimeType": "image/png", "data": base64],
                 text(try jsonText(envelope))

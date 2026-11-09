@@ -161,23 +161,28 @@ class SourcesManager {
 
     // MARK: - Raw HTML
 
-    static let rawHTMLScript = """
-    (function() {
-        const doctype = document.doctype;
-        let doctypeStr = '';
-        if (doctype) {
-            doctypeStr = '<!DOCTYPE ' + doctype.name;
-            if (doctype.publicId) {
-                doctypeStr += ' PUBLIC "' + doctype.publicId + '"';
+    static let rawHTMLScript = rawHTMLScript(result: "html")
+
+    static func rawHTMLScript(result: String) -> String {
+        """
+        (function() {
+            const doctype = document.doctype;
+            let doctypeStr = '';
+            if (doctype) {
+                doctypeStr = '<!DOCTYPE ' + doctype.name;
+                if (doctype.publicId) {
+                    doctypeStr += ' PUBLIC "' + doctype.publicId + '"';
+                }
+                if (doctype.systemId) {
+                    doctypeStr += ' "' + doctype.systemId + '"';
+                }
+                doctypeStr += '>\\n';
             }
-            if (doctype.systemId) {
-                doctypeStr += ' "' + doctype.systemId + '"';
-            }
-            doctypeStr += '>\\n';
-        }
-        return doctypeStr + document.documentElement.outerHTML;
-    })();
-    """
+            const html = doctypeStr + document.documentElement.outerHTML;
+            return \(result);
+        })();
+        """
+    }
 
     func fetchRawHTML() async {
         guard let navigator else {
@@ -227,36 +232,42 @@ class SourcesManager {
 
     // MARK: - Stylesheets
 
-    static let stylesheetsScript = """
-    (function() {
-        const sheets = [];
-        for (const sheet of document.styleSheets) {
-            let rulesCount = 0;
-            let cssContent = null;
-            try {
-                if (sheet.cssRules) {
-                    rulesCount = sheet.cssRules.length;
-                    // Collect CSS content for search (selectors + properties)
-                    const parts = [];
-                    for (const rule of sheet.cssRules) {
-                        if (rule.cssText) parts.push(rule.cssText);
+    static let stylesheetsScript = stylesheetsScript(result: "JSON.stringify(sheets)", includeContent: true)
+
+    static func stylesheetsScript(result: String, includeContent: Bool) -> String {
+        """
+        (function() {
+            const sheets = [];
+            for (const sheet of document.styleSheets) {
+                let rulesCount = 0;
+                let cssContent = null;
+                try {
+                    if (sheet.cssRules) {
+                        rulesCount = sheet.cssRules.length;
+                        // Collect CSS content for search (selectors + properties)
+                        if (\(includeContent)) {
+                            const parts = [];
+                            for (const rule of sheet.cssRules) {
+                                if (rule.cssText) parts.push(rule.cssText);
+                            }
+                            cssContent = parts.join('\\n');
+                        }
                     }
-                    cssContent = parts.join('\\n');
+                } catch(e) {
+                    // CORS: external stylesheets can't access cssRules
                 }
-            } catch(e) {
-                // CORS: external stylesheets can't access cssRules
+                sheets.push({
+                    href: sheet.href,
+                    rulesCount: rulesCount,
+                    isExternal: !!sheet.href,
+                    media: sheet.media ? sheet.media.mediaText : null,
+                    cssContent: cssContent
+                });
             }
-            sheets.push({
-                href: sheet.href,
-                rulesCount: rulesCount,
-                isExternal: !!sheet.href,
-                media: sheet.media ? sheet.media.mediaText : null,
-                cssContent: cssContent
-            });
-        }
-        return JSON.stringify(sheets);
-    })();
-    """
+            return \(result);
+        })();
+        """
+    }
 
     func fetchStylesheets() async {
         guard let navigator else {
@@ -289,24 +300,28 @@ class SourcesManager {
 
     // MARK: - Scripts
 
-    static let scriptsScript = """
-    (function() {
-        const scripts = [];
-        for (const script of document.scripts) {
-            // Only inline scripts have textContent (external scripts are empty)
-            const content = script.src ? null : (script.textContent || null);
-            scripts.push({
-                src: script.src || null,
-                isExternal: !!script.src,
-                isModule: script.type === 'module',
-                isAsync: script.async,
-                isDefer: script.defer,
-                content: content
-            });
-        }
-        return JSON.stringify(scripts);
-    })();
-    """
+    static let scriptsScript = scriptsScript(result: "JSON.stringify(scripts)", includeContent: true)
+
+    static func scriptsScript(result: String, includeContent: Bool) -> String {
+        """
+        (function() {
+            const scripts = [];
+            for (const script of document.scripts) {
+                // Only inline scripts have textContent (external scripts are empty)
+                const content = !\(includeContent) || script.src ? null : (script.textContent || null);
+                scripts.push({
+                    src: script.src || null,
+                    isExternal: !!script.src,
+                    isModule: script.type === 'module',
+                    isAsync: script.async,
+                    isDefer: script.defer,
+                    content: content
+                });
+            }
+            return \(result);
+        })();
+        """
+    }
 
     func fetchScripts() async {
         guard let navigator else {

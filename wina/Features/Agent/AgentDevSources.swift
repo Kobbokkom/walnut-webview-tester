@@ -1,4 +1,5 @@
 import Foundation
+import WebKit
 
 @MainActor
 extension AgentDevTools {
@@ -12,61 +13,27 @@ extension AgentDevTools {
         let section = try input.string("section") ?? "tree"
         let query = try input.string("query") ?? ""
         let raw = try input.bool("raw") ?? false
-        let textOffset = try sourceTextStart(input)
         guard ["tree", "html", "stylesheets", "scripts"].contains(section) else { throw AgentError("Invalid Sources section.") }
         if raw || section == "tree" || section == "html" || !query.isEmpty {
             try await context.confirm("Inspect \(section) from the current page on the Mac?")
         }
-        let sources = SourcesManager()
-        sources.setNavigator(context.navigator)
-        let rows: [[String: Any]]
-        switch section {
-        case "tree":
+        if section == "tree" {
+            let sources = SourcesManager()
+            sources.setNavigator(context.navigator)
             await sources.fetchDOMTree()
-            guard let tree = sources.domTree else { throw AgentError(sources.errorMessage ?? "No DOM tree returned.") }
-            rows = sourceNodes(tree, query: query)
-        case "html":
-            await sources.fetchRawHTML()
-            guard let html = sources.rawHTML else { throw AgentError(sources.errorMessage ?? "No HTML returned.") }
-            let lines = html.components(separatedBy: .newlines)
-            let indices = query.isEmpty ? Array(lines.indices) : SourcesSearchHelper.findMatchingLineIndices(lines: lines, query: query)
             try context.checkDocument()
-            let page = try paginate(input, indices).map { index -> [String: Any] in
-                var row: [String: Any] = ["line": index + 1]
-                addSourceText(lines[index], to: &row, key: "text", offset: textOffset, query: query)
-                return row
-            }
-            return ["documentId": context.document.uuidString, "total": indices.count, "entries": page]
-        case "stylesheets":
-            await sources.fetchStylesheets()
-            rows = sources.stylesheets.filter { sheet in
-                query.isEmpty || [sheet.href, sheet.cssContent, sheet.mediaText].compactMap { $0 }
-                    .contains { $0.localizedCaseInsensitiveContains(query) }
-            }
-            .map { sheet in
-                var row: [String: Any] = ["index": sheet.index, "ruleCount": sheet.rulesCount, "external": sheet.isExternal]
-                row["url"] = sheet.href.map { raw ? clipped($0) : safeURL($0) }
-                row["media"] = raw ? sheet.mediaText : nil
-                return row
-            }
-        default:
-            await sources.fetchScripts()
-            rows = sources.scripts.filter { script in
-                query.isEmpty || [script.src, script.content].compactMap { $0 }
-                    .contains { $0.localizedCaseInsensitiveContains(query) }
-            }
-            .map { script in
-                var row: [String: Any] = [
-                    "index": script.index, "external": script.isExternal,
-                    "module": script.isModule, "async": script.isAsync, "defer": script.isDefer
-                ]
-                row["url"] = script.src.map { raw ? clipped($0) : safeURL($0) }
-                return row
-            }
+            guard let tree = sources.domTree else { throw AgentError(sources.errorMessage ?? "No DOM tree returned.") }
+            let rows = sourceNodes(tree, query: query)
+            return ["documentId": context.document.uuidString, "total": rows.count, "entries": Array(try paginate(input, rows))]
         }
-        try context.checkDocument()
-        if let error = sources.errorMessage { throw AgentError(error) }
-        return ["documentId": context.document.uuidString, "total": rows.count, "entries": Array(try paginate(input, rows))]
+        let script = switch section {
+        case "html": SourcesManager.rawHTMLScript(result: "pageHTML(html)")
+        case "stylesheets":
+            SourcesManager.stylesheetsScript(result: "pageMetadata(sheets, true, \(raw))", includeContent: !query.isEmpty)
+        default:
+            SourcesManager.scriptsScript(result: "pageMetadata(scripts, false, \(raw))", includeContent: !query.isEmpty)
+        }
+        return try await evaluateSourcePage(script, input, query: query, context: context)
     }
 
     private static func sourceNodes(_ node: DOMNode, query: String) -> [[String: Any]] {
@@ -96,18 +63,14 @@ extension AgentDevTools {
         case "stylesheet", "script":
             let index = try input.int("index", default: -1, range: 0...100_000)
             guard index >= 0 else { throw AgentError("A stylesheet or script index is required.") }
-            script = kind == "stylesheet" ? StylesheetDetailView.detailScript(index: index)
-                : ScriptDetailView.inlineContentScript(index: index, maxLength: nil)
+            script = kind == "stylesheet"
+                ? StylesheetDetailView.detailScript(index: index, result: "pageSheet(rules, rawCSS)")
+                : ScriptDetailView.inlineContentScript(index: index, result: "pageEntries({content: script.textContent})")
         default:
             throw AgentError("Invalid Sources detail kind.")
         }
         try await context.confirm("Share the selected \(kind) details from this page with the Mac?")
-        let data = await context.navigator.evaluateJavaScript(script)
-        try context.checkDocument()
-        let result = try parseJSON(data)
-        var payload = try sourceDetailResult(result, input, query: query)
-        payload["documentId"] = context.document.uuidString
-        return payload
+        return try await evaluateSourcePage(script, input, query: query, context: context)
     }
 
     private static func checkSourceDocument(_ input: AgentDevInput, _ context: AgentDevContext) throws {
@@ -122,108 +85,204 @@ extension AgentDevTools {
         guard path.count == pieces.count, path.count <= 51, path.first == 0, path.allSatisfy({ $0 >= 0 }) else {
             throw AgentError("Use the element path returned by sources_list.")
         }
-        let section = try input.string("section") ?? "attributes"
-        switch section {
+        switch try input.string("section") ?? "attributes" {
         case "attributes":
             return """
             (function() {
                 const node = \(SourcesManager.nodeLookupScript(path: path));
                 if (!node) return JSON.stringify({error: 'Element not found'});
-                const attributes = Object.fromEntries(Array.from(node.attributes || []).map(attr => [attr.name, attr.value]));
-                return JSON.stringify({attributes});
+                return pageEntries(Object.fromEntries(Array.from(node.attributes || [], attr => [attr.name, attr.value])));
             })();
             """
         case "computedStyles":
             return try input.bool("allComputedStyles") == true
-                ? ElementDetailScripts.allComputedStyles(path: path) : ElementDetailScripts.computedStyles(path: path)
+                ? ElementDetailScripts.allComputedStyles(path: path, result: "pageEntries(result)")
+                : ElementDetailScripts.computedStyles(path: path, result: "pageEntries(result)")
         case "matchedRules":
-            return ElementDetailScripts.matchedRules(path: path)
+            return ElementDetailScripts.matchedRules(path: path, result: "pageMatchedRules(rules)")
         case "html":
-            return ElementDetailScripts.htmlContent(path: path, maxLength: nil)
+            return ElementDetailScripts.htmlContent(path: path, result: "pageEntries({outer: el.outerHTML, inner: el.innerHTML})")
         default:
             throw AgentError("Invalid element detail section.")
         }
     }
 
-    private static func sourceDetailResult(_ result: Any, _ input: AgentDevInput, query: String) throws -> [String: Any] {
-        let textOffset = try sourceTextStart(input)
-        if let object = result as? [String: Any] {
-            if let error = object["error"] as? String { throw AgentError(error) }
-            if let rules = object["rules"] as? [[String: String]] {
-                let filtered = rules.filter { row in
-                    query.isEmpty || row.values.contains { $0.localizedCaseInsensitiveContains(query) }
-                }
-                let page = try paginate(input, filtered).map { rule -> [String: Any] in
-                    var row: [String: Any] = ["selector": rule["selector"].map { clipped($0, limit: 2048) } ?? ""]
-                    if let text = rule["text"] {
-                        addSourceText(text, to: &row, key: "text", offset: textOffset, query: query)
-                    }
-                    return row
-                }
-                var payload: [String: Any] = ["total": filtered.count, "rules": page]
-                if let raw = object["raw"] as? String {
-                    addSourceText(raw, to: &payload, key: "raw", offset: textOffset, query: query, limit: 32_768)
-                }
-                return payload
-            }
-            let values = object["attributes"] as? [String: String] ?? object.compactMapValues { $0 as? String }
-            let keys = values.keys.sorted().filter { key in
-                query.isEmpty || key.localizedCaseInsensitiveContains(query)
-                    || values[key]?.localizedCaseInsensitiveContains(query) == true
-            }
-            let page = try paginate(input, keys).map { key -> [String: Any] in
-                var row: [String: Any] = ["key": key]
-                if let value = values[key] {
-                    addSourceText(value, to: &row, key: "value", offset: textOffset, query: query, limit: 8192)
-                }
-                return row
-            }
-            return ["total": keys.count, "entries": page]
-        }
-        guard let rules = result as? [[String: Any]] else { throw AgentError("No Sources details returned.") }
-        let rows = rules.filter { row in
-            query.isEmpty || (row["selector"] as? String)?.localizedCaseInsensitiveContains(query) == true
-        }
+    private static func evaluateSourcePage(
+        _ script: String, _ input: AgentDevInput, query: String, context: AgentDevContext
+    ) async throws -> [String: Any] {
+        let offset = try input.int("offset", default: 0, range: 0...100_000)
+        let limit = try input.int("limit", default: 30, range: 1...100)
         let propertyOffset = try input.int("propertyOffset", default: 0, range: 0...100_000)
-        let page = try paginate(input, rows).map { row -> [String: Any] in
-            var entry = row
-            if let properties = row["properties"] as? [[String: Any]] {
-                let page = properties.dropFirst(propertyOffset).prefix(50)
-                entry["properties"] = page.map { property in
-                    var property = property
-                    if let value = property["v"] as? String {
-                        addSourceText(value, to: &property, key: "v", offset: textOffset, query: query, limit: 256)
-                    }
-                    return property
-                }
-                let end = propertyOffset + page.count
-                if end < properties.count { entry["nextPropertyOffset"] = end }
+        let textOffset = try input.values["textOffset"].map { _ in
+            try input.int("textOffset", default: 0, range: 0...Int(Int32.max))
+        }
+        guard let literal = try String(bytes: JSONEncoder().encode(query), encoding: .utf8) else {
+            throw AgentError("Could not encode the Sources query.")
+        }
+        let wrapped = """
+        (() => {
+            const query = \(literal), offset = \(offset), end = offset + \(limit);
+            const textOffset = \(textOffset.map(String.init) ?? "null"), propertyOffset = \(propertyOffset);
+            \(sourcePageFunctions)
+            return \(script)
+        })();
+        """
+        let data = try await context.navigator.evaluateJavaScriptReportingErrors(wrapped, contentWorld: .defaultClient)
+        try context.checkDocument()
+        guard var payload = try parseJSON(data) as? [String: Any] else { throw AgentError("No Sources details returned.") }
+        if let error = payload["error"] as? String { throw AgentError(error) }
+        payload["documentId"] = context.document.uuidString
+        return payload
+    }
+
+    private static let sourcePageFunctions = #"""
+    const nonASCII = /[^\x00-\x7f]/;
+    const foldedQuery = fold(query);
+    function fold(value) {
+        // The upper/lower round trip expands case-folded letters such as ß and ligatures.
+        return value.normalize('NFC').replace(/[^\x00-\x7f]/gu, scalar =>
+            scalar === 'ı' ? scalar : scalar.toUpperCase().toLowerCase().replace(/ß/g, 'ss')
+        ).toLowerCase().normalize('NFC');
+    }
+    function* foldedRanges(value) {
+        const graphemes = new Intl.Segmenter('und', {granularity: 'grapheme'});
+        let offset = 0;
+        // Keep the final ASCII character with a following Unicode run so combining marks stay attached.
+        for (const part of value.matchAll(/[\x00-\x7f]+(?=[\x00-\x7f]|$)|[\x00-\x7f]?[^\x00-\x7f]+/g)) {
+            const text = part[0];
+            if (!nonASCII.test(text)) {
+                yield [offset, offset + text.length, part.index, text.length, true];
+                offset += text.length;
+                continue;
             }
-            return entry
+            for (const {segment, index} of graphemes.segment(text)) {
+                const folded = fold(segment);
+                const preservesIndices = folded.length === segment.length && folded === segment.toLowerCase();
+                yield [offset, offset + folded.length, part.index + index, segment.length, preservesIndices];
+                offset += folded.length;
+            }
         }
-        return ["total": rows.count, "rules": page]
     }
-
-    private static func sourceTextStart(_ input: AgentDevInput) throws -> Int? {
-        guard input.values["textOffset"] != nil else { return nil }
-        return try input.int("textOffset", default: 0, range: 0...Int(Int32.max))
+    function originalIndex(value) {
+        const ranges = foldedRanges(value);
+        let range = ranges.next().value;
+        return index => {
+            while (range && index > range[1]) range = ranges.next().value;
+            if (!range) return -1;
+            if (index === range[1]) return range[2] + range[3];
+            return range[4] || index === range[0] ? range[2] + index - range[0] : -1;
+        };
     }
-
-    private static func addSourceText(
-        _ value: String, to row: inout [String: Any], key: String, offset: Int?, query: String, limit: Int = 2048
-    ) {
-        let scalars = value.unicodeScalars
-        let start = if let offset {
-            scalars.index(scalars.startIndex, offsetBy: offset, limitedBy: scalars.endIndex) ?? scalars.endIndex
-        } else {
-            (query.isEmpty ? nil : value.range(of: query, options: .caseInsensitive)?.lowerBound) ?? scalars.startIndex
+    function matchIndex(value) {
+        if (!query) return 0;
+        if (typeof value !== 'string') return -1;
+        if (!nonASCII.test(value)) return value.toLowerCase().indexOf(foldedQuery);
+        const folded = fold(value);
+        let match = folded.indexOf(foldedQuery);
+        if (match < 0) return -1;
+        const findStart = originalIndex(value), findEnd = originalIndex(value);
+        while (match >= 0) {
+            const start = findStart(match);
+            if (start >= 0 && findEnd(match + foldedQuery.length) >= 0) return start;
+            match = folded.indexOf(foldedQuery, match + 1);
         }
-        let end = scalars.index(start, offsetBy: limit, limitedBy: scalars.endIndex) ?? scalars.endIndex
-        let startOffset = scalars.distance(from: scalars.startIndex, to: start)
-        let offsetKey = key == "raw" ? "rawTextOffset" : "textOffset"
-        let nextKey = key == "raw" ? "nextRawTextOffset" : "nextTextOffset"
-        row[key] = String(scalars[start..<end])
-        row[offsetKey] = startOffset
-        if end < scalars.endIndex { row[nextKey] = startOffset + limit }
+        return -1;
     }
+    const matches = value => matchIndex(value) >= 0;
+    function scalarEnd(value, start, count) {
+        let end = start;
+        while (count-- > 0 && end < value.length) end += value.codePointAt(end) > 0xffff ? 2 : 1;
+        return end;
+    }
+    function boundedText(value, limit = 4096) {
+        return typeof value === 'string' ? value.slice(0, scalarEnd(value, 0, limit)).toWellFormed() : value;
+    }
+    function metadataURL(value, raw) {
+        if (raw) return boundedText(value);
+        try {
+            const url = new URL(value);
+            if (['http:', 'https:', 'ws:', 'wss:'].includes(url.protocol) && url.hostname && url.origin.length <= 4096) {
+                return url.origin;
+            }
+        } catch (_) {}
+        return '';
+    }
+    function sourceSlice(value, row, key, limit) {
+        const raw = key === 'raw';
+        let start = 0, offset = 0;
+        const found = textOffset === null ? Math.max(0, matchIndex(value)) : 0;
+        while (start < value.length && (textOffset === null ? start < found : offset < textOffset)) {
+            start += value.codePointAt(start) > 0xffff ? 2 : 1;
+            offset++;
+        }
+        const end = scalarEnd(value, start, limit);
+        row[key] = value.slice(start, end).toWellFormed();
+        row[raw ? 'rawTextOffset' : 'textOffset'] = offset;
+        if (end < value.length) row[raw ? 'nextRawTextOffset' : 'nextTextOffset'] = offset + limit;
+        return row;
+    }
+    function pageEntries(values) {
+        const keys = Object.keys(values).sort().filter(key => matches(key) || matches(values[key]));
+        const entries = keys.slice(offset, end).map(key => sourceSlice(values[key], {key: boundedText(key, 1024)}, 'value', 8192));
+        return JSON.stringify({total: keys.length, entries});
+    }
+    function pageHTML(html) {
+        const entries = [];
+        let total = 0;
+        const lines = html.split(/[\n\r\v\f\u0085\u2028\u2029]/);
+        for (let i = 0; i < lines.length; i++) {
+            if (matches(lines[i]) && total++ >= offset && total <= end) {
+                entries.push(sourceSlice(lines[i], {line: i + 1}, 'text', 2048));
+            }
+        }
+        return JSON.stringify({total, entries});
+    }
+    function pageMetadata(items, stylesheets, raw) {
+        const entries = [];
+        let total = 0;
+        items.forEach((item, index) => {
+            if (stylesheets ? ![item.href, item.cssContent, item.media].some(matches) : ![item.src, item.content].some(matches)) return;
+            if (total++ < offset || total > end) return;
+            const row = {index, external: item.isExternal};
+            if (stylesheets) {
+                row.ruleCount = item.rulesCount;
+                if (item.href) row.url = metadataURL(item.href, raw);
+                if (raw && item.media != null) row.media = boundedText(item.media);
+            } else {
+                if (item.src) row.url = metadataURL(item.src, raw);
+                row.module = item.isModule;
+                row.async = item.isAsync;
+                row.defer = item.isDefer;
+            }
+            entries.push(row);
+        });
+        return JSON.stringify({total, entries});
+    }
+    function pageSheet(rules, raw) {
+        const filtered = rules.filter(row => matches(row.selector) || matches(row.text));
+        const page = filtered.slice(offset, end).map(rule => {
+            const selector = boundedText(rule.selector, 2048);
+            return sourceSlice(rule.text, {selector}, 'text', 2048);
+        });
+        return JSON.stringify(sourceSlice(raw, {total: filtered.length, rules: page}, 'raw', 32768));
+    }
+    function pageMatchedRules(rules) {
+        const filtered = rules.filter(row => matches(row.selector));
+        const page = filtered.slice(offset, end).map(row => {
+            row.selector = boundedText(row.selector, 2048);
+            if (row.layer != null) row.layer = boundedText(row.layer, 1024);
+            if (row.source?.href != null) row.source.href = boundedText(row.source.href);
+            const total = row.properties.length;
+            const properties = row.properties.slice(propertyOffset, propertyOffset + 50);
+            row.properties = properties.map(property => {
+                property.p = boundedText(property.p, 128);
+                return sourceSlice(property.v, property, 'v', 256);
+            });
+            const next = propertyOffset + properties.length;
+            if (next < total) row.nextPropertyOffset = next;
+            return row;
+        });
+        return JSON.stringify({total: filtered.length, rules: page});
+    }
+    """#
 }

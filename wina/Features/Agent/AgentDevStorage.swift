@@ -3,7 +3,7 @@ import Foundation
 @MainActor
 extension AgentDevTools {
     static let storageTools: [[String: Any]] = [
-        AgentTool.definition("storage_list", "Refresh and list Local Storage, Session Storage and cookies. Values, key search, and all-domain access require confirmation.", [
+        AgentTool.definition("storage_list", "Read Local Storage, Session Storage and cookies. An all-types read returns per-type errors for unavailable storage. Values, key search, and all-domain access require confirmation.", [
             "type": options(["all", "localStorage", "sessionStorage", "cookies"]), "query": query,
             "cookieScope": options(["current", "all"]), "raw": raw,
             "decode": flag, "offset": offset, "limit": limit
@@ -45,10 +45,11 @@ extension AgentDevTools {
             } else {
                 await storage.clearStorage(type: type, pageURL: pageURL)
             }
-            guard success else { throw AgentError("Walnut could not clear the selected storage.") }
-            try context.checkDocument()
-            await storage.refresh(pageURL: pageURL)
-            try context.checkDocument()
+            guard success else {
+                try context.checkDocument()
+                throw AgentError("Walnut could not clear the selected storage.")
+            }
+            refreshStorageIfCurrent(storage, pageURL: pageURL, context: context)
             return ["cleared": true]
         default:
             throw AgentError("Unknown storage tool.")
@@ -70,10 +71,20 @@ extension AgentDevTools {
         if includeContent || allCookies || !query.isEmpty {
             try await context.confirm("Inspect \(allCookies ? "all domains' cookies and" : "the active page's") WebView storage on the Mac?")
         }
-        let candidates = try await StorageManager.readItems(
-            type: type, pageURL: pageURL, allCookies: allCookies, navigator: context.navigator
-        )
-        try context.checkDocument()
+        var candidates: [StorageItem] = []
+        var errors: [String: String] = [:]
+        for storageType in type.map({ [$0] }) ?? StorageItem.StorageType.allCases {
+            do {
+                candidates += try await StorageManager.readItems(
+                    type: storageType, pageURL: pageURL, allCookies: allCookies, navigator: context.navigator
+                )
+            } catch {
+                try context.checkDocument()
+                guard type == nil else { throw error }
+                errors[storageType.rawValue] = error.localizedDescription
+            }
+            try context.checkDocument()
+        }
         let items = candidates.filter { item in
             return query.isEmpty || item.key.localizedCaseInsensitiveContains(query) || item.value.localizedCaseInsensitiveContains(query)
                 || item.cookieMetadata?.domain.localizedCaseInsensitiveContains(query) == true
@@ -95,7 +106,9 @@ extension AgentDevTools {
             }
             return row
         }
-        return ["total": items.count, "entries": entries]
+        var result: [String: Any] = ["total": items.count, "entries": entries]
+        if !errors.isEmpty { result["errors"] = errors }
+        return result
     }
 
     private static func writeStorage(
@@ -162,10 +175,20 @@ extension AgentDevTools {
                 await storage.removeItem(item)
             }
         }
-        try context.checkDocument()
-        guard success else { throw AgentError(storage.errorMessage ?? "Walnut could not change the storage entry.") }
-        await storage.refresh(pageURL: pageURL)
-        try context.checkDocument()
+        guard success else {
+            try context.checkDocument()
+            throw AgentError(storage.errorMessage ?? "Walnut could not change the storage entry.")
+        }
+        refreshStorageIfCurrent(storage, pageURL: pageURL, context: context)
         return ["action": action, "applied": true]
+    }
+
+    private static func refreshStorageIfCurrent(_ storage: StorageManager, pageURL: URL, context: AgentDevContext) {
+        // Refresh the inspector independently of a mutation already committed to the authorized storage.
+        Task {
+            await storage.refresh(pageURL: pageURL) {
+                context.navigator.attachedPageURL == pageURL && (try? context.checkDocument()) != nil
+            }
+        }
     }
 }

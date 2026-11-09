@@ -43,7 +43,8 @@ class StorageManager {
 
     // Sync storage with WebView (keep prior data for same page if fetch fails)
     @MainActor
-    func refresh(pageURL: URL? = nil) async {
+    func refresh(pageURL: URL? = nil, isCurrentDocument: () -> Bool = { true }) async {
+        guard isCurrentDocument() else { return }
         guard let navigator else {
             errorMessage = "WebView not connected"
             return
@@ -79,7 +80,7 @@ class StorageManager {
         }
         if let cookieStore { newItems += await Self.fetchCookies(in: cookieStore, pageURL: pageURL) }
 
-        guard refreshID == id else { return }
+        guard refreshID == id, isCurrentDocument() else { return }
         items = newItems
         errorMessage = readError
         lastRefreshTime = Date()
@@ -87,26 +88,22 @@ class StorageManager {
 
     @MainActor
     static func readItems(
-        type: StorageItem.StorageType?,
+        type: StorageItem.StorageType,
         pageURL: URL,
         allCookies: Bool,
         navigator: StorageNavigator
     ) async throws -> [StorageItem] {
-        var items: [StorageItem] = []
-        let cookieStore = navigator.attachedCookieStore
-        for type in type.map({ [$0] }) ?? StorageItem.StorageType.allCases {
-            if type == .cookies {
-                guard let cookieStore else { throw ReadError(errorDescription: "The active cookie store is unavailable.") }
-                items += await fetchCookies(in: cookieStore, pageURL: pageURL, allCookies: allCookies)
-            } else {
-                let result = await fetchStorage(type: type, navigator: navigator)
-                guard let entries = result.items else {
-                    throw ReadError(errorDescription: "Could not read \(type.rawValue) for the active document.")
-                }
-                items += entries
+        if type == .cookies {
+            guard let cookieStore = navigator.attachedCookieStore else {
+                throw ReadError(errorDescription: "The active cookie store is unavailable.")
             }
+            return await fetchCookies(in: cookieStore, pageURL: pageURL, allCookies: allCookies)
         }
-        return items
+        let result = await fetchStorage(type: type, navigator: navigator)
+        guard let entries = result.items else {
+            throw ReadError(errorDescription: "Could not read \(type.rawValue) for the active document.")
+        }
+        return entries
     }
 
     private struct ReadError: LocalizedError {

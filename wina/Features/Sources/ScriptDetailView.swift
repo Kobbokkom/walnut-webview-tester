@@ -141,15 +141,17 @@ struct ScriptDetailView: View {
         .background(Color(uiColor: .systemBackground))
     }
 
-    static func inlineContentScript(index: Int, maxLength: Int? = 50_000) -> String {
-        let truncation = maxLength.map { ".substring(0, \($0))" } ?? ""
-        return """
+    static func inlineContentScript(
+        index: Int,
+        result: String = "JSON.stringify({content: script.textContent.substring(0, 50000)})"
+    ) -> String {
+        """
         (function() {
             const scripts = document.scripts;
             const script = scripts[\(index)];
             if (!script) return JSON.stringify({error: 'Script not found'});
             if (script.src) return JSON.stringify({error: 'External script source is unavailable'});
-            return JSON.stringify({content: script.textContent\(truncation)});
+            return \(result);
         })();
         """
     }
