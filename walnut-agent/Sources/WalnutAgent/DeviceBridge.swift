@@ -23,6 +23,11 @@ final class DeviceBridge: @unchecked Sendable {
         if let proxy, proxy.isRunning { proxy.terminate() }
     }
 
+    func shutdown() async {
+        if let active { await active.exchange.close() }
+        active = nil
+    }
+
     func call(_ tool: String, arguments: [String: Any] = [:]) async throws -> Any {
         try Task.checkCancellation()
         let pairing = try Pairing.load(from: Pairing.file)

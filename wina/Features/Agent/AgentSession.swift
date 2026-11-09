@@ -150,7 +150,8 @@ final class AgentSession {
         if operation == nil, let end = buffer.firstIndex(of: 10) {
             let frame = Data(buffer[..<end])
             buffer.removeSubrange(...end)
-            guard frame.count <= Self.maxRequest else { disconnect(connection); return }
+            // An empty frame lets the companion release the peer before it exits.
+            guard !frame.isEmpty, frame.count <= Self.maxRequest else { disconnect(connection); return }
             process(frame, connection: connection, handler: handler)
             receive(connection, handler: handler)
             return

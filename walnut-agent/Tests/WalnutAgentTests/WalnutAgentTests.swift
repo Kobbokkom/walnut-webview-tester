@@ -94,12 +94,13 @@ final class WalnutAgentTests: XCTestCase {
         let listener = try NWListener(using: parameters)
         defer { listener.cancel() }
         let ready = expectation(description: "TLS listener ready")
+        let peerClosed = expectation(description: "Peer received the graceful close frame")
         listener.stateUpdateHandler = { state in
             if case .ready = state { ready.fulfill() }
         }
         listener.newConnectionHandler = { connection in
             connection.start(queue: queue)
-            Self.respond(on: connection, count: 1, buffered: Data())
+            Self.respond(on: connection, count: 1, buffered: Data(), peerClosed: peerClosed)
         }
         listener.start(queue: queue)
         await fulfillment(of: [ready], timeout: 5)
@@ -120,17 +121,24 @@ final class WalnutAgentTests: XCTestCase {
         let second = try await exchange.run(payload, timeout: 3)
         XCTAssertEqual(try DeviceBridge.result(first, for: "test") as? Int, 1)
         XCTAssertEqual(try DeviceBridge.result(second, for: "test") as? Int, 2)
+        await exchange.close()
+        await fulfillment(of: [peerClosed], timeout: 3)
     }
 
-    private static func respond(on connection: NWConnection, count: Int, buffered: Data) {
+    private static func respond(on connection: NWConnection, count: Int, buffered: Data, peerClosed: XCTestExpectation) {
         connection.receive(minimumIncompleteLength: 1, maximumLength: 1024) { data, _, complete, error in
             if complete || error != nil {
                 connection.cancel()
                 return
             }
             let input = buffered + (data ?? Data())
-            guard input.contains(0x0A) else {
-                respond(on: connection, count: count, buffered: input)
+            guard let newline = input.firstIndex(of: 0x0A) else {
+                respond(on: connection, count: count, buffered: input, peerClosed: peerClosed)
+                return
+            }
+            if newline == input.startIndex {
+                if count == 3 { peerClosed.fulfill() }
+                connection.cancel()
                 return
             }
             let response = Data("{\"id\":\"test\",\"result\":\(count)}".utf8)
@@ -138,7 +146,7 @@ final class WalnutAgentTests: XCTestCase {
                 if error != nil { connection.cancel(); return }
                 connection.send(content: Data([0x0A]), completion: .contentProcessed { error in
                     if error != nil { connection.cancel(); return }
-                    respond(on: connection, count: count + 1, buffered: Data())
+                    respond(on: connection, count: count + 1, buffered: Data(), peerClosed: peerClosed)
                 })
             })
         }

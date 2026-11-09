@@ -17,7 +17,13 @@ enum CLI {
                 print("Saved Walnut pairing.")
             case "mcp":
                 let bridge = DeviceBridge(usb: try parseUSB(Array(arguments.dropFirst())))
-                try await MCPServer { name, arguments in try await bridge.call(name, arguments: arguments) }.run()
+                do {
+                    try await MCPServer { name, arguments in try await bridge.call(name, arguments: arguments) }.run()
+                } catch {
+                    await bridge.shutdown()
+                    throw error
+                }
+                await bridge.shutdown()
             case "--help", "-h", nil:
                 print(usage)
             default:
