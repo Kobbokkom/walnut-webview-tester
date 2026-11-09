@@ -72,13 +72,19 @@ extension ContentView {
             throw AgentError("Unknown Walnut tool.")
         }
         try AgentTool.validate(arguments, using: tool)
+        let fixedTarget = ["walnut_screenshot", "storage_write", "storage_clear"].contains(name) ? agentPageEvidence() : nil
         let result = try await performAgentCall(name, arguments, tools: tools)
+        var envelope = fixedTarget ?? agentPageEvidence()
+        envelope["data"] = result
+        return envelope
+    }
+
+    private func agentPageEvidence() -> [String: Any] {
         let navigation = agentNavigation
         let evidence: [String: Any] = showWebView ? navigation.evidence : ["phase": "idle"]
         var envelope: [String: Any] = ["runId": navigation.runID.uuidString, "mode": agentMode]
         envelope["navigation"] = evidence
-        envelope["data"] = result
-        if let document = agentNavigation.documentID, showWebView {
+        if let document = navigation.documentID, showWebView {
             envelope["documentId"] = document.uuidString
         }
         if let userAgent = webViewNavigator.agentEffectiveUserAgent, !useSafariWebView, showWebView {

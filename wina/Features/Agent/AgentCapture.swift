@@ -40,16 +40,27 @@ enum AgentCapture {
             guard await approveSafariPreview(image) else { throw AgentError("Screenshot sharing was denied.") }
             try validateTarget()
         }
-        guard let png = image.pngData() else { throw AgentError("Screenshot unavailable.") }
-        if saveToPhotos {
-            try await requirePhotos()
-            try validateTarget()
+        return try await exportScreenshot(image, saveToPhotos: saveToPhotos, validateTarget: validateTarget)
+    }
+
+    static func exportScreenshot(
+        _ image: UIImage,
+        saveToPhotos: Bool,
+        validateTarget: () throws -> Void,
+        requestPhotos: () async throws -> Void = { try await AgentCapture.requirePhotos() },
+        savePhoto: (UIImage) async throws -> Void = { image in
             try await PHPhotoLibrary.shared().performChanges {
                 PHAssetCreationRequest.creationRequestForAsset(from: image)
             }
-            try validateTarget()
         }
-        return ["mimeType": "image/png", "data": png.base64EncodedString()]
+    ) async throws -> [String: Any] {
+        guard let png = image.pngData() else { throw AgentError("Screenshot unavailable.") }
+        if saveToPhotos {
+            try await requestPhotos()
+            try validateTarget()
+            try await savePhoto(image)
+        }
+        return ["mimeType": "image/png", "data": png.base64EncodedString(), "savedToPhotos": saveToPhotos]
     }
 
     static func requirePhotos() async throws {

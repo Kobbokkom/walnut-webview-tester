@@ -290,9 +290,9 @@ class WebViewNavigator {
     }
 
     @MainActor
-    func evaluateJavaScriptReportingErrors(_ script: String) async throws -> Any? {
+    func evaluateJavaScriptReportingErrors(_ script: String, contentWorld: WKContentWorld = .page) async throws -> Any? {
         guard let webView else { throw AgentError("The WKWebView is disconnected.") }
-        return try await webView.evaluateJavaScript(script)
+        return try await webView.evaluateJavaScript(script, contentWorld: contentWorld)
     }
 
     /// Evaluate async JavaScript (supports Promises)

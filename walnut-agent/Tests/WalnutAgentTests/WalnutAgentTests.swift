@@ -43,7 +43,7 @@ final class WalnutAgentTests: XCTestCase {
                 return ["data": ["tools": [tool]]]
             case "walnut_screenshot":
                 XCTAssertEqual(arguments["scale"] as? Int, 2)
-                return ["runId": "run", "data": ["mimeType": "image/png", "data": "aW1hZ2U="]]
+                return ["runId": "run", "data": ["mimeType": "image/png", "data": "aW1hZ2U=", "savedToPhotos": true]]
             default: throw AgentError("Tool unavailable")
             }
         }
@@ -61,7 +61,8 @@ final class WalnutAgentTests: XCTestCase {
         XCTAssertEqual(content.first?["data"], "aW1hZ2U=")
         let structured = try XCTUnwrap(result["structuredContent"] as? [String: Any])
         XCTAssertEqual(structured["runId"] as? String, "run")
-        XCTAssertNil((structured["data"] as? [String: String])?["data"])
+        XCTAssertNil((structured["data"] as? [String: Any])?["data"])
+        XCTAssertEqual((structured["data"] as? [String: Any])?["savedToPhotos"] as? Bool, true)
         let error = await server.respond(to: Data(#"{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"walnut_unavailable"}}"#.utf8))
         XCTAssertEqual((error?["result"] as? [String: Any])?["isError"] as? Bool, true)
     }

@@ -643,11 +643,11 @@ struct ElementDetailView: View {
 enum ElementDetailScripts {
     /// Script to fetch computed styles that differ from defaults (Chrome DevTools style)
     /// Uses isolated iframe to get true initial values without inheritance
-    static func computedStyles(path: [Int]) -> String {
+    static func computedStyles(path: [Int], result: String? = nil) -> String {
         """
         (function() {
             const el = \(SourcesManager.nodeLookupScript(path: path));
-            if (!el) return '{}';
+            if (!el) return \(result == nil ? "'{}'" : "pageEntries({})");
 
             const tagName = el.tagName.toLowerCase();
             const styles = window.getComputedStyle(el);
@@ -688,17 +688,17 @@ enum ElementDetailScripts {
                 document.body.removeChild(iframe);
             }
 
-            return JSON.stringify(result);
+            return \(result ?? "JSON.stringify(result)");
         })();
         """
     }
 
     /// Script to fetch ALL computed styles (for "Show all" mode)
-    static func allComputedStyles(path: [Int]) -> String {
+    static func allComputedStyles(path: [Int], result: String? = nil) -> String {
         """
         (function() {
             const el = \(SourcesManager.nodeLookupScript(path: path));
-            if (!el) return '{}';
+            if (!el) return \(result == nil ? "'{}'" : "pageEntries({})");
             const styles = window.getComputedStyle(el);
             const result = {};
             for (let i = 0; i < styles.length; i++) {
@@ -706,36 +706,41 @@ enum ElementDetailScripts {
                 const val = styles.getPropertyValue(prop);
                 if (val && val.trim()) { result[prop] = val; }
             }
-            return JSON.stringify(result);
+            return \(result ?? "JSON.stringify(result)");
         })();
         """
     }
 
     /// Script to fetch HTML content
-    static func htmlContent(path: [Int], maxLength: Int? = 5000) -> String {
-        let truncation = maxLength.map { ".substring(0, \($0))" } ?? ""
-        return """
+    static func htmlContent(
+        path: [Int],
+        result: String? = nil
+    ) -> String {
+        """
         (function() {
             const el = \(SourcesManager.nodeLookupScript(path: path));
-            if (!el) return '{}';
-            return JSON.stringify({
-                outer: el.outerHTML\(truncation),
-                inner: el.innerHTML\(truncation)
-            });
+            if (!el) return \(result == nil ? "'{}'" : "pageEntries({})");
+            return \(result ?? "JSON.stringify({outer: el.outerHTML.substring(0, 5000), inner: el.innerHTML.substring(0, 5000)})");
         })();
         """
     }
 
     /// Script to fetch matched CSS rules (with @layer support)
-    static func matchedRules(path: [Int]) -> String {
-        "(function() { \(matchedRulesSetup(path: path)) \(matchedRulesProcessing) })();"
+    static func matchedRules(path: [Int], result: String? = nil) -> String {
+        """
+        (function() {
+            const el = \(SourcesManager.nodeLookupScript(path: path));
+            if (!el) return \(result == nil ? "'[]'" : "pageMatchedRules([])");
+            \(matchedRulesSetup)
+            \(matchedRulesProcessing)
+            return \(result ?? "JSON.stringify(rules.slice(0, 100))");
+        })();
+        """
     }
 
     /// Setup part of matchedRules script
-    private static func matchedRulesSetup(path: [Int]) -> String {
+    private static var matchedRulesSetup: String {
         """
-        const el = \(SourcesManager.nodeLookupScript(path: path));
-        if (!el) return '[]';
         const rules = []; let ruleId = 0;
         function calcSpecificity(sel) {
             if (!sel) return 0;
@@ -806,7 +811,6 @@ enum ElementDetailScripts {
                 prop.o = !(winner && winner.ruleId === r.id && winner.propIdx === r.properties.indexOf(prop));
             }
         }
-        return JSON.stringify(rules.slice(0, 100));
         """
     }
 }

@@ -111,7 +111,7 @@ struct StylesheetDetailView: View {
         .padding()
     }
 
-    static func detailScript(index: Int) -> String {
+    static func detailScript(index: Int, result: String = "JSON.stringify({rules, raw: rawCSS})") -> String {
         """
         (function() {
             const sheet = document.styleSheets[\(index)];
@@ -129,7 +129,7 @@ struct StylesheetDetailView: View {
             } catch(e) {
                 return JSON.stringify({error: 'Cannot access rules (CORS)'});
             }
-            return JSON.stringify({rules: rules, raw: rawCSS});
+            return \(result);
         })();
         """
     }
