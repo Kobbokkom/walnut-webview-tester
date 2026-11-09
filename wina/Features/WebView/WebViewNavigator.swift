@@ -43,6 +43,30 @@ class WebViewNavigator {
     let snippetsManager = SnippetsManager()
     let preloadBridgeLogManager = PreloadBridgeLogManager()
     let recorder = WebViewRecorder()
+    let agentNavigation = AgentNavigation()
+    var agentLogSettings = AgentLogSettings()
+
+    func setAgentDocument(_ documentID: UUID?) {
+        consoleManager.agentDocumentID = documentID
+        networkManager.agentDocumentID = documentID
+        resourceManager.agentDocumentID = documentID
+    }
+
+    var agentIsLoading: Bool { webView?.isLoading ?? false }
+
+    var agentEffectiveUserAgent: String? { webView?.customUserAgent }
+
+    func applyAgentUserAgent() {
+        let value = AgentBrowserSettings.shared.value(
+            "customUserAgent", fallback: UserDefaults.standard.string(forKey: "customUserAgent") ?? ""
+        )
+        webView?.customUserAgent = value.isEmpty ? nil : value
+    }
+
+    func agentScreenshot() async -> UIImage? {
+        guard let webView else { return nil }
+        return await captureSnapshot(from: webView)
+    }
     // 수동 새로고침 시 coordinator에 reload 준비를 알리는 콜백입니다.
     @ObservationIgnored
     private var reloadPreparationHandler: (() -> Void)?
@@ -146,10 +170,17 @@ class WebViewNavigator {
     func documentDidChange(in webView: WKWebView) {
         guard self.webView === webView else { return }
         documentID = UUID()
+        setAgentDocument(agentTrackingEnabled ? documentID : nil)
         performanceManager.clear()
     }
 
-    func detach() {
+    var agentTrackingEnabled = false {
+        didSet { setAgentDocument(agentTrackingEnabled ? documentID : nil) }
+    }
+
+    func detach(from previousWebView: WKWebView? = nil) {
+        if let previousWebView, webView !== previousWebView { return }
+        setAgentDocument(nil)
         recorder.stopRecording()
         canGoBackObservation?.invalidate()
         canGoForwardObservation?.invalidate()
@@ -171,11 +202,13 @@ class WebViewNavigator {
         reloadPreparationHandler = handler
     }
 
-    func goBack() {
+    @discardableResult
+    func goBack() -> WKNavigation? {
         webView?.goBack()
     }
 
-    func goForward() {
+    @discardableResult
+    func goForward() -> WKNavigation? {
         webView?.goForward()
     }
 
@@ -196,15 +229,17 @@ class WebViewNavigator {
     }
 
     /// 최초 입력된 URL로 이동
-    func goToInitialURL() {
-        guard let initialURL else { return }
-        webView?.load(URLRequest(url: initialURL))
+    @discardableResult
+    func goToInitialURL() -> WKNavigation? {
+        guard let initialURL else { return nil }
+        return webView?.load(URLRequest(url: initialURL))
     }
 
-    func reload() {
+    @discardableResult
+    func reload() -> WKNavigation? {
         // AppBar 새로고침에서도 coordinator가 동일한 reload 전략을 적용하도록 보장합니다.
         reloadPreparationHandler?()
-        webView?.reload()
+        return webView?.reload()
     }
 
     func applyEmulation(configScript: String) {
@@ -235,14 +270,15 @@ class WebViewNavigator {
     }
 
     /// Load a new URL in the same WebView instance
-    func loadURL(_ urlString: String) {
-        guard let webView else { return }
+    @discardableResult
+    func loadURL(_ urlString: String) -> WKNavigation? {
+        guard let webView else { return nil }
 
         // Normalize URL (http for local/private hosts, https otherwise)
         let normalized = URLValidator.normalizeURL(urlString)
 
-        guard let url = URL(string: normalized) else { return }
-        webView.load(URLRequest(url: url))
+        guard let url = URL(string: normalized) else { return nil }
+        return webView.load(URLRequest(url: url))
     }
 
     /// Evaluate JavaScript on the attached WebView
@@ -400,7 +436,8 @@ class WebViewNavigator {
     // 현재 설정값 기준으로 Eruda 상태를 페이지에 동기화합니다.
     func syncErudaWithSettings(forceInit: Bool = false) async {
         guard webView != nil else { return }
-        let isEnabled = UserDefaults.standard.bool(forKey: Self.erudaModeKey)
+        let saved = UserDefaults.standard.bool(forKey: Self.erudaModeKey)
+        let isEnabled = agentTrackingEnabled ? AgentBrowserSettings.shared.value(Self.erudaModeKey, fallback: saved) : saved
         if isEnabled {
             await injectEruda(forceInit: forceInit)
         } else {

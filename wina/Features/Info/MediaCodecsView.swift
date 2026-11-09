@@ -80,7 +80,7 @@ struct MediaCodecsView: View {
 
 // MARK: - Media Codec Info Model
 
-struct MediaCodecInfo: Sendable {
+struct MediaCodecInfo: Sendable, Encodable {
     // Video
     let h264: CodecSupport
     let hevc: CodecSupport
@@ -116,9 +116,10 @@ struct MediaCodecInfo: Sendable {
     )
 
     @MainActor
-    static func load(onStatusUpdate: @escaping (String) -> Void) async -> MediaCodecInfo {
-        let shared = SharedInfoWebView.shared
-
+    static func load(
+        using shared: SharedInfoWebView = .shared,
+        onStatusUpdate: @escaping (String) -> Void
+    ) async -> MediaCodecInfo {
         // Return cached if available
         if let cached = shared.cachedCodecInfo {
             onStatusUpdate("Using cached data...")

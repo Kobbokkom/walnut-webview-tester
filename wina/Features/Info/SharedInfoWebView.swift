@@ -26,7 +26,9 @@ final class SharedInfoWebView {
     var cachedDisplayInfo: DisplayInfo?
     var cachedAccessibilityInfo: AccessibilityInfo?
 
-    private init() {}
+    init(navigator: WebViewNavigator? = nil) {
+        self.navigator = navigator
+    }
 
     /// Whether using live WebView from the loaded page
     var isUsingLiveWebView: Bool {

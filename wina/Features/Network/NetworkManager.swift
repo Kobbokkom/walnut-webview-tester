@@ -244,6 +244,7 @@ final class NetworkBodyStorage {
 class NetworkManager {
     var requests: [NetworkRequest] = []
     var isCapturing: Bool = true
+    var agentDocumentID: UUID?
     var pageURL: URL?  // Current page URL for mixed content detection
 
     // Limits for memory management (only affects request count, not body size)
@@ -289,7 +290,8 @@ class NetworkManager {
             requestBodyPreview: preview,
             startTime: Date(),
             pageIsSecure: pageIsSecure,
-            requestType: type
+            requestType: type,
+            agentDocumentID: type == .document ? nil : agentDocumentID
         )
 
         DispatchQueue.main.async { [weak self] in
@@ -383,6 +385,16 @@ class NetworkManager {
         let ids = requests.map(\.id)
         bodyStorage.delete(ids: ids)
         requests.removeAll()
+    }
+
+    func assignAgentDocument(_ document: UUID, requestID: String?) {
+        guard let requestID, let id = UUID(uuidString: requestID) else { return }
+        DispatchQueue.main.async { [weak self] in
+            guard let self, let index = requests.firstIndex(where: { $0.id == id }) else { return }
+            var request = requests[index]
+            request.agentDocumentID = document
+            requests[index] = request
+        }
     }
 
     func clearForNavigation(preserving requestID: String?) {

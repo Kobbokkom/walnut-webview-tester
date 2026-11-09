@@ -13,59 +13,140 @@ import os
 // MARK: - WebView Container
 
 struct WebViewContainer: View {
+    @Environment(\.agentBrowserSettings) private var agentSettings
     let urlString: String
     let useSafari: Bool
     @Binding var webViewID: UUID
     let navigator: WebViewNavigator?
+    var safariNavigation: AgentNavigation?
 
     // Loading State
     @State private var isLoading: Bool = true
 
     // Core Settings
-    @AppStorage("allowsContentJavaScript") private var allowsContentJavaScript: Bool = true
-    @AppStorage("allowZoom") private var allowZoom: Bool = false
-    @AppStorage("minimumFontSize") private var minimumFontSize: Double = 0
+    @AppStorage("allowsContentJavaScript") private var storedAllowsContentJavaScript = true
+    private var allowsContentJavaScript: Bool {
+        agentSettings?.value("allowsContentJavaScript", fallback: storedAllowsContentJavaScript) ?? storedAllowsContentJavaScript
+    }
+    @AppStorage("allowZoom") private var storedAllowZoom = false
+    private var allowZoom: Bool {
+        agentSettings?.value("allowZoom", fallback: storedAllowZoom) ?? storedAllowZoom
+    }
+    @AppStorage("minimumFontSize") private var storedMinimumFontSize = 0.0
+    private var minimumFontSize: Double {
+        agentSettings?.value("minimumFontSize", fallback: storedMinimumFontSize) ?? storedMinimumFontSize
+    }
 
     // Media Settings
-    @AppStorage("mediaAutoplay") private var mediaAutoplay: Bool = false
-    @AppStorage("inlineMediaPlayback") private var inlineMediaPlayback: Bool = true
-    @AppStorage("allowsAirPlay") private var allowsAirPlay: Bool = true
-    @AppStorage("allowsPictureInPicture") private var allowsPictureInPicture: Bool = true
+    @AppStorage("mediaAutoplay") private var storedMediaAutoplay = false
+    private var mediaAutoplay: Bool {
+        agentSettings?.value("mediaAutoplay", fallback: storedMediaAutoplay) ?? storedMediaAutoplay
+    }
+    @AppStorage("inlineMediaPlayback") private var storedInlineMediaPlayback = true
+    private var inlineMediaPlayback: Bool {
+        agentSettings?.value("inlineMediaPlayback", fallback: storedInlineMediaPlayback) ?? storedInlineMediaPlayback
+    }
+    @AppStorage("allowsAirPlay") private var storedAllowsAirPlay = true
+    private var allowsAirPlay: Bool {
+        agentSettings?.value("allowsAirPlay", fallback: storedAllowsAirPlay) ?? storedAllowsAirPlay
+    }
+    @AppStorage("allowsPictureInPicture") private var storedAllowsPictureInPicture = true
+    private var allowsPictureInPicture: Bool {
+        agentSettings?.value("allowsPictureInPicture", fallback: storedAllowsPictureInPicture) ?? storedAllowsPictureInPicture
+    }
 
     // Navigation & Gestures
-    @AppStorage("allowsBackForwardGestures") private var allowsBackForwardGestures: Bool = false
-    @AppStorage("allowsLinkPreview") private var allowsLinkPreview: Bool = true
+    @AppStorage("allowsBackForwardGestures") private var storedAllowsBackForwardGestures = false
+    private var allowsBackForwardGestures: Bool {
+        agentSettings?.value("allowsBackForwardGestures", fallback: storedAllowsBackForwardGestures) ?? storedAllowsBackForwardGestures
+    }
+    @AppStorage("allowsLinkPreview") private var storedAllowsLinkPreview = true
+    private var allowsLinkPreview: Bool {
+        agentSettings?.value("allowsLinkPreview", fallback: storedAllowsLinkPreview) ?? storedAllowsLinkPreview
+    }
 
     // Content Settings
-    @AppStorage("suppressesIncrementalRendering") private var suppressesIncrementalRendering: Bool = false
-    @AppStorage("javaScriptCanOpenWindows") private var javaScriptCanOpenWindows: Bool = false
-    @AppStorage("fraudulentWebsiteWarning") private var fraudulentWebsiteWarning: Bool = true
-    @AppStorage("textInteractionEnabled") private var textInteractionEnabled: Bool = true
-    @AppStorage("elementFullscreenEnabled") private var elementFullscreenEnabled: Bool = false
+    @AppStorage("suppressesIncrementalRendering") private var storedSuppressesIncrementalRendering = false
+    private var suppressesIncrementalRendering: Bool {
+        agentSettings?.value("suppressesIncrementalRendering", fallback: storedSuppressesIncrementalRendering) ?? storedSuppressesIncrementalRendering
+    }
+    @AppStorage("javaScriptCanOpenWindows") private var storedJavaScriptCanOpenWindows = false
+    private var javaScriptCanOpenWindows: Bool {
+        agentSettings?.value("javaScriptCanOpenWindows", fallback: storedJavaScriptCanOpenWindows) ?? storedJavaScriptCanOpenWindows
+    }
+    @AppStorage("fraudulentWebsiteWarning") private var storedFraudulentWebsiteWarning = true
+    private var fraudulentWebsiteWarning: Bool {
+        agentSettings?.value("fraudulentWebsiteWarning", fallback: storedFraudulentWebsiteWarning) ?? storedFraudulentWebsiteWarning
+    }
+    @AppStorage("textInteractionEnabled") private var storedTextInteractionEnabled = true
+    private var textInteractionEnabled: Bool {
+        agentSettings?.value("textInteractionEnabled", fallback: storedTextInteractionEnabled) ?? storedTextInteractionEnabled
+    }
+    @AppStorage("elementFullscreenEnabled") private var storedElementFullscreenEnabled = false
+    private var elementFullscreenEnabled: Bool {
+        agentSettings?.value("elementFullscreenEnabled", fallback: storedElementFullscreenEnabled) ?? storedElementFullscreenEnabled
+    }
 
     // Data Detectors
-    @AppStorage("detectPhoneNumbers") private var detectPhoneNumbers: Bool = false
-    @AppStorage("detectLinks") private var detectLinks: Bool = false
-    @AppStorage("detectAddresses") private var detectAddresses: Bool = false
-    @AppStorage("detectCalendarEvents") private var detectCalendarEvents: Bool = false
+    @AppStorage("detectPhoneNumbers") private var storedDetectPhoneNumbers = false
+    private var detectPhoneNumbers: Bool {
+        agentSettings?.value("detectPhoneNumbers", fallback: storedDetectPhoneNumbers) ?? storedDetectPhoneNumbers
+    }
+    @AppStorage("detectLinks") private var storedDetectLinks = false
+    private var detectLinks: Bool {
+        agentSettings?.value("detectLinks", fallback: storedDetectLinks) ?? storedDetectLinks
+    }
+    @AppStorage("detectAddresses") private var storedDetectAddresses = false
+    private var detectAddresses: Bool {
+        agentSettings?.value("detectAddresses", fallback: storedDetectAddresses) ?? storedDetectAddresses
+    }
+    @AppStorage("detectCalendarEvents") private var storedDetectCalendarEvents = false
+    private var detectCalendarEvents: Bool {
+        agentSettings?.value("detectCalendarEvents", fallback: storedDetectCalendarEvents) ?? storedDetectCalendarEvents
+    }
 
     // Privacy & Security
-    @AppStorage("privateBrowsing") private var privateBrowsing: Bool = false
-    @AppStorage("upgradeToHTTPS") private var upgradeToHTTPS: Bool = true
+    @AppStorage("privateBrowsing") private var storedPrivateBrowsing = false
+    private var privateBrowsing: Bool {
+        agentSettings?.isolatesPreloadCookies == true ||
+            (agentSettings?.value("privateBrowsing", fallback: storedPrivateBrowsing) ?? storedPrivateBrowsing)
+    }
+    @AppStorage("upgradeToHTTPS") private var storedUpgradeToHTTPS = true
+    private var upgradeToHTTPS: Bool {
+        agentSettings?.value("upgradeToHTTPS", fallback: storedUpgradeToHTTPS) ?? storedUpgradeToHTTPS
+    }
 
     // Content Mode
-    @AppStorage("preferredContentMode") private var preferredContentMode: Int = 0
+    @AppStorage("preferredContentMode") private var storedPreferredContentMode = 0
+    private var preferredContentMode: Int {
+        agentSettings?.value("preferredContentMode", fallback: storedPreferredContentMode) ?? storedPreferredContentMode
+    }
 
     // User Agent
-    @AppStorage("customUserAgent") private var customUserAgent: String = ""
+    @AppStorage("customUserAgent") private var storedCustomUserAgent = ""
+    private var customUserAgent: String {
+        agentSettings?.value("customUserAgent", fallback: storedCustomUserAgent) ?? storedCustomUserAgent
+    }
 
     // WKWebView Size
-    @AppStorage("webViewWidthRatio") private var webViewWidthRatio: Double = 1.0
-    @AppStorage("webViewHeightRatio") private var webViewHeightRatio: Double = 0.82
+    @AppStorage("webViewWidthRatio") private var storedWebViewWidthRatio = 1.0
+    private var webViewWidthRatio: Double {
+        agentSettings?.value("webViewWidthRatio", fallback: storedWebViewWidthRatio) ?? storedWebViewWidthRatio
+    }
+    @AppStorage("webViewHeightRatio") private var storedWebViewHeightRatio = 0.82
+    private var webViewHeightRatio: Double {
+        agentSettings?.value("webViewHeightRatio", fallback: storedWebViewHeightRatio) ?? storedWebViewHeightRatio
+    }
 
     // SafariVC Size (separate settings)
-    @AppStorage("safariWidthRatio") private var safariWidthRatio: Double = 1.0
-    @AppStorage("safariHeightRatio") private var safariHeightRatio: Double = 0.82
+    @AppStorage("safariWidthRatio") private var storedSafariWidthRatio = 1.0
+    private var safariWidthRatio: Double {
+        agentSettings?.value("safariWidthRatio", fallback: storedSafariWidthRatio) ?? storedSafariWidthRatio
+    }
+    @AppStorage("safariHeightRatio") private var storedSafariHeightRatio = 0.82
+    private var safariHeightRatio: Double {
+        agentSettings?.value("safariHeightRatio", fallback: storedSafariHeightRatio) ?? storedSafariHeightRatio
+    }
 
     private var currentWidthRatio: Double {
         useSafari ? safariWidthRatio : webViewWidthRatio
@@ -97,7 +178,7 @@ struct WebViewContainer: View {
 
                 // WebView
                 if useSafari {
-                    SafariWebView(urlString: normalizedURL)
+                    SafariWebView(urlString: normalizedURL, agentNavigation: safariNavigation)
                         .id(webViewID)
                         .frame(width: webViewWidth, height: webViewHeight)
                         .clipShape(RoundedRectangle(cornerRadius: isFullSize ? 0 : 12))
@@ -162,6 +243,7 @@ struct WebViewContainer: View {
         config.ignoresViewportScaleLimits = allowZoom
         config.preferences.javaScriptCanOpenWindowsAutomatically = javaScriptCanOpenWindows
         config.preferences.isFraudulentWebsiteWarningEnabled = fraudulentWebsiteWarning
+        config.preferences.isElementFullscreenEnabled = elementFullscreenEnabled
         config.preferences.minimumFontSize = CGFloat(SettingsFormatter.validMinimumFontSize(minimumFontSize))
 
         // Media
@@ -208,37 +290,72 @@ struct WebViewContainer: View {
 // MARK: - WKWebView Representable
 
 struct WKWebViewRepresentable: UIViewRepresentable {
+    @Environment(\.agentBrowserSettings) private var agentSettings
     let urlString: String
     let configuration: WKWebViewConfiguration
     @Binding var isLoading: Bool
     let navigator: WebViewNavigator?
 
     // Navigation & Gestures
-    @AppStorage("allowsBackForwardGestures") private var allowsBackForwardGestures: Bool = false
-    @AppStorage("allowsLinkPreview") private var allowsLinkPreview: Bool = true
-    @AppStorage("textInteractionEnabled") private var textInteractionEnabled: Bool = true
+    @AppStorage("allowsBackForwardGestures") private var storedAllowsBackForwardGestures = false
+    private var allowsBackForwardGestures: Bool {
+        agentSettings?.value("allowsBackForwardGestures", fallback: storedAllowsBackForwardGestures) ?? storedAllowsBackForwardGestures
+    }
+    @AppStorage("allowsLinkPreview") private var storedAllowsLinkPreview = true
+    private var allowsLinkPreview: Bool {
+        agentSettings?.value("allowsLinkPreview", fallback: storedAllowsLinkPreview) ?? storedAllowsLinkPreview
+    }
+    @AppStorage("textInteractionEnabled") private var storedTextInteractionEnabled = true
+    private var textInteractionEnabled: Bool {
+        agentSettings?.value("textInteractionEnabled", fallback: storedTextInteractionEnabled) ?? storedTextInteractionEnabled
+    }
 
     // Display
-    @AppStorage("pageZoom") private var pageZoom: Double = 1.0
-    @AppStorage("underPageBackgroundColor") private var underPageBackgroundColorHex: String = ""
+    @AppStorage("pageZoom") private var storedPageZoom = 1.0
+    private var pageZoom: Double {
+        agentSettings?.value("pageZoom", fallback: storedPageZoom) ?? storedPageZoom
+    }
+    @AppStorage("underPageBackgroundColor") private var storedUnderPageBackgroundColorHex = ""
+    private var underPageBackgroundColorHex: String {
+        agentSettings?.value("underPageBackgroundColor", fallback: storedUnderPageBackgroundColorHex) ?? storedUnderPageBackgroundColorHex
+    }
 
     // Features
-    @AppStorage("findInteractionEnabled") private var findInteractionEnabled: Bool = false
+    @AppStorage("findInteractionEnabled") private var storedFindInteractionEnabled = false
+    private var findInteractionEnabled: Bool {
+        agentSettings?.value("findInteractionEnabled", fallback: storedFindInteractionEnabled) ?? storedFindInteractionEnabled
+    }
 
     // User Agent
-    @AppStorage("customUserAgent") private var customUserAgent: String = ""
+    @AppStorage("customUserAgent") private var storedCustomUserAgent = ""
+    private var customUserAgent: String {
+        agentSettings?.value("customUserAgent", fallback: storedCustomUserAgent) ?? storedCustomUserAgent
+    }
 
     // Emulation
-    @AppStorage("emulationColorScheme") private var emulationColorScheme: String = "system"
-    @AppStorage("emulationReducedMotion") private var emulationReducedMotion: Bool = false
-    @AppStorage("emulationHighContrast") private var emulationHighContrast: Bool = false
-    @AppStorage("emulationReducedTransparency") private var emulationReducedTransparency: Bool = false
+    @AppStorage("emulationColorScheme") private var storedEmulationColorScheme = "system"
+    private var emulationColorScheme: String {
+        agentSettings?.value("emulationColorScheme", fallback: storedEmulationColorScheme) ?? storedEmulationColorScheme
+    }
+    @AppStorage("emulationReducedMotion") private var storedEmulationReducedMotion = false
+    private var emulationReducedMotion: Bool {
+        agentSettings?.value("emulationReducedMotion", fallback: storedEmulationReducedMotion) ?? storedEmulationReducedMotion
+    }
+    @AppStorage("emulationHighContrast") private var storedEmulationHighContrast = false
+    private var emulationHighContrast: Bool {
+        agentSettings?.value("emulationHighContrast", fallback: storedEmulationHighContrast) ?? storedEmulationHighContrast
+    }
+    @AppStorage("emulationReducedTransparency") private var storedEmulationReducedTransparency = false
+    private var emulationReducedTransparency: Bool {
+        agentSettings?.value("emulationReducedTransparency", fallback: storedEmulationReducedTransparency) ?? storedEmulationReducedTransparency
+    }
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(
+        let saved = PreloadProfileStore.activeProfile()
+        return Coordinator(
             isLoading: $isLoading,
             navigator: navigator,
-            preloadProfile: PreloadProfileStore.activeProfile()
+            preloadProfile: agentSettings?.preloadProfile(fallback: saved) ?? saved
         )
     }
 
@@ -414,7 +531,7 @@ struct WKWebViewRepresentable: UIViewRepresentable {
             uiView.configuration.userContentController.removeScriptMessageHandler(forName: channelName)
         }
         coordinator.invalidateObservation()
-        coordinator.navigator?.detach()
+        coordinator.navigator?.detach(from: uiView)
     }
 
     // MARK: - Coordinator
@@ -479,16 +596,50 @@ private struct CheckerboardPattern: View {
 // MARK: - Safari WebView
 
 struct SafariWebView: UIViewControllerRepresentable {
+    @Environment(\.agentBrowserSettings) private var agentSettings
     let urlString: String
+    var agentNavigation: AgentNavigation?
 
     // Configuration settings (require recreation)
-    @AppStorage("safariEntersReaderIfAvailable") var entersReaderIfAvailable = false
-    @AppStorage("safariBarCollapsingEnabled") var barCollapsingEnabled = true
+    @AppStorage("safariEntersReaderIfAvailable") private var storedEntersReaderIfAvailable = false
+    private var entersReaderIfAvailable: Bool {
+        agentSettings?.value("safariEntersReaderIfAvailable", fallback: storedEntersReaderIfAvailable) ?? storedEntersReaderIfAvailable
+    }
+    @AppStorage("safariBarCollapsingEnabled") private var storedBarCollapsingEnabled = true
+    private var barCollapsingEnabled: Bool {
+        agentSettings?.value("safariBarCollapsingEnabled", fallback: storedBarCollapsingEnabled) ?? storedBarCollapsingEnabled
+    }
 
     // Runtime-changeable settings
-    @AppStorage("safariDismissButtonStyle") var dismissButtonStyle = 0
-    @AppStorage("safariControlTintColorHex") var controlTintColorHex = ""
-    @AppStorage("safariBarTintColorHex") var barTintColorHex = ""
+    @AppStorage("safariDismissButtonStyle") private var storedDismissButtonStyle = 0
+    private var dismissButtonStyle: Int {
+        agentSettings?.value("safariDismissButtonStyle", fallback: storedDismissButtonStyle) ?? storedDismissButtonStyle
+    }
+    @AppStorage("safariControlTintColorHex") private var storedControlTintColorHex = ""
+    private var controlTintColorHex: String {
+        agentSettings?.value("safariControlTintColorHex", fallback: storedControlTintColorHex) ?? storedControlTintColorHex
+    }
+    @AppStorage("safariBarTintColorHex") private var storedBarTintColorHex = ""
+    private var barTintColorHex: String {
+        agentSettings?.value("safariBarTintColorHex", fallback: storedBarTintColorHex) ?? storedBarTintColorHex
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator(navigation: agentNavigation) }
+
+    final class Coordinator: NSObject, SFSafariViewControllerDelegate {
+        let navigation: AgentNavigation?
+
+        init(navigation: AgentNavigation?) { self.navigation = navigation }
+
+        func safariViewController(_ controller: SFSafariViewController, initialLoadDidRedirectTo url: URL) {
+            navigation?.redirect(controller, url: url)
+        }
+
+        func safariViewController(_ controller: SFSafariViewController, didCompleteInitialLoad didLoadSuccessfully: Bool) {
+            let error = didLoadSuccessfully ? nil : URLError(.cannotLoadFromNetwork)
+            navigation?.finish(controller, url: nil, error: error)
+        }
+    }
 
     func makeUIViewController(context: Context) -> SFSafariViewController {
         guard let url = URL(string: urlString),
@@ -500,6 +651,9 @@ struct SafariWebView: UIViewControllerRepresentable {
         config.entersReaderIfAvailable = entersReaderIfAvailable
         config.barCollapsingEnabled = barCollapsingEnabled
         let vc = SFSafariViewController(url: url, configuration: config)
+        vc.delegate = context.coordinator
+        agentNavigation?.start(vc, url: url)
+        agentNavigation?.captureView = vc.view
 
         // Apply runtime settings
         applyRuntimeSettings(to: vc)

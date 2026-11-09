@@ -40,6 +40,7 @@ struct ConsoleLog: Identifiable, Equatable {
     // ✨ Object Support (console.dir, console.log with objects)
     var objectValue: ConsoleValue?
     var repeatCount: Int = 1
+    var agentDocumentID: UUID?
 
     enum LogType: String, CaseIterable {
         case log

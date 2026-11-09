@@ -235,8 +235,7 @@ struct SearchTextOverlay: View {
         """
     }
 
-    private func navigateToNext() {
-        let script = """
+    static let nextScript = """
         (function() {
             const elements = window.__wina_search_elements__ || [];
             if (elements.length === 0) return JSON.stringify({index: 0});
@@ -262,6 +261,9 @@ struct SearchTextOverlay: View {
         })();
         """
 
+    private func navigateToNext() {
+        let script = Self.nextScript
+
         let document = navigator.documentID
         let query = searchText
         Task {
@@ -277,8 +279,7 @@ struct SearchTextOverlay: View {
         }
     }
 
-    private func navigateToPrevious() {
-        let script = """
+    static let previousScript = """
         (function() {
             const elements = window.__wina_search_elements__ || [];
             if (elements.length === 0) return JSON.stringify({index: 0});
@@ -304,6 +305,9 @@ struct SearchTextOverlay: View {
         })();
         """
 
+    private func navigateToPrevious() {
+        let script = Self.previousScript
+
         let document = navigator.documentID
         let query = searchText
         Task {
@@ -319,13 +323,7 @@ struct SearchTextOverlay: View {
         }
     }
 
-    private func clearHighlights() {
-        searchTask?.cancel()
-        matchCount = 0
-        currentIndex = 0
-        hasCompletedSearch = false
-
-        let script = """
+    static let clearScript = """
         (function() {
             document.querySelectorAll('.__wina_search_highlight__').forEach(el => {
                 const parent = el.parentNode;
@@ -336,6 +334,14 @@ struct SearchTextOverlay: View {
             window.__wina_search_index__ = 0;
         })();
         """
+
+    private func clearHighlights() {
+        searchTask?.cancel()
+        matchCount = 0
+        currentIndex = 0
+        hasCompletedSearch = false
+
+        let script = Self.clearScript
 
         Task {
             await navigator.evaluateJavaScript(script)

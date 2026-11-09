@@ -43,6 +43,12 @@
 	<string>en</string>
 	<key>NSUserTrackingUsageDescription</key>
 	<string>Your data will be used to deliver personalized ads and to improve the app experience.</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Connect Walnut to a Mac you pair for local web debugging.</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_walnut-agent._tcp</string>
+	</array>
 	<key>NSCameraUsageDescription</key>
 	<string>This app uses the camera to test WKWebView media device capabilities.</string>
 	<key>NSMicrophoneUsageDescription</key>

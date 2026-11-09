@@ -186,7 +186,7 @@ struct BenchmarkRow: View {
 
 // MARK: - Codec Support
 
-enum CodecSupport: String {
+enum CodecSupport: String, Encodable {
     case probably = "probably"
     case maybe = "maybe"
     case none = ""

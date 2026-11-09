@@ -17,7 +17,7 @@ struct ContentView: View {
     @State var showSettings: Bool = false
     @State var showBookmarks: Bool = false
     @State var showInfo: Bool = false
-    @State private var devToolsState = DevToolsOverlayState()
+    @State var devToolsState = DevToolsOverlayState()
     @State private var showURLInput: Bool = false
     @State var showPreloadSettings: Bool = false
     @State var preloadProfileBeforeSettings: WebViewPreloadProfile = .defaultSavedSetup
@@ -28,17 +28,23 @@ struct ContentView: View {
     @State var showWebView: Bool = false
     @State var isPreparingCleanStart = false
     @State private var showCleanStartOptionsChanged = false
-    @State private var loadedURL = ""
-    @State private var webViewID = UUID()
+    @State var loadedURL = ""
+    @State var webViewID = UUID()
     @State var validationTask: Task<Void, Never>?
-    @State private var webViewNavigator = WebViewNavigator()
-    @State private var screenRecorder = WebViewRecorder()
-    @State private var storageManager = StorageManager()
+    @State var webViewNavigator = WebViewNavigator()
+    @State var screenRecorder = WebViewRecorder()
+    @State var storageManager = StorageManager()
     @State private var storageEditor: StorageEditorTarget?
-    @State private var consoleSession = ConsoleSession()
+    @State var consoleSession = ConsoleSession()
     @State private var showSafariUnsupportedAlert = false
     @State private var safariUnsupportedURL = ""
     @FocusState var textFieldFocused: Bool
+    @Environment(\.scenePhase) private var agentScenePhase
+    @State var agentSession = AgentSession()
+    @State var agentSafariNavigation = AgentNavigation()
+    @State var agentCaptureRecorder: WebViewRecorder?
+    @State var agentCaptureDefaults: (console: Bool, network: Bool, resources: Bool)?
+    @State var showAgentConnection = false
 
     // Shared URL storage
     var urlStorage: URLStorageManager { URLStorageManager.shared }
@@ -59,6 +65,14 @@ struct ContentView: View {
     @AppStorage("erudaModeEnabled") private var erudaModeEnabled = false
     @AppStorage(PreloadProfileStore.activeProfileKey) var preloadActiveProfileData = Data()
 
+    private var agentBrowserSettings: AgentBrowserSettings? {
+        agentSession.isRunning ? AgentBrowserSettings.shared : nil
+    }
+
+    private var effectiveErudaMode: Bool {
+        agentBrowserSettings?.value("erudaModeEnabled", fallback: erudaModeEnabled) ?? erudaModeEnabled
+    }
+
     // WebView size settings (for fullscreen detection)
     @AppStorage("webViewWidthRatio") private var webViewWidthRatio: Double = 1.0
     @AppStorage("webViewHeightRatio") private var webViewHeightRatio: Double = 0.82
@@ -68,8 +82,12 @@ struct ContentView: View {
     // Bars are expanded (fixed position) when WebView is NOT fullscreen
     // Fullscreen = both width and height at 99%+ (matches isFullSize in WebViewContainer)
     private var shouldBarsBeExpanded: Bool {
-        let widthRatio = useSafariWebView ? safariWidthRatio : webViewWidthRatio
-        let heightRatio = useSafariWebView ? safariHeightRatio : webViewHeightRatio
+        let widthRatio = useSafariWebView
+            ? agentBrowserSettings?.value("safariWidthRatio", fallback: safariWidthRatio) ?? safariWidthRatio
+            : agentBrowserSettings?.value("webViewWidthRatio", fallback: webViewWidthRatio) ?? webViewWidthRatio
+        let heightRatio = useSafariWebView
+            ? agentBrowserSettings?.value("safariHeightRatio", fallback: safariHeightRatio) ?? safariHeightRatio
+            : agentBrowserSettings?.value("webViewHeightRatio", fallback: webViewHeightRatio) ?? webViewHeightRatio
         let isFullSize = widthRatio >= 0.99 && heightRatio >= 0.99
         return !isFullSize
     }
@@ -88,7 +106,8 @@ struct ContentView: View {
 
     private var preloadProfile: WebViewPreloadProfile {
         _ = preloadActiveProfileData
-        return PreloadProfileStore.activeProfile()
+        let saved = PreloadProfileStore.activeProfile()
+        return agentBrowserSettings?.preloadProfile(fallback: saved) ?? saved
     }
 
     var isPreloadProfileEnabled: Bool {
@@ -117,7 +136,7 @@ struct ContentView: View {
             let fold = foldRegion(in: geometry)
             let hasRoomForPanel = verticalSizeClass == .regular || fold.isPresent
             let canDock = !UIDevice.current.isIPad && horizontalSizeClass == .regular && hasRoomForPanel
-                && showWebView && !useSafariWebView && !erudaModeEnabled
+                && showWebView && !useSafariWebView && !effectiveErudaMode
             // The editor belongs to the current presentation until the user saves or cancels.
             let docked = storageEditor == nil ? canDock : devToolsState.isDocked
             let frames = DevToolsWorkspaceLayout.frames(in: geometry.size, division: fold.activeFrame)
@@ -146,6 +165,45 @@ struct ContentView: View {
             .onChange(of: docked, initial: true) { _, newValue in
                 devToolsState.isDocked = newValue
             }
+        }
+        .environment(\.agentBrowserSettings, agentBrowserSettings)
+        .overlay(alignment: .top) {
+            if showWebView && agentSession.isRunning {
+                let isRecording = agentCaptureRecorder?.isRecording == true
+                GlassIconButton(
+                    icon: isRecording ? "record.circle.fill" : "network",
+                    color: isRecording ? .red : .green,
+                    accessibilityLabel: isRecording ? "Mac Agent recording" : "Mac Agent"
+                ) {
+                    showAgentConnection = true
+                }
+                .padding(.top, 8)
+            }
+        }
+        .sheet(isPresented: $showAgentConnection) {
+            AgentConnectionView(session: agentSession, start: startAgentConnection)
+                .preferredColorScheme(preferredScheme)
+        }
+        .background {
+            AgentApprovalPresenter(message: agentSession.approval, resolve: agentSession.resolveApproval)
+                .frame(width: 0, height: 0)
+                .accessibilityHidden(true)
+        }
+        .onChange(of: agentScenePhase) { _, phase in
+            if phase == .background { agentSession.stop() }
+        }
+        .onDisappear { agentSession.stop() }
+        .onChange(of: ObjectIdentifier(webViewNavigator)) { _, _ in
+            webViewNavigator.agentTrackingEnabled = agentSession.isConnected
+        }
+        .onChange(of: agentSession.isConnected) { _, connected in
+            webViewNavigator.agentTrackingEnabled = connected
+        }
+        .onChange(of: AgentBrowserSettings.shared.rebuildID) { _, _ in
+            if agentSession.isRunning && !useSafariWebView { recreateAgentBrowser() }
+        }
+        .onChange(of: AgentBrowserSettings.shared.safariRebuildID) { _, _ in
+            if agentSession.isRunning && useSafariWebView { recreateAgentBrowser() }
         }
         .alert("Browser options changed", isPresented: $showCleanStartOptionsChanged) {
             Button("OK", role: .cancel) {}
@@ -277,7 +335,7 @@ struct ContentView: View {
             }
         }
         // Eruda mode: inject/destroy when toggled
-        .onChange(of: erudaModeEnabled) { _, newValue in
+        .onChange(of: effectiveErudaMode) { _, newValue in
             guard showWebView && !useSafariWebView else { return }
             Task {
                 if newValue {
@@ -308,7 +366,8 @@ struct ContentView: View {
                     urlString: loadedURL,
                     useSafari: useSafariWebView,
                     webViewID: $webViewID,
-                    navigator: useSafariWebView ? nil : webViewNavigator
+                    navigator: useSafariWebView ? nil : webViewNavigator,
+                    safariNavigation: agentSafariNavigation
                 )
                 .ignoresSafeArea(edges: .bottom)
             } else {
@@ -323,44 +382,10 @@ struct ContentView: View {
                     hasBookmarks: !urlStorage.bookmarks.isEmpty,
                     useSafariVC: useSafariWebView,
                     isOverlayMode: !shouldBarsBeExpanded,
-                    erudaModeEnabled: erudaModeEnabled,
+                    erudaModeEnabled: effectiveErudaMode,
                     hasDockedDevTools: hasDockedDevTools,
-                    onHome: {
-                        screenRecorder.stopRecording()
-                        webViewNavigator.recorder.stopRecording()
-                        // Close all DevTools overlays with single call
-                        devToolsState.closeAll()
-                        consoleSession = ConsoleSession()
-
-                        // Close other sheets
-                        showSettings = false
-                        showBookmarks = false
-                        showInfo = false
-                        showURLInput = false
-                        urlInputText = ""
-
-                        // Clear initial URL tracking
-                        webViewNavigator.clearInitialURL()
-
-                        withAnimation(.easeOut(duration: 0.2)) {
-                            showWebView = false
-                        }
-                    },
-                    onURLChange: { newURL in
-                        guard validateSafariURLIfNeeded(newURL) else { return false }
-                        // Add to history
-                        urlStorage.addToHistory(newURL)
-
-                        // Load in same WebView instance (preserves history)
-                        if !useSafariWebView {
-                            webViewNavigator.loadURL(newURL)
-                        } else {
-                            // SafariVC needs recreation
-                            loadedURL = newURL
-                            webViewID = UUID()
-                        }
-                        return true
-                    },
+                    onHome: returnHome,
+                    onURLChange: { navigateDisplayedURL($0) },
                     navigator: useSafariWebView ? nil : webViewNavigator,
                     recorder: screenRecorder,
                     urlStorage: urlStorage,
@@ -438,37 +463,11 @@ struct ContentView: View {
             targetURL = urlText
         }
 
-        // Clean Start: clear all website data and DevTools logs before loading
-        if cleanStart && !useSafariWebView {
-            let usesPrivateStore = privateBrowsing
+        let shouldCleanStart = agentBrowserSettings?.value("cleanStart", fallback: cleanStart) ?? cleanStart
+        if shouldCleanStart && !useSafariWebView {
             isPreparingCleanStart = true
             Task { @MainActor in
-                defer { isPreparingCleanStart = false }
-                if !usesPrivateStore {
-                    let dataStore = WKWebsiteDataStore.default()
-                    let allTypes = WKWebsiteDataStore.allWebsiteDataTypes()
-                    let records = await dataStore.dataRecords(ofTypes: allTypes)
-                    guard privateBrowsing == usesPrivateStore else {
-                        showCleanStartOptionsChanged = true
-                        return
-                    }
-                    await dataStore.removeData(ofTypes: allTypes, for: records)
-                }
-
-                guard privateBrowsing == usesPrivateStore else {
-                    showCleanStartOptionsChanged = true
-                    return
-                }
-                webViewNavigator.consoleManager.clear()
-                webViewNavigator.networkManager.clear()
-                webViewNavigator.resourceManager.clear()
-                webViewNavigator.performanceManager.clear()
-                webViewNavigator.accessibilityManager.clear()
-                storageManager.clear()
-                webViewNavigator.detach()
-                webViewNavigator = WebViewNavigator()
-                webViewID = UUID()
-                openSubmittedURL(targetURL, recordsHistory: !isCallback)
+                await completeCleanStart(targetURL)
             }
         } else {
             openSubmittedURL(targetURL, recordsHistory: !isCallback)
@@ -476,7 +475,7 @@ struct ContentView: View {
         return true
     }
 
-    private func openSubmittedURL(_ targetURL: String, recordsHistory: Bool) {
+    func openSubmittedURL(_ targetURL: String, recordsHistory: Bool) {
         if recordsHistory { urlStorage.addToHistory(targetURL) }
         if let url = URL(string: URLValidator.normalizeURL(targetURL)) {
             webViewNavigator.setInitialURL(url)
@@ -485,7 +484,7 @@ struct ContentView: View {
         withAnimation(.easeOut(duration: 0.2)) { showWebView = true }
     }
 
-    private func validateSafariURLIfNeeded(_ url: String) -> Bool {
+    func validateSafariURLIfNeeded(_ url: String) -> Bool {
         guard useSafariWebView else { return true }
         guard URLValidator.isSupportedSafariURL(url) else {
             safariUnsupportedURL = url
@@ -552,4 +551,89 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
+}
+
+extension ContentView {
+    var effectivePrivateBrowsing: Bool {
+        agentBrowserSettings?.isolatesPreloadCookies == true ||
+            (agentBrowserSettings?.value("privateBrowsing", fallback: privateBrowsing) ?? privateBrowsing)
+    }
+
+    func recreateAgentBrowser() {
+        guard showWebView else { return }
+        if !useSafariWebView, let url = webViewNavigator.currentURL { loadedURL = url.absoluteString }
+        webViewID = UUID()
+    }
+
+    func returnHome() {
+        screenRecorder.stopRecording()
+        webViewNavigator.recorder.stopRecording()
+        devToolsState.closeAll()
+        consoleSession = ConsoleSession()
+        showSettings = false
+        showBookmarks = false
+        showInfo = false
+        showURLInput = false
+        urlInputText = ""
+        webViewNavigator.clearInitialURL()
+        withAnimation(.easeOut(duration: 0.2)) { showWebView = false }
+    }
+
+    func navigateDisplayedURL(
+        _ url: String,
+        recordsHistory: Bool = true,
+        onNavigation: ((WKNavigation?) -> Void)? = nil
+    ) -> Bool {
+        guard validateSafariURLIfNeeded(url) else { return false }
+        if recordsHistory { urlStorage.addToHistory(url) }
+        if useSafariWebView {
+            loadedURL = url
+            webViewID = UUID()
+        } else {
+            let navigation = webViewNavigator.loadURL(url)
+            onNavigation?(navigation)
+        }
+        return true
+    }
+
+    func completeCleanStart(_ targetURL: String, recordsHistory: Bool = true) async {
+        defer { isPreparingCleanStart = false }
+        let usesPrivateStore = effectivePrivateBrowsing
+        if !usesPrivateStore {
+            let dataStore = WKWebsiteDataStore.default()
+            let allTypes = WKWebsiteDataStore.allWebsiteDataTypes()
+            let records = await dataStore.dataRecords(ofTypes: allTypes)
+            guard !Task.isCancelled else { return }
+            guard effectivePrivateBrowsing == usesPrivateStore else {
+                showCleanStartOptionsChanged = true
+                return
+            }
+            await dataStore.removeData(ofTypes: allTypes, for: records)
+        }
+
+        guard !Task.isCancelled else { return }
+        guard effectivePrivateBrowsing == usesPrivateStore else {
+            showCleanStartOptionsChanged = true
+            return
+        }
+        let navigator = webViewNavigator
+        navigator.consoleManager.clear()
+        navigator.networkManager.clear()
+        navigator.resourceManager.clear()
+        navigator.performanceManager.clear()
+        navigator.accessibilityManager.clear()
+        storageManager.clear()
+        let logSettings = navigator.agentLogSettings
+        navigator.detach()
+        webViewNavigator = WebViewNavigator()
+        if agentSession.isConnected {
+            webViewNavigator.agentLogSettings = logSettings
+            webViewNavigator.agentTrackingEnabled = true
+            webViewNavigator.consoleManager.isCapturing = navigator.consoleManager.isCapturing
+            webViewNavigator.networkManager.isCapturing = navigator.networkManager.isCapturing
+            webViewNavigator.resourceManager.isCapturing = navigator.resourceManager.isCapturing
+        }
+        webViewID = UUID()
+        openSubmittedURL(targetURL, recordsHistory: recordsHistory)
+    }
 }

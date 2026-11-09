@@ -640,7 +640,7 @@ struct ElementDetailView: View {
 // MARK: - Element Detail Scripts
 
 /// JavaScript scripts for element detail fetching
-private enum ElementDetailScripts {
+enum ElementDetailScripts {
     /// Script to fetch computed styles that differ from defaults (Chrome DevTools style)
     /// Uses isolated iframe to get true initial values without inheritance
     static func computedStyles(path: [Int]) -> String {

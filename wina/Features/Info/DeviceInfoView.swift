@@ -91,7 +91,7 @@ struct DeviceInfoView: View {
 
 // MARK: - Device Info Model
 
-struct DeviceInfo: Sendable {
+struct DeviceInfo: Sendable, Encodable {
     let model: String
     let modelIdentifier: String
     let systemName: String

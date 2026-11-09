@@ -111,14 +111,8 @@ struct StylesheetDetailView: View {
         .padding()
     }
 
-    private func fetchDetails() async {
-        guard let navigator else {
-            errorMessage = "Navigator not available"
-            isLoading = false
-            return
-        }
-
-        let script = """
+    static func detailScript(index: Int) -> String {
+        """
         (function() {
             const sheet = document.styleSheets[\(index)];
             if (!sheet) return JSON.stringify({error: 'Sheet not found'});
@@ -138,6 +132,16 @@ struct StylesheetDetailView: View {
             return JSON.stringify({rules: rules, raw: rawCSS});
         })();
         """
+    }
+
+    private func fetchDetails() async {
+        guard let navigator else {
+            errorMessage = "Navigator not available"
+            isLoading = false
+            return
+        }
+
+        let script = Self.detailScript(index: index)
 
         if let result = await navigator.evaluateJavaScript(script) as? String,
            let data = result.data(using: .utf8),

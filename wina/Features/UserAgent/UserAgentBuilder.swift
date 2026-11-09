@@ -113,6 +113,25 @@ struct UserAgentBuilder {
         return parts.joined(separator: " ")
     }
 
+    static func compose(browser: UserAgentBrowser, platform: PlatformToken, version: String) -> String {
+        switch browser {
+        case .chrome:
+            return chrome(version: version, platform: platform).build()
+        case .safari:
+            return safari(version: version, platform: platform).build()
+        case .firefox:
+            return firefox(version: version, platform: platform).build()
+        case .edge:
+            return edge(version: version, platform: platform).build()
+        case .opera, .brave:
+            var builder = chrome(version: version, platform: platform)
+            if browser == .opera {
+                builder.additionalTokens = ["OPR/116.0.0.0"]
+            }
+            return builder.build()
+        }
+    }
+
     // MARK: - Prebuilt Configurations
 
     static func chrome(version: String = "131.0.0.0", platform: PlatformToken = .windowsDesktop) -> UserAgentBuilder {

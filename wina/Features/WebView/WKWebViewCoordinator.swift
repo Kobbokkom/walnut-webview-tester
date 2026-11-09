@@ -328,31 +328,21 @@ class WKWebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
         committedDocumentNavigation = nil
     }
 
-    // MARK: - Clear Strategy
-
-    private func applyClearStrategies(currentURL: URL?, newURL: URL?, preserving requestID: String?) {
-        let resolver = LogClearStrategyResolver()
-        let strategies = resolver.resolveStrategies()
-
-        if LogClearStrategyResolver.shouldClear(strategy: strategies.console, currentURL: currentURL, newURL: newURL) {
-            navigator?.consoleManager.clear()
-        }
-
-        if LogClearStrategyResolver.shouldClear(strategy: strategies.network, currentURL: currentURL, newURL: newURL) {
-            navigator?.networkManager.clearForNavigation(preserving: requestID)
-            navigator?.resourceManager.clear()
-        }
-    }
-
     private func resetActiveSnippets() {
         navigator?.snippetsManager.resetActiveSnippets()
     }
 
     // refresh 전략(보존/clear + Eruda force-init + snippet reset)을 공통으로 적용합니다.
     func prepareForManualReloadRequest() {
-        navigator?.consoleManager.clearIfNotPreserved()
-        navigator?.networkManager.clearIfNotPreserved()
-        navigator?.resourceManager.clearIfNotPreserved()
+        if let navigator {
+            if !(navigator.agentLogSettings.consolePreserveLog ?? navigator.consoleManager.preserveLog) {
+                navigator.consoleManager.clear()
+            }
+            if !(navigator.agentLogSettings.networkPreserveLog ?? navigator.networkManager.preserveLog) {
+                navigator.networkManager.clear()
+                navigator.resourceManager.clear()
+            }
+        }
         resetActiveSnippets()
         scheduleForceErudaInitOnNextFinish()
     }
@@ -403,6 +393,7 @@ class WKWebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
         nextNavigationIsReload = false
         guard let navigation else { return }
         let id = ObjectIdentifier(navigation)
+        navigator?.agentNavigation.start(navigation, url: nextDocumentRequest?.url ?? webView.url)
         if let previous = provisionalDocumentNavigation, previous != id {
             finishDocumentRequest(previous, error: URLError(.cancelled))
         }
@@ -434,6 +425,9 @@ class WKWebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
         decisionHandler: @escaping (WKNavigationResponsePolicy) -> Void
     ) {
         // Update document request with response info
+        if navigationResponse.isForMainFrame, let response = navigationResponse.response as? HTTPURLResponse {
+            navigator?.agentNavigation.response(response.statusCode, url: response.url)
+        }
         if navigationResponse.isForMainFrame,
            let navigation = provisionalDocumentNavigation,
            let request = documentRequests[navigation],
@@ -458,6 +452,7 @@ class WKWebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
 
     // Mark document navigation as complete
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        navigator?.agentNavigation.finish(navigation, url: webView.url)
         if let navigation { finishDocumentRequest(ObjectIdentifier(navigation)) }
 
         // 새로고침 force-init 플래그를 취소된 Task가 소거하지 않도록 완료 시점에만 해제합니다.
@@ -482,7 +477,15 @@ class WKWebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
         }
         committedDocumentNavigation = navigationID
         if provisionalDocumentNavigation == navigationID { provisionalDocumentNavigation = nil }
-        navigator?.documentDidChange(in: webView)
+        if let navigator {
+            navigator.documentDidChange(in: webView)
+            navigator.agentNavigation.commit(navigator.documentID, navigation: navigation)
+            if navigator.agentTrackingEnabled {
+                navigator.networkManager.assignAgentDocument(
+                    navigator.documentID, requestID: navigationID.flatMap { documentRequests[$0]?.id }
+                )
+            }
+        }
 
         if let navigation, navigation === reloadNavigation {
             reloadNavigation = nil
@@ -500,10 +503,12 @@ class WKWebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
     }
 
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+        navigator?.agentNavigation.finish(navigation, url: nil, error: error)
         handleDocumentFailure(navigation, error: error)
     }
 
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+        navigator?.agentNavigation.finish(navigation, url: nil, error: error)
         handleDocumentFailure(navigation, error: error)
     }
 
@@ -596,6 +601,24 @@ class WKWebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
 
     deinit {
         invalidateObservation()
+    }
+}
+
+extension WKWebViewCoordinator {
+    // MARK: - Clear Strategy
+
+    private func applyClearStrategies(currentURL: URL?, newURL: URL?, preserving requestID: String?) {
+        let resolver = LogClearStrategyResolver()
+        let strategies = resolver.resolveStrategies()
+
+        if LogClearStrategyResolver.shouldClear(strategy: navigator?.agentLogSettings.consoleClearStrategy ?? strategies.console, currentURL: currentURL, newURL: newURL) {
+            navigator?.consoleManager.clear()
+        }
+
+        if LogClearStrategyResolver.shouldClear(strategy: navigator?.agentLogSettings.networkClearStrategy ?? strategies.network, currentURL: currentURL, newURL: newURL) {
+            navigator?.networkManager.clearForNavigation(preserving: requestID)
+            navigator?.resourceManager.clear()
+        }
     }
 }
 

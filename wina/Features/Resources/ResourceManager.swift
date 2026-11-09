@@ -13,6 +13,7 @@ import Foundation
 class ResourceManager {
     var resources: [ResourceEntry] = []
     var isCapturing: Bool = true
+    var agentDocumentID: UUID?
 
     private let maxResourceCount = 1000
 
@@ -40,7 +41,7 @@ class ResourceManager {
 
         // Skip duplicate entries (same URL and startTime)
         let isDuplicate = resources.contains { entry in
-            entry.name == name && abs(entry.startTime - startTime) < 1
+            entry.agentDocumentID == agentDocumentID && entry.name == name && abs(entry.startTime - startTime) < 1
         }
         guard !isDuplicate else { return }
 
@@ -58,7 +59,8 @@ class ResourceManager {
             tlsTime: tlsTime,
             requestTime: requestTime,
             responseTime: responseTime,
-            timestamp: Date()
+            timestamp: Date(),
+            agentDocumentID: agentDocumentID
         )
 
         DispatchQueue.main.async { [weak self] in

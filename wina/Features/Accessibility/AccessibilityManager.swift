@@ -17,6 +17,7 @@ class AccessibilityManager {
     var isScanning: Bool = false
     var hasScanned: Bool = false
     private(set) var auditedURL: String?
+    private(set) var auditedDocumentID: UUID?
     private(set) var auditedAt: Date?
     var errorMessage: String?
     var filterSeverity: AccessibilityIssue.Severity?
@@ -27,6 +28,7 @@ class AccessibilityManager {
         issues = []
         hasScanned = false
         auditedURL = nil
+        auditedDocumentID = nil
         auditedAt = nil
         errorMessage = nil
         filterSeverity = nil
@@ -36,15 +38,18 @@ class AccessibilityManager {
     @MainActor
     func runAudit(navigator: WebViewNavigator) async {
         guard !isScanning else { return }
+        let document = navigator.documentID
         isScanning = true
         issues = []
         hasScanned = false
         auditedURL = nil
+        auditedDocumentID = nil
         auditedAt = nil
         errorMessage = nil
         defer { isScanning = false }
 
         let axeLoaded = await navigator.evaluateJavaScript("typeof axe !== 'undefined'") as? Bool ?? false
+        guard navigator.documentID == document, !Task.isCancelled else { return }
         if !axeLoaded {
             guard let url = Bundle.main.url(forResource: "axe.min", withExtension: "js"),
                   let script = try? String(contentsOf: url, encoding: .utf8) else {
@@ -54,6 +59,7 @@ class AccessibilityManager {
             _ = await navigator.evaluateJavaScript(script)
         }
 
+        guard navigator.documentID == document, !Task.isCancelled else { return }
         let script = """
         const results = await axe.run();
         return JSON.stringify({url: results.url, violations: results.violations});
@@ -65,7 +71,9 @@ class AccessibilityManager {
             errorMessage = "Could not scan this page. Check that JavaScript is enabled and the page is loaded, then try again."
             return
         }
+        guard navigator.documentID == document, !Task.isCancelled else { return }
         issues = parseAxeViolations(violations)
+        auditedDocumentID = document
         auditedURL = report["url"] as? String
         auditedAt = Date()
         hasScanned = true

@@ -141,6 +141,18 @@ struct ScriptDetailView: View {
         .background(Color(uiColor: .systemBackground))
     }
 
+    static func inlineContentScript(index: Int) -> String {
+        """
+        (function() {
+            const scripts = document.scripts;
+            const script = scripts[\(index)];
+            if (!script) return JSON.stringify({error: 'Script not found'});
+            if (script.src) return JSON.stringify({error: 'External script source is unavailable'});
+            return JSON.stringify({content: script.textContent.substring(0, 50000)});
+        })();
+        """
+    }
+
     private func fetchDetails() async {
         guard let navigator else {
             errorMessage = "Navigator not available"
@@ -155,13 +167,7 @@ struct ScriptDetailView: View {
             return
         } else {
             // Get inline script content
-            let script = """
-            (function() {
-                const scripts = document.scripts;
-                if (\(index) >= scripts.length) return JSON.stringify({error: 'Script not found'});
-                return JSON.stringify({content: scripts[\(index)].textContent.substring(0, 50000)});
-            })();
-            """
+            let script = Self.inlineContentScript(index: index)
 
             if let result = await navigator.evaluateJavaScript(script) as? String,
                let data = result.data(using: .utf8),
