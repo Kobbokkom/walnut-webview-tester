@@ -117,9 +117,10 @@ struct MediaCodecInfo: Sendable, Encodable {
 
     @MainActor
     static func load(
-        using shared: SharedInfoWebView = .shared,
+        using webView: SharedInfoWebView? = nil,
         onStatusUpdate: @escaping (String) -> Void
     ) async -> MediaCodecInfo {
+        let shared = webView ?? .shared
         // Return cached if available
         if let cached = shared.cachedCodecInfo {
             onStatusUpdate("Using cached data...")

@@ -2,6 +2,7 @@ import Foundation
 import Network
 import Observation
 import Security
+import UIKit
 
 @Observable
 @MainActor
@@ -10,17 +11,15 @@ final class AgentSession {
     private(set) var isConnected = false
     private(set) var isRunning = false
     private(set) var connectionError: String?
-    private(set) var approval: String?
+    var approval: AgentApprovalGate.Request? { approvals.pending }
 
+    private let approvals = AgentApprovalGate()
     @ObservationIgnored private var listener: NWListener?
     @ObservationIgnored private var peer: NWConnection?
     @ObservationIgnored private var handshake: NWConnection?
     @ObservationIgnored private var buffer = Data()
     @ObservationIgnored private var isReceiving = false
-    @ObservationIgnored private var approvalID: UUID?
     @ObservationIgnored private var operation: Task<Void, Never>?
-    @ObservationIgnored private var approvalContinuation: CheckedContinuation<Bool, Never>?
-    @ObservationIgnored private var approvalTimeout: Task<Void, Never>?
     @ObservationIgnored private var onDisconnect: (() -> Void)?
 
     typealias Handler = @MainActor (String, [String: Any]) async throws -> Any
@@ -79,33 +78,16 @@ final class AgentSession {
     }
 
     func authorize(_ message: String) async -> Bool {
-        guard isConnected, !Task.isCancelled, approvalContinuation == nil else { return false }
-        let id = UUID()
-        return await withTaskCancellationHandler {
-            await withCheckedContinuation { continuation in
-                approvalID = id
-                approvalContinuation = continuation
-                approval = message
-                approvalTimeout = Task { [weak self] in
-                    do { try await Task.sleep(for: .seconds(45)) } catch { return }
-                    self?.resolveApproval(false)
-                }
-            }
-        } onCancel: {
-            Task { @MainActor [weak self] in
-                guard let self, self.approvalID == id else { return }
-                self.resolveApproval(false)
-            }
-        }
+        await authorize(message, preview: nil)
     }
 
-    func resolveApproval(_ allow: Bool) {
-        approvalTimeout?.cancel()
-        approvalTimeout = nil
-        approval = nil
-        approvalID = nil
-        approvalContinuation?.resume(returning: allow && isConnected)
-        approvalContinuation = nil
+    func authorize(_ message: String, preview: UIImage?) async -> Bool {
+        guard isConnected, await approvals.authorize(message, preview: preview) else { return false }
+        return isConnected && !Task.isCancelled
+    }
+
+    func resolveApproval(_ id: UUID, _ allow: Bool) {
+        approvals.resolve(id, allow: allow && isConnected)
     }
 
     private func update(_ state: NWListener.State, name: String, key: Data, port: NWEndpoint.Port?) {
@@ -237,7 +219,7 @@ final class AgentSession {
         isReceiving = false
         operation?.cancel()
         operation = nil
-        resolveApproval(false)
+        if let approval { approvals.resolve(approval.id, allow: false) }
         onDisconnect?()
     }
 

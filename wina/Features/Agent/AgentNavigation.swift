@@ -12,6 +12,8 @@ final class AgentNavigation {
     private var identity: ObjectIdentifier?
     @ObservationIgnored weak var captureView: UIView?
 
+    var isTerminal: Bool { phase == "finished" || phase == "failed" }
+
     func start(_ object: AnyObject, url: URL?) {
         identity = ObjectIdentifier(object)
         runID = UUID()

@@ -54,16 +54,24 @@ extension EnvironmentValues {
 }
 
 private struct AgentApprovalView: View {
-    let message: String
+    let request: AgentApprovalGate.Request
     let resolve: (Bool) -> Void
 
     var body: some View {
         NavigationStack {
             ScrollView {
-                Text(verbatim: message)
-                    .textSelection(.enabled)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding()
+                VStack(alignment: .leading, spacing: 16) {
+                    Text(verbatim: request.message).textSelection(.enabled)
+                    if let preview = request.preview {
+                        Image(uiImage: preview)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(maxWidth: .infinity, maxHeight: 420)
+                            .accessibilityLabel("Screenshot preview")
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding()
             }
             .navigationTitle("Allow Mac Agent action?")
             .navigationBarTitleDisplayMode(.inline)
@@ -80,31 +88,90 @@ private struct AgentApprovalView: View {
 }
 
 struct AgentApprovalPresenter: UIViewControllerRepresentable {
-    let message: String?
-    let resolve: (Bool) -> Void
+    let request: AgentApprovalGate.Request?
+    let resolve: (UUID, Bool) -> Void
 
     func makeUIViewController(context: Context) -> Presenter { Presenter() }
 
     func updateUIViewController(_ controller: Presenter, context: Context) {
-        controller.update(message: message, resolve: resolve)
+        controller.update(request: request, resolve: resolve)
     }
 
     final class Presenter: UIViewController {
-        private weak var approvalController: UIViewController?
+        private var request: AgentApprovalGate.Request?
+        private var resolve: ((UUID, Bool) -> Void)?
+        private var presentedApproval: (id: UUID, controller: UIViewController)?
+        private var transitioning = false
 
-        func update(message: String?, resolve: @escaping (Bool) -> Void) {
-            guard let message else {
-                approvalController?.dismiss(animated: true)
-                approvalController = nil
+        override func viewDidAppear(_ animated: Bool) {
+            super.viewDidAppear(animated)
+            reconcile()
+        }
+
+        func update(request: AgentApprovalGate.Request?, resolve: @escaping (UUID, Bool) -> Void) {
+            self.request = request
+            self.resolve = resolve
+            reconcile()
+        }
+
+        private func reconcile() {
+            guard !transitioning else { return }
+            if let presentedApproval {
+                if presentedApproval.id != request?.id { dismiss(presentedApproval.controller) }
                 return
             }
-            guard approvalController == nil, var host = view.window?.rootViewController else { return }
+            guard let request, var host = view.window?.rootViewController else { return }
             while let presented = host.presentedViewController { host = presented }
-            let approval = UIHostingController(rootView: AgentApprovalView(message: message, resolve: resolve))
+
+            transitioning = true
+            if let coordinator = host.transitionCoordinator,
+               coordinator.animate(alongsideTransition: nil, completion: { [weak self] _ in
+                   self?.finishTransition()
+               }) { return }
+
+            let id = request.id
+            let approval = UIHostingController(rootView: AgentApprovalView(request: request) { [weak self] allow in
+                self?.choose(id, allow: allow)
+            })
             approval.modalPresentationStyle = .formSheet
             approval.isModalInPresentation = true
-            approvalController = approval
-            host.present(approval, animated: true)
+            presentedApproval = (request.id, approval)
+            host.present(approval, animated: true) { [weak self] in self?.finishTransition() }
+            if approval.presentingViewController == nil {
+                presentedApproval = nil
+                self.request = nil
+                resolve?(request.id, false)
+                finishTransition()
+            }
+        }
+
+        private func choose(_ id: UUID, allow: Bool) {
+            guard !transitioning, let presentedApproval, presentedApproval.id == id, request?.id == id else { return }
+            // Wait for UIKit to remove the approval sheet before the action captures the app window.
+            dismiss(presentedApproval.controller) { [weak self] in
+                guard let self, self.request?.id == id else { return }
+                self.request = nil
+                self.resolve?(id, allow)
+            }
+        }
+
+        private func dismiss(_ controller: UIViewController, completion: (() -> Void)? = nil) {
+            transitioning = true
+            let finish = { [weak self] in
+                self?.presentedApproval = nil
+                completion?()
+                self?.finishTransition()
+            }
+            if controller.presentingViewController != nil {
+                controller.dismiss(animated: true, completion: finish)
+            } else {
+                finish()
+            }
+        }
+
+        private func finishTransition() {
+            transitioning = false
+            reconcile()
         }
     }
 }

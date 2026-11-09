@@ -267,6 +267,63 @@ final class NavigationLogRegressionTests: XCTestCase {
         XCTAssertNotNil(navigator.performanceManager.data.navigation)
     }
 
+    func testAgentCookieAddUsesRootPathFromNestedPage() async throws {
+        let server = try await startHTTPServer { connection in
+            let response = """
+            HTTP/1.1 200 OK\r
+            Content-Type: text/html\r
+            Set-Cookie: protected=original; Path=/; HttpOnly\r
+            Content-Length: 13\r
+            Connection: close\r
+            \r
+            <html></html>
+            """
+            connection.send(content: Data(response.utf8), completion: .contentProcessed { _ in connection.cancel() })
+        }
+        defer { server.cancel() }
+        let port = try XCTUnwrap(server.port)
+        let url = try XCTUnwrap(URL(string: "http://127.0.0.1:\(port.rawValue)/account/settings"))
+        let configuration = WKWebViewConfiguration()
+        configuration.websiteDataStore = .nonPersistent()
+        let webView = WKWebView(frame: .zero, configuration: configuration)
+        let navigator = WebViewNavigator()
+        let coordinator = Coordinator(isLoading: .constant(false), navigator: navigator)
+        webView.navigationDelegate = coordinator
+        let loaded = expectation(description: "Nested page loaded")
+        coordinator.onFinish = { loaded.fulfill() }
+        webView.load(URLRequest(url: url))
+        await fulfillment(of: [loaded], timeout: 15)
+        navigator.attach(to: webView)
+        defer { navigator.detach() }
+
+        let storage = StorageManager()
+        storage.setNavigator(navigator)
+        let addedInApp = await storage.addItem(key: "agent", value: "original", type: .cookies, pageURL: url)
+        XCTAssertTrue(addedInApp)
+        let result = try await AgentDevTools.call(
+            "storage_write", arguments: ["action": "add", "type": "cookies", "key": "agent", "value": "original", "path": "/"],
+            navigator: navigator, storage: storage, console: ConsoleSession(), authorize: { _ in true }
+        ) as? [String: Any]
+        XCTAssertEqual(result?["applied"] as? Bool, true)
+
+        for key in ["agent", "protected"] {
+            do {
+                _ = try await AgentDevTools.call(
+                    "storage_write", arguments: ["action": "add", "type": "cookies", "key": key, "value": "replace"],
+                    navigator: navigator, storage: storage, console: ConsoleSession(), authorize: { _ in true }
+                )
+                XCTFail("An existing root cookie should not be overwritten")
+            } catch {
+                XCTAssertEqual(error.localizedDescription, "A cookie with this name already exists at /.")
+            }
+        }
+        let cookies = await configuration.websiteDataStore.httpCookieStore.allCookies()
+        XCTAssertEqual(cookies.filter { $0.name == "agent" && $0.value == "original" }.map(\.path).sorted(), ["/", "/account"])
+        let protected = try XCTUnwrap(cookies.first { $0.name == "protected" })
+        XCTAssertTrue(protected.isHTTPOnly)
+        XCTAssertEqual(protected.value, "original")
+    }
+
     func testNetworkHookPreservesFetchAndXHRHeaderValues() async throws {
         let server = try await startHTTPServer()
         defer { server.cancel() }

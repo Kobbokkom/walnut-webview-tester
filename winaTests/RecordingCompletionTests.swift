@@ -47,6 +47,25 @@ final class RecordingCompletionTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: url.path))
     }
 
+    func testDisconnectDiscardsAgentVideoEvenWhenPhotoSaveFails() async throws {
+        let saving = expectation(description: "Photos operation in progress")
+        var finishSave: CheckedContinuation<Void, Never>?
+        let recorder = WebViewRecorder(stopCapture: {}, saveToPhotos: { _ in
+            saving.fulfill()
+            await withCheckedContinuation { finishSave = $0 }
+            throw NSError(domain: "PhotosFixture", code: 1)
+        })
+        let url = try await prepareVideo(recorder, retainForAgent: true)
+        recorder.stopRecording()
+        await fulfillment(of: [saving], timeout: 10)
+        recorder.discardAgentRecording()
+        finishSave?.resume()
+        await waitForIdle(recorder)
+        XCTAssertNil(recorder.agentOutputURL)
+        XCTAssertNil(recorder.failedOutputURL)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: url.path))
+    }
+
     func testLeavingWhileCaptureStartsStopsItAsSoonAsStartCompletes() async {
         let starting = expectation(description: "Capture start suspended")
         var resumeStart: CheckedContinuation<Void, Never>?
@@ -79,7 +98,7 @@ final class RecordingCompletionTests: XCTestCase {
         XCTAssertNil(recorder.lastResult)
     }
 
-    private func prepareVideo(_ recorder: WebViewRecorder) async throws -> URL {
+    private func prepareVideo(_ recorder: WebViewRecorder, retainForAgent: Bool = false) async throws -> URL {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("walnut-recording-\(UUID()).mov")
         outputFiles.append(url)
         let writer = try AVAssetWriter(outputURL: url, fileType: .mov)
@@ -99,7 +118,7 @@ final class RecordingCompletionTests: XCTestCase {
             try await Task.sleep(for: .milliseconds(20))
         }
         XCTAssertTrue(adaptor.append(pixelBuffer, withPresentationTime: .zero))
-        recorder.test_prepareRecording(writer: writer, input: input, url: url)
+        recorder.test_prepareRecording(writer: writer, input: input, url: url, retainForAgent: retainForAgent)
         return url
     }
 

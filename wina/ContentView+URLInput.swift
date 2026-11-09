@@ -259,8 +259,13 @@ extension ContentView {
         } else {
             // WKWebView mode: Clean start and private browsing toggles
             VStack(spacing: 8) {
-                ToggleChipButton(isOn: $cleanStart, label: "Start with fresh data")
-                ToggleChipButton(isOn: $privateBrowsing, label: "Browse in private session")
+                ToggleChipButton(
+                    isOn: Binding(get: { effectiveCleanStart }, set: setLocalCleanStart), label: "Start with fresh data"
+                )
+                ToggleChipButton(
+                    isOn: Binding(get: { effectivePrivateBrowsing }, set: setLocalPrivateBrowsing), label: "Browse in private session"
+                )
+                .disabled(agentRequiresPrivateBrowsing)
                 HStack(spacing: 0) {
                     // Tapping the row toggles enable/disable — same behavior as the chips above.
                     Button {

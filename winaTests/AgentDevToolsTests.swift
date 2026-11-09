@@ -70,11 +70,11 @@ final class AgentDevToolsTests: XCTestCase {
         withExtendedLifetime(webView) {}
     }
 
-    func testRetainedConsoleLogsRequireApprovalForTighterClearPolicy() async throws {
+    func testTighterClearPolicyRequiresApprovalEvenBeforeCapturingLogs() async throws {
         let webView = WKWebView()
         let navigator = WebViewNavigator()
         navigator.attach(to: webView)
-        navigator.consoleManager.logs = [ConsoleLog(type: .log, message: "", source: nil, timestamp: Date())]
+        XCTAssertTrue(navigator.consoleManager.logs.isEmpty)
         navigator.agentLogSettings.consoleClearStrategy = .keep
         navigator.agentLogSettings.consolePreserveLog = true
 

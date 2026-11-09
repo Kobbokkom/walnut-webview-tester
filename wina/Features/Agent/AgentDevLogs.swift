@@ -82,7 +82,16 @@ extension AgentDevTools {
             }
             console.historyIndex = -1
             navigator.consoleManager.addLog(type: "command", message: script, source: "Mac agent")
-            let result = await navigator.evaluateJavaScript(script)
+            let result: Any?
+            do {
+                result = try await navigator.evaluateJavaScriptReportingErrors(script)
+            } catch {
+                try context.checkDocument()
+                let exception = (error as NSError).userInfo["WKJavaScriptExceptionMessage"] as? String
+                let message = clipped(exception ?? error.localizedDescription)
+                navigator.consoleManager.addLog(type: "error", message: message, source: "Mac agent")
+                throw AgentError("JavaScript evaluation failed: \(message)")
+            }
             try context.checkDocument()
             let output = clipped(result.map { String(describing: $0) } ?? "undefined")
             navigator.consoleManager.addLog(type: "result", message: output, source: "Mac agent")
@@ -142,11 +151,8 @@ extension AgentDevTools {
         let currentStrategy = isConsole
             ? (overrides.consoleClearStrategy ?? policies.console)
             : (overrides.networkClearStrategy ?? policies.network)
-        let hasHistory = isConsole
-            ? !navigator.consoleManager.logs.isEmpty
-            : !navigator.networkManager.requests.isEmpty || !navigator.resourceManager.resources.isEmpty
         let tighterStrategy = strategy.map { $0 != currentStrategy && $0 != .keep && (currentStrategy == .keep || $0 == .page) } ?? false
-        let canClearHistory = hasHistory && (tighterStrategy || (currentPreserve && preserve == false))
+        let canClearHistory = tighterStrategy || (currentPreserve && preserve == false)
         let savesSettings = save && (preserve != nil || strategy != nil)
         try await confirmLogSettings(context, prefix: prefix, saves: savesSettings, canClearHistory: canClearHistory)
         if savesSettings {

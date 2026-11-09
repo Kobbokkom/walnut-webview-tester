@@ -5,12 +5,14 @@ extension AgentDevTools {
     static let pageTools: [[String: Any]] = [
         AgentTool.definition("sources_list", "Inspect DOM tree, raw HTML, stylesheets, or scripts. DOM and source data require confirmation.", [
             "section": options(["tree", "html", "stylesheets", "scripts"]), "query": query,
-            "raw": raw, "offset": offset, "limit": limit
+            "raw": raw, "documentId": identifier, "offset": offset, "limit": limit, "textOffset": sourceTextOffset
         ]),
         AgentTool.definition("sources_detail", "Read an element path, stylesheet index, or inline script index from sources_list. Requires confirmation.", [
             "kind": options(["element", "stylesheet", "script"]), "path": query,
             "index": offset, "section": options(["attributes", "computedStyles", "matchedRules", "html"]),
-            "allComputedStyles": flag, "query": query, "documentId": identifier, "offset": offset, "limit": limit
+            "allComputedStyles": flag, "query": query, "documentId": identifier,
+            "offset": offset, "limit": limit, "textOffset": sourceTextOffset,
+            "propertyOffset": offset.merging(["description": "Offset in each matched rule's properties. Follow nextPropertyOffset."]) { _, description in description }
         ], required: ["kind"]),
         AgentTool.definition("performance_read", "Collect metrics, resource timings, or navigation timings. Reload and capture a fresh run with reload=true.", [
             "section": options(["all", "metrics", "resources", "timing"]), "reload": flag,
@@ -127,7 +129,12 @@ extension AgentDevTools {
         case "previous":
             script = SearchTextOverlay.previousScript
         case "clear":
-            _ = await navigator.evaluateJavaScript(SearchTextOverlay.clearScript)
+            do {
+                _ = try await navigator.evaluateJavaScriptReportingErrors(SearchTextOverlay.clearScript)
+            } catch {
+                try context.checkDocument()
+                throw AgentError("Could not clear page search highlights.")
+            }
             try context.checkDocument()
             return ["cleared": true]
         default:
@@ -135,7 +142,17 @@ extension AgentDevTools {
         }
         let result = await navigator.evaluateJavaScript(script)
         try context.checkDocument()
-        return try parseJSON(result)
+        guard let values = (try? parseJSON(result)) as? [String: Any],
+              let index = try? AgentDevInput(values: values).int("index", default: -1, range: 0...Int.max),
+              index >= 0 else {
+            throw AgentError("Invalid page search result.")
+        }
+        guard action == "find" else { return ["index": index] }
+        guard let count = try? AgentDevInput(values: values).int("count", default: -1, range: 0...Int.max),
+              count >= 0, index < max(1, count) else {
+            throw AgentError("Invalid page search result.")
+        }
+        return ["count": count, "index": index]
     }
 
     private static func readPerformance(_ input: AgentDevInput, _ context: AgentDevContext) async throws -> [String: Any] {

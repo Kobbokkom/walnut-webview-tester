@@ -211,9 +211,10 @@ struct WebViewInfo: Sendable, Encodable {
 
     @MainActor
     static func load(
-        using shared: SharedInfoWebView = .shared,
+        using webView: SharedInfoWebView? = nil,
         onStatusUpdate: @escaping (String) -> Void
     ) async -> WebViewInfo {
+        let shared = webView ?? .shared
         if let cached = shared.cachedWebViewInfo {
             onStatusUpdate("Using cached data...")
             return cached

@@ -28,7 +28,13 @@ final class DeviceBridge: @unchecked Sendable {
         let pairing = try Pairing.load(from: Pairing.file)
         let id = UUID().uuidString
         let payload = try Self.request(id: id, tool: tool, arguments: arguments)
-        let timeout: TimeInterval = tool == "walnut_capabilities" ? 7 : 90
+        let timeout: TimeInterval
+        switch tool {
+        case "walnut_capabilities": timeout = 7
+        case "walnut_screenshot": timeout = 105 // SafariVC can require two 45-second approvals.
+        case "walnut_browser" where arguments["cleanStart"] as? Bool == true: timeout = 120
+        default: timeout = 90
+        }
         let exchange = try connect(pairing)
         let reply: Data
         do {

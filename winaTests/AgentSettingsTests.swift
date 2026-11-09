@@ -51,6 +51,24 @@ final class AgentSettingsTests: XCTestCase {
         XCTAssertTrue(keys.isSuperset(of: ["elementFullscreenEnabled", "safariDismissButtonStyle", "emulationHighContrast"]))
     }
 
+    func testTemporaryCleanStartRequiresApprovalAndExplainsDeletion() async throws {
+        let settings = AgentBrowserSettings.shared
+        let key = "cleanStart"
+        defer { settings.reset(keys: [key]) }
+        settings.apply([key: false], persist: false)
+        var prompt: String?
+        do {
+            _ = try await AgentSettings.call("settings_apply", arguments: ["settings": [key: true]], navigator: nil) {
+                prompt = $0
+                return false
+            }
+            XCTFail("Unapproved settings must not enable Clean Start")
+        } catch {
+            XCTAssertTrue(try XCTUnwrap(prompt).contains("clears all WKWebView website data"))
+        }
+        XCTAssertFalse(settings.value(key, fallback: true))
+    }
+
     func testTypedPatchRejectsUnknownOrInvalidValues() {
         XCTAssertThrowsError(try AgentSetting.validatePatch(["unknown": true], persist: false))
         XCTAssertThrowsError(try AgentSetting.validatePatch(["pageZoom": true], persist: false))

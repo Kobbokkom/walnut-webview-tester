@@ -185,7 +185,7 @@ struct ContentView: View {
                 .preferredColorScheme(preferredScheme)
         }
         .background {
-            AgentApprovalPresenter(message: agentSession.approval, resolve: agentSession.resolveApproval)
+            AgentApprovalPresenter(request: agentSession.approval, resolve: agentSession.resolveApproval)
                 .frame(width: 0, height: 0)
                 .accessibilityHidden(true)
         }
@@ -463,8 +463,7 @@ struct ContentView: View {
             targetURL = urlText
         }
 
-        let shouldCleanStart = agentBrowserSettings?.value("cleanStart", fallback: cleanStart) ?? cleanStart
-        if shouldCleanStart && !useSafariWebView {
+        if effectiveCleanStart && !useSafariWebView {
             isPreparingCleanStart = true
             Task { @MainActor in
                 await completeCleanStart(targetURL)
@@ -554,9 +553,25 @@ struct ContentView: View {
 }
 
 extension ContentView {
+    var effectiveCleanStart: Bool {
+        agentBrowserSettings?.value("cleanStart", fallback: cleanStart) ?? cleanStart
+    }
+
     var effectivePrivateBrowsing: Bool {
-        agentBrowserSettings?.isolatesPreloadCookies == true ||
+        agentRequiresPrivateBrowsing ||
             (agentBrowserSettings?.value("privateBrowsing", fallback: privateBrowsing) ?? privateBrowsing)
+    }
+
+    var agentRequiresPrivateBrowsing: Bool { agentBrowserSettings?.isolatesPreloadCookies == true }
+
+    func setLocalCleanStart(_ value: Bool) {
+        cleanStart = value
+        agentBrowserSettings?.reset(keys: ["cleanStart"])
+    }
+
+    func setLocalPrivateBrowsing(_ value: Bool) {
+        privateBrowsing = value
+        agentBrowserSettings?.reset(keys: ["privateBrowsing"])
     }
 
     func recreateAgentBrowser() {
@@ -596,27 +611,46 @@ extension ContentView {
         return true
     }
 
-    func completeCleanStart(_ targetURL: String, recordsHistory: Bool = true) async {
+    @discardableResult
+    func completeCleanStart(_ targetURL: String, recordsHistory: Bool = true) async -> Bool {
         defer { isPreparingCleanStart = false }
+        guard !Task.isCancelled else { return false }
         let usesPrivateStore = effectivePrivateBrowsing
-        if !usesPrivateStore {
-            let dataStore = WKWebsiteDataStore.default()
-            let allTypes = WKWebsiteDataStore.allWebsiteDataTypes()
-            let records = await dataStore.dataRecords(ofTypes: allTypes)
-            guard !Task.isCancelled else { return }
-            guard effectivePrivateBrowsing == usesPrivateStore else {
-                showCleanStartOptionsChanged = true
-                return
+        let navigator = webViewNavigator
+        let startedInSafari = useSafariWebView
+        let closePage = !usesPrivateStore && showWebView && !startedInSafari
+        let expectedPageVisibility = showWebView && !closePage
+        let originalViewID = webViewID
+        func browserUnchanged() -> Bool {
+            usesPrivateStore == effectivePrivateBrowsing && startedInSafari == useSafariWebView &&
+                expectedPageVisibility == showWebView && originalViewID == webViewID
+        }
+        if closePage {
+            // Wait for SwiftUI to dismantle the active view before WebKit removes its data.
+            let session = consoleSession
+            returnHome()
+            consoleSession = session
+            let deadline = ContinuousClock.now + .seconds(5)
+            while navigator.isAttached && browserUnchanged() && ContinuousClock.now < deadline && !Task.isCancelled {
+                try? await Task.sleep(for: .milliseconds(25))
             }
-            await dataStore.removeData(ofTypes: allTypes, for: records)
+            guard !Task.isCancelled else { return false }
+            guard !navigator.isAttached, browserUnchanged() else {
+                showCleanStartOptionsChanged = true
+                return false
+            }
+        }
+        if !usesPrivateStore {
+            await WKWebsiteDataStore.default().removeData(
+                ofTypes: WKWebsiteDataStore.allWebsiteDataTypes(), modifiedSince: .distantPast
+            )
         }
 
-        guard !Task.isCancelled else { return }
-        guard effectivePrivateBrowsing == usesPrivateStore else {
+        guard !Task.isCancelled else { return false }
+        guard browserUnchanged() else {
             showCleanStartOptionsChanged = true
-            return
+            return false
         }
-        let navigator = webViewNavigator
         navigator.consoleManager.clear()
         navigator.networkManager.clear()
         navigator.resourceManager.clear()
@@ -633,7 +667,9 @@ extension ContentView {
             webViewNavigator.networkManager.isCapturing = navigator.networkManager.isCapturing
             webViewNavigator.resourceManager.isCapturing = navigator.resourceManager.isCapturing
         }
+        useSafariWebView = false
         webViewID = UUID()
         openSubmittedURL(targetURL, recordsHistory: recordsHistory)
+        return true
     }
 }

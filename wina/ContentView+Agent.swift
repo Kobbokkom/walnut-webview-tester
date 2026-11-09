@@ -207,9 +207,12 @@ extension ContentView {
                 throw AgentError("Clean Start was denied.")
             }
             try Task.checkCancellation()
-            useSafariWebView = false
+            guard !isPreparingCleanStart else { throw AgentError("Another Clean Start is in progress.") }
             isPreparingCleanStart = true
-            await completeCleanStart(url.absoluteString, recordsHistory: recordsHistory)
+            guard await completeCleanStart(url.absoluteString, recordsHistory: recordsHistory) else {
+                try Task.checkCancellation()
+                throw AgentError("Browser options changed during Clean Start. Check the current settings and retry.")
+            }
         } else if showWebView && useSafariWebView == newSafari && !callbackPage {
             let opened = navigateDisplayedURL(url.absoluteString, recordsHistory: recordsHistory) { expected = $0 }
             guard opened else { throw AgentError("Unsupported URL.") }
@@ -261,14 +264,18 @@ extension ContentView {
     ) async throws {
         let clock = ContinuousClock()
         let deadline = clock.now + .seconds(timeout)
+        let safari = useSafariWebView
         while clock.now < deadline {
             try Task.checkCancellation()
+            guard showWebView, useSafariWebView == safari else {
+                throw AgentError("The browser changed before the requested load finished.")
+            }
             let navigation = agentNavigation
             if navigation.runID != previous {
                 if let expected, !navigation.matches(expected) {
                     throw AgentError("A different navigation interrupted the requested load.")
                 }
-                if navigation.phase != "loading" { return }
+                if navigation.isTerminal { return }
             } else if !useSafariWebView, let previousURL, let currentURL = webViewNavigator.currentURL,
                       currentURL != previousURL, !webViewNavigator.agentIsLoading {
                 return
@@ -304,36 +311,74 @@ extension ContentView {
         throw AgentError("Selector was not found before the timeout.")
     }
 
-    private func agentMedia(_ name: String, _ arguments: [String: Any]) async throws -> Any {
+    private func agentScreenshot(saveToPhotos: Bool) async throws -> [String: Any] {
         guard showWebView else { throw AgentError("Open a test page first.") }
-        let save = arguments["saveToPhotos"] as? Bool ?? false
-        let activeRecorder = useSafariWebView ? screenRecorder : webViewNavigator.recorder
-        if name == "walnut_screenshot" {
-            guard await agentSession.authorize("Share a screenshot of the test page with the connected Mac and its agent?") else {
-                throw AgentError("Screenshot sharing was denied.")
+        let safari = useSafariWebView
+        let viewID = webViewID
+        let runID = agentNavigation.runID
+        let navigator = safari ? nil : webViewNavigator
+        let documentID = navigator?.documentID
+        let url = navigator?.attachedPageURL ?? agentNavigation.url
+        let safariView = safari ? agentSafariNavigation.captureView : nil
+        let safariWindow = safariView?.window
+        if safari {
+            guard safariWindow != nil, agentNavigation.isTerminal else {
+                throw AgentError("Wait for SafariVC to finish opening the test page.")
             }
-            return try await AgentCapture.screenshot(
-                navigator: useSafariWebView ? nil : webViewNavigator,
-                safariWindow: useSafariWebView ? agentSafariNavigation.captureView?.window : nil,
-                saveToPhotos: save
-            )
+        } else {
+            try requireWKWebView()
+            guard agentNavigation.documentID != nil, navigator?.agentIsLoading == false else {
+                throw AgentError("Wait for the WKWebView test page to load.")
+            }
         }
-        let recorder = agentCaptureRecorder ?? activeRecorder
+
+        let photosNote = saveToPhotos ? " Walnut will also save the approved screenshot to Photos." : ""
+        let prompt = safari ? "Capture the Walnut app window with SafariVC for you to review before sharing?"
+            : "Share a screenshot of the WKWebView test page with the connected Mac and its agent?" + photosNote
+        guard await agentSession.authorize(prompt) else {
+            throw AgentError("Screenshot sharing was denied.")
+        }
+        return try await AgentCapture.screenshot(
+            navigator: navigator, safariWindow: safariWindow, saveToPhotos: saveToPhotos
+        ) { image in
+            await agentSession.authorize("Share this screenshot with the connected Mac and its agent?" + photosNote, preview: image)
+        } validateTarget: {
+            try Task.checkCancellation()
+            let sameView = safari ? agentSafariNavigation.captureView === safariView && safariView?.window === safariWindow
+                : webViewNavigator === navigator && navigator?.documentID == documentID && navigator?.agentIsLoading == false
+            guard showWebView, useSafariWebView == safari, webViewID == viewID, agentNavigation.runID == runID, sameView,
+                  (navigator?.attachedPageURL ?? agentNavigation.url) == url else {
+                throw AgentError("The test page changed while approving or capturing the screenshot. Try again.")
+            }
+        }
+    }
+
+    private func agentMedia(_ name: String, _ arguments: [String: Any]) async throws -> Any {
+        let save = arguments["saveToPhotos"] as? Bool ?? false
+        if name == "walnut_screenshot" { return try await agentScreenshot(saveToPhotos: save) }
+
+        let recorder = agentCaptureRecorder ?? (useSafariWebView ? screenRecorder : webViewNavigator.recorder)
         switch arguments["action"] as? String {
         case "start":
-            guard await agentSession.authorize("Record the app screen and share the video with the connected Mac and its agent?") else {
+            guard showWebView else { throw AgentError("Open a test page first.") }
+            let photosNote = save ? " Walnut will also save the video to Photos." : ""
+            guard await agentSession.authorize("Record the app screen and share the video with the connected Mac and its agent?" + photosNote) else {
                 throw AgentError("Recording was denied.")
             }
             if save { try await AgentCapture.requirePhotos() }
             try Task.checkCancellation()
+            guard showWebView else { throw AgentError("Open a test page first.") }
+            let activeRecorder = useSafariWebView ? screenRecorder : webViewNavigator.recorder
             guard activeRecorder.state == .idle, (agentCaptureRecorder?.state ?? .idle) == .idle else {
                 throw AgentError("A screen recording is already active.")
             }
+            if agentCaptureRecorder !== activeRecorder { agentCaptureRecorder?.discardAgentRecording() }
             agentCaptureRecorder = activeRecorder
             guard await activeRecorder.startRecording(retainForAgent: true, saveToPhotos: save) else {
                 if agentCaptureRecorder === activeRecorder { agentCaptureRecorder = nil }
                 throw AgentError("Recording could not start.")
             }
+            return AgentCapture.recordingStatus(activeRecorder)
         case "stop":
             guard agentCaptureRecorder != nil else { throw AgentError("No agent recording to stop.") }
             recorder.stopRecording()

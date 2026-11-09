@@ -712,14 +712,15 @@ enum ElementDetailScripts {
     }
 
     /// Script to fetch HTML content
-    static func htmlContent(path: [Int]) -> String {
-        """
+    static func htmlContent(path: [Int], maxLength: Int? = 5000) -> String {
+        let truncation = maxLength.map { ".substring(0, \($0))" } ?? ""
+        return """
         (function() {
             const el = \(SourcesManager.nodeLookupScript(path: path));
             if (!el) return '{}';
             return JSON.stringify({
-                outer: el.outerHTML.substring(0, 5000),
-                inner: el.innerHTML.substring(0, 5000)
+                outer: el.outerHTML\(truncation),
+                inner: el.innerHTML\(truncation)
             });
         })();
         """
