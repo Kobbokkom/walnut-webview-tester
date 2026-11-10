@@ -103,6 +103,7 @@ extension AgentDevTools {
         guard var result = try? await interactionResult(request, context) else {
             return ["documentId": context.document.uuidString, "outcome": "unknown", "observeAgain": true]
         }
+        try Task.checkCancellation()
         try checkInteractionResult(result)
         if context.navigator.documentID == context.document,
            let point = result["pointer"] as? [String: Double], let x = point["unitX"], let y = point["unitY"] {
@@ -152,6 +153,10 @@ extension AgentDevTools {
                 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'PageUp', 'PageDown', 'Space'].includes(key)) {
                 return error('Use a printable character or a supported navigation or editing key.');
             }
+            if (focusableText && keyboard && (printable || ['Space', 'Backspace', 'Delete'].includes(key)) &&
+                (element.selectionStart === null || element.selectionEnd === null)) {
+                return error('This field does not expose its selection. Use fill to replace its value.');
+            }
             const unitX = (x - visual.left) / visual.width;
             const unitY = (y - visual.top) / visual.height;
             if (!keyboard && (unitX < 0 || unitX >= 1 || unitY < 0 || unitY >= 1)) {
@@ -199,8 +204,9 @@ extension AgentDevTools {
             const prototype = element instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
             const value = Object.getOwnPropertyDescriptor(prototype, 'value');
             const previous = value.get.call(element);
-            let start = element.selectionStart ?? previous.length;
-            let end = element.selectionEnd ?? start;
+            let start = element.selectionStart;
+            let end = element.selectionEnd;
+            if (start === null || end === null) return false;
             let insert = printable || key === ' ' ? key : '';
             let inputType = 'insertText';
             if (key === 'Backspace' || key === 'Delete') {
@@ -277,8 +283,11 @@ extension AgentDevTools {
             if (!canFill && !canClick) return null;
             const linkedLabel = (element.getAttribute('aria-labelledby') ?? '').slice(0, 512).trim().split(/\s+/)
                 .map(id => document.getElementById(id)?.textContent).filter(Boolean).join(' ');
-            const visibleLabel = canClick ? (tag === 'input' ? element.value : element.innerText) :
-                Array.from(element.labels ?? []).map(item => item.innerText).join(' ');
+            let visibleLabel = element.innerText;
+            if (tag === 'input' || tag === 'textarea') {
+                visibleLabel = ['button', 'submit', 'reset'].includes(type) ? element.value :
+                    Array.from(element.labels ?? [], label => label.innerText).join(' ');
+            }
             const label = clipped(visibleLabel || linkedLabel || element.getAttribute('aria-label') ||
                 (canFill ? element.placeholder : '') ||
                 element.title || (canFill ? 'Text field' : role));

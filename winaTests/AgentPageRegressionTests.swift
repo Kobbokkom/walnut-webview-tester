@@ -14,6 +14,23 @@ final class AgentPageRegressionTests: XCTestCase {
         }
     }
 
+    private final class CancellingPointerNavigator: WebViewNavigator {
+        var cancelAfterEvaluation = false
+        private(set) var didShowPointer = false
+
+        override func evaluateJavaScriptReportingErrors(_ script: String, contentWorld: WKContentWorld) async throws -> Any? {
+            let value = try await super.evaluateJavaScriptReportingErrors(script, contentWorld: contentWorld)
+            if cancelAfterEvaluation {
+                withUnsafeCurrentTask { $0?.cancel() }
+            }
+            return value
+        }
+
+        override func showAgentPointer(x: Double, y: Double) {
+            didShowPointer = true
+        }
+    }
+
     private final class NavigationDelegate: NSObject, WKNavigationDelegate {
         let loaded: XCTestExpectation
 
@@ -177,12 +194,40 @@ final class AgentPageRegressionTests: XCTestCase {
         XCTAssertEqual(clicked as? String, "")
     }
 
+    func testCancelledPointerMoveDoesNotShowCursor() async throws {
+        let webView = await load("""
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <button style="position:fixed;left:20px;top:80px;width:200px;height:32px">Target</button>
+            """, frame: CGRect(x: 0, y: 0, width: 390, height: 650))
+        defer { withExtendedLifetime(webView) {} }
+        let navigator = CancellingPointerNavigator()
+        navigator.attach(to: webView)
+        let page = try await call("page_interact", ["action": "observe"], navigator)
+        let document = try XCTUnwrap(page["documentId"] as? String)
+        let move = Task {
+            _ = try await call("page_interact", ["action": "move", "documentId": document, "x": 60, "y": 90], navigator) { _ in
+                navigator.cancelAfterEvaluation = true
+                return true
+            }
+        }
+
+        do {
+            _ = try await move.value
+            XCTFail("A cancelled move must not report success")
+        } catch {
+            XCTAssertTrue(error is CancellationError, error.localizedDescription)
+        }
+        XCTAssertFalse(navigator.didShowPointer)
+    }
+
     func testPageInteractionKeepsValuesPrivateAndRejectsUnapprovedOrChangedTargets() async throws {
         let webView = await load("""
             <meta name="viewport" content="width=device-width, initial-scale=1">
             <label for="reference">Delivery reference</label><input id="reference" value="fixture-private-reference">
             <label for="pass">Passcode</label><input id="pass" type="password" value="fixture-private-passcode">
             <label for="comment">Comment</label><textarea id="comment">fixture-private-comment</textarea>
+            <label><input type="checkbox" value="fixture-private-checkbox">Gift wrap</label>
+            <input type="radio" name="shipping" aria-label="Express shipping" value="fixture-private-radio">
             <form id="checkout" action="https://example.invalid/confirm"></form>
             <form id="other" action="https://example.invalid/confirm"></form>
             <button id="confirm" form="checkout" type="submit"
@@ -202,6 +247,8 @@ final class AgentPageRegressionTests: XCTestCase {
         XCTAssertFalse(String(describing: page).contains("fixture-private-"))
         let elements = try XCTUnwrap(page["elements"] as? [[String: Any]])
         XCTAssertFalse(elements.contains { $0["label"] as? String == "Passcode" && $0["canFill"] as? Bool == true })
+        _ = try interactionRef(page, label: "Gift wrap", capability: "canClick")
+        _ = try interactionRef(page, label: "Express shipping", capability: "canClick")
         let field = try interactionRef(page, label: "Delivery reference", capability: "canFill")
 
         do {
@@ -489,5 +536,45 @@ final class AgentPageRegressionTests: XCTestCase {
         await fulfillment(of: [loaded], timeout: 15)
         withExtendedLifetime(delegate) {}
         return webView
+    }
+}
+
+extension AgentPageRegressionTests {
+    func testPageInteractionRejectsEditingKeysWithoutSelectionButAllowsFillAndEscape() async throws {
+        let webView = await load("""
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <label for="email">Email address</label>
+            <input id="email" type="email" value="first@example.invalid"
+                onkeydown="this.dataset.key = event.key">
+            """, frame: CGRect(x: 0, y: 0, width: 390, height: 650))
+        defer { withExtendedLifetime(webView) {} }
+        let navigator = WebViewNavigator()
+        navigator.attach(to: webView)
+        let page = try await call("page_interact", ["action": "observe"], navigator)
+        let document = try XCTUnwrap(page["documentId"] as? String)
+        let field = try interactionRef(page, label: "Email address", capability: "canFill")
+        let focused = try await webView.evaluateJavaScript("document.getElementById('email').focus(); document.activeElement.id")
+        XCTAssertEqual(focused as? String, "email")
+
+        for key in ["A", "Space", "Backspace", "Delete"] {
+            do {
+                _ = try await call("page_interact", ["action": "press", "documentId": document, "key": key], navigator) { _ in
+                    XCTFail("Unsupported email editing must fail before approval")
+                    return true
+                }
+                XCTFail("An editing key must not guess the selection position")
+            } catch {
+                XCTAssertEqual(error.localizedDescription, "This field does not expose its selection. Use fill to replace its value.")
+            }
+        }
+        let beforeFill = try await webView.evaluateJavaScript("document.activeElement.value + '|' + (document.activeElement.dataset.key || '')")
+        XCTAssertEqual(beforeFill as? String, "first@example.invalid|")
+
+        let fill = try await applyInteraction(["action": "fill", "documentId": document, "ref": field, "text": "next@example.invalid"], navigator)
+        XCTAssertEqual(fill["applied"] as? Bool, true)
+        let escape = try await applyInteraction(["action": "press", "documentId": document, "key": "Escape"], navigator)
+        XCTAssertEqual(escape["applied"] as? Bool, true)
+        let afterEscape = try await webView.evaluateJavaScript("document.activeElement.value + '|' + document.activeElement.dataset.key")
+        XCTAssertEqual(afterEscape as? String, "next@example.invalid|Escape")
     }
 }
