@@ -17,7 +17,7 @@ agent="$(swift build --package-path walnut-agent -c release --show-bin-path)/wal
 
 ## Run tools directly
 
-Start `"$agent" session` and enter one JSON object per line. Read each response before choosing the next action. Press Control-D when finished. For a fixed batch, you can pass all requests together:
+Start `"$agent" session` and enter one UTF-8 JSON object per line, up to 256 KiB per request. Read each response before choosing the next action. Press Control-D when finished. For a fixed batch, you can pass all requests together:
 
 ```sh
 "$agent" session <<'JSONL'
@@ -32,7 +32,7 @@ Use `walnut_browser` with action `open` and a `url` the iPhone can reach. For a 
 
 In WKWebView, `page_interact` action `observe` returns a `documentId`, visible control references, and viewport CSS coordinates. Pass the current document ID and coordinates to `move` or `click_at`. Walnut shows the pointer and sends page events. Use `press` for supported keys such as `A` or `Backspace`, and observe the result. Use the iPhone directly for native touch, focus, keyboard, IME, or browser shortcuts. Review and approve requested interactions and page text sharing on the iPhone.
 
-After approval, `walnut_screenshot` saves a private PNG to the Mac. For a completed recording, `walnut_recording` with action `read` saves a private `.mov` file to the Mac, up to 512 MiB. Both return the local file in `result.data.path`.
+After approval, `walnut_screenshot` saves a private PNG to the Mac. If Mac storage fails after the iPhone returns the capture, the error response retains `result.data.savedToPhotos` so you can tell whether Walnut already saved it to Photos. For a completed recording, `walnut_recording` with action `read` saves a private `.mov` file to the Mac, up to 512 MiB. Successful captures return the local file in `result.data.path`.
 
 If the phone shows a new pairing code, run `"$agent" pair` again. If the connection drops mid-call, check the page and run state before retrying. The interrupted action may already have taken effect.
 
