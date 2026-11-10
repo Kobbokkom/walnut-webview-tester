@@ -15,15 +15,22 @@ enum CLI {
                 let pairing = try Pairing.fromToken(String(cString: buffer))
                 try pairing.save(to: Pairing.file)
                 print("Saved Walnut pairing.")
-            case "mcp":
+            case "session", "mcp":
                 let bridge = DeviceBridge(usb: try parseUSB(Array(arguments.dropFirst())))
+                let call: AgentToolCall = { name, arguments in try await bridge.call(name, arguments: arguments) }
+                var succeeded = true
                 do {
-                    try await MCPServer { name, arguments in try await bridge.call(name, arguments: arguments) }.run()
+                    if arguments.first == "session" {
+                        succeeded = try await CLISession(call: call).run()
+                    } else {
+                        try await MCPServer(call: call).run()
+                    }
                 } catch {
                     await bridge.shutdown()
                     throw error
                 }
                 await bridge.shutdown()
+                if !succeeded { exit(EXIT_FAILURE) }
             case "--help", "-h", nil:
                 print(usage)
             default:
@@ -38,7 +45,10 @@ enum CLI {
     static let usage = """
     Usage:
       walnut-agent pair
+      walnut-agent session [--usb [--local-port PORT] [--udid UDID]]
       walnut-agent mcp [--usb [--local-port PORT] [--udid UDID]]
+
+    In a session, send one JSON request per line on stdin. Start with {"op":"tools"}.
     """
 
     static func parseUSB(_ arguments: [String]) throws -> USBOptions? {

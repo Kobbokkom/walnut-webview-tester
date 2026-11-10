@@ -1,6 +1,6 @@
 # Walnut Agent for macOS
 
-This CLI connects a Mac MCP client to Walnut on an iPhone. Commands run in the open Walnut app and return results over an authenticated TLS connection. The CLI keeps one device connection across tool calls so they can share a test run.
+Use `walnut-agent` to drive Walnut on your iPhone from a Mac terminal, a script, or a coding agent. The [Walnut skill](../.agents/skills/walnut/SKILL.md) guides an agent through a test run. Both the direct CLI and the optional MCP adapter use the same tools and authenticated connection to Walnut.
 
 ## Connect over Wi-Fi
 
@@ -11,43 +11,54 @@ swift build --package-path walnut-agent -c release
 agent="$(swift build --package-path walnut-agent -c release --show-bin-path)/walnut-agent"
 ```
 
-1. Connect both devices to the same local network. In Walnut on the iPhone, start a Mac Agent session and copy the pairing token. Allow Local Network access when prompted.
-2. Run `"$agent" pair` in a Mac terminal and paste the token into the hidden prompt. This saves the pairing in `~/.config/walnut-agent/pairing.json` with owner-only permissions. Paste the token directly into the terminal.
-3. Register the CLI as a local stdio MCP server. For Codex, run:
+1. Put both devices on the same Wi-Fi network. In Walnut on the iPhone, tap the network icon to open **Mac Agent**, select **Start connection**, and tap **Copy pairing code**. Allow Local Network access if prompted.
+2. Run `"$agent" pair` in a Mac terminal and paste the code into the hidden prompt. This saves the pairing in `~/.config/walnut-agent/pairing.json` with owner-only permissions.
+3. Keep Walnut in the foreground and start a CLI session.
 
-   ```sh
-   codex mcp add walnut -- "$agent" mcp
-   ```
+## Run tools directly
 
-4. Keep Walnut open in the foreground and start a new MCP client session. The tool list comes from the connected iPhone. If the phone was unavailable at startup, reload the MCP client after starting Mac Agent.
+Start `"$agent" session` and enter one JSON object per line. Read each response before choosing the next action. Press Control-D when finished. For a fixed batch, you can pass all requests together:
 
-You can ask the agent to open a test URL on the iPhone and report the errors captured in that run. For a site hosted on the Mac, use an address the iPhone can reach. `localhost` in a URL opened by Walnut points to the iPhone.
+```sh
+"$agent" session <<'JSONL'
+{"op":"tools"}
+{"op":"call","name":"walnut_browser","arguments":{"action":"status"}}
+JSONL
+```
 
-Use `walnut_browser` with action `open` to change the current URL. In WKWebView, `page_interact` action `observe` returns the current `documentId` and viewport CSS coordinates for visible controls. Pass the document ID and `x`/`y` to `move` or `click_at`. The pointer appears in Walnut, and clicking a supported text field focuses it. Use `press` with `key` (for example `A`, `Backspace`, or `Escape`) to send DOM keyboard events. Printable keys and deletion edit supported text fields. Browser shortcuts, IME, and native keyboard or touch events are outside this tool's scope. Pointer and key actions require approval on the iPhone.
+The `tools` response lists the connected phone's schemas in `result.data.tools` and current mode restrictions in `result.data.unavailable`. A response contains `{"ok":true,"result":{...}}` or `{"ok":false,"error":"..."}`. Inspect the result's `runId`, `documentId` when present, `navigation`, and tool data to verify the outcome. The session keeps processing lines after a failed request and exits with status 1 at end of input if any request failed. Keep one process open so temporary settings, capture, and page interactions share the connection.
 
-For a finished recording, `walnut_recording` with action `read` saves a private `.mov` file under `~/Library/Application Support/Walnut Agent/Recordings/` and returns its path. The transfer stays on the device connection and supports recordings up to 512 MiB.
+Use `walnut_browser` with action `open` and a `url` the iPhone can reach. For a development server on the Mac, use the Mac's LAN address. `localhost` inside Walnut points to the iPhone.
 
-If you start a new Mac Agent session and Walnut shows a new pairing token, run `"$agent" pair` again. If a connection drops mid-call, retry only after checking the run state. The CLI does not replay the interrupted call. A new connection can start a fresh run.
+In WKWebView, `page_interact` action `observe` returns a `documentId`, visible control references, and viewport CSS coordinates. Pass the current document ID and coordinates to `move` or `click_at`. Walnut shows the pointer and sends page events. Use `press` for supported keys such as `A` or `Backspace`, and observe the result. Use the iPhone directly for native touch, focus, keyboard, IME, or browser shortcuts. Review and approve requested interactions and page text sharing on the iPhone.
+
+After approval, `walnut_screenshot` saves a private PNG to the Mac. For a completed recording, `walnut_recording` with action `read` saves a private `.mov` file to the Mac, up to 512 MiB. Both return the local file in `result.data.path`.
+
+If the phone shows a new pairing code, run `"$agent" pair` again. If the connection drops mid-call, check the page and run state before retrying. The interrupted action may already have taken effect.
 
 ## Connect by USB
 
-Install `iproxy` with `brew install libusbmuxd`, attach the unlocked iPhone by USB and trust the Mac when prompted. Start Mac Agent and pair as above, then register the MCP server with USB enabled:
+Install `iproxy` with `brew install libusbmuxd`, attach the unlocked iPhone by USB and trust the Mac when prompted. Start Mac Agent and pair as above, then run:
 
 ```sh
-codex mcp add walnut -- "$agent" mcp --usb
+"$agent" session --usb
 ```
 
 The CLI starts `iproxy` on `127.0.0.1` and forwards to the port in the pairing token. If that Mac port is in use, append `--local-port PORT`. If more than one phone is connected, append `--udid UDID` to select one. USB forwarding uses the same authenticated bridge as Wi-Fi. See the [iproxy documentation](https://github.com/libimobiledevice/libusbmuxd/blob/master/docs/iproxy.1).
 
+## Use an MCP client
+
+Register the same binary as a local stdio server with its absolute path as the command and `mcp` as the argument. Use `mcp --usb` for USB. The tool list comes from the connected iPhone. If the phone was unavailable at startup, reload the client after starting Mac Agent.
+
 ## Configuration and tests
 
-Set `WALNUT_AGENT_CONFIG` to use another absolute path for the pairing file. Set it for both the pairing command and the MCP process. Delete the file to forget the saved pairing, or run `pair` again to replace it.
+Set `WALNUT_AGENT_CONFIG` to use another absolute path for the pairing file. Use the same value for pairing and for the CLI or MCP process. Delete the file to forget the saved pairing, or run `pair` again to replace it.
 
 ```sh
 swift test --package-path walnut-agent
 ```
 
-The tests cover private pairing files, request and response validation, MCP discovery and image results, and an authenticated TLS connection reused for two calls.
+The tests cover private pairing files, an authenticated TLS connection reused for two calls, CLI response order and private PNG output, and MCP discovery and results.
 
 Run the checkout diagnostic fixture from the repository root:
 
@@ -61,6 +72,6 @@ For the WKWebView interaction test, give your agent a goal such as “Open `/che
 
 ## App Review notes
 
-Mac Agent starts only after a user opts in on the iPhone. It works while Walnut is in the foreground and can be stopped from the phone. Evaluating JavaScript, capturing a recording, reading raw sensitive data, and destructive operations require approval in Walnut. Tool definitions and sanitized evidence come from the connected device. The companion forwards calls from a local MCP client.
+Mac Agent starts after the user opts in on the iPhone. It works while Walnut is in the foreground and can be stopped from the phone. Evaluating JavaScript, capturing a recording, reading raw sensitive data, and destructive operations require approval in Walnut. Tool definitions and sanitized evidence come from the connected device.
 
-To reproduce, build and register the CLI, pair it with Walnut over Wi-Fi, then ask the MCP client to open a fixture such as `https://example.com`, report the current page, and capture a screenshot. Approve the capture on the phone. In SafariVC, also approve the captured preview before Walnut shares it. For a recording, approve start, stop it, then read the `.mov` on the Mac. Physical iPhone USB forwarding needs a separate device verification.
+To reproduce, build the CLI, pair over Wi-Fi, and use a session to open a page such as `https://example.com`, check its status, and request a screenshot. Approve the capture on the phone. In SafariVC, also approve the captured preview before Walnut shares it. For a recording, approve start, stop it, then read the `.mov` on the Mac. Physical iPhone USB forwarding needs a separate device verification.

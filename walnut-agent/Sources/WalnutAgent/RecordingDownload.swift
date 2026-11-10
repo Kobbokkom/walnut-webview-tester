@@ -8,7 +8,7 @@ enum RecordingDownload {
     }
 
     static func save(
-        using call: MCPServer.ToolCall,
+        using call: AgentToolCall,
         arguments: [String: Any],
         to directory: URL
     ) async throws -> [String: Any] {

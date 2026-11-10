@@ -2,14 +2,16 @@ import Foundation
 import Network
 import Security
 
+typealias AgentToolCall = @Sendable (String, [String: Any]) async throws -> Any
+
 struct USBOptions {
     var localPort: UInt16?
     var udid: String?
 }
 
-// The MCP request queue serializes calls that use the active connection and USB proxy.
+// The CLI session and MCP request queue serialize calls to the active connection and USB proxy.
 final class DeviceBridge: @unchecked Sendable {
-    private static let requestLimit = 256 * 1024
+    static let requestLimit = 256 * 1024
     private let usb: USBOptions?
     private var active: (pairing: Pairing, exchange: BridgeExchange)?
     private var proxy: Process?
@@ -26,6 +28,9 @@ final class DeviceBridge: @unchecked Sendable {
     func shutdown() async {
         if let active { await active.exchange.close() }
         active = nil
+        if let proxy, proxy.isRunning { proxy.terminate() }
+        proxy = nil
+        proxyPort = nil
     }
 
     func call(_ tool: String, arguments: [String: Any] = [:]) async throws -> Any {

@@ -1,11 +1,10 @@
 import Foundation
 
 struct MCPServer: Sendable {
-    typealias ToolCall = @Sendable (String, [String: Any]) async throws -> Any
     let recordingDirectory: URL
-    let call: ToolCall
+    let call: AgentToolCall
 
-    init(recordingDirectory: URL = RecordingDownload.directory, call: @escaping ToolCall) {
+    init(recordingDirectory: URL = RecordingDownload.directory, call: @escaping AgentToolCall) {
         self.recordingDirectory = recordingDirectory
         self.call = call
     }
