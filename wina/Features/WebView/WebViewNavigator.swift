@@ -7,6 +7,7 @@
 
 import Observation
 import Photos
+import UIKit
 import WebKit
 
 // MARK: - Screenshot Types
@@ -67,6 +68,32 @@ class WebViewNavigator {
         guard let webView else { return nil }
         return await captureSnapshot(from: webView)
     }
+
+    func showAgentPointer(x: Double, y: Double) {
+        guard let webView, (0...1).contains(x), (0...1).contains(y) else { return }
+        let pointer: AgentPointerView
+        if let agentPointerView {
+            pointer = agentPointerView
+        } else {
+            pointer = AgentPointerView(frame: webView.bounds)
+            pointer.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+            pointer.clipsToBounds = true
+            pointer.isUserInteractionEnabled = false
+            pointer.accessibilityElementsHidden = true
+            webView.addSubview(pointer)
+            agentPointerView = pointer
+        }
+        pointer.position = CGPoint(x: x, y: y)
+    }
+
+    func hideAgentPointer() {
+        agentPointerView?.removeFromSuperview()
+        agentPointerView = nil
+    }
+
+    @ObservationIgnored
+    private var agentPointerView: AgentPointerView?
+
     // 수동 새로고침 시 coordinator에 reload 준비를 알리는 콜백입니다.
     @ObservationIgnored
     private var reloadPreparationHandler: (() -> Void)?
@@ -171,6 +198,7 @@ class WebViewNavigator {
 
     func documentDidChange(in webView: WKWebView) {
         guard self.webView === webView else { return }
+        hideAgentPointer()
         documentID = UUID()
         setAgentDocument(agentTrackingEnabled ? documentID : nil)
         performanceManager.clear()
@@ -182,6 +210,7 @@ class WebViewNavigator {
 
     func detach(from previousWebView: WKWebView? = nil) {
         if let previousWebView, webView !== previousWebView { return }
+        hideAgentPointer()
         setAgentDocument(nil)
         recorder.stopRecording()
         canGoBackObservation?.invalidate()
@@ -435,5 +464,40 @@ class WebViewNavigator {
     // 테스트에서 Eruda 번들 스크립트를 대체할 수 있도록 분리합니다.
     func erudaBundleScript() -> String? {
         Self.cachedErudaScript
+    }
+}
+
+private final class AgentPointerView: UIView {
+    var position: CGPoint = .zero {
+        didSet { setNeedsLayout() }
+    }
+
+    private lazy var cursor: CAShapeLayer = {
+        let outline = UIBezierPath()
+        outline.move(to: .zero)
+        outline.addLine(to: CGPoint(x: 0, y: 17))
+        outline.addLine(to: CGPoint(x: 5, y: 12))
+        outline.addLine(to: CGPoint(x: 8, y: 18))
+        outline.addLine(to: CGPoint(x: 11, y: 17))
+        outline.addLine(to: CGPoint(x: 8, y: 11))
+        outline.addLine(to: CGPoint(x: 15, y: 11))
+        outline.close()
+        let shape = CAShapeLayer()
+        shape.anchorPoint = .zero
+        shape.bounds.size = CGSize(width: 16, height: 19)
+        shape.path = outline.cgPath
+        shape.fillColor = UIColor.white.cgColor
+        shape.strokeColor = UIColor.black.cgColor
+        shape.lineJoin = .round
+        layer.addSublayer(shape)
+        return shape
+    }()
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        cursor.position = CGPoint(x: bounds.width * position.x, y: bounds.height * position.y)
+        CATransaction.commit()
     }
 }

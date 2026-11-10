@@ -23,6 +23,8 @@ agent="$(swift build --package-path walnut-agent -c release --show-bin-path)/wal
 
 You can ask the agent to open a test URL on the iPhone and report the errors captured in that run. For a site hosted on the Mac, use an address the iPhone can reach. `localhost` in a URL opened by Walnut points to the iPhone.
 
+Use `walnut_browser` with action `open` to change the current URL. In WKWebView, `page_interact` action `observe` returns the current `documentId` and viewport CSS coordinates for visible controls. Pass the document ID and `x`/`y` to `move` or `click_at`. The pointer appears in Walnut, and clicking a supported text field focuses it. Use `press` with `key` (for example `A`, `Backspace`, or `Escape`) to send DOM keyboard events. Printable keys and deletion edit supported text fields. Browser shortcuts, IME, and native keyboard or touch events are outside this tool's scope. Pointer and key actions require approval on the iPhone.
+
 For a finished recording, `walnut_recording` with action `read` saves a private `.mov` file under `~/Library/Application Support/Walnut Agent/Recordings/` and returns its path. The transfer stays on the device connection and supports recordings up to 512 MiB.
 
 If you start a new Mac Agent session and Walnut shows a new pairing token, run `"$agent" pair` again. If a connection drops mid-call, retry only after checking the run state. The CLI does not replay the interrupted call. A new connection can start a fresh run.

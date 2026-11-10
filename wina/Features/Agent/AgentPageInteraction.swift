@@ -1,3 +1,4 @@
+import CoreFoundation
 import Foundation
 import WebKit
 
@@ -6,14 +7,18 @@ extension AgentDevTools {
     static let pageInteractionTool = AgentTool.definition(
         "page_interact",
         "Observe and interact with the visible main page in WKWebView. Observe shares text near the viewport after iPhone approval. " +
-            "Scroll and pass the current documentId, then observe again. Click and fill require an observed ref and iPhone approval. " +
-            "After an action, observe again to verify its outcome.",
+            "Use move or click_at with viewport CSS coordinates from observe. Press sends a key to the focused element. " +
+            "Move, click, fill and press require iPhone approval. After an action, observe again to verify its outcome.",
         [
-            "action": options(["observe", "scroll", "fill", "click"]),
+            "action": options(["observe", "scroll", "fill", "click", "move", "click_at", "press"]),
             "documentId": identifier,
             "direction": options(["up", "down"]),
             "ref": identifier,
-            "text": ["type": "string", "maxLength": 1000]
+            "text": ["type": "string", "maxLength": 1000],
+            "x": ["type": "number", "minimum": 0, "description": "Viewport client X in CSS pixels"],
+            "y": ["type": "number", "minimum": 0, "description": "Viewport client Y in CSS pixels"],
+            "key": ["type": "string", "maxLength": 24, "description": "KeyboardEvent key, e.g. Enter, Escape or a printable character"],
+            "code": ["type": "string", "maxLength": 24, "description": "Optional KeyboardEvent physical key code"]
         ],
         required: ["action"]
     )
@@ -38,7 +43,7 @@ extension AgentDevTools {
             let direction = try input.required("direction")
             guard ["up", "down"].contains(direction) else { throw AgentError("Scroll direction must be up or down.") }
             request["direction"] = direction
-        case "fill", "click":
+        case "fill", "click", "move", "click_at", "press":
             return try await performPageInteraction(input, context, request: request, action: action)
         default:
             throw AgentError("Invalid page interaction action.")
@@ -55,11 +60,25 @@ extension AgentDevTools {
         _ input: AgentDevInput, _ context: AgentDevContext, request: [String: Any], action: String
     ) async throws -> [String: Any] {
         var request = request
-        request["ref"] = try input.required("ref", maxLength: 48)
         request["prepare"] = true
         let text = action == "fill" ? try input.required("text", maxLength: 1000, allowEmpty: true) : nil
         guard (text?.utf16.count ?? 0) <= 1000 else { throw AgentError("The fill text is too long.") }
         request["text"] = text
+        switch action {
+        case "move", "click_at":
+            for axis in ["x", "y"] {
+                guard let number = input.values[axis] as? NSNumber, CFGetTypeID(number) != CFBooleanGetTypeID(),
+                      number.doubleValue.isFinite, number.doubleValue >= 0 else {
+                    throw AgentError("Provide a finite, non-negative viewport \(axis) coordinate.")
+                }
+                request[axis] = number.doubleValue
+            }
+        case "press":
+            request["key"] = try input.required("key", maxLength: 24)
+            request["code"] = try input.string("code", maxLength: 24)
+        default:
+            request["ref"] = try input.required("ref", maxLength: 48)
+        }
         let target = try await interactionResult(request, context)
         try context.checkDocument()
         try checkInteractionResult(target)
@@ -69,6 +88,10 @@ extension AgentDevTools {
         let question: String
         if let text {
             question = "Fill “\(label)” on \(site) with this value?\(destination)\n\n\(String(reflecting: text))"
+        } else if action == "press" {
+            question = "Press \(String(reflecting: request["key"] as? String ?? "")) on “\(label)” at \(site)?\(destination)"
+        } else if action == "move" {
+            question = "Move the pointer over “\(label)” on \(site)?"
         } else {
             question = "Click “\(label)” on \(site)?\(destination)"
         }
@@ -81,6 +104,10 @@ extension AgentDevTools {
             return ["documentId": context.document.uuidString, "outcome": "unknown", "observeAgain": true]
         }
         try checkInteractionResult(result)
+        if context.navigator.documentID == context.document,
+           let point = result["pointer"] as? [String: Double], let x = point["unitX"], let y = point["unitY"] {
+            context.navigator.showAgentPointer(x: x, y: y)
+        }
         result["documentId"] = context.document.uuidString
         return result
     }
@@ -105,6 +132,105 @@ extension AgentDevTools {
         if let error = result["error"] as? String { throw AgentError(error) }
     }
 
+    private static let pointerKeyboardScript = #"""
+        if (['move', 'click_at', 'press'].includes(request.action)) {
+            const {action, x, y, key, code} = request;
+            const keyboard = action === 'press';
+            const hit = keyboard ? document.activeElement ?? document.body : document.elementFromPoint(x, y);
+            if (!(hit instanceof Element) || hit.closest('iframe,frame,[inert]')) {
+                return error('The action needs a target inside the current viewport.');
+            }
+            const element = keyboard ? hit : hit.closest(controls) ?? hit;
+            const details = describe(element);
+            const focusableText = details?.canFill;
+            if ((action === 'click_at' && !details) || (keyboard && !details &&
+                element.closest('input,textarea,select,[contenteditable],button,a[href],[aria-disabled="true"]'))) {
+                return error('This control does not support the requested input.');
+            }
+            const printable = keyboard && Array.from(key).length === 1 && !/[\u0000-\u001f\u007f]/.test(key);
+            if (keyboard && !printable && !['Enter', 'Escape', 'Tab', 'Backspace', 'Delete', 'Home', 'End',
+                'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'PageUp', 'PageDown', 'Space'].includes(key)) {
+                return error('Use a printable character or a supported navigation or editing key.');
+            }
+            const unitX = (x - visual.left) / visual.width;
+            const unitY = (y - visual.top) / visual.height;
+            if (!keyboard && (unitX < 0 || unitX >= 1 || unitY < 0 || unitY >= 1)) {
+                return error('The coordinates are outside the visible viewport.');
+            }
+            const signature = JSON.stringify([request.documentId, action, location.href, x, y, key, code, details?.signature]);
+            if (request.prepare) {
+                globalThis.walnutPendingInput = {hit, element, form: element.form, signature};
+                return {
+                    label: details?.label ?? (keyboard ? 'focused page' : clipped(element.localName, 24)),
+                    destination: details?.destination,
+                    site: clipped(location.origin, 200)
+                };
+            }
+            const pending = globalThis.walnutPendingInput;
+            delete globalThis.walnutPendingInput;
+            if (pending?.hit !== hit || pending?.element !== element || pending?.form !== element.form || pending?.signature !== signature) {
+                return error('The target changed or is no longer visible. Observe the page again.');
+            }
+            if (keyboard) {
+                const options = {key: key === 'Space' ? ' ' : key, code: code ?? '', bubbles: true, cancelable: true, composed: true};
+                const allowed = element.dispatchEvent(new KeyboardEvent('keydown', options));
+                const sameFocus = () => document.activeElement === element && element.isConnected &&
+                    describe(element)?.signature === details?.signature;
+                const edited = allowed && focusableText && sameFocus() ? editWithKey(element, options.key, printable, sameFocus) : false;
+                element.dispatchEvent(new KeyboardEvent('keyup', options));
+                return {applied: true, edited, defaultPrevented: !allowed};
+            }
+            const pointer = {x, y, unitX, unitY};
+            const options = {clientX: x, clientY: y, view: window, bubbles: true, cancelable: true, composed: true};
+            if (action === 'move') {
+                hit.dispatchEvent(new PointerEvent('pointermove', {...options, pointerType: 'mouse', pointerId: 1, isPrimary: true}));
+                hit.dispatchEvent(new MouseEvent('mousemove', options));
+            } else {
+                if (focusableText) element.focus({preventScroll: true});
+                if (document.elementFromPoint(x, y) !== hit || describe(element)?.signature !== details.signature) {
+                    return {applied: false, outcome: 'targetChanged', observeAgain: true, pointer};
+                }
+                hit.dispatchEvent(new MouseEvent('click', {...options, button: 0, detail: 1}));
+            }
+            return {applied: true, pointer};
+        }
+
+        function editWithKey(element, key, printable, sameFocus) {
+            const prototype = element instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
+            const value = Object.getOwnPropertyDescriptor(prototype, 'value');
+            const previous = value.get.call(element);
+            let start = element.selectionStart ?? previous.length;
+            let end = element.selectionEnd ?? start;
+            let insert = printable || key === ' ' ? key : '';
+            let inputType = 'insertText';
+            if (key === 'Backspace' || key === 'Delete') {
+                const backwards = key === 'Backspace';
+                inputType = backwards ? 'deleteContentBackward' : 'deleteContentForward';
+                if (start === end) {
+                    if (backwards) start -= Array.from(previous.slice(0, start)).pop()?.length ?? 0;
+                    else end += Array.from(previous.slice(end))[0]?.length ?? 0;
+                }
+            } else if (key === 'Enter' && element instanceof HTMLTextAreaElement) {
+                insert = '\n';
+                inputType = 'insertLineBreak';
+            } else if (!insert) {
+                return false;
+            }
+            const next = previous.slice(0, start) + insert + previous.slice(end);
+            if (next === previous || (element.maxLength >= 0 && next.length > element.maxLength)) return false;
+            const probe = element.cloneNode(false);
+            value.set.call(probe, next);
+            if (value.get.call(probe) !== next) return false;
+            const options = {data: insert || null, inputType, bubbles: true, composed: true};
+            if (!element.dispatchEvent(new InputEvent('beforeinput', {...options, cancelable: true})) ||
+                !sameFocus() || value.get.call(element) !== previous) return false;
+            value.set.call(element, next);
+            if (element.selectionStart !== null) element.setSelectionRange(start + insert.length, start + insert.length);
+            element.dispatchEvent(new InputEvent('input', options));
+            return value.get.call(element) === next;
+        }
+    """#
+
     private static let interactionScript = #"""
     function(request) {
         const controls = 'a[href],button,input,textarea,[role="button"],[role="link"]';
@@ -112,14 +238,20 @@ extension AgentDevTools {
         const clipped = (text, size = 160) => text.slice(0, size * 2)
             .replace(/[\u0000-\u001f\u007f\u202a-\u202e\u2066-\u2069]/g, ' ')
             .replace(/\s+/g, ' ').trim().slice(0, size).toWellFormed();
+        const visual = {
+            left: window.visualViewport?.offsetLeft ?? 0,
+            top: window.visualViewport?.offsetTop ?? 0,
+            width: window.visualViewport?.width ?? innerWidth,
+            height: window.visualViewport?.height ?? innerHeight
+        };
         const viewport = () => {
             const {scrollX: x, scrollY: y, innerWidth: width, innerHeight: height} = window;
             const end = document.scrollingElement?.scrollHeight ?? height;
-            return {x, y, width, height, atTop: y <= 1, atBottom: y + height >= end - 1};
+            return {x, y, width, height, visual, atTop: y <= 1, atBottom: y + height >= end - 1};
         };
         function inView(rect) {
-            const left = Math.max(0, rect.left), right = Math.min(innerWidth, rect.right);
-            const top = Math.max(0, rect.top), bottom = Math.min(innerHeight, rect.bottom);
+            const left = Math.max(visual.left, rect.left), right = Math.min(visual.left + visual.width, rect.right);
+            const top = Math.max(visual.top, rect.top), bottom = Math.min(visual.top + visual.height, rect.bottom);
             return right > left && bottom > top ? [(left + right) / 2, (top + bottom) / 2] : null;
         }
         function visible(element, rect) {
@@ -137,10 +269,11 @@ extension AgentDevTools {
             const sensitive = autocomplete.some(value => value === 'one-time-code' || value.endsWith('-password') || value.startsWith('cc-'));
             const canFill = !sensitive && !element.readOnly && (tag === 'textarea' ||
                 (tag === 'input' && ['text', 'search', 'email', 'url', 'tel'].includes(type)));
-            const role = element.getAttribute('role') || (tag === 'a' ? 'link' : (canFill ? 'textbox' : 'button'));
+            const explicitRole = element.getAttribute('role');
+            const role = explicitRole || (tag === 'a' ? 'link' : (canFill ? 'textbox' : 'button'));
             const canClick = !sensitive && (tag === 'button' || tag === 'a' ||
                 (tag === 'input' && ['button', 'submit', 'reset', 'checkbox', 'radio'].includes(type)) ||
-                (tag !== 'input' && tag !== 'textarea' && ['button', 'link'].includes(role)));
+                (tag !== 'input' && tag !== 'textarea' && ['button', 'link'].includes(explicitRole)));
             if (!canFill && !canClick) return null;
             const linkedLabel = (element.getAttribute('aria-labelledby') ?? '').slice(0, 512).trim().split(/\s+/)
                 .map(id => document.getElementById(id)?.textContent).filter(Boolean).join(' ');
@@ -195,7 +328,10 @@ extension AgentDevTools {
                 const ref = request.observationId + ':' + elements.length;
                 const {signature, ...summary} = data;
                 refs.set(ref, {element, signature, form: element.form});
-                elements.push({ref, ...summary});
+                const point = Array.from(element.getClientRects())
+                    .find(rect => visible(element, rect));
+                const [x, y] = inView(point);
+                elements.push({ref, ...summary, point: {x, y}});
                 if (elements.length === 32) break;
             }
             globalThis.walnutInteraction = {documentId: request.documentId, refs};
@@ -209,6 +345,7 @@ extension AgentDevTools {
             const after = viewport();
             return {before, after, moved: before.y !== after.y};
         }
+        \#(pointerKeyboardScript)
         const state = globalThis.walnutInteraction;
         const record = state?.documentId === request.documentId ? state.refs.get(request.ref) : null;
         const data = record ? describe(record.element) : null;

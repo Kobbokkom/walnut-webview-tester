@@ -96,6 +96,87 @@ final class AgentPageRegressionTests: XCTestCase {
         XCTAssertTrue(try XCTUnwrap(result["text"] as? String).contains("Receipt WALNUT-6205"))
     }
 
+    func testPageInteractionMovesClicksAndPressesKeysAtTheFocusedControl() async throws {
+        let webView = await load("""
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <label for="reference">Delivery reference</label>
+            <input id="reference" style="position:fixed;left:20px;top:80px;width:200px;height:32px">
+            <p id="result" style="position:fixed;left:20px;top:140px">Waiting for key</p>
+            <script>
+            const input = document.querySelector('#reference');
+            for (const name of ['pointermove', 'mousemove', 'click']) {
+                input.addEventListener(name, event => input.dataset[name] = `${event.clientX},${event.clientY}`);
+            }
+            input.addEventListener('input', event => input.dataset.edit = `${event.inputType}:${input.value}`);
+            input.addEventListener('keydown', event => input.dataset.keydown = `${event.key}/${event.code}`);
+            input.addEventListener('keyup', event => {
+                document.querySelector('#result').textContent = `Received ${input.dataset.keydown} then ${event.key}/${event.code}`;
+            });
+            </script>
+            """, frame: CGRect(x: 0, y: 0, width: 390, height: 650))
+        defer { withExtendedLifetime(webView) {} }
+        let navigator = WebViewNavigator()
+        navigator.attach(to: webView)
+        let page = try await call("page_interact", ["action": "observe"], navigator)
+        let document = try XCTUnwrap(page["documentId"] as? String)
+
+        let move = try await applyInteraction(["action": "move", "documentId": document, "x": 60, "y": 90], navigator)
+        XCTAssertEqual(move["applied"] as? Bool, true)
+        let moves = try await webView.evaluateJavaScript("[input.dataset.pointermove, input.dataset.mousemove].join('|')")
+        XCTAssertEqual(moves as? String, "60,90|60,90")
+
+        let click = try await applyInteraction(["action": "click_at", "documentId": document, "x": 90, "y": 100], navigator)
+        XCTAssertEqual(click["applied"] as? Bool, true)
+        let clicked = try await webView.evaluateJavaScript("[document.activeElement.id, input.dataset.click].join('|')")
+        XCTAssertEqual(clicked as? String, "reference|90,100")
+
+        let type = try await applyInteraction(["action": "press", "documentId": document, "key": "A", "code": "KeyA"], navigator)
+        XCTAssertEqual(type["applied"] as? Bool, true)
+        let typed = try await webView.evaluateJavaScript("[input.value, input.dataset.edit].join('|')")
+        XCTAssertEqual(typed as? String, "A|insertText:A")
+
+        let backspace = try await applyInteraction(["action": "press", "documentId": document, "key": "Backspace"], navigator)
+        XCTAssertEqual(backspace["applied"] as? Bool, true)
+        let removed = try await webView.evaluateJavaScript("[input.value, input.dataset.edit].join('|')")
+        XCTAssertEqual(removed as? String, "|deleteContentBackward:")
+
+        let press = try await applyInteraction(["action": "press", "documentId": document, "key": "Escape", "code": "Escape"], navigator)
+        XCTAssertEqual(press["applied"] as? Bool, true)
+        let result = try await call("page_interact", ["action": "observe"], navigator)
+        XCTAssertTrue(try XCTUnwrap(result["text"] as? String).contains("Received Escape/Escape then Escape/Escape"))
+    }
+
+    func testCoordinateClickDoesNotActivateReplacementAtTheSamePoint() async throws {
+        let webView = await load("""
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <button id="submit" style="position:fixed;left:20px;top:80px;width:200px;height:32px"
+                onclick="document.body.dataset.clicked = 'yes'">Confirm shipment</button>
+            """, frame: CGRect(x: 0, y: 0, width: 390, height: 650))
+        defer { withExtendedLifetime(webView) {} }
+        let navigator = WebViewNavigator()
+        navigator.attach(to: webView)
+        let page = try await call("page_interact", ["action": "observe"], navigator)
+        let document = try XCTUnwrap(page["documentId"] as? String)
+        var replacedDuringApproval = false
+
+        do {
+            _ = try await call("page_interact", ["action": "click_at", "documentId": document, "x": 90, "y": 100], navigator) { _ in
+                let replacement = try? await webView.evaluateJavaScript("""
+                    const button = document.querySelector('#submit');
+                    button.replaceWith(button.cloneNode(true));
+                    true;
+                    """)
+                replacedDuringApproval = replacement as? Bool == true
+                return true
+            }
+            XCTFail("Approval for a coordinate click must not activate a replacement control")
+        } catch {
+            XCTAssertTrue(replacedDuringApproval, error.localizedDescription)
+        }
+        let clicked = try await webView.evaluateJavaScript("document.body.dataset.clicked || ''")
+        XCTAssertEqual(clicked as? String, "")
+    }
+
     func testPageInteractionKeepsValuesPrivateAndRejectsUnapprovedOrChangedTargets() async throws {
         let webView = await load("""
             <meta name="viewport" content="width=device-width, initial-scale=1">

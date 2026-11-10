@@ -5,12 +5,12 @@ import WebKit
 extension ContentView {
     private static let browserTools = [
         AgentTool.definition("walnut_capabilities", "List available Walnut MCP tools and the current browser mode."),
-        AgentTool.definition("walnut_browser", "Read browser state, open or navigate a page, use the callback test page, or wait for a selector.", [
+        AgentTool.definition("walnut_browser", "Read browser state, open or change the current URL, navigate history, use the callback test page, or wait for a selector.", [
             "action": [
                 "type": "string",
                 "enum": ["status", "open", "reload", "back", "forward", "initial", "home", "stop", "callback", "wait"]
             ],
-            "url": ["type": "string"],
+            "url": ["type": "string", "description": "HTTP or HTTPS URL for open. Also changes the URL of the active page."],
             "mode": ["type": "string", "enum": ["wkwebview", "safarivc"]],
             "selector": ["type": "string"],
             "cleanStart": ["type": "boolean", "description": "Explicit WKWebView data reset. Requires approval."],
@@ -36,6 +36,7 @@ extension ContentView {
     }
 
     private func resetAgentSession() {
+        webViewNavigator.hideAgentPointer()
         agentCaptureRecorder?.stopRecording()
         agentCaptureRecorder?.discardAgentRecording()
         agentCaptureRecorder = nil
@@ -72,7 +73,7 @@ extension ContentView {
             throw AgentError("Unknown Walnut tool.")
         }
         try AgentTool.validate(arguments, using: tool)
-        let pageAction = name == "page_interact" && ["click", "fill"].contains(arguments["action"] as? String ?? "")
+        let pageAction = name == "page_interact" && ["click", "fill", "move", "click_at", "press"].contains(arguments["action"] as? String ?? "")
         let fixedTarget = pageAction || ["walnut_screenshot", "storage_write", "storage_clear"].contains(name) ? agentPageEvidence() : nil
         let result = try await performAgentCall(name, arguments, tools: tools)
         var envelope = fixedTarget ?? agentPageEvidence()
