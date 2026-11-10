@@ -3,6 +3,8 @@ import Foundation
 
 @main
 enum CLI {
+    static let version = "0.1.0"
+
     static func main() async {
         do {
             let arguments = Array(CommandLine.arguments.dropFirst())
@@ -31,6 +33,8 @@ enum CLI {
                 }
                 await bridge.shutdown()
                 if !succeeded { exit(EXIT_FAILURE) }
+            case "--version" where arguments.count == 1:
+                FileHandle.standardOutput.write(Data("\(version)\n".utf8))
             case "--help", "-h", nil:
                 print(usage)
             default:
@@ -44,6 +48,7 @@ enum CLI {
 
     static let usage = """
     Usage:
+      walnut-agent --version
       walnut-agent pair
       walnut-agent session [--usb [--local-port PORT] [--udid UDID]]
       walnut-agent mcp [--usb [--local-port PORT] [--udid UDID]]

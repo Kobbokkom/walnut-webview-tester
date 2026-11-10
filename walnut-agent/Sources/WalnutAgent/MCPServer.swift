@@ -54,7 +54,7 @@ struct MCPServer: Sendable {
             return success(id: id, result: [
                 "protocolVersion": version,
                 "capabilities": ["tools": ["listChanged": false]],
-                "serverInfo": ["name": "walnut-agent", "version": "0.1.0"]
+                "serverInfo": ["name": "walnut-agent", "version": CLI.version]
             ])
         case "ping":
             return success(id: id, result: [:])

@@ -170429,6 +170429,156 @@
           }
         }
       }
+    },
+    "After pairing, ask your coding agent to use Walnut or run `walnut-agent session` in Terminal." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "페어링한 뒤 코딩 에이전트에게 Walnut을 사용하라고 하거나 터미널에서 `walnut-agent session`을 실행하세요."
+          }
+        }
+      }
+    },
+    "Connect a Mac agent to this Walnut window for web development. Diagnostics and approved data go to the connected Mac and may be shared with its AI service." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "웹 개발을 위해 Mac 에이전트를 이 Walnut 창에 연결합니다. 진단 정보와 승인한 데이터가 연결된 Mac으로 전송되며, Mac의 AI 서비스와 공유될 수 있습니다."
+          }
+        }
+      }
+    },
+    "Copy Homebrew command" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Homebrew 명령 복사"
+          }
+        }
+      }
+    },
+    "Copy pairing code" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "페어링 코드 복사"
+          }
+        }
+      }
+    },
+    "For Wi-Fi, connect your iPhone and Mac to the same network." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wi-Fi로 연결하려면 iPhone과 Mac을 같은 네트워크에 연결하세요."
+          }
+        }
+      }
+    },
+    "Install command copied" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "설치 명령을 복사했습니다"
+          }
+        }
+      }
+    },
+    "Install on Mac" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mac에 설치"
+          }
+        }
+      }
+    },
+    "Mac connected" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mac 연결됨"
+          }
+        }
+      }
+    },
+    "On the Mac, run walnut-agent pair and paste the code. Keep the code private." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mac에서 walnut-agent pair를 실행하고 코드를 붙여넣으세요. 코드는 다른 사람이나 에이전트에게 공유하지 마세요."
+          }
+        }
+      }
+    },
+    "Run the command in Terminal on your Mac. The setup guide also covers direct download." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mac의 터미널에서 명령을 실행하세요. 설치 안내에서 직접 다운로드하는 방법도 확인할 수 있습니다."
+          }
+        }
+      }
+    },
+    "Share Mac setup guide" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mac 설치 안내 공유"
+          }
+        }
+      }
+    },
+    "Start connection" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "연결 시작"
+          }
+        }
+      }
+    },
+    "Starting connection" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "연결 시작 중"
+          }
+        }
+      }
+    },
+    "Stop connection" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "연결 중지"
+          }
+        }
+      }
+    },
+    "The connected agent can navigate and reload test pages using your log retention settings. Walnut stops the connection when you turn it off or leave the app." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "연결된 에이전트는 로그 보관 설정에 따라 테스트 페이지를 열거나 새로고침할 수 있습니다. 연결을 끄거나 앱을 벗어나면 Walnut이 연결을 종료합니다."
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

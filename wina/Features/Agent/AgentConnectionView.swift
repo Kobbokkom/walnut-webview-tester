@@ -4,15 +4,23 @@ import UniformTypeIdentifiers
 
 struct AgentConnectionView: View {
     @Environment(\.dismiss) private var dismiss
+    @State private var copyFeedback = CopiedFeedbackState()
     let session: AgentSession
     let start: () -> Void
 
+    private static let installCommand = "brew install kobbokkom/tap/walnut-agent"
+    private static let setupGuide = URL(string: "https://github.com/Kobbokkom/walnut-webview-tester/tree/main/walnut-agent#install-on-mac")!
+
     var body: some View {
+        @Bindable var feedback = copyFeedback
         NavigationStack {
             List {
                 Section {
                     Text("Connect a Mac agent to this Walnut window for web development. Diagnostics and approved data go to the connected Mac and may be shared with its AI service.")
                     Text("The connected agent can navigate and reload test pages using your log retention settings. Walnut stops the connection when you turn it off or leave the app.")
+                }
+                if !session.isRunning {
+                    installSection
                 }
                 Section {
                     if session.isRunning {
@@ -37,6 +45,12 @@ struct AgentConnectionView: View {
                         Text(error)
                             .foregroundStyle(.secondary)
                     }
+                } footer: {
+                    if !session.isRunning {
+                        Text("For Wi-Fi, connect your iPhone and Mac to the same network.")
+                    } else if session.pairingCode != nil && !session.isConnected {
+                        Text("After pairing, ask your coding agent to use Walnut or run `walnut-agent session` in Terminal.")
+                    }
                 }
             }
             .navigationTitle("Mac Agent")
@@ -45,6 +59,30 @@ struct AgentConnectionView: View {
                     Button("Done") { dismiss() }
                 }
             }
+        }
+        .copiedFeedbackOverlay($feedback.message)
+    }
+
+    private var installSection: some View {
+        Section {
+            Button {
+                UIPasteboard.general.string = Self.installCommand
+                copyFeedback.show("Install command copied")
+            } label: {
+                VStack(alignment: .leading, spacing: 4) {
+                    Label("Copy Homebrew command", systemImage: "doc.on.doc")
+                    Text(verbatim: Self.installCommand)
+                        .font(.footnote.monospaced())
+                        .foregroundStyle(Color.secondary)
+                }
+            }
+            ShareLink(item: Self.setupGuide) {
+                Label("Share Mac setup guide", systemImage: "square.and.arrow.up")
+            }
+        } header: {
+            Text("Install on Mac")
+        } footer: {
+            Text("Run the command in Terminal on your Mac. The setup guide also covers direct download.")
         }
     }
 }
