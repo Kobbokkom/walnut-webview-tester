@@ -72,7 +72,8 @@ extension ContentView {
             throw AgentError("Unknown Walnut tool.")
         }
         try AgentTool.validate(arguments, using: tool)
-        let fixedTarget = ["walnut_screenshot", "storage_write", "storage_clear"].contains(name) ? agentPageEvidence() : nil
+        let pageAction = name == "page_interact" && ["click", "fill"].contains(arguments["action"] as? String ?? "")
+        let fixedTarget = pageAction || ["walnut_screenshot", "storage_write", "storage_clear"].contains(name) ? agentPageEvidence() : nil
         let result = try await performAgentCall(name, arguments, tools: tools)
         var envelope = fixedTarget ?? agentPageEvidence()
         envelope["data"] = result

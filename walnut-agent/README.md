@@ -55,6 +55,8 @@ python3 walnut-agent/Tests/Fixtures/checkout.py
 
 To reach it from the iPhone, pass the Mac’s LAN address with `--host` and open `/checkout-a` and `/checkout-b` on port `8874`. Both routes reproduce a blank checkout with different causes.
 
+For the WKWebView interaction test, give your agent a goal such as “Open `/checkout-interaction` on the iPhone, submit the test shipment with delivery reference `WK-417`, and report the receipt number.” The agent can use `page_interact` to inspect the viewport, scroll to the form, fill the field, activate the button, and inspect the receipt. Approve page text sharing, filling, and activation on the iPhone when prompted.
+
 ## App Review notes
 
 Mac Agent starts only after a user opts in on the iPhone. It works while Walnut is in the foreground and can be stopped from the phone. Evaluating JavaScript, capturing a recording, reading raw sensitive data, and destructive operations require approval in Walnut. Tool definitions and sanitized evidence come from the connected device. The companion forwards calls from a local MCP client.

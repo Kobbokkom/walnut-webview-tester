@@ -38,7 +38,8 @@ extension AgentDevTools {
         AgentTool.definition("snippets_reset", "Undo all active built-in snippets. Requires confirmation.", [:]),
         AgentTool.definition("page_search", "Find and highlight text, move to the next or previous result, or clear highlights.", [
             "action": options(["find", "next", "previous", "clear"]), "query": query
-        ], required: ["action"])
+        ], required: ["action"]),
+        pageInteractionTool
     ]
 
     static func callPage(_ tool: String, _ input: AgentDevInput, _ context: AgentDevContext) async throws -> Any {
@@ -107,6 +108,8 @@ extension AgentDevTools {
             return ["reset": true]
         case "page_search":
             return try await searchPage(input, context)
+        case "page_interact":
+            return try await interactWithPage(input, context)
         default:
             throw AgentError("Unknown DevTools tool.")
         }

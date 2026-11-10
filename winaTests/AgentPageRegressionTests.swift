@@ -48,6 +48,171 @@ final class AgentPageRegressionTests: XCTestCase {
         }
     }
 
+    func testPageInteractionScrollsFillsAndClicksToAVisibleResult() async throws {
+        let webView = await load("""
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <header style="min-height:125vh"><h1>Test shipment checkout</h1></header>
+            <label for="reference">Delivery reference</label>
+            <input id="reference">
+            <button id="confirm" disabled>Confirm shipment</button>
+            <p id="receipt" style="visibility:hidden">Receipt WALNUT-6205</p>
+            <script>
+            const input = document.querySelector('#reference');
+            const button = document.querySelector('#confirm');
+            input.addEventListener('input', () => input.dataset.input = input.value);
+            input.addEventListener('change', () => {
+                button.disabled = input.dataset.input !== 'WK-417' || input.value !== 'WK-417';
+            });
+            button.addEventListener('click', () => document.querySelector('#receipt').style.visibility = 'visible');
+            </script>
+            """, frame: CGRect(x: 0, y: 0, width: 390, height: 650))
+        defer { withExtendedLifetime(webView) {} }
+        let navigator = WebViewNavigator()
+        navigator.attach(to: webView)
+
+        let initial = try await call("page_interact", ["action": "observe"], navigator)
+        let document = try XCTUnwrap(initial["documentId"] as? String)
+        let initialElements = try XCTUnwrap(initial["elements"] as? [[String: Any]])
+        XCTAssertFalse(initialElements.contains { $0["canFill"] as? Bool == true })
+        XCTAssertFalse(try XCTUnwrap(initial["text"] as? String).contains("WALNUT-6205"))
+
+        let scroll = try await call("page_interact", ["action": "scroll", "direction": "down", "documentId": document], navigator)
+        let before = try XCTUnwrap((scroll["before"] as? [String: Any])?["y"] as? Double)
+        let after = try XCTUnwrap((scroll["after"] as? [String: Any])?["y"] as? Double)
+        XCTAssertEqual(scroll["moved"] as? Bool, true)
+        XCTAssertGreaterThan(after, before)
+
+        let form = try await call("page_interact", ["action": "observe"], navigator)
+        let field = try interactionRef(form, label: "Delivery reference", capability: "canFill")
+        let fill = try await applyInteraction(["action": "fill", "documentId": document, "ref": field, "text": "WK-417"], navigator)
+        XCTAssertEqual(fill["applied"] as? Bool, true)
+        XCTAssertFalse(String(describing: fill).contains("WK-417"), "Do not return the supplied field value")
+
+        let ready = try await call("page_interact", ["action": "observe"], navigator)
+        let button = try interactionRef(ready, label: "Confirm shipment", capability: "canClick")
+        let click = try await applyInteraction(["action": "click", "documentId": document, "ref": button], navigator)
+        XCTAssertEqual(click["applied"] as? Bool, true)
+        let result = try await call("page_interact", ["action": "observe"], navigator)
+        XCTAssertTrue(try XCTUnwrap(result["text"] as? String).contains("Receipt WALNUT-6205"))
+    }
+
+    func testPageInteractionKeepsValuesPrivateAndRejectsUnapprovedOrChangedTargets() async throws {
+        let webView = await load("""
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <label for="reference">Delivery reference</label><input id="reference" value="fixture-private-reference">
+            <label for="pass">Passcode</label><input id="pass" type="password" value="fixture-private-passcode">
+            <label for="comment">Comment</label><textarea id="comment">fixture-private-comment</textarea>
+            <form id="checkout" action="https://example.invalid/confirm"></form>
+            <form id="other" action="https://example.invalid/confirm"></form>
+            <button id="confirm" form="checkout" type="submit"
+                onclick="event.preventDefault(); document.body.dataset.clicked = 'yes'">Confirm shipment</button>
+            """, frame: CGRect(x: 0, y: 0, width: 390, height: 650))
+        defer { withExtendedLifetime(webView) {} }
+        let navigator = WebViewNavigator()
+        navigator.attach(to: webView)
+        do {
+            _ = try await call("page_interact", ["action": "observe"], navigator, authorize: { _ in false })
+            XCTFail("Sharing page text requires approval")
+        } catch {
+            XCTAssertEqual(error.localizedDescription, "The iPhone did not approve this action.")
+        }
+        let page = try await call("page_interact", ["action": "observe"], navigator)
+        let document = try XCTUnwrap(page["documentId"] as? String)
+        XCTAssertFalse(String(describing: page).contains("fixture-private-"))
+        let elements = try XCTUnwrap(page["elements"] as? [[String: Any]])
+        XCTAssertFalse(elements.contains { $0["label"] as? String == "Passcode" && $0["canFill"] as? Bool == true })
+        let field = try interactionRef(page, label: "Delivery reference", capability: "canFill")
+
+        do {
+            _ = try await call(
+                "page_interact", ["action": "fill", "documentId": document, "ref": field, "text": "denied value"],
+                navigator, authorize: { _ in false }
+            )
+            XCTFail("Filling a page field requires approval")
+        } catch {
+            XCTAssertEqual(error.localizedDescription, "The iPhone did not approve this action.")
+        }
+        let currentValue = try await webView.evaluateJavaScript("document.querySelector('#reference').value")
+        XCTAssertEqual(currentValue as? String, "fixture-private-reference")
+
+        let button = try interactionRef(page, label: "Confirm shipment", capability: "canClick")
+        var replacedDuringApproval = false
+        do {
+            _ = try await call("page_interact", ["action": "click", "documentId": document, "ref": button], navigator) { _ in
+                let replacement = try? await webView.evaluateJavaScript("""
+                    const button = document.querySelector('#confirm');
+                    button.replaceWith(button.cloneNode(true));
+                    true;
+                    """)
+                replacedDuringApproval = replacement as? Bool == true
+                return true
+            }
+            XCTFail("Approval for a detached element must not click its replacement")
+        } catch {
+            XCTAssertTrue(replacedDuringApproval)
+        }
+
+        let freshPage = try await call("page_interact", ["action": "observe"], navigator)
+        let movedButton = try interactionRef(freshPage, label: "Confirm shipment", capability: "canClick")
+        var movedDuringApproval = false
+        do {
+            _ = try await call("page_interact", ["action": "click", "documentId": document, "ref": movedButton], navigator) { _ in
+                let changed = try? await webView.evaluateJavaScript("""
+                    document.querySelector('#confirm').setAttribute('form', 'other');
+                    true;
+                    """)
+                movedDuringApproval = changed as? Bool == true
+                return true
+            }
+            XCTFail("Approval for one form must not apply to an identical destination in another form")
+        } catch {
+            XCTAssertTrue(movedDuringApproval)
+        }
+        let clicked = try await webView.evaluateJavaScript("document.body.dataset.clicked || ''")
+        XCTAssertEqual(clicked as? String, "")
+    }
+
+    func testPageInteractionRejectsInvalidFillAndReportsWhenThePageRevertsIt() async throws {
+        let webView = await load("""
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <label for="reference">Delivery reference</label><input id="reference" maxlength="6" value="locked">
+            <script>
+            const input = document.querySelector('#reference');
+            input.addEventListener('input', () => {
+                input.dataset.received = input.value;
+                input.value = 'locked';
+            });
+            </script>
+            """, frame: CGRect(x: 0, y: 0, width: 390, height: 650))
+        defer { withExtendedLifetime(webView) {} }
+        let navigator = WebViewNavigator()
+        navigator.attach(to: webView)
+        let page = try await call("page_interact", ["action": "observe"], navigator)
+        let document = try XCTUnwrap(page["documentId"] as? String)
+        let field = try interactionRef(page, label: "Delivery reference", capability: "canFill")
+        var arguments: [String: Any] = ["action": "fill", "documentId": document, "ref": field, "text": "too long"]
+        do {
+            _ = try await call("page_interact", arguments, navigator) { _ in
+                XCTFail("A known invalid fill must fail before approval")
+                return true
+            }
+            XCTFail("A fill must respect maxlength")
+        } catch {
+            XCTAssertTrue(error.localizedDescription.contains("length"), error.localizedDescription)
+        }
+        let before = try await webView.evaluateJavaScript("document.querySelector('#reference').dataset.received || ''")
+        XCTAssertEqual(before as? String, "")
+
+        arguments["text"] = "NEW-1"
+        let result = try await applyInteraction(arguments, navigator)
+        XCTAssertEqual(result["applied"] as? Bool, false)
+        XCTAssertEqual(result["outcome"] as? String, "pageChangedValue")
+        XCTAssertEqual(result["observeAgain"] as? Bool, true)
+        XCTAssertFalse(String(describing: result).contains("NEW-1"))
+        let dispatched = try await webView.evaluateJavaScript("document.querySelector('#reference').dataset.received")
+        XCTAssertEqual(dispatched as? String, "NEW-1")
+    }
+
     func testConsoleReportsAnExceptionAndAcceptsUndefined() async throws {
         let webView = await load("<p>console</p>")
         defer { withExtendedLifetime(webView) {} }
@@ -220,8 +385,22 @@ final class AgentPageRegressionTests: XCTestCase {
         try XCTUnwrap((payload["entries"] as? [[String: Any]])?.first)
     }
 
-    private func load(_ html: String) async -> WKWebView {
-        let webView = WKWebView()
+    private func interactionRef(_ page: [String: Any], label: String, capability: String) throws -> String {
+        let rows = try XCTUnwrap(page["elements"] as? [[String: Any]])
+        let row = rows.first { $0["label"] as? String == label && $0[capability] as? Bool == true }
+        return try XCTUnwrap(row?["ref"] as? String, "Missing enabled \(label) in \(rows)")
+    }
+
+    private func applyInteraction(_ arguments: [String: Any], _ navigator: WebViewNavigator) async throws -> [String: Any] {
+        do {
+            return try await call("page_interact", arguments, navigator)
+        } catch {
+            throw AgentError("\(arguments["action"] ?? "action"): \(error.localizedDescription)")
+        }
+    }
+
+    private func load(_ html: String, frame: CGRect = .zero) async -> WKWebView {
+        let webView = WKWebView(frame: frame)
         let loaded = expectation(description: "Fixture loaded")
         let delegate = NavigationDelegate(loaded: loaded)
         webView.navigationDelegate = delegate
