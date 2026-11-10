@@ -170440,17 +170440,27 @@
         }
       }
     },
-    "Connect a Mac agent to this Walnut window for web development. Diagnostics and approved data go to the connected Mac and may be shared with its AI service." : {
+    "Connect your Mac" : {
       "localizations" : {
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "웹 개발을 위해 Mac 에이전트를 이 Walnut 창에 연결합니다. 진단 정보와 승인한 데이터가 연결된 Mac으로 전송되며, Mac의 AI 서비스와 공유될 수 있습니다."
+            "value" : "Mac 연결"
           }
         }
       }
     },
-    "Copy Homebrew command" : {
+    "Connection details" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "연결 정보"
+          }
+        }
+      }
+    },
+    "Copy Homebrew commands" : {
       "localizations" : {
         "ko" : {
           "stringUnit" : {
@@ -170470,17 +170480,27 @@
         }
       }
     },
+    "Diagnostics and approved data go to your Mac and may reach its AI service." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "진단 정보와 승인한 데이터는 Mac으로 전송되며, AI 서비스와 공유될 수 있습니다."
+          }
+        }
+      }
+    },
     "For Wi-Fi, connect your iPhone and Mac to the same network." : {
       "localizations" : {
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Wi-Fi로 연결하려면 iPhone과 Mac을 같은 네트워크에 연결하세요."
+            "value" : "iPhone과 Mac을 같은 Wi-Fi에 연결하세요."
           }
         }
       }
     },
-    "Install command copied" : {
+    "Install commands copied" : {
       "localizations" : {
         "ko" : {
           "stringUnit" : {
@@ -170520,12 +170540,22 @@
         }
       }
     },
-    "Run the command in Terminal on your Mac. The setup guide also covers direct download." : {
+    "Pairing code copied" : {
       "localizations" : {
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mac의 터미널에서 명령을 실행하세요. 설치 안내에서 직접 다운로드하는 방법도 확인할 수 있습니다."
+            "value" : "페어링 코드를 복사했습니다"
+          }
+        }
+      }
+    },
+    "Run these commands in Terminal on your Mac." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mac의 터미널에서 아래 명령을 실행하세요."
           }
         }
       }

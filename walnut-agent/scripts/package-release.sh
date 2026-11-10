@@ -21,7 +21,7 @@ trap 'rm -rf "$scratch"' EXIT
 staging="$scratch/package"
 app="$staging/Walnut Agent.app"
 binary="$app/Contents/MacOS/walnut-agent"
-mkdir -p "$app/Contents/MacOS" "$staging/skill"
+mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources" "$staging/skill"
 binaries=()
 for arch in arm64 x86_64; do
     build=(--package-path "$package" --scratch-path "$scratch/$arch" -c release --triple "$arch-apple-macosx")
@@ -32,6 +32,7 @@ xcrun lipo -create "${binaries[@]}" -output "$binary"
 xcrun lipo "$binary" -verify_arch arm64 x86_64
 chmod 755 "$binary"
 install -m 644 "$package/../.agents/skills/walnut/SKILL.md" "$staging/skill/SKILL.md"
+install -m 644 "$staging/skill/SKILL.md" "$app/Contents/Resources/SKILL.md"
 
 version=$("$binary" --version)
 if [[ ! $version =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then

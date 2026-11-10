@@ -7,14 +7,15 @@ Use `walnut-agent` to drive Walnut on your iPhone from a Mac terminal, a script,
 On a Mac with Homebrew, install the CLI from the Kobbokkom tap:
 
 ```sh
-brew install kobbokkom/tap/walnut-agent
+brew tap kobbokkom/tap
+brew install --cask kobbokkom/tap/walnut-agent
 walnut-agent --version
 ```
 
-For a manual install, download the macOS universal ZIP and its `.sha256` file from [GitHub Releases](https://github.com/Kobbokkom/walnut-webview-tester/releases). It supports Apple Silicon and Intel Macs running macOS 13 or later. For version 0.1.0, run this from the download folder:
+For a manual install, download the macOS universal ZIP and its `.sha256` file from [GitHub Releases](https://github.com/Kobbokkom/walnut-webview-tester/releases). It supports Apple Silicon and Intel Macs running macOS 13 or later. For version 0.1.1, run this from the download folder:
 
 ```sh
-archive=walnut-agent-0.1.0-macos-universal.zip
+archive=walnut-agent-0.1.1-macos-universal.zip
 walnut_dir="$HOME/.local/share/walnut-agent"
 shasum -a 256 -c "$archive.sha256" &&
   install -d "$HOME/.local/bin" "$walnut_dir" &&
@@ -24,6 +25,10 @@ shasum -a 256 -c "$archive.sha256" &&
 ```
 
 Keep the app bundle intact so macOS can verify its signature and notarization. Add `$HOME/.local/bin` to your shell's `PATH` for future terminals if needed. To build from source, clone this repository, run `swift build --package-path walnut-agent -c release` from its root, and add the path printed by `swift build --package-path walnut-agent -c release --show-bin-path` to `PATH`.
+
+## Update the CLI
+
+Run `walnut-agent update` in Terminal. Homebrew installations refresh the tap and upgrade the Walnut Agent cask. ZIP installations in the documented location download the latest stable CLI release, verify it, and replace the app bundle and bundled skill together. Start a new CLI session after updating. For a source build, pull the repository and rebuild.
 
 ## Connect over Wi-Fi
 
@@ -109,7 +114,7 @@ WALNUT_SIGN_IDENTITY='Developer ID Application: Your Name (TEAMID)' \
   walnut-agent/scripts/package-release.sh ./release-artifacts
 ```
 
-Upload the resulting ZIP and `.sha256` to the matching `walnut-agent-v<version>` GitHub release. Update the version and SHA-256 in `Casks/walnut-agent.rb` in the [Kobbokkom tap](https://github.com/Kobbokkom/homebrew-tap). Verify the public asset and run `brew install kobbokkom/tap/walnut-agent` before announcing the release.
+Upload the resulting ZIP and `.sha256` to the matching `walnut-agent-v<version>` GitHub release. Update the version and SHA-256 in `Casks/walnut-agent.rb` in the [Kobbokkom tap](https://github.com/Kobbokkom/homebrew-tap). Verify the public asset and run `brew install --cask kobbokkom/tap/walnut-agent` before announcing the release.
 
 ## App Review notes
 

@@ -8,52 +8,29 @@ struct AgentConnectionView: View {
     let session: AgentSession
     let start: () -> Void
 
-    private static let installCommand = "brew install kobbokkom/tap/walnut-agent"
+    private static let installCommands = """
+    brew tap kobbokkom/tap
+    brew install --cask kobbokkom/tap/walnut-agent
+    """
     private static let setupGuide = URL(string: "https://github.com/Kobbokkom/walnut-webview-tester/tree/main/walnut-agent#install-on-mac")!
 
     var body: some View {
         @Bindable var feedback = copyFeedback
         NavigationStack {
-            List {
-                Section {
-                    Text("Connect a Mac agent to this Walnut window for web development. Diagnostics and approved data go to the connected Mac and may be shared with its AI service.")
-                    Text("The connected agent can navigate and reload test pages using your log retention settings. Walnut stops the connection when you turn it off or leave the app.")
-                }
-                if !session.isRunning {
-                    installSection
-                }
-                Section {
-                    if session.isRunning {
-                        if session.isConnected {
-                            Label("Mac connected", systemImage: "checkmark.circle")
-                        } else if let code = session.pairingCode {
-                            Button("Copy pairing code") {
-                                UIPasteboard.general.setItems(
-                                    [[UTType.plainText.identifier: code]],
-                                    options: [.expirationDate: Date().addingTimeInterval(120)]
-                                )
-                            }
-                            Text("On the Mac, run walnut-agent pair and paste the code. Keep the code private.")
-                        } else if session.connectionError == nil {
-                            ProgressView("Starting connection")
-                        }
-                        Button("Stop connection", role: .destructive) { session.stop() }
-                    } else {
-                        Button("Start connection", action: start)
-                    }
-                    if let error = session.connectionError {
-                        Text(error)
-                            .foregroundStyle(.secondary)
-                    }
-                } footer: {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 26) {
                     if !session.isRunning {
-                        Text("For Wi-Fi, connect your iPhone and Mac to the same network.")
-                    } else if session.pairingCode != nil && !session.isConnected {
-                        Text("After pairing, ask your coding agent to use Walnut or run `walnut-agent session` in Terminal.")
+                        installSection
                     }
+                    connectionSection
                 }
+                .frame(maxWidth: 520, alignment: .leading)
+                .padding(20)
+                .frame(maxWidth: .infinity)
             }
+            .background(Color(uiColor: .systemGroupedBackground))
             .navigationTitle("Mac Agent")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") { dismiss() }
@@ -64,25 +41,108 @@ struct AgentConnectionView: View {
     }
 
     private var installSection: some View {
-        Section {
-            Button {
-                UIPasteboard.general.string = Self.installCommand
-                copyFeedback.show("Install command copied")
-            } label: {
-                VStack(alignment: .leading, spacing: 4) {
-                    Label("Copy Homebrew command", systemImage: "doc.on.doc")
-                    Text(verbatim: Self.installCommand)
-                        .font(.footnote.monospaced())
-                        .foregroundStyle(Color.secondary)
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Install on Mac")
+                .font(.title2.bold())
+                .accessibilityAddTraits(.isHeader)
+            Text("Run these commands in Terminal on your Mac.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 0) {
+                HStack {
+                    Label("Homebrew", systemImage: "terminal")
+                        .font(.subheadline.weight(.semibold))
+                    Spacer()
+                    Button {
+                        UIPasteboard.general.string = Self.installCommands
+                        copyFeedback.show("Install commands copied")
+                        UIAccessibility.post(notification: .announcement, argument: String(localized: "Install commands copied"))
+                    } label: {
+                        Label("Copy", systemImage: "doc.on.doc")
+                            .font(.subheadline.weight(.semibold))
+                            .frame(minWidth: 44, minHeight: 44)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(Color.accentColor)
+                    .accessibilityLabel("Copy Homebrew commands")
                 }
+                Divider()
+                Text(verbatim: Self.installCommands)
+                    .font(.footnote.monospaced())
+                    .fixedSize(horizontal: false, vertical: true)
+                    .textSelection(.enabled)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.vertical, 12)
             }
+            .padding(.horizontal, 14)
+            .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14))
             ShareLink(item: Self.setupGuide) {
                 Label("Share Mac setup guide", systemImage: "square.and.arrow.up")
+                    .font(.subheadline)
+                    .frame(minHeight: 44)
+                    .contentShape(Rectangle())
             }
-        } header: {
-            Text("Install on Mac")
-        } footer: {
-            Text("Run the command in Terminal on your Mac. The setup guide also covers direct download.")
+        }
+    }
+
+    private var connectionSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Connect your Mac")
+                .font(.title2.bold())
+                .accessibilityAddTraits(.isHeader)
+            if session.isRunning {
+                if session.isConnected {
+                    Label("Mac connected", systemImage: "checkmark.circle.fill")
+                } else if let code = session.pairingCode {
+                    Text("On the Mac, run walnut-agent pair and paste the code. Keep the code private.")
+                        .font(.subheadline)
+                    Button {
+                        UIPasteboard.general.setItems(
+                            [[UTType.plainText.identifier: code]],
+                            options: [.expirationDate: Date().addingTimeInterval(120)]
+                        )
+                        copyFeedback.show("Pairing code copied")
+                        UIAccessibility.post(notification: .announcement, argument: String(localized: "Pairing code copied"))
+                    } label: {
+                        Label("Copy pairing code", systemImage: "doc.on.doc")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
+                    Text("After pairing, ask your coding agent to use Walnut or run `walnut-agent session` in Terminal.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                } else if session.connectionError == nil {
+                    ProgressView("Starting connection")
+                }
+                Button("Stop connection", role: .destructive) { session.stop() }
+                    .buttonStyle(.bordered)
+            } else {
+                Text("For Wi-Fi, connect your iPhone and Mac to the same network.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                Button(action: start) {
+                    Label("Start connection", systemImage: "link")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+                Text("Diagnostics and approved data go to your Mac and may reach its AI service.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+            if let error = session.connectionError {
+                Text(error)
+                    .foregroundStyle(.secondary)
+            }
+            DisclosureGroup("Connection details") {
+                Text("The connected agent can navigate and reload test pages using your log retention settings. Walnut stops the connection when you turn it off or leave the app.")
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.top, 4)
+            }
+            .font(.footnote)
         }
     }
 }
