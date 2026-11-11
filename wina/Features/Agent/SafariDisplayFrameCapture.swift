@@ -8,6 +8,7 @@ import UIKit
 @MainActor
 final class SafariDisplayFrameCapture: NSObject {
     private enum Phase {
+        case waitingToPresent
         case picking
         case waitingForForeground(SCContentFilter)
         case starting(SCStream, UIImage?)
@@ -20,7 +21,7 @@ final class SafariDisplayFrameCapture: NSObject {
     private let window: UIWindow
     private let scene: UIWindowScene
     private let validateTarget: @MainActor () throws -> Void
-    private var phase: Phase = .picking
+    private var phase: Phase = .waitingToPresent
     private var originalConfiguration: SCContentSharingPickerConfiguration?
     private var continuation: CheckedContinuation<UIImage, Error>?
     private var deadline: Task<Void, Never>?
@@ -38,8 +39,6 @@ final class SafariDisplayFrameCapture: NSObject {
     static func capture(in window: UIWindow, validateTarget: @escaping @MainActor () throws -> Void) async throws -> UIImage {
         guard let scene = window.windowScene else { throw AgentError("The SafariVC window is no longer visible.") }
         let capture = SafariDisplayFrameCapture(window: window, scene: scene, validateTarget: validateTarget)
-        try Task.checkCancellation()
-        try capture.requireForeground()
         return try await withTaskCancellationHandler {
             try await withCheckedThrowingContinuation(capture.begin)
         } onCancel: {
@@ -52,44 +51,104 @@ final class SafariDisplayFrameCapture: NSObject {
             continuation.resume(throwing: CancellationError())
             return
         }
-        guard picker.isAvailable else {
-            continuation.resume(throwing: AgentError(AgentCapture.safariScreenshotUnavailableOnDevice))
+        if let owner = Self.owner {
+            continuation.resume(throwing: AgentError(owner.busyMessage))
             return
         }
-        guard Self.owner == nil, !picker.isActive else {
-            continuation.resume(throwing: AgentError("The iOS screen capture picker is already open."))
+        do {
+            try requireAttachedTarget()
+            try requirePicker()
+        } catch {
+            continuation.resume(throwing: error)
             return
         }
         Self.owner = self
         self.continuation = continuation
+        let notifications = NotificationCenter.default
+        notifications.addObserver(self, selector: #selector(windowReady), name: UIScene.didActivateNotification, object: scene)
+        notifications.addObserver(self, selector: #selector(windowReady), name: UIWindow.didBecomeKeyNotification, object: window)
+        notifications.addObserver(self, selector: #selector(sceneDeactivated), name: UIScene.willDeactivateNotification, object: scene)
+        notifications.addObserver(self, selector: #selector(sceneDeactivated), name: UIWindow.didResignKeyNotification, object: window)
+        notifications.addObserver(self, selector: #selector(sceneLeftForeground), name: UIScene.didEnterBackgroundNotification, object: scene)
+        notifications.addObserver(self, selector: #selector(sceneLeftForeground), name: UIScene.didDisconnectNotification, object: scene)
+        startDeadline(after: .seconds(3))
+        windowReady()
+    }
+
+    private var busyMessage: String {
+        if continuation != nil { return "A display capture is already in progress." }
+        if case .picking = phase {
+            return "The previous iOS screen capture picker has not closed. Close it on the device, or relaunch Walnut if it never appeared."
+        }
+        return "iOS is still finishing the previous display capture."
+    }
+
+    private func requirePicker() throws {
+        guard picker.isAvailable else { throw AgentError(AgentCapture.safariScreenshotUnavailableOnDevice) }
+        guard !picker.isActive else { throw AgentError("The iOS screen capture picker is already open.") }
+    }
+
+    private func presentPicker() throws {
+        try requireForeground()
+        try requirePicker()
         originalConfiguration = picker.defaultConfiguration
         var configuration = SCContentSharingPickerConfiguration()
         configuration.showsMicrophoneControl = false
         configuration.showsCameraControl = false
         picker.defaultConfiguration = configuration
-        let notifications = NotificationCenter.default
-        notifications.addObserver(self, selector: #selector(startIfForeground), name: UIScene.didActivateNotification, object: scene)
-        notifications.addObserver(self, selector: #selector(sceneDeactivated), name: UIScene.willDeactivateNotification, object: scene)
-        notifications.addObserver(self, selector: #selector(sceneLeftForeground), name: UIScene.didEnterBackgroundNotification, object: scene)
-        notifications.addObserver(self, selector: #selector(sceneLeftForeground), name: UIScene.didDisconnectNotification, object: scene)
+        phase = .picking
         picker.add(self)
         picker.isActive = true
-        deadline = Task { [weak self] in
-            do { try await Task.sleep(for: .seconds(25)) } catch { return }
-            self?.cancel(AgentError("Display capture timed out. Close the iOS screen capture picker before retrying."))
-        }
-        picker.present(using: .display)
+        startDeadline(after: .seconds(25))
+        picker.present()
     }
 
-    private func requireForeground() throws {
-        guard window.windowScene === scene, window.isKeyWindow, scene.activationState == .foregroundActive else {
-            throw AgentError("The SafariVC window is no longer active.")
+    private func startDeadline(after delay: Duration) {
+        deadline?.cancel()
+        deadline = Task { [weak self] in
+            do { try await Task.sleep(for: delay) } catch { return }
+            guard !Task.isCancelled, let self else { return }
+            cancel(AgentError(timeoutMessage))
+        }
+    }
+
+    private var timeoutMessage: String {
+        switch phase {
+        case .waitingToPresent: "The SafariVC window did not become active before opening the iOS screen capture picker."
+        case .picking: "The iOS screen capture picker did not respond. Close it on the device, or relaunch Walnut if it never appeared."
+        case .waitingForForeground: "The SafariVC window did not become active after iOS display selection."
+        case .starting: "iOS did not start the display stream in time."
+        case .capturing: "iOS did not return a complete display frame in time."
+        case .stopping: "iOS did not stop the display stream in time."
+        }
+    }
+
+    private func requireAttachedTarget() throws {
+        guard window.windowScene === scene, scene.activationState != .background, scene.activationState != .unattached else {
+            throw AgentError("The SafariVC window is no longer in the foreground.")
         }
         try validateTarget()
     }
 
-    @objc private func startIfForeground() {
-        guard case .waitingForForeground(let filter) = phase, scene.activationState == .foregroundActive else { return }
+    private func requireForeground() throws {
+        try requireAttachedTarget()
+        guard window.isKeyWindow, scene.activationState == .foregroundActive else {
+            throw AgentError("The SafariVC window is no longer active.")
+        }
+    }
+
+    @objc private func windowReady() {
+        guard continuation != nil, window.isKeyWindow, scene.activationState == .foregroundActive else { return }
+        switch phase {
+        case .waitingToPresent:
+            do { try presentPicker() } catch { cancel(error) }
+        case .waitingForForeground(let filter):
+            startCapture(filter)
+        default: break
+        }
+    }
+
+    private func startCapture(_ filter: SCContentFilter) {
         do {
             try requireForeground()
             let configuration = SCStreamConfiguration()
@@ -122,7 +181,7 @@ final class SafariDisplayFrameCapture: NSObject {
     @objc private func sceneDeactivated() {
         switch phase {
         case .starting, .capturing, .stopping: sceneLeftForeground()
-        case .picking, .waitingForForeground: break
+        case .waitingToPresent, .picking, .waitingForForeground: break
         }
     }
 
@@ -185,7 +244,7 @@ final class SafariDisplayFrameCapture: NSObject {
         switch phase {
         // Keep ownership until the system replies so a late selection cannot authorize a later request.
         case .picking, .starting, .stopping: break
-        case .waitingForForeground: releasePicker()
+        case .waitingToPresent, .waitingForForeground: releasePicker()
         case .capturing(let stream): stop(stream)
         }
     }
@@ -200,9 +259,11 @@ final class SafariDisplayFrameCapture: NSObject {
 
     private func releasePicker() {
         guard Self.owner === self else { return }
-        picker.remove(self)
-        picker.isActive = false
-        if let originalConfiguration { picker.defaultConfiguration = originalConfiguration }
+        if let originalConfiguration {
+            picker.remove(self)
+            picker.isActive = false
+            picker.defaultConfiguration = originalConfiguration
+        }
         Self.owner = nil
     }
 }
@@ -221,7 +282,7 @@ extension SafariDisplayFrameCapture: SCContentSharingPickerObserver, SCStreamOut
                 return
             }
             phase = .waitingForForeground(filter)
-            startIfForeground()
+            windowReady()
         }
     }
 
