@@ -31,8 +31,8 @@ extension AgentDevTools {
                 "description": "Follow nextExportOffset with exportId and the same filters to read the retained Markdown report."
             ]
         ]),
-        AgentTool.definition("accessibility_detail", "Read the selected axe issue's full details. Requires confirmation.", [
-            "id": identifier
+        AgentTool.definition("accessibility_detail", "Read the selected axe issue's full details. For a large record, concatenate the content chunks and parse them as JSON. Pass nextByteOffset as byteOffset with contentId and the same ID. Requires confirmation.", [
+            "id": identifier, "byteOffset": exportByteOffset, "contentId": identifier
         ], required: ["id"]),
         AgentTool.definition("accessibility_clear", "Clear retained accessibility results. Requires confirmation.", [:]),
         AgentTool.definition("snippets_list", "List Walnut's preset JavaScript snippets and their current states.", [
@@ -66,13 +66,16 @@ extension AgentDevTools {
             return try await accessibilityAudit(input, context)
         case "accessibility_detail":
             let id = try input.uuid("id")
+            let cursor = try exportCursor(input, source: "Accessibility issue")
             try await context.confirm("Share the selected accessibility issue and its markup with the Mac?")
             guard let issue = navigator.accessibilityManager.issues.first(where: { $0.id == id }) else {
                 throw AgentError("Accessibility issue not found.")
             }
-            var row = issueRecord(issue, includeContent: true)
+            var row = issueRecord(issue, includeContent: true, fullContent: true)
             row["documentId"] = navigator.accessibilityManager.auditedDocumentID?.uuidString
-            return row
+            var result = try exportRecord(row, cursor: cursor, source: "Accessibility issue")
+            result["documentId"] = row["documentId"]
+            return result
         case "accessibility_clear":
             try await context.confirm("Clear Walnut's accessibility audit results?")
             guard !navigator.accessibilityManager.isScanning else { throw AgentError("An accessibility scan is running.") }
@@ -260,8 +263,8 @@ extension AgentDevTools {
         }
         let issues = manager.issues.filter { issue in
             (severity == nil || issue.severity == severity) && (category == nil || issue.category == category) &&
-                (query.isEmpty || [issue.help, issue.failureSummary, issue.element, issue.selector ?? ""]
-                    .contains { $0.localizedCaseInsensitiveContains(query) })
+                (issue.matchesSearch(query) || issue.failureSummary.localizedCaseInsensitiveContains(query)
+                    || issue.selector?.localizedCaseInsensitiveContains(query) == true)
         }
         var result: [String: Any] = [
             "total": issues.count, "hasScanned": manager.hasScanned,
@@ -294,16 +297,17 @@ extension AgentDevTools {
         return result
     }
 
-    private static func issueRecord(_ issue: AccessibilityIssue, includeContent: Bool) -> [String: Any] {
+    private static func issueRecord(_ issue: AccessibilityIssue, includeContent: Bool, fullContent: Bool = false) -> [String: Any] {
+        func content(_ value: String) -> String { fullContent ? value : clipped(value) }
         var row: [String: Any] = [
             "id": issue.id.uuidString, "severity": issue.severity.rawValue, "category": issue.category.rawValue
         ]
         row["ruleId"] = issue.ruleId
         if includeContent {
-            row["help"] = clipped(issue.help)
-            row["failure"] = clipped(issue.failureSummary)
-            row["html"] = clipped(issue.fullHtml)
-            row["selector"] = issue.selector.map { clipped($0) }
+            row["help"] = content(issue.help)
+            row["failure"] = content(issue.failureSummary)
+            row["html"] = content(issue.fullHtml)
+            row["selector"] = issue.selector.map(content)
             row["helpUrl"] = issue.helpUrl
         }
         return row

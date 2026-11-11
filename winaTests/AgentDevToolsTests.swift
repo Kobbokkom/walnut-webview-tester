@@ -4,6 +4,47 @@ import XCTest
 
 @MainActor
 final class AgentDevToolsTests: XCTestCase {
+    func testAccessibilitySearchAndDetailUseTheRetainedIssue() async throws {
+        let webView = WKWebView()
+        let navigator = WebViewNavigator()
+        navigator.attach(to: webView)
+        defer { withExtendedLifetime(webView) {} }
+        let markup = "<img data-fixture=\"" + String(repeating: "가🙂", count: 40_000) + "\">"
+        let issue = AccessibilityIssue(
+            severity: .error, category: .images, help: "Missing description", failureSummary: "Add alternative text",
+            element: "<img>", fullHtml: markup, selector: "#picture", helpUrl: nil, ruleId: "image-alt"
+        )
+        navigator.accessibilityManager.issues = [issue]
+        let context = AgentDevContext(navigator: navigator) { _ in true }
+        for query in ["IMAGE-ALT", "Images", "#picture"] {
+            let value = try await AgentDevTools.callPage(
+                "accessibility_audit", AgentDevInput(values: ["run": false, "query": query]), context
+            )
+            let result = try XCTUnwrap(value as? [String: Any])
+            XCTAssertEqual(result["total"] as? Int, 1)
+        }
+
+        let id = issue.id.uuidString
+        let first = try await AgentDevTools.callPage(
+            "accessibility_detail", AgentDevInput(values: ["id": id]), context
+        )
+        let prefix = try XCTUnwrap(first as? [String: Any])
+        let offset = try XCTUnwrap(prefix["nextByteOffset"] as? Int)
+        let contentID = try XCTUnwrap(prefix["contentId"] as? String)
+        let second = try await AgentDevTools.callPage(
+            "accessibility_detail", AgentDevInput(values: ["id": id, "byteOffset": offset, "contentId": contentID]), context
+        )
+        let suffix = try XCTUnwrap(second as? [String: Any])
+        let initialContent = try XCTUnwrap(prefix["content"] as? String)
+        let remainingContent = try XCTUnwrap(suffix["content"] as? String)
+        XCTAssertEqual(initialContent.utf8.count, offset)
+        XCTAssertNil(suffix["nextByteOffset"])
+        let joined = Data((initialContent + remainingContent).utf8)
+        let detail = try XCTUnwrap(JSONSerialization.jsonObject(with: joined) as? [String: Any])
+        XCTAssertEqual(detail["html"] as? String, markup)
+        XCTAssertEqual(detail["failure"] as? String, "Add alternative text")
+    }
+
     func testConsoleFiltersRetainedRecordsByDocumentAndHidesRawContent() async throws {
         let webView = WKWebView()
         let navigator = WebViewNavigator()

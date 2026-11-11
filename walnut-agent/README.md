@@ -36,7 +36,7 @@ Run `walnut-agent update` in Terminal. Homebrew installations refresh the tap an
 2. Run `walnut-agent pair` in a Mac terminal and paste the code into the hidden prompt. This saves the pairing in `~/.config/walnut-agent/pairing.json` with owner-only permissions. Keep the code out of agent chats.
 3. Keep Walnut in the foreground and start a CLI session or ask your agent to use it.
 
-On the Mac, allow Local Network access if macOS prompts for Walnut Agent or the app that starts it. If you dismissed the prompt, open **System Settings → Privacy & Security → Local Network**, check that app's access, then retry the connection.
+On the Mac, allow Local Network access if macOS prompts for Walnut Agent or the app that starts it. If you dismissed the prompt, open **System Settings → Privacy & Security → Local Network**, check that app's access, then retry the connection. If Walnut Agent is missing from the list on macOS 27.2 or later, click **+** and select the installed `Walnut Agent.app`. You can also run the CLI directly in Terminal to check the connection. See [Apple's local network privacy notes](https://developer.apple.com/documentation/technotes/tn3179-understanding-local-network-privacy).
 
 If clipboard sharing is unavailable, tap **Share pairing file** in Walnut and AirDrop it to your Mac while Walnut stays open. In Terminal, type `walnut-agent pair --file` followed by a space, drag in the file you just received, and press Return. Delete the received file after pairing. The file and code grant access to the current session and expire when that connection stops.
 
@@ -68,7 +68,11 @@ The `tools` response lists the connected phone's schemas in `result.data.tools` 
 
 Use `walnut_browser` with action `open` and a `url` the iPhone can reach. For a development server on the Mac, use the Mac's LAN address. `localhost` inside Walnut points to the iPhone.
 
-Large `console_detail` responses return serialized JSON in `content` chunks. Text and JSON exports can return `records` chunks from `console_list` and `export` chunks from `network_list`. Pass `nextByteOffset` as `byteOffset` with `contentId` and the same tool arguments until there is no next offset. Concatenate the chunks in order before parsing JSON. If Walnut reports that the content changed, restart from the first chunk.
+Applying or resetting emulation through the CLI or MCP recreates an open WKWebView. Walnut opens the current URL with a new GET request, and the replacement starts with an empty back and forward history. Temporary emulation settings expire when the connection ends.
+
+Large `console_detail` and `accessibility_detail` responses return serialized JSON in `content` chunks. Text and JSON exports can return `records` chunks from `console_list` and `export` chunks from `network_list`. Pass `nextByteOffset` as `byteOffset` with `contentId` and the same tool arguments until there is no next offset. Concatenate the chunks in order before parsing JSON. If Walnut reports that the content changed, restart from the first chunk.
+
+Use `preload` with `action: "logs"` to list the 50 newest startup bridge logs, or set `limit: 200` to list every retained entry. Use `offset` to skip newer entries. The list contains previews when you set `raw: true` and approve sharing on the iPhone. To read a complete retained body, pass the entry's `id` as `logId` with `raw: true`. For a large record, join its `content` chunks as described above. Each body read needs iPhone approval, including continuations.
 
 In WKWebView, `page_interact` action `observe` returns a `documentId`, visible control references, and viewport CSS coordinates. Pass the current document ID and coordinates to `move` or `click_at`. Use `fill` for text fields and plain-text editing areas, `select` for observed select options, and `press` for supported keys such as `A` or `Backspace`. For a same-origin frame, pass its `framePath` and use the `frameDocumentId` returned by observation in subsequent actions. Observe again after each change. If scrolling the main page returns `settled: false`, WebKit did not confirm the requested offset. Observe the viewport before deciding whether to scroll again. Use the iPhone directly for native touch, keyboard, IME, or browser shortcuts. Review and approve requested interactions and page text sharing on the iPhone.
 
@@ -98,9 +102,13 @@ The connected iPhone app must advertise the `agent_engine_inspection` tool in it
 
 For engine-level debugging, enable **Settings → Apps → Safari → Advanced → Web Inspector** on the iPhone and connect it to a trusted Mac. Install `uv` with `brew install uv`. Start Mac Agent, pair as above, close other Walnut CLI sessions, then run `walnut-agent inspect --udid DEVICE_UDID`. The first run resolves the pinned `pymobiledevice3` adapter on the Mac. Add `--usb` to also route Walnut commands through the USB forwarder, or `--wifi` to use an Apple-trusted network connection for Web Inspector.
 
+To set up Web Inspector over Wi-Fi, connect the unlocked iPhone by cable first and enable **Safari → Develop → [your iPhone] → Connect via Network** on the Mac. Then disconnect the cable and keep both devices on the same network. [Apple's device inspection guide](https://developer.apple.com/documentation/safari-developer-tools/inspecting-ios)
+
 Approve engine access to the current WKWebView document on the iPhone. When the CLI emits `event: ready`, send one JSON command per line with a positive integer `id`, a CDP `method`, and optional `params`. Read the response with the same `id` and any asynchronous events. For example, enable `Debugger`, then set a breakpoint with `Debugger.setBreakpointByUrl`, observe `Debugger.paused`, inspect its call frames, and resume or step. The ready message lists accepted methods. WebKit returns an error when a method is unavailable for the attached target.
 
 The inspector session ends on navigation, on disconnect, or when its input closes. Start a fresh session for a new document. Code execution and other sensitive actions require confirmation on the iPhone.
+
+Inspector commands normally wait up to 60 seconds for a WebKit reply. A breakpoint or intercepted request can hold an evaluation for up to ten minutes. An uninterrupted ten-minute pause closes the inspector and releases the page.
 
 For HTML, `sources_list` with `section: "html"` returns the current DOM serialized as HTML (`retrieval: "live-dom"`). To read WebKit's retained resource for the authorized HTTP(S) document, call `Page.getResourceTree` in the inspector session, then pass the top frame's `id` as `frameId` and its `url` to `Page.getResourceContent`. That response reports `retrieval: "webkit-resource"` and `base64Encoded`. WebKit may return decoded text from its retained buffer, so this result cannot establish byte-for-byte identity with the original HTTP response. The lookup makes no new HTTP request. Walnut reports an error if WebKit has no content or the authorized document resource changes.
 
@@ -125,6 +133,8 @@ To reach it from the iPhone, pass the Mac’s LAN address with `--host` and open
 For the WKWebView interaction test, give your agent a goal such as “Open `/checkout-interaction` on the iPhone, submit the test shipment with delivery reference `WK-417`, and report the receipt number.” The agent can use `page_interact` to inspect the viewport, scroll to the form, fill the field, activate the button, and inspect the receipt. Approve page text sharing, filling, and activation on the iPhone when prompted.
 
 For a repeatable device check, use a dedicated QA installation of Walnut and run `python3 walnut-agent/Tests/Fixtures/verify-device.py http://MAC_LAN_IP:8874`. Keep the fixture running and approve each test action on the iPhone. The script exercises both browser modes, saves the capture paths, and reports which advertised tools it called successfully. For a Wi-Fi-off USB test, pass `--usb --udid DEVICE_UDID` and use a fixture URL reachable by the phone over its remaining connection.
+
+For the WebKit engine check, enable **Browse in private session** on Walnut's start screen and open `/agent-e2e` on the iPhone. Close any other CLI sessions and run `python3 walnut-agent/Tests/Fixtures/verify-device.py http://MAC_LAN_IP:8874 --suite engine --udid DEVICE_UDID`. Add `--wifi` for Apple-trusted Wi-Fi inspection or `--usb` to route the Walnut connection through the USB forwarder too. Approve inspector access and the requested commands on the iPhone. This check reads the retained HTML and confirms that a breakpoint can pause an evaluation, inspect a local argument, step, and resume it.
 
 ## Package a release
 

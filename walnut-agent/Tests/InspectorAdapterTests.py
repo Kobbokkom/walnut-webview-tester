@@ -179,6 +179,177 @@ class InspectorAdapterTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(target.sent, ["Debugger.pause", "Debugger.resume", "Fetch.disable", "Debugger.disable"])
         self.assertTrue(target.closed)
 
+    async def test_paused_evaluation_accepts_debugger_and_fetch_commands(self):
+        for evaluation, event, resume, params, inspect_frame in (
+            ("Runtime.evaluate", "Debugger.paused", "Debugger.resume", {}, True),
+            ("Runtime.callFunctionOn", "Fetch.requestPaused", "Fetch.continueRequest", {"requestId": "fetch"}, False),
+        ):
+            with self.subTest(event=event), patch.dict(INSPECTOR.relay.__globals__, MAX_PENDING_COMMANDS=1):
+                class PausingTarget(FakeTarget):
+                    async def send(self, request):
+                        if request["method"] == evaluation:
+                            self.sent.append(evaluation)
+                            await self.output_queue.put({"method": event})
+                            return
+                        await super().send(request)
+                        if request["method"] == resume and request["id"] == 4:
+                            await self.output_queue.put({"id": 1, "result": {"value": "resumed"}})
+
+                target = PausingTarget()
+                reader = asyncio.StreamReader()
+                output = asyncio.Queue()
+
+                def send(identifier, method, params=None):
+                    frame = {"id": identifier, "method": method, "params": params or {}}
+                    reader.feed_data(json.dumps(frame).encode() + b"\n")
+
+                async def receive():
+                    return await asyncio.wait_for(output.get(), timeout=1)
+
+                session = asyncio.create_task(INSPECTOR.relay(reader, target, asyncio.Event(), output.put_nowait))
+                try:
+                    send(1, evaluation)
+                    self.assertEqual(await receive(), {"method": event})
+
+                    send(1, "Runtime.enable")
+                    duplicate = await receive()
+                    self.assertIsNone(duplicate["id"])
+                    self.assertIn("already pending", duplicate["error"]["message"])
+                    send(2, "Runtime.enable")
+                    over_limit = await receive()
+                    self.assertEqual(over_limit["id"], 2)
+                    self.assertEqual(over_limit["error"]["code"], -32000)
+
+                    if inspect_frame:
+                        send(3, "Debugger.evaluateOnCallFrame")
+                        self.assertEqual(await receive(), {"id": 3, "result": {}})
+                    send(4, resume, params)
+                    self.assertEqual(await receive(), {"id": 4, "result": {}})
+                    self.assertEqual(await receive(), {"id": 1, "result": {"value": "resumed"}})
+
+                    reader.feed_eof()
+                    await asyncio.wait_for(session, timeout=1)
+                finally:
+                    session.cancel()
+                    await asyncio.gather(session, return_exceptions=True)
+                expected = [evaluation] + (["Debugger.evaluateOnCallFrame"] if inspect_frame else [])
+                self.assertEqual(target.sent, [*expected, resume, "Debugger.resume", "Fetch.disable", "Debugger.disable"])
+                self.assertTrue(target.closed)
+                self.assertTrue(output.empty())
+
+    async def test_pauses_extend_only_evaluation_deadlines_and_remain_bounded(self):
+        class HeldEvaluation(FakeTarget):
+            async def send(self, request):
+                if request["method"] in {"Runtime.evaluate", "DOM.getDocument"} or (
+                    request["method"] == "Debugger.resume" and request["id"] > 0
+                ):
+                    self.sent.append(request["method"])
+                    await self.output_queue.put({"method": "Runtime.consoleAPICalled"})
+                    return
+                await super().send(request)
+
+        for outcome in ("resume", "continue", "unrelated_timeout", "evaluation_limit", "pause_limit", "eof", "eof_resume", "revoke"):
+            with self.subTest(outcome=outcome):
+                loop = asyncio.get_running_loop()
+                clock = loop.time
+                advance = 0
+                reader = asyncio.StreamReader()
+                target = HeldEvaluation()
+                output = asyncio.Queue()
+
+                def send(identifier, method, params=None):
+                    reader.feed_data(json.dumps({"id": identifier, "method": method, "params": params or {}}).encode() + b"\n")
+
+                async def receive():
+                    return await asyncio.wait_for(output.get(), timeout=1)
+
+                async def event(method, params=None):
+                    message = {"method": method, "params": params or {}}
+                    await target.output_queue.put(message)
+                    self.assertEqual(await receive(), message)
+
+                with (
+                    patch.object(loop, "time", side_effect=lambda: clock() + advance),
+                    patch.object(loop, "slow_callback_duration", float("inf")),
+                    patch.dict(INSPECTOR.relay.__globals__, COMMAND_REPLY_TIMEOUT=2, PAUSED_SESSION_TIMEOUT=12),
+                ):
+                    session = asyncio.create_task(INSPECTOR.relay(reader, target, asyncio.Event(), output.put_nowait))
+                    try:
+                        send(1, "Runtime.evaluate")
+                        self.assertEqual((await receive())["method"], "Runtime.consoleAPICalled")
+                        if outcome == "continue":
+                            await event("Fetch.requestPaused", {"requestId": "first"})
+                            await event("Fetch.requestPaused", {"requestId": "second"})
+                            send(2, "Fetch.continueRequest", {"requestId": "first"})
+                            self.assertEqual(await receive(), {"id": 2, "result": {}})
+                        else:
+                            await event("Debugger.paused")
+
+                        advance += 3
+                        send(3, "Debugger.evaluateOnCallFrame")
+                        self.assertEqual(await receive(), {"id": 3, "result": {}})
+                        advance += 3
+                        send(4, "Runtime.getProperties")
+                        self.assertEqual(await receive(), {"id": 4, "result": {}})
+
+                        timeout_message = "command timed out"
+                        if outcome == "resume":
+                            await event("Debugger.resumed")
+                            advance += 3
+                        elif outcome == "continue":
+                            send(5, "Fetch.continueRequest", {"requestId": "second"})
+                            self.assertEqual(await receive(), {"id": 5, "result": {}})
+                            advance += 3
+                        elif outcome == "unrelated_timeout":
+                            send(6, "DOM.getDocument")
+                            self.assertEqual((await receive())["method"], "Runtime.consoleAPICalled")
+                            advance += 3
+                        elif outcome == "evaluation_limit":
+                            await event("Debugger.resumed")
+                            await event("Debugger.paused")
+                            timeout_message = "evaluation stayed pending too long"
+                            advance += 7
+                        elif outcome == "pause_limit":
+                            await target.output_queue.put({"id": 1, "result": {}})
+                            self.assertEqual(await receive(), {"id": 1, "result": {}})
+                            timeout_message = "page stayed paused too long"
+                            advance += 7
+                        elif outcome == "eof":
+                            reader.feed_eof()
+                            await asyncio.sleep(0)
+                            advance += 3
+                        elif outcome == "eof_resume":
+                            send(7, "Debugger.resume")
+                            self.assertEqual((await receive())["method"], "Runtime.consoleAPICalled")
+                            reader.feed_eof()
+                            await asyncio.sleep(0)
+                            advance += 1
+                            await event("Debugger.resumed")
+                            for identifier in (7, 1):
+                                response = {"id": identifier, "result": {}}
+                                await target.output_queue.put(response)
+                                self.assertEqual(await receive(), response)
+                            await asyncio.wait_for(session, timeout=1)
+                            self.assertEqual(target.sent[-3:], ["Debugger.resume", "Fetch.disable", "Debugger.disable"])
+                            self.assertTrue(target.closed)
+                            continue
+                        elif outcome == "revoke":
+                            target.revoked = True
+                            await target.output_queue.put(INSPECTOR.REVOKED)
+                            self.assertEqual(await receive(), INSPECTOR.REVOKED)
+                            await asyncio.wait_for(session, timeout=1)
+                            self.assertNotIn("Debugger.resume", target.sent)
+                            self.assertTrue(target.closed)
+                            continue
+
+                        with self.assertRaisesRegex(INSPECTOR.InspectorError, timeout_message):
+                            await asyncio.wait_for(session, timeout=1)
+                        self.assertEqual(target.sent[-3:], ["Debugger.resume", "Fetch.disable", "Debugger.disable"])
+                        self.assertTrue(target.closed)
+                    finally:
+                        session.cancel()
+                        await asyncio.gather(session, return_exceptions=True)
+
     async def test_eof_without_newline_discards_valid_json(self):
         startup = asyncio.StreamReader()
         startup.feed_data(json.dumps({"version": 1, "udid": UDID, "bundleId": BUNDLE, "nonce": NONCE}).encode())

@@ -1,7 +1,12 @@
 """Exercise a paired Walnut QA device against the synthetic checkout server."""
 
 import argparse
+import asyncio
+import base64
+import contextlib
 import json
+import os
+import signal
 import subprocess
 import time
 from pathlib import Path
@@ -270,15 +275,127 @@ class Verification:
         print(json.dumps({"passed": "SafariVC host-window screenshot with visible page text", "png": png["path"]}), flush=True)
 
 
+async def verify_engine(args):
+    command = [args.cli, "inspect", "--udid", args.udid]
+    if args.usb:
+        command.append("--usb")
+    if args.wifi:
+        command.append("--wifi")
+    process = await asyncio.create_subprocess_exec(
+        *command, stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE, limit=8 * 1024 * 1024,
+        start_new_session=True
+    )
+    replies = {}
+    pauses = []
+    next_id = 0
+
+    async def receive(predicate, timeout=100):
+        async def read_packets():
+            while line := await process.stdout.readline():
+                packet = json.loads(line)
+                require(packet.get("event") != "revoked", "The phone revoked the WebKit document grant")
+                if packet.get("event") == "error":
+                    raise RuntimeError(packet.get("error", "Web Inspector stopped"))
+                if predicate(packet):
+                    return packet
+                if "id" in packet:
+                    replies[packet["id"]] = packet
+                elif packet.get("method") == "Debugger.paused":
+                    pauses.append(packet)
+                require(len(replies) + len(pauses) <= 16, "Unexpected inspector packets")
+            raise RuntimeError("Web Inspector closed before replying")
+
+        return await asyncio.wait_for(read_packets(), timeout=timeout)
+
+    async def send(method, **params):
+        nonlocal next_id
+        next_id += 1
+        print(json.dumps({"inspector": method, "id": next_id}), flush=True)
+        request = {"id": next_id, "method": method, "params": params}
+        process.stdin.write(json.dumps(request).encode() + b"\n")
+        await process.stdin.drain()
+        return next_id
+
+    async def result(identifier):
+        packet = replies.pop(identifier, None) or await receive(lambda item: item.get("id") == identifier)
+        require("error" not in packet, packet.get("error", {}).get("message", "Inspector request failed"))
+        return packet["result"]
+
+    async def call(method, **params):
+        return await result(await send(method, **params))
+
+    async def paused():
+        packet = pauses.pop(0) if pauses else await receive(lambda item: item.get("method") == "Debugger.paused")
+        frame = packet["params"]["callFrames"][0]
+        require(frame["functionName"] == "walnutBreakpointFixture", "Paused outside the fixture function")
+        return frame
+
+    try:
+        ready = await receive(lambda packet: packet.get("event") == "ready", timeout=180)
+        require(ready.get("protocol") == "cdp", "Walnut did not open its WebKit inspector")
+        tree = await call("Page.getResourceTree")
+        frame = tree["frameTree"]["frame"]
+        origin = args.origin.rstrip("/")
+        require(frame["url"] == origin + "/agent-e2e", "Open the /agent-e2e fixture in Walnut before running this suite")
+        resource = await call("Page.getResourceContent", frameId=frame["id"], url=frame["url"])
+        html = base64.b64decode(resource["content"]).decode() if resource["base64Encoded"] else resource["content"]
+        require(resource.get("retrieval") == "webkit-resource" and "Walnut developer tools verification" in html,
+                "WebKit did not return the retained fixture document")
+
+        await call("Debugger.enable")
+        # The fixture declares the first executable statement on zero-based line 14.
+        breakpoint = await call("Debugger.setBreakpointByUrl", lineNumber=14, url=origin + "/agent-e2e.js")
+        require(breakpoint.get("locations"), "WebKit did not bind a breakpoint to the fixture script")
+        evaluation = await send("Runtime.evaluate", expression="walnutBreakpointFixture(21)", returnByValue=True)
+        initial = await paused()
+        value = await call("Debugger.evaluateOnCallFrame", callFrameId=initial["callFrameId"], expression="value")
+        require(value.get("result", {}).get("value") == 21, "WebKit did not expose the paused frame's argument")
+        await call("Debugger.stepOver")
+        stepped = await paused()
+        require(stepped["location"]["lineNumber"] > initial["location"]["lineNumber"], "The debugger did not advance")
+        await call("Debugger.resume")
+        value = await result(evaluation)
+        require(value.get("result", {}).get("value") == 43, "The original evaluation did not finish after resume")
+    except BaseException:
+        # Stop the adapter too so it can detach from a paused page.
+        with contextlib.suppress(ProcessLookupError):
+            os.killpg(process.pid, signal.SIGTERM)
+        raise
+    finally:
+        process.stdin.close()
+        try:
+            await asyncio.wait_for(process.wait(), timeout=10)
+        except asyncio.TimeoutError:
+            with contextlib.suppress(ProcessLookupError):
+                os.killpg(process.pid, signal.SIGTERM)
+            try:
+                await asyncio.wait_for(process.wait(), timeout=20)
+            except asyncio.TimeoutError:
+                with contextlib.suppress(ProcessLookupError):
+                    os.killpg(process.pid, signal.SIGKILL)
+                await process.wait()
+    require(process.returncode == 0, "Web Inspector failed to detach cleanly")
+    print(json.dumps({"passed": "WebKit retained HTML, breakpoint, frame scope, step and resume"}), flush=True)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("origin", help="LAN origin of the synthetic checkout.py fixture")
     parser.add_argument("--cli", default="walnut-agent")
-    parser.add_argument("--usb", action="store_true")
-    parser.add_argument("--udid", help="Select a USB device")
+    connection = parser.add_mutually_exclusive_group()
+    connection.add_argument("--usb", action="store_true")
+    connection.add_argument("--wifi", action="store_true", help="Use Apple-trusted Wi-Fi for the engine suite")
+    parser.add_argument("--udid", help="Select the iPhone by UDID")
     suites = ("diagnostics", "tools", "capture", "controls", "safari")
-    parser.add_argument("--suite", choices=suites, action="append", help="Run a specific suite. May be repeated.")
+    parser.add_argument("--suite", choices=(*suites, "engine"), action="append", help="Run a specific suite. May be repeated.")
     args = parser.parse_args()
+    if "engine" in (args.suite or []):
+        if args.suite != ["engine"] or not args.udid:
+            parser.error("The engine suite runs separately and requires --udid")
+        asyncio.run(verify_engine(args))
+        return
+    if args.wifi:
+        parser.error("--wifi requires --suite engine")
     if args.udid and not args.usb:
         parser.error("--udid requires --usb")
     command = [args.cli, "session"] + (["--usb"] if args.usb else [])

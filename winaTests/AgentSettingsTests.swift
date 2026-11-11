@@ -209,4 +209,72 @@ final class AgentSettingsTests: XCTestCase {
         XCTAssertEqual(page["redacted"] as? Bool, false)
     }
 
+    func testPreloadLogListCanPageThroughAllRetainedEntries() async throws {
+        let webView = WKWebView()
+        let navigator = WebViewNavigator()
+        navigator.attach(to: webView)
+        defer { withExtendedLifetime(webView) {} }
+        for index in 0..<205 {
+            navigator.preloadBridgeLogManager.add(channel: "channel_\(index)", direction: .received, body: "private")
+        }
+        let tool = try XCTUnwrap(AgentSettings.tools.first { $0["name"] as? String == "preload" })
+        let arguments: [String: Any] = ["action": "logs", "offset": 50, "limit": 150]
+        try AgentTool.validate(arguments, using: tool)
+        XCTAssertThrowsError(try AgentTool.validate(["action": "logs", "limit": 201], using: tool))
+
+        let first = try await AgentSettings.call("preload", arguments: ["action": "logs"], navigator: navigator) { _ in
+            XCTFail("Listing log metadata does not need approval")
+            return false
+        }
+        let next = try await AgentSettings.call("preload", arguments: arguments, navigator: navigator) { _ in false }
+        let rows = try XCTUnwrap(first as? [[String: Any]]) + XCTUnwrap(next as? [[String: Any]])
+        XCTAssertEqual((first as? [[String: Any]])?.count, 50)
+        XCTAssertEqual(rows.compactMap { $0["channel"] as? String }, (5..<205).reversed().map { "channel_\($0)" })
+        XCTAssertTrue(rows.allSatisfy { $0["body"] == nil })
+    }
+
+    func testPreloadLogDetailReturnsExactRetainedBodyWithApprovalOnEveryChunk() async throws {
+        let webView = WKWebView()
+        let navigator = WebViewNavigator()
+        navigator.attach(to: webView)
+        defer { withExtendedLifetime(webView) {} }
+        let channel = String(repeating: "c", count: 5_000)
+        let longCharacter = "a" + String(repeating: "\u{301}", count: 150_000)
+        let body = longCharacter + String(repeating: "🚦", count: 20_001)
+        navigator.preloadBridgeLogManager.add(channel: channel, direction: .received, body: body)
+        let entry = try XCTUnwrap(navigator.preloadBridgeLogManager.entries.first)
+        var arguments: [String: Any] = ["action": "logs", "logId": entry.id.uuidString, "raw": true]
+
+        do {
+            _ = try await AgentSettings.call("preload", arguments: arguments, navigator: navigator) { _ in false }
+            XCTFail("The log body requires iPhone approval")
+        } catch {
+            XCTAssertTrue(error.localizedDescription.contains("did not approve"))
+        }
+
+        let preview = try await AgentSettings.call("preload", arguments: ["action": "logs", "raw": true], navigator: navigator) { _ in true }
+        let row = try XCTUnwrap((preview as? [[String: Any]])?.first)
+        XCTAssertEqual((row["body"] as? String)?.unicodeScalars.count, 8_192)
+
+        var approvalCount = 0
+        var content = ""
+        for _ in 0..<2 {
+            let response = try await AgentSettings.call("preload", arguments: arguments, navigator: navigator) { _ in
+                approvalCount += 1
+                return true
+            }
+            let chunk = try XCTUnwrap(response as? [String: Any])
+            XCTAssertEqual(chunk["id"] as? String, entry.id.uuidString)
+            content += try XCTUnwrap(chunk["content"] as? String)
+            guard let nextOffset = chunk["nextByteOffset"] as? Int else { break }
+            arguments["byteOffset"] = nextOffset
+            arguments["contentId"] = try XCTUnwrap(chunk["contentId"] as? String)
+        }
+        XCTAssertEqual(approvalCount, 2)
+        let record = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(content.utf8)) as? [String: Any])
+        XCTAssertEqual(record["channel"] as? String, channel)
+        XCTAssertEqual(Data(try XCTUnwrap(record["body"] as? String).utf8), Data(entry.body.utf8))
+        XCTAssertTrue(entry.body.contains("[truncated "))
+    }
+
 }

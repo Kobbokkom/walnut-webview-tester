@@ -4,6 +4,51 @@ import XCTest
 @testable import WalnutAgent
 
 final class EngineInspectorTests: XCTestCase {
+    func testCancelledInspectorAllowsOwnedAdapterToCleanUpAfterWrapperExits() async throws {
+        let log = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: log) }
+        let input = Pipe()
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/bin/sh")
+        process.arguments = [
+            "-c", "trap 'exit 0' TERM; /bin/sh -c \"$2\" adapter \"$1\" & wait", "wrapper", log.path,
+            """
+            release() {
+                /bin/sleep 0.15
+                printf 'released\\n' >> "$1"
+                exit 0
+            }
+            trap 'release "$1"' TERM
+            printf 'ready\\n' > "$1"
+            while :; do /bin/sleep 1; done
+            """
+        ]
+        process.standardInput = input
+        process.standardOutput = FileHandle.nullDevice
+        process.standardError = FileHandle.nullDevice
+        try process.run()
+        let group = EngineInspector.ownedProcessGroup(process)
+        defer {
+            if process.isRunning { Darwin.kill(group.map { -$0 } ?? process.processIdentifier, SIGKILL) }
+        }
+        XCTAssertEqual(group, process.processIdentifier)
+        let readyBy = ContinuousClock.now + .seconds(2)
+        while !FileManager.default.fileExists(atPath: log.path), ContinuousClock.now < readyBy {
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        XCTAssertTrue(FileManager.default.fileExists(atPath: log.path))
+
+        let stop = Task {
+            await EngineInspector.stop(process, processGroup: group, input: input.fileHandleForWriting,
+                                       eofGrace: .milliseconds(50), terminationGrace: .seconds(2))
+        }
+        stop.cancel()
+        await stop.value
+
+        XCTAssertFalse(process.isRunning)
+        XCTAssertEqual(try String(contentsOf: log, encoding: .utf8), "ready\nreleased\n")
+    }
+
     func testBlockedOutputFailsWithinBoundAndRestoresDescriptorFlags() throws {
         let pipe = Pipe()
         let descriptor = pipe.fileHandleForWriting.fileDescriptor

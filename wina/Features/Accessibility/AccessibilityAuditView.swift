@@ -22,6 +22,13 @@ struct AccessibilityIssue: Identifiable, Equatable {
     let helpUrl: String?  // Link to axe-core documentation
     let ruleId: String?  // axe-core rule ID
 
+    func matchesSearch(_ query: String) -> Bool {
+        query.isEmpty || help.localizedCaseInsensitiveContains(query)
+            || element.localizedCaseInsensitiveContains(query)
+            || category.label.localizedCaseInsensitiveContains(query)
+            || ruleId?.localizedCaseInsensitiveContains(query) == true
+    }
+
     enum Severity: String, CaseIterable {
         case error  // critical, serious
         case warning  // moderate
@@ -182,15 +189,7 @@ struct AccessibilityAuditView: View {
             result = result.filter { $0.severity == severity }
         }
 
-        if !searchText.isEmpty {
-            result = result.filter {
-                $0.help.localizedCaseInsensitiveContains(searchText)
-                    || $0.element.localizedCaseInsensitiveContains(searchText)
-                    || $0.category.label.localizedCaseInsensitiveContains(searchText)
-                    || ($0.ruleId?.localizedCaseInsensitiveContains(searchText) ?? false)
-            }
-        }
-
+        if !searchText.isEmpty { result = result.filter { $0.matchesSearch(searchText) } }
         return result
     }
 

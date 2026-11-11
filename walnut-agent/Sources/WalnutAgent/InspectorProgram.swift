@@ -1,10 +1,14 @@
 enum InspectorProgram {
-    static let source = #"""
+    static let source = inspectorProgramSource
+}
+
+private let inspectorProgramSource = #"""
 """A single, authorized Walnut page's Web Inspector session over stdio."""
 
 import asyncio
 import base64
 import contextlib
+from dataclasses import dataclass
 import importlib.metadata
 import json
 import logging
@@ -17,6 +21,12 @@ import uuid
 PACKAGE_VERSION = "11.51.0"
 MAX_COMMAND_BYTES = 256 * 1024
 MAX_OUTPUT_BYTES = 8 * 1024 * 1024
+MAX_PENDING_COMMANDS = 32
+RESERVED_CONTROL_COMMANDS = 4
+MAX_FETCH_PAUSES = 1024
+COMMAND_REPLY_TIMEOUT = 60
+PAUSED_SESSION_TIMEOUT = 10 * 60
+EVALUATION_COMMANDS = {"Runtime.evaluate", "Runtime.callFunctionOn"}
 BUNDLES = {"com.kobbokkom.wina", "com.kobbokkom.wina.qa"}
 PAGE_TYPES = {"WIRTypeWeb", "WIRTypeWebPage", "WIRTypePage"}
 AUTHORIZATION_WORLD = "WalnutEngineInspection"
@@ -25,6 +35,10 @@ FETCH_ACTIONS = {
     "Fetch.continueResponse": (),
     "Fetch.fulfillRequest": ("responseCode", "responsePhrase", "responseHeaders", "body"),
     "Fetch.failRequest": ("errorReason",),
+}
+UNBLOCKING_COMMANDS = {
+    "Debugger.disable", "Debugger.resume", "Debugger.stepInto", "Debugger.stepOver", "Debugger.stepOut",
+    "Debugger.evaluateOnCallFrame", "Fetch.disable", "Network.disable", *FETCH_ACTIONS,
 }
 INTERCEPTION_COMMANDS = {
     "Network.interceptContinue", "Network.interceptWithRequest", "Network.interceptWithResponse",
@@ -273,7 +287,7 @@ def scoped_target_type(base):
                         await self.revoke("More than one authorization context was reported for the Walnut page.")
                     return
             if method == "Network.responseIntercepted" and self._fetch_enabled and isinstance(params.get("requestId"), str):
-                if len(self.response_interceptions) >= 1024:
+                if len(self.response_interceptions) >= MAX_FETCH_PAUSES:
                     await self.revoke("The inspector detached after too many intercepted responses were left pending.")
                     return
                 self.response_interceptions.add(params["requestId"])
@@ -570,37 +584,168 @@ async def cleanup_target(target, call):
         await asyncio.wait_for(target.close(), timeout=3)
 
 
-async def relay(reader, target, stop, write):
-    pending = None
+@dataclass
+class PendingInspectorCommand:
+    method: str
+    started: float
+    continued_fetch: tuple[str, object] | None = None
+    timer: asyncio.TimerHandle | None = None
+    pause_extended: bool = False
 
-    async def call(request, timeout=60):
-        nonlocal pending
-        future = asyncio.get_running_loop().create_future()
-        pending = (request["id"], future)
+
+async def relay(reader, target, stop, write):
+    loop = asyncio.get_running_loop()
+    pending = {}
+    drained = asyncio.Event()
+    drained.set()
+    expired = loop.create_future()
+    cleanup_reply = None
+    input_closed = False
+    debugger_paused = False
+    fetch_pauses = {}
+    pause_timer = None
+
+    def expire(message):
+        if not expired.done():
+            expired.set_result(message)
+
+    def arm_reply_timeout(command):
+        if command.timer is not None:
+            command.timer.cancel()
+        deadline = command.started + COMMAND_REPLY_TIMEOUT
+        message = "The inspector command timed out. Reconnect to the current page."
+        if command.method in EVALUATION_COMMANDS:
+            # A paused page may wait through several separate iPhone approvals. The
+            # evaluation still has an absolute limit even if it repeatedly pauses.
+            limit = command.started + PAUSED_SESSION_TIMEOUT
+            if input_closed:
+                if command.pause_extended:
+                    deadline = min(loop.time() + COMMAND_REPLY_TIMEOUT, limit)
+            elif pause_timer is not None:
+                command.pause_extended = True
+                deadline = limit
+                message = "The inspector evaluation stayed pending too long during pauses. Reconnect to the current page."
+            else:
+                deadline = min(loop.time() + COMMAND_REPLY_TIMEOUT, limit)
+        command.timer = loop.call_at(deadline, expire, message)
+
+    def update_pause_timeout():
+        nonlocal pause_timer
+        paused = debugger_paused or bool(fetch_pauses)
+        if input_closed or paused == (pause_timer is not None):
+            return
+        if paused:
+            pause_timer = loop.call_later(
+                PAUSED_SESSION_TIMEOUT, expire,
+                "The inspector page stayed paused too long. Reconnect to the current page.",
+            )
+        else:
+            pause_timer.cancel()
+            pause_timer = None
+        for command in pending.values():
+            if command.method in EVALUATION_COMMANDS:
+                arm_reply_timeout(command)
+
+    async def drain_input():
+        nonlocal input_closed
+        input_closed = True
+        # Give already queued resume/continue commands a short chance to finish an
+        # evaluation whose ordinary deadline elapsed while WebKit was paused.
+        for command in pending.values():
+            if command.method in EVALUATION_COMMANDS:
+                arm_reply_timeout(command)
+        await drained.wait()
+
+    def observe_event(message):
+        nonlocal debugger_paused
+        method = message.get("method")
+        if method == "Debugger.paused":
+            debugger_paused = True
+        elif method == "Debugger.resumed":
+            debugger_paused = False
+        elif method in {"Fetch.requestPaused", "Network.loadingFinished", "Network.loadingFailed"}:
+            params = message.get("params")
+            identifier = params.get("requestId") if isinstance(params, dict) else None
+            if not isinstance(identifier, str) or not identifier:
+                return
+            if method == "Fetch.requestPaused":
+                if identifier not in fetch_pauses and len(fetch_pauses) >= MAX_FETCH_PAUSES:
+                    expire("The inspector detached after too many intercepted requests were left pending.")
+                    return
+                fetch_pauses[identifier] = object()
+            else:
+                fetch_pauses.pop(identifier, None)
+        else:
+            return
+        update_pause_timeout()
+
+    def observe_success(command):
+        nonlocal debugger_paused
+        if command.method == "Debugger.disable":
+            debugger_paused = False
+        elif command.method in {"Fetch.disable", "Network.disable"}:
+            fetch_pauses.clear()
+        elif command.continued_fetch is not None:
+            identifier, pause = command.continued_fetch
+            if fetch_pauses.get(identifier) is pause:
+                del fetch_pauses[identifier]
+        else:
+            return
+        update_pause_timeout()
+
+    async def cleanup_call(request, timeout):
+        nonlocal cleanup_reply
+        cleanup_reply = loop.create_future()
         try:
             await target.send(request)
-            return await asyncio.wait_for(future, timeout)
+            return await asyncio.wait_for(cleanup_reply, timeout)
         finally:
-            pending = None
+            cleanup_reply = None
 
     async def inputs():
-        while (data := await read_frame(reader)) is not None:
-            value = {}
+        while not stop.is_set() and not target.revoked:
+            try:
+                data = await read_frame(reader)
+            except InspectorError:
+                await drain_input()
+                raise
+            if data is None:
+                await drain_input()
+                return
+            if stop.is_set() or target.revoked:
+                return
+            identifier = None
             try:
                 value = parse_object(data)
+                identifier = request_id(value)
+                if identifier in pending:
+                    identifier = None
+                    raise InspectorError("This inspector command id is already pending.")
                 command = validate_request(value)
-                if command["method"] in {"Runtime.evaluate", "Runtime.callFunctionOn"}:
+                if command["method"] in EVALUATION_COMMANDS:
                     params = command["params"]
                     if any(type(params.get(key)) is int and params[key] in target.authorization_contexts
                            for key in ("contextId", "executionContextId")):
                         raise InspectorError("The inspector authorization context is private.", -32602)
+                limit = MAX_PENDING_COMMANDS
+                if command["method"] in UNBLOCKING_COMMANDS:
+                    limit += RESERVED_CONTROL_COMMANDS
+                if len(pending) >= limit:
+                    raise InspectorError("Too many inspector commands are pending. Retry after a reply.", -32000)
             except InspectorError as error:
-                write({"id": request_id(value), "error": {"code": error.code, "message": str(error)}})
+                write({"id": identifier, "error": {"code": error.code, "message": str(error)}})
                 continue
-            try:
-                await call(command)
-            except asyncio.TimeoutError as error:
-                raise InspectorError("The inspector command timed out. Reconnect to the current page.") from error
+            # CdpTarget sends in FIFO order. Waiting for a reply here would prevent a
+            # later debugger or Fetch command from unblocking an evaluation.
+            entry = PendingInspectorCommand(command["method"], loop.time())
+            if entry.method in FETCH_ACTIONS:
+                request = command["params"].get("requestId")
+                if isinstance(request, str) and request in fetch_pauses:
+                    entry.continued_fetch = (request, fetch_pauses[request])
+            arm_reply_timeout(entry)
+            pending[identifier] = entry
+            drained.clear()
+            await target.send(command)
 
     async def outputs():
         while True:
@@ -610,26 +755,48 @@ async def relay(reader, target, stop, write):
                 stop.set()
                 continue
             if "id" in message:
-                if pending is None or message["id"] != pending[0] or pending[1].done():
+                identifier = message["id"]
+                if type(identifier) is not int:
                     continue
-                if not target.revoked and message["id"] > 0:
+                if identifier == 0:
+                    if cleanup_reply is not None and not cleanup_reply.done():
+                        cleanup_reply.set_result(message)
+                    continue
+                command = pending.pop(identifier, None)
+                if command is None:
+                    continue
+                command.timer.cancel()
+                if not pending:
+                    drained.set()
+                if not target.revoked:
+                    if "result" in message:
+                        observe_success(command)
                     write(message)
-                pending[1].set_result(message)
             elif not target.revoked and message.get("method", "").split(".", 1)[0] in METHODS:
+                observe_event(message)
                 write(message)
 
     reader_task = asyncio.create_task(inputs())
     writer_task = asyncio.create_task(outputs())
     stop_task = asyncio.create_task(stop.wait())
     try:
-        done, _ = await asyncio.wait((reader_task, writer_task, stop_task), return_when=asyncio.FIRST_COMPLETED)
+        done, _ = await asyncio.wait((reader_task, writer_task, stop_task, expired), return_when=asyncio.FIRST_COMPLETED)
         for task in done:
             task.result()
+        if expired in done:
+            raise InspectorError(expired.result())
     finally:
         reader_task.cancel()
         stop_task.cancel()
         await asyncio.gather(reader_task, stop_task, return_exceptions=True)
-        await cleanup_target(target, call)
+        input_closed = True
+        expired.cancel()
+        if pause_timer is not None:
+            pause_timer.cancel()
+        for command in pending.values():
+            command.timer.cancel()
+        pending.clear()
+        await cleanup_target(target, cleanup_call)
         writer_task.cancel()
         await asyncio.gather(writer_task, return_exceptions=True)
 
@@ -784,4 +951,3 @@ def main():
 if __name__ == "__main__":
     sys.exit(main())
 """#
-}

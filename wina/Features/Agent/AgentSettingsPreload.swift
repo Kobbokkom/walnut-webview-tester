@@ -1,6 +1,8 @@
 import Foundation
 
 extension AgentSettings {
+    private static let bridgeLogPageLimit = 200
+
     static let preloadTools = [
         AgentTool.definition("preload", "Inspect and manage WKWebView Page Startup Setup: cookies, window values/functions, native bridge mocks, postMessage capture, and document-start scripts. Use template to obtain the full Codable profile shape. Apply/load/save/delete and sharing raw data need iPhone confirmation.", [
             "action": choices(["get", "list", "template", "apply", "load", "save", "delete", "disable", "reset", "logs", "clear_logs"]),
@@ -32,7 +34,18 @@ extension AgentSettings {
                 "additionalProperties": false,
             ],
             "persist": ["type": "boolean", "default": false],
-            "raw": ["type": "boolean", "default": false],
+            "raw": ["type": "boolean", "default": false, "description": "Share full profile content or bridge log bodies with iPhone approval."],
+            "offset": ["type": "integer", "minimum": 0, "default": 0, "description": "Skip this many of the newest retained bridge logs."],
+            "limit": [
+                "type": "integer", "minimum": 1, "maximum": bridgeLogPageLimit, "default": 50,
+                "description": "Maximum number of bridge logs to list. Use 200 to list all retained entries.",
+            ],
+            "logId": [
+                "type": "string", "format": "uuid",
+                "description": "With logs and raw:true, read the selected log's entire retained body instead of a list preview. For a large record, concatenate content chunks and parse them as JSON.",
+            ],
+            "byteOffset": AgentDevTools.exportByteOffset,
+            "contentId": ["type": "string", "description": "Continue a large log record with this contentId and nextByteOffset as byteOffset."],
         ], required: ["action"]),
     ]
 
@@ -102,30 +115,50 @@ extension AgentSettings {
 
     private static func bridgeLogs(_ action: String, _ input: AgentSettingsInput, navigator: WebViewNavigator?) async throws -> Any {
         guard let navigator, navigator.isAttached else { throw AgentError("Open an active WKWebView first.") }
-        let document = navigator.documentID
+        let context = AgentDevContext(navigator: navigator, authorize: input.authorize)
         let raw = try input.flag("raw")
         if action == "clear_logs" {
-            try await input.confirm("Clear Walnut's startup bridge log?")
-        } else if raw {
-            try await input.confirm("Share startup bridge message bodies with the paired Mac?")
-        }
-        guard navigator.isAttached, navigator.documentID == document else {
-            throw AgentError("The active WKWebView document changed. Try again.")
-        }
-        if action == "clear_logs" {
+            try await context.confirm("Clear Walnut's startup bridge log?")
             navigator.preloadBridgeLogManager.clear()
             return ["cleared": true]
         }
-        return navigator.preloadBridgeLogManager.entries.prefix(50).map { entry -> [String: Any] in
-            var item: [String: Any] = [
-                "id": entry.id.uuidString,
-                "date": entry.date.formatted(.iso8601),
-                "channel": entry.channel,
-                "direction": entry.direction == .received ? "received" : "responded",
-            ]
-            if raw { item["body"] = String(entry.body.prefix(4096)) }
-            return item
+
+        let options = AgentDevInput(values: input.arguments)
+        if input.arguments["logId"] != nil {
+            guard raw else { throw AgentError("Set raw to true to request the retained bridge log body.") }
+            return try await bridgeLogDetail(options, context: context)
         }
+        let offset = try options.int("offset", default: 0, range: 0...Int.max)
+        let limit = try options.int("limit", default: 50, range: 1...bridgeLogPageLimit)
+        if raw { try await context.confirm("Share startup bridge message bodies with the paired Mac?") }
+        return navigator.preloadBridgeLogManager.entries.dropFirst(offset).prefix(limit).map { entry in
+            var record = bridgeLogRecord(entry)
+            // Bound list previews by scalars because one Swift Character can contain many of them.
+            record["channel"] = String(entry.channel.unicodeScalars.prefix(4_096))
+            if raw { record["body"] = String(entry.body.prefix(4_096).unicodeScalars.prefix(8_192)) }
+            return record
+        }
+    }
+
+    private static func bridgeLogDetail(_ input: AgentDevInput, context: AgentDevContext) async throws -> [String: Any] {
+        let id = try input.uuid("logId")
+        let cursor = try AgentDevTools.exportCursor(input, source: "startup bridge log")
+        try await context.confirm("Share the selected startup bridge log and its retained message body with the paired Mac?")
+        guard let entry = context.navigator.preloadBridgeLogManager.entries.first(where: { $0.id == id }) else {
+            throw AgentError("Startup bridge log entry not found.")
+        }
+        var record = bridgeLogRecord(entry)
+        record["body"] = entry.body
+        return try AgentDevTools.exportRecord(record, cursor: cursor, source: "startup bridge log")
+    }
+
+    private static func bridgeLogRecord(_ entry: PreloadBridgeLogEntry) -> [String: Any] {
+        [
+            "id": entry.id.uuidString,
+            "date": entry.date.formatted(.iso8601),
+            "channel": entry.channel,
+            "direction": entry.direction == .received ? "received" : "responded",
+        ]
     }
 
     private static func currentProfile() -> WebViewPreloadProfile {

@@ -9,6 +9,40 @@ enum EngineInspector {
     static func run(arguments: [String]) async throws {
         let options = try Options(arguments)
         let executable = try findUV()
+        try await withTerminationSignals {
+            try await inspect(options: options, executable: executable)
+        }
+    }
+
+    private static func withTerminationSignals(_ operation: @escaping @Sendable () async throws -> Void) async throws {
+        let (interruptions, continuation) = AsyncStream<Void>.makeStream(bufferingPolicy: .bufferingNewest(1))
+        let signals = [SIGINT, SIGTERM]
+        // An inert handler keeps the CLI alive while Dispatch receives the signal. Unlike
+        // SIG_IGN, a caught disposition resets to the default when the adapter is executed.
+        let previousHandlers = signals.map { signal($0, { _ in }) }
+        let sources = signals.map { number in
+            let source = DispatchSource.makeSignalSource(signal: number, queue: .global())
+            source.setEventHandler { continuation.yield(()) }
+            source.resume()
+            return source
+        }
+        defer {
+            sources.forEach { $0.cancel() }
+            continuation.finish()
+            for (number, handler) in zip(signals, previousHandlers) { signal(number, handler) }
+        }
+        try await withThrowingTaskGroup(of: Void.self) { group in
+            group.addTask(operation: operation)
+            group.addTask {
+                for await _ in interruptions { throw AgentError("Web Inspector interrupted.") }
+            }
+            defer { group.cancelAll() }
+            _ = try await group.next()
+            try Task.checkCancellation()
+        }
+    }
+
+    private static func inspect(options: Options, executable: URL) async throws {
         let bridge = DeviceBridge(usb: options.usb ? USBOptions(udid: options.udid) : nil)
         do {
             let grant = try await authorize(bridge)
@@ -44,7 +78,10 @@ enum EngineInspector {
     }
 
     private static func end(_ grant: Grant, bridge: DeviceBridge) async {
-        _ = try? await bridge.call(tool, arguments: ["action": "end", "grantId": grant.id])
+        // Closing the owned grant still needs a bridge request after the inspector task is cancelled.
+        await Task {
+            _ = try? await bridge.call(tool, arguments: ["action": "end", "grantId": grant.id])
+        }.value
     }
 
     private enum Event {
@@ -56,6 +93,7 @@ enum EngineInspector {
     }
 
     private static func runAdapter(_ executable: URL, options: Options, grant: Grant, bridge: DeviceBridge) async throws {
+        try Task.checkCancellation()
         let process = Process()
         let requests = Pipe()
         let replies = Pipe()
@@ -68,17 +106,19 @@ enum EngineInspector {
         process.standardError = FileHandle.standardError
         signal(SIGPIPE, SIG_IGN)
         try process.run()
+        let processGroup = ownedProcessGroup(process)
         let writer = requests.fileHandleForWriting
         do {
             try write(["version": 1, "udid": options.udid, "bundleId": grant.bundleId, "nonce": grant.nonce], to: writer)
             try await relay(replies.fileHandleForReading, writer: writer, grant: grant, bridge: bridge)
-            await stop(process, input: writer)
-            guard !process.isRunning, process.terminationStatus == 0 else {
-                throw AgentError("Web Inspector stopped. See the adapter error above.")
-            }
         } catch {
-            await stop(process, input: writer)
+            await stop(process, processGroup: processGroup, input: writer)
             throw error
+        }
+        await stop(process, processGroup: processGroup, input: writer)
+        try Task.checkCancellation()
+        guard process.terminationStatus == 0 else {
+            throw AgentError("Web Inspector stopped. See the adapter error above.")
         }
     }
 
@@ -136,8 +176,10 @@ enum EngineInspector {
     }
 
     private static func read(
-        _ reader: CLILineReader, into continuation: AsyncThrowingStream<Event, Error>.Continuation,
-        permit: DispatchSemaphore, command: Bool
+        _ reader: CLILineReader,
+        into continuation: AsyncThrowingStream<Event, Error>.Continuation,
+        permit: DispatchSemaphore,
+        command: Bool
     ) {
         DispatchQueue(label: command ? "walnut-agent.inspector.input" : "walnut-agent.inspector.output").async {
             do {
@@ -169,6 +211,7 @@ enum EngineInspector {
             id = command.id
             try await validate(grant, bridge: bridge, command: command)
         } catch {
+            try Task.checkCancellation()
             try write(["id": id, "error": ["code": -32000, "message": error.localizedDescription]], to: .standardOutput)
             return
         }
@@ -187,20 +230,46 @@ enum EngineInspector {
         }
     }
 
-    private static func stop(_ process: Process, input: FileHandle) async {
+    static func ownedProcessGroup(_ process: Process) -> pid_t? {
+        let pid = process.processIdentifier
+        return pid > 1 && getpgid(pid) == pid ? pid : nil
+    }
+
+    static func stop(
+        _ process: Process,
+        processGroup: pid_t?,
+        input: FileHandle,
+        eofGrace: Duration = .seconds(3),
+        terminationGrace: Duration = .seconds(9)
+    ) async {
         try? input.close()
-        for _ in 0..<60 where process.isRunning { try? await Task.sleep(for: .milliseconds(50)) }
-        if process.isRunning {
-            process.terminate()
-            for _ in 0..<60 where process.isRunning { try? await Task.sleep(for: .milliseconds(50)) }
-        }
-        if process.isRunning { Darwin.kill(process.processIdentifier, SIGKILL) }
+        // Foundation starts uv in its own process group, which includes Python. uv can
+        // exit before Python finishes resuming the debugger and detaching from WebKit.
+        // Cleanup deadlines must run even when the inspector task was cancelled by a signal.
+        await Task.detached {
+            let target = processGroup.map { -$0 } ?? process.processIdentifier
+            if !(await waitForExit(process, processGroup: processGroup, grace: eofGrace)) {
+                Darwin.kill(target, SIGTERM)
+                if !(await waitForExit(process, processGroup: processGroup, grace: terminationGrace)) {
+                    Darwin.kill(target, SIGKILL)
+                }
+            }
+        }.value
         await withCheckedContinuation { continuation in
             DispatchQueue.global().async {
                 process.waitUntilExit()
                 continuation.resume()
             }
         }
+    }
+
+    private static func waitForExit(_ process: Process, processGroup: pid_t?, grace: Duration) async -> Bool {
+        let deadline = ContinuousClock.now + grace
+        while process.isRunning || processGroup.map({ Darwin.kill(-$0, 0) == 0 || errno == EPERM }) == true {
+            guard ContinuousClock.now < deadline else { return false }
+            try? await Task.sleep(for: .milliseconds(50))
+        }
+        return true
     }
 
     private static func write(_ object: [String: Any], to handle: FileHandle) throws {
