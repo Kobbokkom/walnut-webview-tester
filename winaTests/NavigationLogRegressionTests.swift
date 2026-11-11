@@ -230,7 +230,9 @@ final class NavigationLogRegressionTests: XCTestCase {
         let url = try XCTUnwrap(URL(string: "http://127.0.0.1:\(XCTUnwrap(server.port).rawValue)/page"))
         let navigator = WebViewNavigator()
         let coordinator = Coordinator(isLoading: .constant(false), navigator: navigator)
-        let webView = WKWebView(frame: .zero, configuration: WKWebViewConfiguration())
+        let configuration = WKWebViewConfiguration()
+        configuration.websiteDataStore = .nonPersistent()
+        let webView = WKWebView(frame: .zero, configuration: configuration)
         navigator.attach(to: webView)
         webView.navigationDelegate = coordinator
 
@@ -242,11 +244,11 @@ final class NavigationLogRegressionTests: XCTestCase {
         let storage = StorageManager()
         storage.setNavigator(navigator)
         let accepted = await storage.addItem(key: "small", value: "works", type: .cookies, pageURL: url)
+        XCTAssertTrue(accepted, storage.errorMessage ?? "The native store did not confirm the cookie.")
         let rejected = await storage.addItem(key: "large", value: String(repeating: "a", count: 10_000), type: .cookies, pageURL: url)
-        let whitespace = await storage.addItem(key: " padded ", value: " value ", type: .cookies, pageURL: url)
-        XCTAssertTrue(accepted)
-        XCTAssertTrue(whitespace)
         XCTAssertFalse(rejected)
+        let whitespace = await storage.addItem(key: " padded ", value: " value ", type: .cookies, pageURL: url)
+        XCTAssertTrue(whitespace, storage.errorMessage ?? "The native store did not confirm the trimmed cookie.")
         let cookies = try await webView.evaluateJavaScript("document.cookie") as? String
         XCTAssertEqual(Set(cookies?.split(separator: ";").map { $0.trimmingCharacters(in: .whitespaces) } ?? []), ["small=works", "padded=value"])
 

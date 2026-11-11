@@ -18,7 +18,9 @@ struct ContentView: View {
         var isOpen = false
         var url = ""
         var revision = UUID()
+        var showsCallback = false
         @ObservationIgnored weak var window: UIWindow?
+        @ObservationIgnored weak var sheetPresenter: BrowserSheetPresenter.Presenter?
 
         var safariRequest: (url: URL?, revision: UUID?) {
             (isOpen && usesSafari ? URL(string: URLValidator.normalizeURL(url)) : nil, revision)
@@ -181,7 +183,7 @@ struct ContentView: View {
         .environment(\.agentBrowserSettings, agentBrowserSettings)
         .overlay(alignment: .top) {
             if showWebView && !useSafariWebView && agentSession.isRunning {
-                let isRecording = agentCaptureRecorder?.isRecording == true
+                let isRecording = ownedAgentRecorder?.isRecording == true
                 GlassIconButton(
                     icon: isRecording ? "record.circle.fill" : "network",
                     color: isRecording ? .red : .green,
@@ -200,10 +202,13 @@ struct ContentView: View {
             BrowserSheetPresenter(
                 request: { [weak agentSession] in agentSession?.approval },
                 resolve: agentSession.resolveApproval,
-                showsCallback: { CallbackTestManager.shared.showResultAlert },
-                dismissCallback: { CallbackTestManager.shared.showResultAlert = false },
+                showsCallback: { [weak browserState] in browserState?.showsCallback == true },
+                dismissCallback: { [weak browserState] in browserState?.showsCallback = false },
                 onSceneExit: stopBackgroundSession,
-                onWindowAttached: { [weak browserState] in browserState?.window = $0 }
+                onWindowAttached: { [weak browserState] window, presenter in
+                    browserState?.window = window
+                    browserState?.sheetPresenter = presenter
+                }
             )
                 .frame(width: 0, height: 0)
                 .accessibilityHidden(true)
@@ -231,6 +236,10 @@ struct ContentView: View {
 
     var body: some View {
         browserSurface
+        .onOpenURL { url in
+            CallbackTestManager.shared.handleIncomingURL(url)
+            browserState.showsCallback = true
+        }
         .alert("Browser options changed", isPresented: $showCleanStartOptionsChanged) {
             Button("OK", role: .cancel) {}
         } message: {
@@ -732,6 +741,10 @@ extension ContentView {
 
     private var webViewIDBinding: Binding<UUID> { Binding(get: { webViewID }, set: { webViewID = $0 }) }
     private var loadedURLBinding: Binding<String> { Binding(get: { loadedURL }, set: { loadedURL = $0 }) }
+
+    func dismissAgentCallback() async throws -> Bool {
+        try await browserState.sheetPresenter?.dismissCallbackResult() ?? false
+    }
 
     func requireSafariPresentationAvailable() throws {
         guard let presented = browserState.window?.rootViewController?.presentedViewController else { return }

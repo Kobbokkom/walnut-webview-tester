@@ -90,12 +90,74 @@ final class RecordingCompletionTests: XCTestCase {
 
     func testStartFailureReturnsToIdleWithoutClaimingSaved() async {
         let recorder = WebViewRecorder(startCapture: { _ in
-            throw NSError(domain: "CaptureFixture", code: 1)
+            throw NSError(domain: "CaptureFixture", code: 1, userInfo: [NSLocalizedDescriptionKey: "Capture declined"])
         })
         let started = await recorder.startRecording()
         XCTAssertFalse(started)
         XCTAssertEqual(recorder.state, .idle)
         XCTAssertNil(recorder.lastResult)
+        XCTAssertEqual(AgentCapture.recordingStatus(recorder)["error"] as? String, "Capture declined")
+    }
+
+    func testAgentCanPollAndStopWhileSystemApprovalIsPending() async throws {
+        let pending = expectation(description: "System capture awaiting approval")
+        var allowCapture: CheckedContinuation<Void, Never>?
+        var stops = 0
+        var saves = 0
+        let recorder = WebViewRecorder(startCapture: { _ in
+            pending.fulfill()
+            await withCheckedContinuation { allowCapture = $0 }
+        }, stopCapture: { stops += 1 }, saveToPhotos: { _ in saves += 1 })
+        let competing = WebViewRecorder(startCapture: { _ in }, stopCapture: {})
+        let start = try XCTUnwrap(recorder.beginRecording(retainForAgent: true, saveToPhotos: true))
+        XCTAssertEqual(AgentCapture.recordingStatus(recorder)["state"] as? String, "starting")
+        await fulfillment(of: [pending], timeout: 2)
+        recorder.stopRecording()
+        XCTAssertEqual(AgentCapture.recordingStatus(recorder)["stopRequested"] as? Bool, true)
+        XCTAssertNil(competing.beginRecording(retainForAgent: true, saveToPhotos: false))
+        XCTAssertEqual(stops, 0)
+
+        allowCapture?.resume()
+        let started = await start.value
+        XCTAssertTrue(started)
+        await waitForIdle(recorder)
+        XCTAssertEqual(stops, 1)
+        XCTAssertEqual(saves, 0)
+        XCTAssertNil(recorder.agentOutputURL)
+        XCTAssertEqual(AgentCapture.recordingStatus(recorder)["error"] as? String, "Recording was stopped before it started.")
+
+        let retry = await competing.startRecording(retainForAgent: true, saveToPhotos: false)
+        XCTAssertTrue(retry)
+        competing.stopRecording()
+        await waitForIdle(competing)
+    }
+
+    func testStopBeforeSystemStartDoesNotAskForApproval() async throws {
+        var captureStarts = 0
+        let recorder = WebViewRecorder(startCapture: { _ in captureStarts += 1 }, stopCapture: {})
+        let start = try XCTUnwrap(recorder.beginRecording(retainForAgent: true, saveToPhotos: false))
+        recorder.stopRecording()
+        let started = await start.value
+        XCTAssertFalse(started)
+        XCTAssertEqual(captureStarts, 0)
+        XCTAssertEqual(recorder.state, .idle)
+    }
+
+    func testNativeStartReplacesFailedAgentOwnership() async {
+        var shouldDecline = true
+        let recorder = WebViewRecorder(startCapture: { _ in
+            if shouldDecline { throw CancellationError() }
+        }, stopCapture: {})
+        let agentStarted = await recorder.startRecording(retainForAgent: true, saveToPhotos: false)
+        XCTAssertFalse(agentStarted)
+        XCTAssertTrue(recorder.isAgentCapture)
+
+        shouldDecline = false
+        let nativeStarted = await recorder.startRecording()
+        XCTAssertTrue(nativeStarted)
+        XCTAssertFalse(recorder.isAgentCapture)
+        recorder.stopRecording()
+        await waitForIdle(recorder)
     }
 
     private func prepareVideo(_ recorder: WebViewRecorder, retainForAgent: Bool = false) async throws -> URL {

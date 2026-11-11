@@ -582,9 +582,23 @@ class Verification:
         png = self.data("walnut_screenshot", saveToPhotos=False)
         verify_page_png(png["path"])
         print(json.dumps({"passed": "WKWebView screenshot with visible page text", "png": png["path"]}), flush=True)
-        self.data("walnut_recording", action="start", saveToPhotos=False)
-        time.sleep(2)
-        self.data("walnut_recording", action="stop", saveToPhotos=False)
+        status = self.data("walnut_recording", action="start", saveToPhotos=False, waitForStart=False)
+        try:
+            require(status["state"] == "starting", "Recording start did not return the pending state")
+            deadline = time.monotonic() + 90
+            while status["state"] == "starting" and time.monotonic() < deadline:
+                time.sleep(0.25)
+                status = self.data("walnut_recording", action="status")
+            require(status["state"] == "recording", status.get("error", "Screen-capture approval is still pending"))
+            time.sleep(2)
+        except BaseException:
+            if status.get("state") in {"starting", "recording"}:
+                try:
+                    self.data("walnut_recording", action="stop")
+                except (RuntimeError, OSError, subprocess.SubprocessError) as error:
+                    print(json.dumps({"recordingCleanupError": str(error)}), flush=True)
+            raise
+        self.data("walnut_recording", action="stop")
         for _ in range(30):
             if self.data("walnut_recording", action="status")["available"]:
                 break

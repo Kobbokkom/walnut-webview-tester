@@ -45,6 +45,10 @@ extension ContentView {
 
     private var agentMode: String { useSafariWebView ? "safarivc" : "wkwebview" }
 
+    var ownedAgentRecorder: WebViewRecorder? {
+        agentCaptureRecorder.flatMap { $0.isAgentCapture ? $0 : nil }
+    }
+
     func startAgentConnection() {
         agentSession.start(handler: { name, arguments in
             try await agentCall(name, arguments)
@@ -54,8 +58,10 @@ extension ContentView {
     private func resetAgentSession() {
         AgentEngineInspection.revoke(webViewNavigator)
         webViewNavigator.hideAgentPointer()
-        agentCaptureRecorder?.stopRecording()
-        agentCaptureRecorder?.discardAgentRecording()
+        if let recorder = ownedAgentRecorder {
+            recorder.stopRecording()
+            recorder.discardAgentRecording()
+        }
         agentCaptureRecorder = nil
         webViewNavigator.agentLogSettings = AgentLogSettings()
         if let defaults = agentCaptureDefaults {
@@ -150,6 +156,8 @@ extension ContentView {
             return try await agentBrowser(arguments)
         case "walnut_panel":
             return try agentPanel(arguments)
+        case "callbacks" where arguments["action"] as? String == "dismiss":
+            return ["dismissed": try await dismissAgentCallback()]
         case "walnut_screenshot", "walnut_recording":
             return try await agentMedia(name, arguments)
         default:
@@ -452,7 +460,8 @@ extension ContentView {
         let save = arguments["saveToPhotos"] as? Bool ?? false
         if name == "walnut_screenshot" { return try await agentScreenshot(saveToPhotos: save) }
 
-        let recorder = agentCaptureRecorder ?? (useSafariWebView ? screenRecorder : webViewNavigator.recorder)
+        let ownedRecorder = ownedAgentRecorder
+        let recorder = ownedRecorder ?? (useSafariWebView ? screenRecorder : webViewNavigator.recorder)
         switch arguments["action"] as? String {
         case "start":
             guard showWebView else { throw AgentError("Open a test page first.") }
@@ -476,25 +485,34 @@ extension ContentView {
                 }
             }
             let activeRecorder = useSafariWebView ? screenRecorder : webViewNavigator.recorder
-            guard activeRecorder.state == .idle, (agentCaptureRecorder?.state ?? .idle) == .idle else {
+            guard activeRecorder.state == .idle, (ownedRecorder?.state ?? .idle) == .idle else {
                 throw AgentError("A screen recording is already active.")
             }
-            if agentCaptureRecorder !== activeRecorder { agentCaptureRecorder?.discardAgentRecording() }
+            guard let start = activeRecorder.beginRecording(retainForAgent: true, saveToPhotos: save) else {
+                throw AgentError(activeRecorder.startFailure ?? "Recording could not start.")
+            }
+            if ownedRecorder !== activeRecorder { ownedRecorder?.discardAgentRecording() }
             agentCaptureRecorder = activeRecorder
-            guard await activeRecorder.startRecording(retainForAgent: true, saveToPhotos: save) else {
-                if agentCaptureRecorder === activeRecorder { agentCaptureRecorder = nil }
-                if let message = activeRecorder.startFailure {
-                    throw AgentError("Recording could not start: \(message)")
+            if arguments["waitForStart"] as? Bool != false {
+                let started = await start.value
+                try Task.checkCancellation()
+                if !started {
+                    let detail = activeRecorder.startFailure.map { ": \($0)" } ?? "."
+                    throw AgentError("Recording could not start\(detail)")
                 }
-                throw AgentError("Recording could not start.")
             }
             return AgentCapture.recordingStatus(activeRecorder)
         case "stop":
-            guard agentCaptureRecorder != nil else { throw AgentError("No agent recording to stop.") }
-            recorder.stopRecording()
+            guard let ownedRecorder else { throw AgentError("No agent recording to stop.") }
+            ownedRecorder.stopRecording()
         case "read":
-            guard agentCaptureRecorder != nil else { throw AgentError("No agent recording to read.") }
-            return try AgentCapture.readRecording(recorder, offset: arguments["offset"] as? Int ?? 0)
+            guard let ownedRecorder else { throw AgentError("No agent recording to read.") }
+            return try AgentCapture.readRecording(ownedRecorder, offset: arguments["offset"] as? Int ?? 0)
+        case "status" where agentCaptureRecorder != nil && ownedRecorder == nil:
+            return [
+                "state": "idle", "duration": 0, "available": false,
+                "error": "A local recording replaced the agent recording."
+            ] as [String: Any]
         default:
             break
         }

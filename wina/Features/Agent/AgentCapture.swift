@@ -8,9 +8,10 @@ enum AgentCapture {
         AgentTool.definition("walnut_screenshot", "Capture the WKWebView or the SafariVC host window after approval on the iPhone. The SafariVC preview can omit the remote page. Review it before sharing.", [
             "saveToPhotos": ["type": "boolean"]
         ]),
-        AgentTool.definition("walnut_recording", "Start or stop an approved screen recording, query status, or read a completed video in base64 chunks.", [
+        AgentTool.definition("walnut_recording", "Start or stop an approved screen recording, query status, or read a completed video in base64 chunks. With waitForStart=false, poll status while iOS waits for screen-capture approval.", [
             "action": ["type": "string", "enum": ["start", "stop", "status", "read"]],
             "saveToPhotos": ["type": "boolean"],
+            "waitForStart": ["type": "boolean", "default": true, "description": "For start, return starting after Walnut and any Photos approval, then poll for recording or an error."],
             "offset": ["type": "integer", "minimum": 0]
         ], required: ["action"])
     ]
@@ -91,6 +92,8 @@ enum AgentCapture {
             "duration": recorder.isRecording ? recorder.currentDuration : recorder.recordingDuration,
             "available": recorder.agentOutputURL != nil
         ]
+        if recorder.state == .starting, recorder.stopRequested { result["stopRequested"] = true }
+        if let failure = recorder.startFailure { result["error"] = failure }
         if case .failed(let message) = recorder.lastResult { result["error"] = message }
         return result
     }

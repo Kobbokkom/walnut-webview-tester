@@ -733,6 +733,29 @@ final class StorageManagerTests: XCTestCase {
 
 final class StorageCookieAdditionTests: XCTestCase {
     @MainActor
+    func testCookieAddConfirmsExactScopeAfterAStaleNativeRead() async throws {
+        let url = try XCTUnwrap(URL(string: "https://example.com/account/settings"))
+        let configuration = WKWebViewConfiguration()
+        configuration.websiteDataStore = .nonPersistent()
+        let webView = WKWebView(frame: .zero, configuration: configuration)
+        await webView.loadHTMLStringAsync("<html></html>", baseURL: url)
+        let cookieStore = InterleavedCookieStore(store: configuration.websiteDataStore.httpCookieStore)
+        let navigator = CookieStoreTestNavigator(store: cookieStore)
+        navigator.attach(to: webView)
+        defer { navigator.detach() }
+        let storage = StorageManager()
+        storage.setNavigator(navigator)
+        cookieStore.afterFirstRead = {
+            cookieStore.nextReadOverride = [makeCookie(name: "fixture", value: "trimmed", domain: "example.com")]
+        }
+
+        let applied = await storage.addCookie(key: "fixture", value: "trimmed", pageURL: url, scope: nil) { true }
+        XCTAssertEqual(applied?.path, "/account")
+        XCTAssertEqual(applied?.value, "trimmed")
+        XCTAssertEqual(navigator.storageScriptCalls, 1)
+    }
+
+    @MainActor
     func testOverlappingNativeAndScopedAddsReserveOnlyTheSameCookie() async throws {
         let url = try XCTUnwrap(URL(string: "https://example.com/account/settings"))
         let configuration = WKWebViewConfiguration()
@@ -852,20 +875,31 @@ final class StorageCookieAdditionTests: XCTestCase {
 @MainActor
 private final class CookieStoreTestNavigator: WebViewNavigator {
     private let store: any StorageCookieStore
+    private(set) var storageScriptCalls = 0
 
     init(store: any StorageCookieStore) { self.store = store }
 
     override var attachedCookieStore: (any StorageCookieStore)? { store }
+
+    override func evaluateJavaScriptReportingErrors(_ script: String, contentWorld: WKContentWorld) async throws -> Any? {
+        storageScriptCalls += 1
+        return try await super.evaluateJavaScriptReportingErrors(script, contentWorld: contentWorld)
+    }
 }
 
 @MainActor
 private final class InterleavedCookieStore: StorageCookieStore {
     private let store: WKHTTPCookieStore
     var afterFirstRead: (() async -> Void)?
+    var nextReadOverride: [HTTPCookie]?
 
     init(store: WKHTTPCookieStore) { self.store = store }
 
     func allCookies() async -> [HTTPCookie] {
+        if let nextReadOverride {
+            self.nextReadOverride = nil
+            return nextReadOverride
+        }
         let callback = afterFirstRead
         afterFirstRead = nil
         let cookies = await store.allCookies()

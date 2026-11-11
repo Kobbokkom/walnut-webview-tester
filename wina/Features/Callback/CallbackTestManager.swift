@@ -25,9 +25,6 @@ final class CallbackTestManager {
     /// Timestamp of last callback
     var lastCallbackTime: Date?
 
-    /// Trigger to show result alert
-    var showResultAlert: Bool = false
-
     // MARK: - Constants
 
     /// URL scheme for this app
@@ -52,9 +49,6 @@ final class CallbackTestManager {
         lastCallbackTime = Date()
 
         callbackParameters = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
-
-        // Trigger alert
-        showResultAlert = true
     }
 
     // MARK: - Formatted Output

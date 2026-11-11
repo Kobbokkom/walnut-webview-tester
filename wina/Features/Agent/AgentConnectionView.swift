@@ -255,7 +255,7 @@ struct BrowserSheetPresenter: UIViewControllerRepresentable {
     let showsCallback: () -> Bool
     let dismissCallback: () -> Void
     var onSceneExit: () -> Void = {}
-    var onWindowAttached: (UIWindow) -> Void = { _ in }
+    var onWindowAttached: (UIWindow, Presenter) -> Void = { _, _ in }
 
     func makeUIViewController(context: Context) -> Presenter { Presenter() }
 
@@ -284,7 +284,7 @@ struct BrowserSheetPresenter: UIViewControllerRepresentable {
         private var callbackProvider: (() -> Bool)?
         private var dismissCallback: (() -> Void)?
         private var onSceneExit: (() -> Void)?
-        private var onWindowAttached: ((UIWindow) -> Void)?
+        private var onWindowAttached: ((UIWindow, Presenter) -> Void)?
         private var locale = Locale.current
         private weak var sceneWindow: UIWindow?
         private weak var observedScene: UIWindowScene?
@@ -320,7 +320,7 @@ struct BrowserSheetPresenter: UIViewControllerRepresentable {
 
         private func attach(to window: UIWindow) {
             sceneWindow = window
-            onWindowAttached?(window)
+            onWindowAttached?(window, self)
             guard let scene = window.windowScene, scene !== observedScene else { return }
             let notification = UIScene.didEnterBackgroundNotification
             NotificationCenter.default.removeObserver(self, name: notification, object: observedScene)
@@ -433,19 +433,53 @@ struct BrowserSheetPresenter: UIViewControllerRepresentable {
             }
         }
 
+        func dismissCallbackResult() async throws -> Bool {
+            let deadline = ContinuousClock.now + .seconds(2)
+            while callbackProvider != nil, callback != nil || callbackProvider?() == true {
+                try Task.checkCancellation()
+                if let callback = stableCallback {
+                    guard approval == nil, callback.presentedViewController == nil else {
+                        throw AgentError("Close the open sheet above the callback result in Walnut first.")
+                    }
+                    await withCheckedContinuation { continuation in
+                        closeCallback(callback) { continuation.resume() }
+                    }
+                    return true
+                }
+                guard ContinuousClock.now < deadline else {
+                    throw AgentError("The callback result sheet is still changing. Try again.")
+                }
+                try await Task.sleep(for: .milliseconds(20))
+            }
+            return false
+        }
+
+        private var stableCallback: UIViewController? {
+            guard !transitioning, let callback, callback.presentingViewController != nil, !callback.isBeingDismissed else { return nil }
+            return callback
+        }
+
         private func closeCallback() {
-            guard !transitioning, approval == nil, let callback else { return }
-            dismiss(callback) { [weak self] in self?.callbackClosed() }
+            guard approval == nil, let callback = stableCallback, callback.presentedViewController == nil else { return }
+            closeCallback(callback)
+        }
+
+        private func closeCallback(_ controller: UIViewController, completion: @escaping () -> Void = {}) {
+            clearCallbackRequest()
+            dismiss(controller) { [weak self] in
+                self?.callback = nil
+                completion()
+            }
         }
 
         func presentationControllerDidDismiss(_ presentationController: UIPresentationController) {
             guard callback === presentationController.presentedViewController else { return }
-            callbackClosed()
+            callback = nil
+            clearCallbackRequest()
             reconcile()
         }
 
-        private func callbackClosed() {
-            callback = nil
+        private func clearCallbackRequest() {
             showsCallback = false
             dismissCallback?()
         }

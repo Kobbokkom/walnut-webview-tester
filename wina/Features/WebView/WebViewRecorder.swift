@@ -33,7 +33,7 @@ private final class WriterState {
     var audioInput: AVAssetWriterInput?
     var sessionStarted = false
     var firstSampleTime: CMTime?
-    var isRecording = false
+    var captureURL: URL?
 
     func reset() {
         assetWriter = nil
@@ -41,7 +41,7 @@ private final class WriterState {
         audioInput = nil
         sessionStarted = false
         firstSampleTime = nil
-        isRecording = false
+        captureURL = nil
     }
 
     func markInputsFinished() {
@@ -134,13 +134,15 @@ private final class WriterState {
 @Observable
 @MainActor
 final class WebViewRecorder {
+    private static weak var activeRecorder: WebViewRecorder?
+
     private(set) var state: RecordingState = .idle
     private(set) var recordingDuration: TimeInterval = 0
     private(set) var lastResult: RecordingResult?
     private(set) var startFailure: String?
     private(set) var failedOutputURL: URL?
-    private var stopRequested = false
-    private var isAgentCapture = false
+    private(set) var stopRequested = false
+    private(set) var isAgentCapture = false
     private var retainForAgent = false
     private var shouldSaveToPhotos = true
     private(set) var agentOutputURL: URL?
@@ -190,59 +192,73 @@ final class WebViewRecorder {
     // MARK: - Recording Control
 
     func startRecording(retainForAgent: Bool = false, saveToPhotos: Bool = true) async -> Bool {
-        guard state == .idle else { return false }
+        guard let url = prepareRecording(retainForAgent: retainForAgent, saveToPhotos: saveToPhotos) else { return false }
+        return await completeStart(outputURL: url)
+    }
+
+    func beginRecording(retainForAgent: Bool, saveToPhotos: Bool) -> Task<Bool, Never>? {
+        guard let url = prepareRecording(retainForAgent: retainForAgent, saveToPhotos: saveToPhotos) else { return nil }
+        return Task { await completeStart(outputURL: url) }
+    }
+
+    private func prepareRecording(retainForAgent: Bool, saveToPhotos: Bool) -> URL? {
+        guard state == .idle else { return nil }
         startFailure = nil
+        guard Self.activeRecorder == nil else {
+            startFailure = "A screen recording is already active or awaiting approval."
+            return nil
+        }
 
         // Note: Photo library permission should be checked by caller before calling this method
         // This avoids race conditions where permission was just granted but status hasn't propagated
 
         // Setup output URL
-        let fileName = "ScreenRecording_\(Date().timeIntervalSince1970).mov"
+        let fileName = "ScreenRecording_\(UUID().uuidString).mov"
         let directory = retainForAgent ? FileManager.default.temporaryDirectory
             : FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
-        guard let directory else { return false }
-        outputURL = directory.appendingPathComponent(fileName)
-
-        // Remove existing file if any
-        if let url = outputURL {
-            try? FileManager.default.removeItem(at: url)
-        }
+        guard let directory else { return nil }
+        let url = directory.appendingPathComponent(fileName)
+        outputURL = url
 
         // Reset state
-        let url = outputURL
         let writerState = writerState
         writerQueue.sync {
             writerState.reset()
-            writerState.isRecording = true
+            writerState.captureURL = url
         }
 
         discardAgentRecording()
         isAgentCapture = retainForAgent
         self.retainForAgent = retainForAgent
         shouldSaveToPhotos = saveToPhotos
+        Self.activeRecorder = self
         state = .starting
         stopRequested = false
         lastResult = nil
         failedOutputURL = nil
-        startTime = Date()
+        startTime = nil
         recordingDuration = 0
 
-        // Start ReplayKit capture
+        return url
+    }
+
+    private func completeStart(outputURL: URL) async -> Bool {
         do {
-            try await startReplayKitCapture(outputURL: url)
+            if stopRequested { throw CancellationError() }
+            try await startReplayKitCapture(outputURL: outputURL)
             state = .recording
 
             if stopRequested {
                 stopRecording()
             } else {
+                startTime = Date()
                 startDurationTimer()
             }
             return true
         } catch {
-            cleanupWriter()
-            if let url { try? FileManager.default.removeItem(at: url) }
-            state = .idle
-            startFailure = error.localizedDescription
+            startFailure = stopRequested ? "Recording was stopped before it started." : error.localizedDescription
+            discardPendingCapture(outputURL: outputURL)
+            completeRecording()
             return false
         }
     }
@@ -250,6 +266,8 @@ final class WebViewRecorder {
     func stopRecording() {
         if state == .starting {
             stopRequested = true
+            let writerState = writerState
+            writerQueue.async { writerState.captureURL = nil }
             return
         }
         guard state == .recording else { return }
@@ -257,7 +275,7 @@ final class WebViewRecorder {
 
         let writerState = writerState
         writerQueue.async {
-            writerState.isRecording = false
+            writerState.captureURL = nil
         }
 
         // Stop duration timer
@@ -274,12 +292,12 @@ final class WebViewRecorder {
 
     // MARK: - ReplayKit Capture
 
-    private func startReplayKitCapture(outputURL: URL?) async throws {
+    private func startReplayKitCapture(outputURL: URL) async throws {
         let writerState = writerState
         let queue = writerQueue
         try await captureStart { sampleBuffer, sampleBufferType, _ in
             queue.async {
-                guard writerState.isRecording else { return }
+                guard writerState.captureURL == outputURL else { return }
                 switch sampleBufferType {
                 case .video:
                     writerState.processVideoSample(sampleBuffer, outputURL: outputURL)
@@ -296,7 +314,7 @@ final class WebViewRecorder {
 
     private static func startSystemCapture(handler: @escaping CaptureHandler) async throws {
         let recorder = RPScreenRecorder.shared()
-        guard recorder.isAvailable else {
+        guard recorder.isAvailable, !recorder.isRecording else {
             throw NSError(domain: "ScreenRecording", code: 1,
                           userInfo: [NSLocalizedDescriptionKey: "Screen recording is unavailable."])
         }
@@ -345,10 +363,11 @@ final class WebViewRecorder {
     // MARK: - Finish Recording
 
     private func finishRecording(captureError: Error?) async {
-        defer {
-            cleanupWriter()
-            startTime = nil
-            state = .idle
+        defer { completeRecording() }
+        if stopRequested {
+            discardPendingCapture(outputURL: outputURL)
+            lastResult = .failed(captureError?.localizedDescription ?? "Recording was stopped before it started.")
+            return
         }
         let writerState = writerState
         let writer = writerQueue.sync { writerState.assetWriter }
@@ -398,6 +417,23 @@ final class WebViewRecorder {
             writerState.reset()
         }
     }
+
+    private func discardPendingCapture(outputURL: URL?) {
+        let writerState = writerState
+        writerQueue.sync {
+            writerState.captureURL = nil
+            if let writer = writerState.assetWriter, writer.status == .writing { writer.cancelWriting() }
+        }
+        if let outputURL { try? FileManager.default.removeItem(at: outputURL) }
+    }
+
+    private func completeRecording() {
+        cleanupWriter()
+        startTime = nil
+        outputURL = nil
+        if Self.activeRecorder === self { Self.activeRecorder = nil }
+        state = .idle
+    }
 }
 
 #if DEBUG
@@ -409,7 +445,7 @@ extension WebViewRecorder {
         writerQueue.sync {
             writerState.assetWriter = writer
             writerState.videoInput = input
-            writerState.isRecording = true
+            writerState.captureURL = url
         }
         state = .recording
     }

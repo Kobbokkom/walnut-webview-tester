@@ -258,12 +258,20 @@ class StorageManager {
               let accepted = try? await navigator.evaluateJavaScriptReportingErrors(script, contentWorld: .defaultClient),
               accepted as? Bool == true else { return nil }
         let expected = scope?.domain.map { ".\($0)" } ?? host
-        return await store.allCookies().first { entry in
+        let matches: (HTTPCookie) -> Bool = { entry in
             let storedDomain = entry.domain.lowercased()
             // WebKit may turn an exact-host public suffix into a host-only cookie.
             return entry.name == cookie.key && entry.value == cookie.value && entry.path == path && !entry.isHTTPOnly
                 && (storedDomain == expected || (domain == host && storedDomain == host))
         }
+        // WebKit can return before the native store sees the write. Hold the reservation even after a disconnect.
+        return await Task { @MainActor () -> HTTPCookie? in
+            for _ in 0..<4 {
+                if let applied = await store.allCookies().first(where: matches) { return applied }
+                try? await Task.sleep(for: .milliseconds(50))
+            }
+            return await store.allCookies().first(where: matches)
+        }.value
     }
 
     private static func cookieFields(key: String, value: String) -> (key: String, value: String)? {

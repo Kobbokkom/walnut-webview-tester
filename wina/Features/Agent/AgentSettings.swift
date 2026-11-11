@@ -24,8 +24,8 @@ enum AgentSettings {
             "action": choices(["status", "request"]),
             "permission": choices(["camera", "microphone", "location"]),
         ], required: ["action"]),
-        AgentTool.definition("callbacks", "Read, clear, or locate the Walnut URL scheme test page. Raw callback URL and query values need confirmation.", [
-            "action": choices(["get", "clear", "test_page"]),
+        AgentTool.definition("callbacks", "Read or clear the latest Walnut URL scheme callback, close its result sheet, or locate the test page. Use dismiss to close the sheet and keep the result. Raw callback URL and query values need confirmation.", [
+            "action": choices(["get", "dismiss", "clear", "test_page"]),
             "raw": ["type": "boolean", "default": false],
         ], required: ["action"]),
         AgentTool.definition("bookmarks", "Read saved bookmarks and history, add or remove a bookmark, or remove and clear history. Use nextOffset to continue list or history. Existing full URLs and persistent mutations need confirmation.", [

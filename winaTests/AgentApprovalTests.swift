@@ -11,6 +11,7 @@ final class AgentApprovalTests: XCTestCase {
         let gate = AgentApprovalGate()
         var showsCallback = false
         var backgrounds = 0
+        @ObservationIgnored weak var presenter: BrowserSheetPresenter.Presenter?
     }
 
     private struct SheetHarness: View {
@@ -23,7 +24,8 @@ final class AgentApprovalTests: XCTestCase {
                     resolve: { state.gate.resolve($0, allow: $1) },
                     showsCallback: { state.showsCallback },
                     dismissCallback: { state.showsCallback = false },
-                    onSceneExit: { state.backgrounds += 1 }
+                    onSceneExit: { state.backgrounds += 1 },
+                    onWindowAttached: { _, presenter in state.presenter = presenter }
                 )
                 .frame(width: 0, height: 0)
             }
@@ -103,9 +105,53 @@ final class AgentApprovalTests: XCTestCase {
         XCTAssertFalse(nestedAllowed)
         try await waitForSheet { callback.presentedViewController == nil }
         XCTAssertTrue(safari.presentedViewController === callback)
-        state.showsCallback = false
-        try await waitForSheet { safari.presentedViewController == nil }
+
+        let presenter = try XCTUnwrap(state.presenter)
+        let unrelated = UIViewController()
+        unrelated.modalPresentationStyle = .formSheet
+        callback.present(unrelated, animated: false)
+        try await waitForSheet { callback.presentedViewController === unrelated }
+        do {
+            _ = try await presenter.dismissCallbackResult()
+            XCTFail("A callback dismissal must leave the nested sheet open")
+        } catch {
+            XCTAssertTrue(callback.presentedViewController === unrelated)
+        }
+        unrelated.dismiss(animated: false)
+        try await waitForSheet { callback.presentedViewController == nil }
+
+        let manager = CallbackTestManager.shared
+        let originalURL = manager.lastCallbackURL
+        let originalTime = manager.lastCallbackTime
+        let originalParameters = manager.callbackParameters
+        defer {
+            manager.lastCallbackURL = originalURL
+            manager.lastCallbackTime = originalTime
+            manager.callbackParameters = originalParameters
+        }
+        let resultURL = try XCTUnwrap(URL(string: "walnut://callback?value=retained"))
+        manager.handleIncomingURL(resultURL)
+        let dismissed = try await presenter.dismissCallbackResult()
+        XCTAssertTrue(dismissed)
+        XCTAssertFalse(state.showsCallback)
+        XCTAssertNil(safari.presentedViewController)
+        XCTAssertEqual(manager.lastCallbackURL, resultURL)
+        XCTAssertEqual(manager.callbackParameters.first?.value, "retained")
         XCTAssertTrue(host.presentedViewController === safari)
+
+        safari.present(unrelated, animated: false)
+        try await waitForSheet { safari.presentedViewController === unrelated }
+        let dismissedAgain = try await presenter.dismissCallbackResult()
+        XCTAssertFalse(dismissedAgain)
+        XCTAssertTrue(safari.presentedViewController === unrelated)
+        unrelated.dismiss(animated: false)
+        try await waitForSheet { safari.presentedViewController == nil }
+
+        state.showsCallback = true
+        let dismissedWhileOpening = try await presenter.dismissCallbackResult()
+        XCTAssertTrue(dismissedWhileOpening)
+        XCTAssertNil(safari.presentedViewController)
+
         XCTAssertEqual(state.backgrounds, 0)
         NotificationCenter.default.post(name: UIScene.didEnterBackgroundNotification, object: scene)
         XCTAssertEqual(state.backgrounds, 1)

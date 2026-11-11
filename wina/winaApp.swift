@@ -93,9 +93,6 @@ struct winaApp: App {
                     .environment(\.webViewContainerSize, containerSize)
                     .preferredColorScheme(preferredScheme)
                     .environment(\.locale, resolvedLocale)
-                    .onOpenURL { url in
-                        CallbackTestManager.shared.handleIncomingURL(url)
-                    }
             }
         }
     }
