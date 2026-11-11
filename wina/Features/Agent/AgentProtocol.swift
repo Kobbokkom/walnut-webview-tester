@@ -70,12 +70,13 @@ enum AgentTool {
 }
 
 struct AgentRequest: Decodable {
+    static let maximumIDBytes = 128
     let id: String
     let tool: String
 
     static func decode(_ data: Data) throws -> (AgentRequest, [String: Any]) {
         let request = try JSONDecoder().decode(Self.self, from: data)
-        guard request.id.utf8.count <= 128,
+        guard request.id.utf8.count <= maximumIDBytes,
               let envelope = try JSONSerialization.jsonObject(with: data) as? [String: Any],
               let arguments = envelope["arguments"] as? [String: Any] else {
             throw AgentError("Invalid Walnut request.")

@@ -43,7 +43,7 @@ final class DeviceBridge: @unchecked Sendable {
         case "walnut_capabilities": timeout = 7
         case "agent_engine_inspection" where arguments["method"] == nil && arguments["action"] as? String != "authorize":
             timeout = 5
-        case "walnut_screenshot": timeout = 105 // SafariVC can require two 45-second approvals.
+        case "walnut_screenshot": timeout = 125 // SafariVC can require two approvals and the system picker.
         case "walnut_browser" where arguments["cleanStart"] as? Bool == true: timeout = 120
         default: timeout = 90
         }

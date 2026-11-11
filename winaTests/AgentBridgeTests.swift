@@ -1,6 +1,9 @@
 import Foundation
 import XCTest
 @testable import wina
+#if canImport(ScreenCaptureKit)
+import ScreenCaptureKit
+#endif
 
 @MainActor
 final class AgentBridgeTests: XCTestCase {
@@ -27,13 +30,22 @@ final class AgentBridgeTests: XCTestCase {
         XCTAssertTrue(unavailable.contains("walnut_panel"))
         XCTAssertTrue(unavailable.contains("console_list"))
         XCTAssertFalse(unavailable.contains("walnut_browser"))
-        XCTAssertFalse(unavailable.contains("walnut_screenshot"))
+        var expectedReason: String? = AgentCapture.safariScreenshotRequiresScreenCaptureKit
+        #if canImport(ScreenCaptureKit)
+        if #available(iOS 27.0, *) {
+            expectedReason = SCContentSharingPicker.shared.isAvailable ? nil : AgentCapture.safariScreenshotUnavailableOnDevice
+        }
+        #endif
+        XCTAssertEqual(unavailable.contains("walnut_screenshot"), expectedReason != nil)
+        let reasons = try XCTUnwrap(safari["unavailableReasons"] as? [String: String])
+        XCTAssertEqual(reasons["walnut_screenshot"], expectedReason)
         let actions = try XCTUnwrap(safari["unavailableActions"] as? [String: [String]])
         XCTAssertEqual(actions["walnut_browser"], ["back", "forward", "initial", "stop", "wait"])
         XCTAssertEqual(actions["preload"], ["clear_logs", "logs"])
         XCTAssertEqual(wk["mode"] as? String, "wkwebview")
         XCTAssertEqual(wk["unavailable"] as? [String], [])
         XCTAssertEqual(wk["unavailableActions"] as? [String: [String]], [:])
+        XCTAssertEqual(wk["unavailableReasons"] as? [String: String], [:])
         let safariTools = try XCTUnwrap(safari["tools"] as? [[String: Any]])
         let wkTools = try XCTUnwrap(wk["tools"] as? [[String: Any]])
         XCTAssertEqual(safariTools.compactMap { $0["name"] as? String }, wkTools.compactMap { $0["name"] as? String })

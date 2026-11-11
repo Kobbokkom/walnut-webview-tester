@@ -26,7 +26,9 @@ extension ContentView {
     private static let agentTools = browserTools + AgentCapture.tools + AgentDevTools.tools + AgentSettings.tools
 
     static func agentCapabilities(safari: Bool) -> [String: Any] {
-        let unavailable = AgentDevTools.tools.compactMap { $0["name"] as? String } + ["walnut_panel"]
+        let screenshotUnavailableReason = safari ? AgentCapture.safariScreenshotUnavailableReason : nil
+        var unavailable = AgentDevTools.tools.compactMap { $0["name"] as? String } + ["walnut_panel"]
+        if screenshotUnavailableReason != nil { unavailable.append("walnut_screenshot") }
         let unavailableActions = [
             "walnut_browser": ["back", "forward", "initial", "stop", "wait"],
             "preload": ["clear_logs", "logs"],
@@ -36,6 +38,7 @@ extension ContentView {
             "mode": safari ? "safarivc" : "wkwebview",
             "unavailable": safari ? unavailable.sorted() : [],
             "unavailableActions": safari ? unavailableActions : [:],
+            "unavailableReasons": screenshotUnavailableReason.map { ["walnut_screenshot": $0] } ?? [:],
         ]
     }
 
@@ -109,9 +112,15 @@ extension ContentView {
             throw AgentError("SafariVC uses Safari’s system toolbar. Walnut menu layout settings apply to WKWebView.")
         }
         try AgentTool.validate(arguments, using: tool)
+        if name == "walnut_screenshot" {
+            var envelope = agentPageEvidence()
+            let screenshot = try await agentScreenshot(saveToPhotos: arguments["saveToPhotos"] as? Bool ?? false, evidence: envelope)
+            envelope["data"] = screenshot
+            return envelope
+        }
         let pageAction = name == "page_interact" && ["scroll", "click", "fill", "select", "move", "click_at", "press"].contains(arguments["action"] as? String ?? "")
         let logExport = ["console_list", "network_list"].contains(name) && ["text", "json"].contains(arguments["format"] as? String ?? "")
-        let fixedTarget = pageAction || logExport || ["walnut_screenshot", "storage_write", "storage_clear"].contains(name) ? agentPageEvidence() : nil
+        let fixedTarget = pageAction || logExport || ["storage_write", "storage_clear"].contains(name) ? agentPageEvidence() : nil
         let result = try await performAgentCall(name, arguments)
         var envelope = fixedTarget ?? agentPageEvidence()
         if name == "performance_read", let measurement = result as? [String: Any],
@@ -158,8 +167,8 @@ extension ContentView {
             return try agentPanel(arguments)
         case "callbacks" where arguments["action"] as? String == "dismiss":
             return ["dismissed": try await dismissAgentCallback()]
-        case "walnut_screenshot", "walnut_recording":
-            return try await agentMedia(name, arguments)
+        case "walnut_recording":
+            return try await agentRecording(arguments)
         default:
             if AgentSettings.tools.contains(where: { $0["name"] as? String == name }) {
                 return try await callAgentSettings(name, arguments)
@@ -410,7 +419,7 @@ extension ContentView {
         throw AgentError("Selector was not found before the timeout.")
     }
 
-    private func agentScreenshot(saveToPhotos: Bool) async throws -> [String: Any] {
+    private func agentScreenshot(saveToPhotos: Bool, evidence: [String: Any]) async throws -> [String: Any] {
         guard showWebView else { throw AgentError("Open a test page first.") }
         let safari = useSafariWebView
         let viewID = webViewID
@@ -422,6 +431,9 @@ extension ContentView {
         let safariView = safariController?.viewIfLoaded
         let safariWindow = safariView?.window
         if safari {
+            if let reason = AgentCapture.safariScreenshotUnavailableReason {
+                throw AgentError(reason)
+            }
             guard safariWindow != nil, agentNavigation.isTerminal else {
                 throw AgentError("Wait for SafariVC to finish opening the test page.")
             }
@@ -432,17 +444,7 @@ extension ContentView {
             }
         }
 
-        let photosNote = saveToPhotos ? " Walnut will also save the approved screenshot to Photos." : ""
-        let prompt = safari ? "Capture the Walnut app window with SafariVC for you to review before sharing?"
-            : "Share a screenshot of the WKWebView test page with the connected Mac and its agent?" + photosNote
-        guard await agentSession.authorize(prompt) else {
-            throw AgentError("Screenshot sharing was denied.")
-        }
-        return try await AgentCapture.screenshot(
-            navigator: navigator, safariWindow: safariWindow, saveToPhotos: saveToPhotos
-        ) { image in
-            await agentSession.authorize("Share this screenshot with the connected Mac and its agent?" + photosNote, preview: image)
-        } validateTarget: {
+        @MainActor func validateTarget() throws {
             try Task.checkCancellation()
             let sameView = safari ? agentSafariNavigation.captureController === safariController && safariView?.window === safariWindow
                 : webViewNavigator === navigator && navigator?.documentID == documentID && navigator?.agentIsLoading == false
@@ -454,11 +456,32 @@ extension ContentView {
                 throw AgentError("Close other Safari sheets before taking a screenshot.")
             }
         }
+
+        let source: AgentCapture.ScreenshotSource
+        if let safariWindow {
+            source = .safariDisplay {
+                try await AgentCapture.captureSafariDisplay(in: safariWindow, validateTarget: validateTarget)
+            }
+        } else if let navigator {
+            source = .wkWebView(navigator)
+        } else {
+            throw AgentError("The test page is no longer visible.")
+        }
+        let photosNote = saveToPhotos ? " Walnut will also save the approved screenshot to Photos." : ""
+        let prompt = safari ? "Capture one image of this device’s entire display with SafariVC visible? Approve in the iOS picker, then review the image before sharing."
+            : "Share a screenshot of the WKWebView test page with the connected Mac and its agent?" + photosNote
+        guard await agentSession.authorize(prompt) else {
+            throw AgentError("Screenshot capture was denied in Walnut.")
+        }
+        return try await AgentCapture.screenshot(source: source, saveToPhotos: saveToPhotos, evidence: evidence) { image in
+            await agentSession.authorize("Share this display screenshot with the connected Mac and its agent?" + photosNote, preview: image)
+        } validateTarget: {
+            try validateTarget()
+        }
     }
 
-    private func agentMedia(_ name: String, _ arguments: [String: Any]) async throws -> Any {
+    private func agentRecording(_ arguments: [String: Any]) async throws -> Any {
         let save = arguments["saveToPhotos"] as? Bool ?? false
-        if name == "walnut_screenshot" { return try await agentScreenshot(saveToPhotos: save) }
 
         let ownedRecorder = ownedAgentRecorder
         let recorder = ownedRecorder ?? (useSafariWebView ? screenRecorder : webViewNavigator.recorder)

@@ -619,10 +619,16 @@ class Verification:
                 and "wait" in capabilities["unavailableActions"]["walnut_browser"],
                 "SafariVC did not report its unavailable tools")
         print(json.dumps({"passed": "SafariVC redirect, load and capability restrictions"}), flush=True)
+        if "walnut_screenshot" in capabilities["unavailable"]:
+            reason = capabilities.get("unavailableReasons", {}).get("walnut_screenshot", "")
+            require("ScreenCaptureKit" in reason or "unavailable on this device" in reason,
+                    "SafariVC screenshot unavailability omitted its reason")
+            print(json.dumps({"unverified": "SafariVC screenshot", "reason": reason}), flush=True)
+            return
         png = self.data("walnut_screenshot", saveToPhotos=False)
-        require(png.get("captureScope") == "hostWindow", "SafariVC did not report the host-window capture scope")
+        require(png.get("captureScope") == "display", "SafariVC did not report the display capture scope")
         verify_page_png(png["path"])
-        print(json.dumps({"passed": "SafariVC host-window screenshot with visible page text", "png": png["path"]}), flush=True)
+        print(json.dumps({"passed": "SafariVC display screenshot with visible page text", "png": png["path"]}), flush=True)
 
 
 async def verify_engine(args):

@@ -25,7 +25,7 @@ final class AgentSession {
     typealias Handler = @MainActor (String, [String: Any]) async throws -> Any
     private static weak var activeSession: AgentSession?
     private static let maxRequest = 256 * 1024
-    private static let maxResponse = 16 * 1024 * 1024
+    static let maxResponse = 16 * 1024 * 1024
 
     func start(handler: @escaping Handler, onDisconnect: @escaping () -> Void) {
         guard !isRunning else { return }

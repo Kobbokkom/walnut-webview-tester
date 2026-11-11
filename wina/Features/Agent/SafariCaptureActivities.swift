@@ -13,7 +13,7 @@ enum SafariCaptureActivities {
         stopMacAgent: (() -> Void)? = nil,
         isCurrent: @escaping @MainActor () -> Bool
     ) -> [UIActivity] {
-        var actions: [CaptureActivity.Action] = [.screenshot]
+        var actions: [CaptureActivity.Action] = AgentCapture.safariScreenshotUnavailableReason == nil ? [.screenshot] : []
         switch recorder.state {
         case .idle: actions.append(.startRecording)
         case .starting, .recording: actions.append(.stopRecording)
@@ -77,7 +77,11 @@ private final class CaptureActivity: UIActivity {
     override var activityType: UIActivity.ActivityType? { UIActivity.ActivityType("com.kobbokkom.wina.safari.\(action.rawValue)") }
     override var activityTitle: String? { localized(action.title) }
     override var activityImage: UIImage? { UIImage(systemName: action.icon) }
-    override func canPerform(withActivityItems _: [Any]) -> Bool { controller != nil }
+    override func canPerform(withActivityItems _: [Any]) -> Bool {
+        MainActor.assumeIsolated {
+            controller != nil && (action != .screenshot || AgentCapture.safariScreenshotUnavailableReason == nil)
+        }
+    }
     override func prepare(withActivityItems _: [Any]) {}
 
     override func perform() {
@@ -100,28 +104,13 @@ private final class CaptureActivity: UIActivity {
     @MainActor
     private func capture(in window: UIWindow) async {
         guard await waitForSafari(in: window) else { return }
-        if action == .stopRecording {
-            await stopRecording(in: window)
-            return
-        }
-        do {
-            try await AgentCapture.requirePhotos()
-        } catch {
-            if await waitForSafari(in: window) {
-                showFeedback(
-                    localized("Photo Access Required"),
-                    message: localized("Allow Walnut to add to Photos in Settings."),
-                    settings: true
-                )
-            }
-            return
-        }
-        guard await waitForSafari(in: window) else { return }
         switch action {
+        case .stopRecording:
+            await stopRecording(in: window)
         case .screenshot:
             await saveScreenshot(in: window)
         case .startRecording:
-            guard recorder.state == .idle else { return }
+            guard await authorizePhotos(in: window), recorder.state == .idle else { return }
             let started = await recorder.startRecording()
             guard isCurrent(), controller?.viewIfLoaded?.window === window else {
                 if started { recorder.stopRecording() }
@@ -130,18 +119,40 @@ private final class CaptureActivity: UIActivity {
             if !started, await waitForSafari(in: window) {
                 showFeedback(localized("Screen Recording Unavailable"), message: recorder.startFailure)
             }
-        case .stopRecording, .stopMacAgent:
+        case .stopMacAgent:
             break
+        }
+    }
+
+    @MainActor
+    private func authorizePhotos(in window: UIWindow) async -> Bool {
+        do {
+            try await AgentCapture.requirePhotos()
+            return await waitForSafari(in: window)
+        } catch {
+            if await waitForSafari(in: window) {
+                showFeedback(
+                    localized("Photo Access Required"),
+                    message: localized("Allow Walnut to add to Photos in Settings."),
+                    settings: true
+                )
+            }
+            return false
         }
     }
 
     @MainActor
     private func saveScreenshot(in window: UIWindow) async {
         do {
-            guard let image = AgentCapture.captureHostWindow(window) else {
-                showFeedback(localized("Screenshot Not Saved"))
-                return
+            let image = try await AgentCapture.captureSafariDisplay(in: window) { [weak self] in
+                guard self?.isSafariReady(in: window) == true else {
+                    throw AgentError("The SafariVC window is no longer active.")
+                }
             }
+            guard WebViewNavigator.hasVisiblePixels(image), isSafariReady(in: window) else {
+                throw AgentError("iOS did not capture visible pixels from the display.")
+            }
+            guard await authorizePhotos(in: window) else { return }
             AudioServicesPlaySystemSound(1108)
             try await AgentCapture.savePhoto(image)
             if await waitForSafari(in: window) { showFeedback(localized("Saved to Photos")) }
@@ -176,13 +187,20 @@ private final class CaptureActivity: UIActivity {
         while !Task.isCancelled, clock.now < deadline {
             guard let controller, isCurrent(), !controller.isBeingDismissed,
                   controller.viewIfLoaded?.window === window else { return false }
-            var front = window.rootViewController
-            while let next = front?.presentedViewController { front = next }
-            if front === controller, controller.transitionCoordinator == nil, window.isKeyWindow,
-               window.windowScene?.activationState == .foregroundActive { return true }
+            if isSafariReady(in: window) { return true }
             try? await Task.sleep(for: .milliseconds(25))
         }
         return false
+    }
+
+    @MainActor
+    private func isSafariReady(in window: UIWindow) -> Bool {
+        guard let controller, isCurrent(), !controller.isBeingDismissed, controller.viewIfLoaded?.window === window,
+              controller.transitionCoordinator == nil, window.isKeyWindow,
+              window.windowScene?.activationState == .foregroundActive else { return false }
+        var front = window.rootViewController
+        while let next = front?.presentedViewController { front = next }
+        return front === controller
     }
 
     @MainActor
