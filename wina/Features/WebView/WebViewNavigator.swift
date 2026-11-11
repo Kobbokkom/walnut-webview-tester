@@ -58,6 +58,20 @@ class WebViewNavigator {
 
     var agentEffectiveUserAgent: String? { webView?.customUserAgent }
 
+    var agentWebViewState: [String: Any]? {
+        guard let webView else { return nil }
+        return [
+            "pageZoom": webView.pageZoom,
+            "widthPoints": webView.bounds.width,
+            "heightPoints": webView.bounds.height,
+            "privateBrowsing": !webView.configuration.websiteDataStore.isPersistent,
+            "allowsBackForwardGestures": webView.allowsBackForwardNavigationGestures,
+            "allowsLinkPreview": webView.allowsLinkPreview,
+            "textInteractionEnabled": webView.configuration.preferences.isTextInteractionEnabled,
+            "findInteractionEnabled": webView.isFindInteractionEnabled
+        ]
+    }
+
     func applyAgentUserAgent() {
         let value = AgentBrowserSettings.shared.value(
             "customUserAgent", fallback: UserDefaults.standard.string(forKey: "customUserAgent") ?? ""

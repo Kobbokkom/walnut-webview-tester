@@ -1,19 +1,26 @@
+import CryptoKit
 import Foundation
 
 @MainActor
 extension AgentDevTools {
+    private static let consoleChunkSize = 256 * 1024
+    private static let consoleByteOffset = ["type": "integer", "minimum": 0, "maximum": Int(Int32.max)] as [String: Any]
+
     static let logTools: [[String: Any]] = [
         AgentTool.definition("console_configure", "Read or set Console options. Preserve and clear strategy are session-only unless saved.", [
             "capture": flag, "preserveOnReload": flag, "clearStrategy": options(LogClearStrategy.self),
             "regex": flag, "types": ["type": "array", "items": options(ConsoleLog.LogType.displayableTypes.map(\.rawValue))],
             "save": flag
         ]),
-        AgentTool.definition("console_list", "Read or export retained Console records. Optional document ID limits results to that document. Text searches and raw content require confirmation.", [
+        AgentTool.definition("console_list", "Read or export retained Console records. Optional document ID limits results to that document. For a long text export, append records from each chunk and pass nextByteOffset as byteOffset with contentId and the same filters. Text searches and raw content require confirmation.", [
             "type": options(ConsoleLog.LogType.displayableTypes.map(\.rawValue)), "query": query, "regex": flag,
             "includeCollapsed": flag, "raw": raw, "format": options(["structured", "text", "json"]),
-            "documentId": identifier, "offset": offset, "limit": limit
+            "documentId": identifier, "offset": offset, "limit": limit,
+            "byteOffset": consoleByteOffset, "contentId": identifier
         ]),
-        AgentTool.definition("console_detail", "Read full Console record details by ID. Requires confirmation.", ["id": identifier], required: ["id"]),
+        AgentTool.definition("console_detail", "Read full Console record details by ID. For a large record, concatenate the content chunks and parse them as JSON. Pass nextByteOffset as byteOffset with contentId and the same ID. Requires confirmation.", [
+            "id": identifier, "byteOffset": consoleByteOffset, "contentId": identifier
+        ], required: ["id"]),
         AgentTool.definition("console_group", "Set the collapsed state of a Console group.", [
             "id": identifier, "collapsed": flag
         ], required: ["id", "collapsed"]),
@@ -55,11 +62,17 @@ extension AgentDevTools {
             return try await listConsole(input, context, console)
         case "console_detail":
             let id = try input.uuid("id")
+            let cursor = try consoleCursor(input)
             try await context.confirm("Share the selected Console entry with the Mac?")
             guard let log = navigator.consoleManager.logs.first(where: { $0.id == id }) else {
                 throw AgentError("Console record not found.")
             }
-            return consoleRecord(log, includeContent: true)
+            let record = consoleRecord(log, includeContent: true, fullContent: true)
+            let data = try JSONSerialization.data(withJSONObject: record, options: [.sortedKeys])
+            if cursor.offset == 0, data.count <= consoleChunkSize { return record }
+            var result = try consoleChunk(data, key: "content", cursor: cursor)
+            result["id"] = log.id.uuidString
+            return result
         case "console_group":
             let id = try input.uuid("id")
             guard let collapsed = try input.bool("collapsed"),
@@ -214,6 +227,8 @@ extension AgentDevTools {
         let includeCollapsed = try input.bool("includeCollapsed") ?? true
         let format = try input.string("format") ?? "structured"
         guard ["structured", "text", "json"].contains(format) else { throw AgentError("Invalid Console format.") }
+        let cursor = try consoleCursor(input)
+        guard format == "text" || cursor.offset == 0 else { throw AgentError("A byte offset requires Console text export.") }
         let includeContent = (try input.bool("raw") ?? false) || format != "structured"
         let compiled: NSRegularExpression?
         if regex && !query.isEmpty {
@@ -245,30 +260,72 @@ extension AgentDevTools {
                 || log.source?.localizedCaseInsensitiveContains(query) == true
         }
         let page = try paginate(input, filtered)
-        let payload: Any
+        var result: [String: Any] = ["capture": manager.isCapturing, "total": filtered.count, "retained": document == nil]
         switch format {
-        case "text": payload = clipped(ConsoleExporter.exportAsText(Array(page), includeObjects: true), limit: 32_768)
+        case "text":
+            let text = ConsoleExporter.exportAsText(Array(page), includeObjects: true)
+            result.merge(try consoleChunk(Data(text.utf8), key: "records", cursor: cursor)) { _, new in new }
         case "json":
             let data = try JSONSerialization.data(withJSONObject: page.map { consoleRecord($0, includeContent: true) })
             guard let output = String(data: data, encoding: .utf8) else { throw AgentError("Could not encode logs.") }
-            payload = output
-        default: payload = page.map { consoleRecord($0, includeContent: includeContent) }
+            result["records"] = output
+        default: result["records"] = page.map { consoleRecord($0, includeContent: includeContent) }
         }
-        return ["capture": manager.isCapturing, "total": filtered.count, "retained": document == nil, "records": payload]
+        return result
     }
 
-    private static func regexMatch(_ regex: NSRegularExpression, _ value: String, deadline: ContinuousClock.Instant) throws -> Bool {
-        let text = clipped(value, limit: 2048)
-        var matched = false
-        regex.enumerateMatches(in: text, options: [.reportProgress], range: NSRange(text.startIndex..., in: text)) { result, _, stop in
-            matched = result != nil
-            stop.pointee = ObjCBool(matched || ContinuousClock.now >= deadline)
+    private static func consoleCursor(_ input: AgentDevInput) throws -> (offset: Int, id: String?) {
+        let offset = try input.int("byteOffset", default: 0, range: 0...Int(Int32.max))
+        let id = try input.string("contentId", maxLength: 64)
+        guard (offset > 0) == (id != nil) else {
+            throw AgentError("A Console continuation requires its byte offset and content ID.")
         }
-        guard ContinuousClock.now < deadline else { throw AgentError("The Console search pattern exceeded its time limit.") }
+        return (offset, id)
+    }
+
+    private static func consoleChunk(_ data: Data, key: String, cursor: (offset: Int, id: String?)) throws -> [String: Any] {
+        let start = cursor.offset
+        let id = start > 0 || data.count > consoleChunkSize
+            ? SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
+            : nil
+        guard cursor.id == nil || cursor.id == id else {
+            throw AgentError("The Console content changed. Start reading it again.")
+        }
+        guard start == 0 || (start < data.count && data[start] & 0xc0 != 0x80) else {
+            throw AgentError("Invalid Console byte offset. Use nextByteOffset from the previous chunk.")
+        }
+        var end = min(data.count, start + consoleChunkSize)
+        while end < data.count && data[end] & 0xc0 == 0x80 { end -= 1 }
+        guard let content = String(bytes: data[start..<end], encoding: .utf8) else {
+            throw AgentError("Could not encode Console content.")
+        }
+        var result: [String: Any] = [key: content]
+        if end < data.count {
+            result["contentId"] = id
+            result["nextByteOffset"] = end
+        }
+        return result
+    }
+
+    private static func regexMatch(_ regex: NSRegularExpression, _ text: String, deadline: ContinuousClock.Instant) throws -> Bool {
+        let timeout = AgentError("The Console search pattern exceeded its time limit.")
+        guard ContinuousClock.now < deadline else { throw timeout }
+        var matched = false
+        var failed = false
+        regex.enumerateMatches(in: text, options: [.reportProgress, .reportCompletion], range: NSRange(text.startIndex..., in: text)) { result, flags, stop in
+            matched = matched || result != nil
+            failed = flags.contains(.internalError)
+            stop.pointee = ObjCBool(matched || failed || ContinuousClock.now >= deadline)
+        }
+        guard ContinuousClock.now < deadline else { throw timeout }
+        guard !failed else { throw AgentError("The Console search pattern could not complete.") }
         return matched
     }
 
-    private static func consoleRecord(_ log: ConsoleLog, includeContent: Bool) -> [String: Any] {
+    private static func consoleRecord(_ log: ConsoleLog, includeContent: Bool, fullContent: Bool = false) -> [String: Any] {
+        func content(_ value: String, limit: Int = 4096) -> String {
+            fullContent ? value : clipped(value, limit: limit)
+        }
         var row: [String: Any] = [
             "id": log.id.uuidString, "type": log.type.rawValue,
             "timestamp": log.timestamp.timeIntervalSince1970, "repeatCount": log.repeatCount,
@@ -277,8 +334,8 @@ extension AgentDevTools {
         row["groupId"] = log.groupId?.uuidString
         row["documentId"] = log.agentDocumentID?.uuidString
         if includeContent {
-            row["message"] = clipped(log.message)
-            row["object"] = log.objectValue.map { clipped($0.copyableString, limit: 32_768) }
+            row["message"] = content(log.message)
+            row["object"] = log.objectValue.map { content($0.copyableString, limit: 32_768) }
             if case .array(let array) = log.objectValue {
                 row["arrayCount"] = array.totalCount
                 row["arrayTruncated"] = array.isTruncated
@@ -286,18 +343,18 @@ extension AgentDevTools {
             if let segments = log.styledSegments, JSONSerialization.isValidJSONObject(segments) {
                 row["styledSegments"] = segments
             }
-            row["inlineSegments"] = log.inlineSegments?.prefix(100).map { segment -> [String: String] in
-                var item = ["text": clipped(segment.text, limit: 1024)]
+            row["inlineSegments"] = log.inlineSegments?.prefix(fullContent ? .max : 100).map { segment -> [String: String] in
+                var item = ["text": content(segment.text, limit: 1024)]
                 item["kind"] = segment.kind?.rawValue
                 return item
             }
-            row["source"] = log.source.map { clipped($0) }
-            row["stack"] = log.stackTrace.map { clipped($0) }
+            row["source"] = log.source.map { content($0) }
+            row["stack"] = log.stackTrace.map { content($0) }
             row["timerLabel"] = log.timerLabel
             row["timerElapsed"] = log.timerElapsed
             row["countLabel"] = log.countLabel
             row["count"] = log.countValue
-            row["table"] = log.tableData?.prefix(20).map { $0.mapValues { clipped($0, limit: 256) } }
+            row["table"] = log.tableData?.prefix(fullContent ? .max : 20).map { $0.mapValues { content($0, limit: 256) } }
         }
         return row
     }
@@ -334,6 +391,7 @@ extension AgentDevTools {
             if filter == .all, [.fetch, .xmlhttprequest].contains(entry.initiatorType) { return false }
             if let host, entry.host?.caseInsensitiveCompare(host) != .orderedSame { return false }
             return query.isEmpty || (includeContent ? entry.name : safeURL(entry.name)).localizedCaseInsensitiveContains(query)
+                || (includeContent && entry.displayName.localizedCaseInsensitiveContains(query))
         }
         let pageRequests = try paginate(input, requests)
         let pageResources = try paginate(input, resources)

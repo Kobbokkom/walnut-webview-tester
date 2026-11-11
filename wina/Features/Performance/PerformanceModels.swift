@@ -466,7 +466,8 @@ class PerformanceManager {
     """
 
     @MainActor
-    func collect(using navigator: WebViewNavigator, reload: Bool) async {
+    @discardableResult
+    func collect(using navigator: WebViewNavigator, reload: Bool) async -> UUID? {
         let id = UUID()
         collectionID = id
         isLoading = true
@@ -481,12 +482,15 @@ class PerformanceManager {
 
         guard navigator.isAttached else {
             lastError = "Failed to collect performance data. Make sure a page is loaded."
-            return
+            return nil
         }
-        let initialDocument = navigator.documentID
-        if reload {
-            clear()
-            navigator.reload()
+        let navigation = navigator.agentNavigation
+        let initialRun = navigation.runID
+        if reload { clear() }
+        let expectedReload = reload ? navigator.reload() : nil
+        guard !reload || expectedReload != nil else {
+            lastError = "The page could not be refreshed for Performance collection."
+            return nil
         }
 
         let script = """
@@ -496,17 +500,28 @@ class PerformanceManager {
         }
         """
         for _ in 0..<20 {
-            guard !Task.isCancelled, collectionID == id else { return }
+            guard !Task.isCancelled, collectionID == id else { return nil }
+            if let expectedReload, navigation.runID != initialRun {
+                guard navigation.matches(expectedReload) else {
+                    lastError = "A different navigation interrupted the Performance refresh."
+                    return nil
+                }
+                guard navigation.phase != "failed" else {
+                    lastError = "The page failed to load during the Performance refresh."
+                    return nil
+                }
+            }
             let document = navigator.documentID
-            if !reload || document != initialDocument {
+            if !reload || (navigation.runID != initialRun && navigation.isTerminal && navigation.documentID == document) {
                 let result = await navigator.evaluateJavaScript(script)
-                guard !Task.isCancelled, collectionID == id else { return }
-                if navigator.documentID == document, let result = result as? String {
+                guard !Task.isCancelled, collectionID == id else { return nil }
+                if navigator.documentID == document, !reload || navigation.matches(expectedReload),
+                   let result = result as? String {
                     parseData(from: result)
-                    if data.navigation == nil && data.paints.isEmpty {
+                    if lastError == nil, data.navigation == nil && data.paints.isEmpty {
                         lastError = "Page load incomplete. Try refreshing again."
                     }
-                    return
+                    return lastError == nil ? document : nil
                 }
             }
             try? await Task.sleep(for: .milliseconds(500))
@@ -514,6 +529,7 @@ class PerformanceManager {
         if !Task.isCancelled, collectionID == id {
             lastError = "Page load incomplete. Try refreshing again."
         }
+        return nil
     }
 
     func parseData(from jsonString: String) {

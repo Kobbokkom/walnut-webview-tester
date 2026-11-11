@@ -5,7 +5,7 @@ import Foundation
 enum AgentSettings {
     static let tools: [[String: Any]] = [
         AgentTool.definition("settings_get", "List available browser testing settings and their effective and saved values."),
-        AgentTool.definition("settings_apply", "Apply a validated patch. Session overrides expire when the connection ends. Persistent edits, enabling Clean Start or Eruda, and disabling private browsing need iPhone confirmation.", [
+        AgentTool.definition("settings_apply", "Apply a validated patch. Session overrides expire when the connection ends. Persistent edits, enabling Clean Start or Eruda, and disabling private browsing or site protections need iPhone confirmation.", [
             "settings": [
                 "type": "object",
                 "properties": AgentSetting.catalog.mapValues(\.schema),
@@ -80,6 +80,23 @@ enum AgentSettings {
         }
     }
 
+    static func configuredBrowserSettings(safari: Bool) -> [String: Any] {
+        let settings = AgentBrowserSettings.shared
+        let entries = AgentSetting.entries.filter { item in
+            guard (item.group == "safari") == safari else { return false }
+            switch item.key {
+            case "cleanStart", "customUserAgent", "useCallbackTestPage":
+                return false
+            case "safariControlTintColorHex", "safariBarTintColorHex":
+                if #available(iOS 26.0, *) { return false }
+                return true
+            default:
+                return true
+            }
+        }
+        return Dictionary(uniqueKeysWithValues: entries.map { ($0.key, settings.effectiveValue(for: $0)) })
+    }
+
     private static func apply(_ input: AgentSettingsInput) async throws -> Any {
         guard let raw = input.arguments["settings"] as? [String: Any] else {
             throw AgentError("Provide a settings object.")
@@ -95,6 +112,12 @@ enum AgentSettings {
         }
         if values["erudaModeEnabled"]?.base as? Bool == true {
             effects.append("Eruda runs third-party JavaScript on the page.")
+        }
+        if values["fraudulentWebsiteWarning"]?.base as? Bool == false {
+            effects.append("Walnut will stop warning about fraudulent websites.")
+        }
+        if values["upgradeToHTTPS"]?.base as? Bool == false {
+            effects.append("Walnut will stop upgrading known hosts to HTTPS.")
         }
         if persist || !effects.isEmpty {
             let question = persist ? "Save changes to Walnut’s testing settings on this iPhone?"

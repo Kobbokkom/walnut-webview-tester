@@ -92,6 +92,11 @@ extension ContentView {
         let fixedTarget = pageAction || ["walnut_screenshot", "storage_write", "storage_clear"].contains(name) ? agentPageEvidence() : nil
         let result = try await performAgentCall(name, arguments)
         var envelope = fixedTarget ?? agentPageEvidence()
+        if name == "performance_read", let measurement = result as? [String: Any],
+           let measuredDocument = measurement["documentId"] as? String,
+           measuredDocument != envelope["documentId"] as? String {
+            throw AgentError("The active WKWebView document changed. Try again.")
+        }
         envelope["data"] = result
         return envelope
     }
@@ -104,8 +109,14 @@ extension ContentView {
         if let document = navigation.documentID, showWebView {
             envelope["documentId"] = document.uuidString
         }
-        if let userAgent = webViewNavigator.agentEffectiveUserAgent, !useSafariWebView, showWebView {
-            envelope["userAgentOverride"] = userAgent
+        if showWebView {
+            var settings = AgentSettings.configuredBrowserSettings(safari: useSafariWebView)
+            if !useSafariWebView {
+                settings["privateBrowsing"] = effectivePrivateBrowsing
+                envelope["userAgentOverride"] = webViewNavigator.agentEffectiveUserAgent
+                envelope["webViewState"] = webViewNavigator.agentWebViewState
+            }
+            envelope["configuredBrowserSettings"] = settings
         }
         return envelope
     }

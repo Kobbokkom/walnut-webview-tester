@@ -15,7 +15,7 @@ extension AgentDevTools {
             "offset": offset, "limit": limit, "textOffset": sourceTextOffset,
             "propertyOffset": offset.merging(["description": "Offset in each matched rule's properties. Follow nextPropertyOffset."]) { _, description in description }
         ], required: ["kind"]),
-        AgentTool.definition("performance_read", "Collect metrics, resource timings, or navigation timings. Reload and capture a fresh run with reload=true.", [
+        AgentTool.definition("performance_read", "Collect metrics, resource timings, or navigation timings. Reload and capture a fresh run with reload=true. Use collect=false to read an existing measurement.", [
             "section": options(["all", "metrics", "resources", "timing"]), "reload": flag,
             "collect": flag, "query": query, "resourceType": options(ResourceType.self),
             "raw": raw, "offset": offset, "limit": limit
@@ -176,20 +176,31 @@ extension AgentDevTools {
         let collect = try input.bool("collect") ?? true
         let type = try input.option("resourceType", as: ResourceType.self)
         let query = try input.string("query") ?? ""
-        if reload || collect {
-            guard !manager.isLoading else { throw AgentError("A Performance collection is already running.") }
+        guard !manager.isLoading else { throw AgentError("A Performance collection is already running.") }
+        let measuredDocument: UUID? = if reload || collect {
             await manager.collect(using: navigator, reload: reload)
-            if let error = manager.lastError { throw AgentError(error) }
+        } else {
+            context.document
         }
-        if !reload { try context.checkDocument() }
         try Task.checkCancellation()
-        guard navigator.isAttached else { throw AgentError("The WKWebView was disconnected.") }
+        if !reload { try context.checkDocument() }
+        guard !manager.isLoading else { throw AgentError("A Performance collection is already running.") }
+        if let error = manager.lastError { throw AgentError(error) }
+        let data = manager.data
+        guard let measuredDocument, data.navigation != nil || !data.paints.isEmpty else {
+            throw AgentError("No Performance measurement is available. Collect performance data first.")
+        }
+        let sharing = AgentDevContext(navigator: navigator, authorize: context.authorize)
+        guard navigator.isAttached, sharing.document == measuredDocument else {
+            throw AgentError("The active WKWebView document changed. Try again.")
+        }
         if raw {
-            let sharing = AgentDevContext(navigator: navigator, authorize: context.authorize)
             try await sharing.confirm("Share captured resource URLs from Performance with the Mac?")
         }
-        let data = manager.data
-        var result: [String: Any] = ["documentId": navigator.documentID.uuidString]
+        if reload, navigator.agentNavigation.documentID != measuredDocument {
+            throw AgentError("A different navigation interrupted the Performance refresh.")
+        }
+        var result: [String: Any] = ["documentId": measuredDocument.uuidString]
         if section == "all" || section == "metrics" {
             result["score"] = data.totalScore
             result["rating"] = data.scoreRating.rawValue

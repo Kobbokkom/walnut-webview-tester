@@ -1,3 +1,4 @@
+import WebKit
 import XCTest
 @testable import wina
 
@@ -49,6 +50,61 @@ final class AgentSettingsTests: XCTestCase {
         XCTAssertTrue(JSONSerialization.isValidJSONObject(result))
         let keys = Set(try XCTUnwrap((result as? [[String: Any]])?.compactMap { $0["key"] as? String }))
         XCTAssertTrue(keys.isSuperset(of: ["elementFullscreenEnabled", "safariDismissButtonStyle", "emulationHighContrast"]))
+    }
+
+    func testBrowserEvidenceSettingsUseCurrentModeAndOverrides() {
+        let settings = AgentBrowserSettings.shared
+        let keys = ["allowsContentJavaScript", "safariWidthRatio"]
+        defer { settings.reset(keys: keys) }
+        settings.apply(["allowsContentJavaScript": false, "safariWidthRatio": 0.5], persist: false)
+
+        let wk = AgentSettings.configuredBrowserSettings(safari: false)
+        XCTAssertEqual(wk["allowsContentJavaScript"] as? Bool, false)
+        XCTAssertNil(wk["safariWidthRatio"])
+        XCTAssertNil(wk["cleanStart"])
+
+        let safari = AgentSettings.configuredBrowserSettings(safari: true)
+        XCTAssertEqual(safari["safariWidthRatio"] as? Double, 0.5)
+        XCTAssertNil(safari["allowsContentJavaScript"])
+        XCTAssertNil(safari["useCallbackTestPage"])
+        XCTAssertTrue(JSONSerialization.isValidJSONObject(safari))
+    }
+
+    func testWebViewStateReportsAppliedZoomAndStore() throws {
+        let config = WKWebViewConfiguration()
+        config.websiteDataStore = .nonPersistent()
+        let webView = WKWebView(frame: .zero, configuration: config)
+        webView.pageZoom = 1.5
+        let navigator = WebViewNavigator()
+        navigator.attach(to: webView)
+
+        let state = try XCTUnwrap(navigator.agentWebViewState)
+        XCTAssertTrue(JSONSerialization.isValidJSONObject(state))
+        XCTAssertEqual(state["pageZoom"] as? CGFloat, 1.5)
+        XCTAssertEqual(state["privateBrowsing"] as? Bool, true)
+    }
+
+    func testDisablingSiteProtectionsRequiresApproval() async throws {
+        let settings = AgentBrowserSettings.shared
+        let keys = ["fraudulentWebsiteWarning", "upgradeToHTTPS"]
+        defer { settings.reset(keys: keys) }
+        settings.apply(Dictionary(uniqueKeysWithValues: keys.map { ($0, true) }), persist: false)
+        let patch = Dictionary(uniqueKeysWithValues: keys.map { ($0, false) })
+        var prompt: String?
+        do {
+            _ = try await AgentSettings.call("settings_apply", arguments: ["settings": patch], navigator: nil) {
+                prompt = $0
+                return false
+            }
+            XCTFail("Unapproved settings must not disable site protections")
+        } catch {
+            let request = try XCTUnwrap(prompt)
+            XCTAssertTrue(request.contains("fraudulent websites"))
+            XCTAssertTrue(request.contains("upgrading known hosts to HTTPS"))
+        }
+        for key in keys {
+            XCTAssertTrue(settings.value(key, fallback: false))
+        }
     }
 
     func testTemporaryCleanStartRequiresApprovalAndExplainsDeletion() async throws {
