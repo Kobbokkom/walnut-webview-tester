@@ -96,7 +96,6 @@ struct winaApp: App {
                     .onOpenURL { url in
                         CallbackTestManager.shared.handleIncomingURL(url)
                     }
-                    .callbackResultSheet()
             }
         }
     }

@@ -40,23 +40,10 @@ struct SafariVCSettingsView: View {
 
                 Section {
                     SettingsCategoryRow(
-                        icon: "menubar.rectangle",
-                        iconColor: .indigo,
-                        title: "Menu",
-                        description: "Customize toolbar & app bar"
-                    ).link {
-                        SafariVCMenuSettingsView()
-                    }
-                } header: {
-                    Text("Developer Tools Settings")
-                }
-
-                Section {
-                    SettingsCategoryRow(
                         icon: "gearshape.fill",
                         iconColor: .orange,
                         title: "Configuration",
-                        description: "All changes reload SafariVC"
+                        description: "Reader mode, bar collapsing options"
                     ).link {
                         SafariVCConfigurationSettingsView(webViewID: $webViewID)
                     }
@@ -88,7 +75,6 @@ struct SafariVCSettingsView: View {
         let search = SettingsSearch(item: result.item, locale: locale)
         switch result.screen {
         case .app: AppSettingsView(settingsSearch: search)
-        case .safariMenu: SafariVCMenuSettingsView(settingsSearch: search)
         case .safariConfiguration: SafariVCConfigurationSettingsView(settingsSearch: search, webViewID: $webViewID)
         default: EmptyView()
         }
@@ -109,8 +95,6 @@ struct SafariVCConfigurationSettingsView: View {
     @AppStorage("safariDismissButtonStyle") private var storedDismissButtonStyle: Int = 0
     @AppStorage("safariControlTintColorHex") private var storedControlTintColorHex: String = ""
     @AppStorage("safariBarTintColorHex") private var storedBarTintColorHex: String = ""
-    @AppStorage("safariWidthRatio") private var storedWidthRatio: Double = 1.0
-    @AppStorage("safariHeightRatio") private var storedHeightRatio: Double = 0.82
 
     // Local state (editable)
     @State private var entersReaderIfAvailable: Bool = false
@@ -118,17 +102,13 @@ struct SafariVCConfigurationSettingsView: View {
     @State private var dismissButtonStyle: Int = 0
     @State private var controlTintColorHex: String = ""
     @State private var barTintColorHex: String = ""
-    @State private var widthRatio: Double = 1.0
-    @State private var heightRatio: Double = 0.82
 
     private var hasChanges: Bool {
         entersReaderIfAvailable != storedEntersReaderIfAvailable ||
         barCollapsingEnabled != storedBarCollapsingEnabled ||
         dismissButtonStyle != storedDismissButtonStyle ||
         controlTintColorHex != storedControlTintColorHex ||
-        barTintColorHex != storedBarTintColorHex ||
-        abs(widthRatio - storedWidthRatio) > 0.001 ||
-        abs(heightRatio - storedHeightRatio) > 0.001
+        barTintColorHex != storedBarTintColorHex
     }
 
     var body: some View {
@@ -136,7 +116,6 @@ struct SafariVCConfigurationSettingsView: View {
             behaviorSection
             uiStyleSection
             colorsSection
-            sizeSection
             resetSection
         }
         .navigationTitle(Text(verbatim: "Configuration"))
@@ -176,8 +155,6 @@ struct SafariVCConfigurationSettingsView: View {
         dismissButtonStyle = storedDismissButtonStyle
         controlTintColorHex = storedControlTintColorHex
         barTintColorHex = storedBarTintColorHex
-        widthRatio = storedWidthRatio
-        heightRatio = storedHeightRatio
     }
 
     private func applyChanges() {
@@ -186,8 +163,6 @@ struct SafariVCConfigurationSettingsView: View {
         storedDismissButtonStyle = dismissButtonStyle
         storedControlTintColorHex = controlTintColorHex
         storedBarTintColorHex = barTintColorHex
-        storedWidthRatio = widthRatio
-        storedHeightRatio = heightRatio
         webViewID = UUID()
         dismiss()
     }
@@ -253,19 +228,6 @@ struct SafariVCConfigurationSettingsView: View {
     }
 
     @ViewBuilder
-    private var sizeSection: some View {
-        Section {
-            WebViewSizeControl(
-                widthRatio: $widthRatio,
-                heightRatio: $heightRatio
-            )
-            .settingsSearchItem("webViewSize")
-        } header: {
-            Text("Size")
-        }
-    }
-
-    @ViewBuilder
     private var resetSection: some View {
         Section {
             HStack {
@@ -285,8 +247,6 @@ struct SafariVCConfigurationSettingsView: View {
         dismissButtonStyle = 0
         controlTintColorHex = ""
         barTintColorHex = ""
-        widthRatio = 1.0
-        heightRatio = 0.82
     }
 }
 

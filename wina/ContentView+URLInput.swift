@@ -44,7 +44,7 @@ extension ContentView {
                     .onTapGesture {}  // Prevent background tap propagation
 
                     // WebView Type Toggle
-                    Picker("WebView Type", selection: $useSafariWebView) {
+                    Picker("WebView Type", selection: Binding(get: { useSafariWebView }, set: { useSafariWebView = $0 })) {
                         Text("WKWebView")
                             .tag(false)
                         Text(verbatim: "SafariVC")

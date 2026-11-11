@@ -11,15 +11,15 @@ import SwiftUI
 
 struct CallbackResultSheet: View {
     @State private var manager = CallbackTestManager.shared
-    @Environment(\.dismiss) private var dismiss
     @State private var shareItem: ShareItem?
+    let onClose: () -> Void
 
     var body: some View {
         VStack(spacing: 0) {
             DevToolsHeader(
                 title: "Callback",
                 leftButtons: [
-                    .init(icon: "xmark.circle.fill", color: .secondary) { dismiss() },
+                    .init(icon: "xmark.circle.fill", color: .secondary, action: onClose),
                     .init(
                         icon: "trash",
                         isDisabled: manager.lastCallbackURL == nil
@@ -221,25 +221,6 @@ private struct ShareItem: Identifiable {
     let items: [Any]
 }
 
-// MARK: - Callback Result Sheet Modifier
-
-struct CallbackResultSheetModifier: ViewModifier {
-    @State private var manager = CallbackTestManager.shared
-
-    func body(content: Content) -> some View {
-        content
-            .sheet(isPresented: $manager.showResultAlert) {
-                CallbackResultSheet()
-            }
-    }
-}
-
-extension View {
-    func callbackResultSheet() -> some View {
-        modifier(CallbackResultSheetModifier())
-    }
-}
-
 #Preview {
-    CallbackResultSheet()
+    CallbackResultSheet(onClose: {})
 }

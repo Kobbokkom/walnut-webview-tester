@@ -5,13 +5,11 @@
 //  Created by Claude on 1/15/26.
 //
 
-import SafariServices
 import SwiftUI
 
 // MARK: - Callback Test Settings View
 
 struct CallbackTestSettingsView: View {
-    @Environment(\.dismiss) private var dismiss
     private let manager = CallbackTestManager.shared
 
     @State private var showingSafariVC = false
@@ -23,8 +21,14 @@ struct CallbackTestSettingsView: View {
         }
         .navigationTitle(Text(verbatim: "Callback Test"))
         .navigationBarTitleDisplayMode(.inline)
-        .sheet(isPresented: $showingSafariVC) {
-            CallbackTestSafariView()
+        .background {
+            SafariModalPresenter(
+                url: showingSafariVC ? CallbackTestManager.testPageURL : nil,
+                usesBrowserSettings: false,
+                onDismiss: { _ in showingSafariVC = false }
+            )
+            .frame(width: 0, height: 0)
+            .accessibilityHidden(true)
         }
     }
 
@@ -140,48 +144,6 @@ struct CallbackTestSettingsView: View {
             Text("Results")
         }
     }
-}
-
-// MARK: - Safari View for Test Page
-
-struct CallbackTestSafariView: View {
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        NavigationStack {
-            SafariViewRepresentable(url: CallbackTestManager.testPageURL)
-                .ignoresSafeArea()
-                .navigationTitle(Text(verbatim: "Callback Test Page"))
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Button("Done") {
-                            dismiss()
-                        }
-                    }
-                }
-        }
-    }
-}
-
-// MARK: - Safari View Representable
-
-private struct SafariViewRepresentable: UIViewControllerRepresentable {
-    let url: URL
-
-    func makeUIViewController(context _: Context) -> SFSafariViewController {
-        let config = SFSafariViewController.Configuration()
-        config.entersReaderIfAvailable = false
-        config.barCollapsingEnabled = true
-
-        let safari = SFSafariViewController(url: url, configuration: config)
-        if #unavailable(iOS 26.0) {
-            safari.preferredControlTintColor = .systemBlue
-        }
-        return safari
-    }
-
-    func updateUIViewController(_: SFSafariViewController, context _: Context) {}
 }
 
 // MARK: - Preview

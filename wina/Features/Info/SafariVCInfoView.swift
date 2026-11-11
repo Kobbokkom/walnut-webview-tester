@@ -8,8 +8,8 @@ import SwiftUI
 import SwiftUIBackports
 
 struct SafariVCInfoView: View {
-    @Environment(\.webViewContainerSize) private var containerSize
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.locale) private var locale
     @Binding var webViewID: UUID
 
     init(webViewID: Binding<UUID> = .constant(UUID())) {
@@ -25,14 +25,6 @@ struct SafariVCInfoView: View {
     @AppStorage("safariControlTintColorHex") private var controlTintColorHex: String = ""
     @AppStorage("safariBarTintColorHex") private var barTintColorHex: String = ""
 
-    // Size settings
-    @AppStorage("safariWidthRatio") private var widthRatio: Double = 1.0
-    @AppStorage("safariHeightRatio") private var heightRatio: Double = 0.82
-
-    private var effectiveHeightRatio: Double {
-        BarConstants.effectiveHeightRatio(heightRatio, for: containerSize.height)
-    }
-
     private var allItems: [SafariInfoSearchItem] {
         var items: [SafariInfoSearchItem] = []
 
@@ -43,8 +35,11 @@ struct SafariVCInfoView: View {
             SafariInfoSearchItem(category: "Active Settings", label: "Dismiss Button", value: SettingsFormatter.dismissButtonStyleText(dismissButtonStyle)),
             SafariInfoSearchItem(category: "Active Settings", label: "Control Tint", value: controlTintColorHex.isEmpty ? "System" : "\(controlTintColorHex) (iOS 18.4-25)"),
             SafariInfoSearchItem(category: "Active Settings", label: "Bar Tint", value: barTintColorHex.isEmpty ? "System" : "\(barTintColorHex) (iOS 18.4-25)"),
-            SafariInfoSearchItem(category: "Active Settings", label: "SafariVC Width", value: "\(Int(widthRatio * 100))%"),
-            SafariInfoSearchItem(category: "Active Settings", label: "SafariVC Height", value: "\(Int(effectiveHeightRatio * 100))%")
+            SafariInfoSearchItem(
+                category: "Active Settings",
+                label: String(localized: LocalizedStringResource("Presentation", locale: locale)),
+                value: String(localized: LocalizedStringResource("Full Screen", locale: locale))
+            )
         ])
 
         // Safari Features
@@ -274,6 +269,7 @@ private struct SafariInfoCategoryRow: View {
 // MARK: - Active Settings Detail View
 
 private struct SafariActiveSettingsDetailView: View {
+    @Environment(\.locale) private var locale
     @Binding var showSettings: Bool
 
     @AppStorage("safariEntersReaderIfAvailable") private var entersReaderIfAvailable: Bool = false
@@ -281,16 +277,6 @@ private struct SafariActiveSettingsDetailView: View {
     @AppStorage("safariDismissButtonStyle") private var dismissButtonStyle: Int = 0
     @AppStorage("safariControlTintColorHex") private var controlTintColorHex: String = ""
     @AppStorage("safariBarTintColorHex") private var barTintColorHex: String = ""
-
-    // Size settings
-    @AppStorage("safariWidthRatio") private var widthRatio: Double = 1.0
-    @AppStorage("safariHeightRatio") private var heightRatio: Double = 0.82
-
-    private var effectiveHeightRatio: Double {
-        BarConstants.effectiveHeightRatio(heightRatio, for: containerSize.height)
-    }
-
-    @Environment(\.webViewContainerSize) private var containerSize
 
     var body: some View {
         List {
@@ -336,6 +322,10 @@ private struct SafariActiveSettingsDetailView: View {
 
             Section("UI Style") {
                 SafariInfoRow(
+                    label: String(localized: LocalizedStringResource("Presentation", locale: locale)),
+                    value: String(localized: LocalizedStringResource("Full Screen", locale: locale))
+                )
+                SafariInfoRow(
                     label: "Dismiss Button",
                     value: SettingsFormatter.dismissButtonStyleText(dismissButtonStyle),
                     info: "Button style shown in top-left corner."
@@ -353,33 +343,6 @@ private struct SafariActiveSettingsDetailView: View {
                     value: barTintColorHex.isEmpty ? "System" : barTintColorHex,
                     info: "Background color of navigation bar.\nApplied on iOS 18.4-25 only."
                 )
-            }
-
-            Section {
-                let w = Int(containerSize.width * widthRatio)
-                let h = Int(containerSize.height * effectiveHeightRatio)
-
-                SafariInfoRow(
-                    label: "Width",
-                    value: "\(Int(widthRatio * 100))%",
-                    info: "SafariVC width ratio.\n100% = Full screen width."
-                )
-                SafariInfoRow(
-                    label: "Height",
-                    value: "\(Int(effectiveHeightRatio * 100))%",
-                    info: "SafariVC height ratio.\n100% = Full screen height."
-                )
-                SafariInfoRow(
-                    label: "Viewport",
-                    value: "\(w) × \(h) pt",
-                    info: "Current SafariVC viewport size in points."
-                )
-            } header: {
-                HStack(spacing: 6) {
-                    Image(systemName: "arrow.up.left.and.arrow.down.right")
-                        .foregroundStyle(.purple)
-                    Text("Size")
-                }
             }
         }
         .navigationTitle(Text(verbatim: "Active Settings"))

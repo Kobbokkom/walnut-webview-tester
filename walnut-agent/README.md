@@ -78,7 +78,7 @@ In WKWebView, `page_interact` action `observe` returns a `documentId`, visible c
 
 After approval, `walnut_screenshot` saves a private PNG to the Mac. If Mac storage fails after the iPhone returns the capture, the error response retains `result.data.savedToPhotos` so you can tell whether Walnut already saved it to Photos. For a completed recording, `walnut_recording` with action `read` saves a private `.mov` file to the Mac, up to 512 MiB. Successful captures return the local file in `result.data.path`.
 
-In SafariVC the capture is of the host window. The remote page can be missing from the rendered image, so inspect the on-device preview before sharing it. Screen recording depends on iOS capture availability.
+SafariVC opens full screen with Safari's native controls. On the iPhone, use Safari's Share menu to select **Save Screenshot**, **Start Recording**, or **Stop Recording**. Agent screenshots capture the host window and show an on-device preview before sharing. Screen recording depends on iOS capture availability. The `menus` tool configures Walnut's WKWebView controls.
 
 If the phone shows a new pairing code, run `walnut-agent pair` again. If the connection drops mid-call, check the page and run state before retrying. The interrupted action may already have taken effect.
 

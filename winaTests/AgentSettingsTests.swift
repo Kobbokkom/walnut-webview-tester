@@ -14,6 +14,35 @@ final class AgentSettingsTests: XCTestCase {
         XCTAssertNotEqual(settings.safariRebuildID, safari)
     }
 
+    func testApplyRevalidatesBrowserAfterApprovalBeforeMutating() async throws {
+        let settings = AgentBrowserSettings.shared
+        let keys = ["cleanStart", "safariEntersReaderIfAvailable"]
+        defer { settings.reset(keys: keys) }
+        settings.apply(["safariEntersReaderIfAvailable": false], persist: false)
+        let revision = settings.safariRebuildID
+        var approved = false
+
+        do {
+            _ = try await AgentSettings.call(
+                "settings_apply", arguments: ["settings": ["cleanStart": true, "safariEntersReaderIfAvailable": true]],
+                navigator: nil,
+                validateApplyTarget: {
+                    XCTAssertTrue(approved)
+                    throw AgentError("The callback sheet is open.")
+                },
+                authorize: { _ in
+                    approved = true
+                    return true
+                }
+            )
+            XCTFail("Settings were applied after the Safari presentation became unavailable")
+        } catch {
+            XCTAssertEqual(error.localizedDescription, "The callback sheet is open.")
+        }
+        XCTAssertEqual(settings.safariRebuildID, revision)
+        XCTAssertFalse(settings.value("safariEntersReaderIfAvailable", fallback: false))
+    }
+
     func testTemporaryPreloadCookiesIsolateWebsiteData() {
         let settings = AgentBrowserSettings()
         let profile = WebViewPreloadProfile(isEnabled: true, cookies: [PreloadCookie(name: "fixture", value: "1")])
@@ -54,20 +83,42 @@ final class AgentSettingsTests: XCTestCase {
 
     func testBrowserEvidenceSettingsUseCurrentModeAndOverrides() {
         let settings = AgentBrowserSettings.shared
-        let keys = ["allowsContentJavaScript", "safariWidthRatio"]
+        let keys = ["allowsContentJavaScript", "safariDismissButtonStyle"]
         defer { settings.reset(keys: keys) }
-        settings.apply(["allowsContentJavaScript": false, "safariWidthRatio": 0.5], persist: false)
+        settings.apply(["allowsContentJavaScript": false, "safariDismissButtonStyle": 1], persist: false)
 
         let wk = AgentSettings.configuredBrowserSettings(safari: false)
         XCTAssertEqual(wk["allowsContentJavaScript"] as? Bool, false)
-        XCTAssertNil(wk["safariWidthRatio"])
+        XCTAssertNil(wk["safariDismissButtonStyle"])
+        XCTAssertNil(wk["presentation"])
         XCTAssertNil(wk["cleanStart"])
 
         let safari = AgentSettings.configuredBrowserSettings(safari: true)
-        XCTAssertEqual(safari["safariWidthRatio"] as? Double, 0.5)
+        XCTAssertEqual(safari["safariDismissButtonStyle"] as? Int, 1)
+        XCTAssertEqual(safari["presentation"] as? String, "full_screen")
         XCTAssertNil(safari["allowsContentJavaScript"])
         XCTAssertNil(safari["useCallbackTestPage"])
         XCTAssertTrue(JSONSerialization.isValidJSONObject(safari))
+    }
+
+    func testSafariOnlyAdvertisesSettingsAvailableInItsFullScreenPresentation() async throws {
+        let removedDimensions = ["safariWidthRatio", "safariHeightRatio"]
+        let report = try await AgentSettings.call("diagnostics", arguments: ["section": "safari"], navigator: nil) { _ in false }
+        let diagnostics = try XCTUnwrap(report as? [String: Any])
+        let safariSettings = try XCTUnwrap(diagnostics["settings"] as? [String: Any])
+        XCTAssertEqual(diagnostics["presentation"] as? String, "full_screen")
+        for key in removedDimensions {
+            XCTAssertNil(safariSettings[key])
+            XCTAssertThrowsError(try AgentSetting.validatePatch([key: 0.5], persist: false))
+        }
+
+        let menus = try XCTUnwrap(AgentSettings.tools.first { $0["name"] as? String == "menus" })
+        for key in ["wk_toolbar", "wk_app_bar"] {
+            XCTAssertNoThrow(try AgentTool.validate(["action": "get", "menu": key], using: menus))
+        }
+        for key in ["safari_toolbar", "safari_app_bar"] {
+            XCTAssertThrowsError(try AgentTool.validate(["action": "get", "menu": key], using: menus))
+        }
     }
 
     func testWebViewStateReportsAppliedZoomAndStore() throws {

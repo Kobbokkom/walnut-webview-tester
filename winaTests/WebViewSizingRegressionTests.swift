@@ -10,7 +10,7 @@ final class WebViewSizingRegressionTests: XCTestCase {
         @State private var identifier = UUID()
 
         var body: some View {
-            WebViewContainer(urlString: "https://example.invalid/initial", useSafari: false,
+            WebViewContainer(urlString: "https://example.invalid/initial",
                              webViewID: $identifier, navigator: navigator)
         }
     }

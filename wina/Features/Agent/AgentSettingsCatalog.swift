@@ -207,8 +207,6 @@ struct AgentSetting {
         .init(key: "safariDismissButtonStyle", title: "SafariVC dismiss style (0 done, 1 close, 2 cancel)", group: "safari", kind: .integer(0...2), defaultValue: 0),
         .init(key: "safariControlTintColorHex", title: "SafariVC control tint before iOS 26, empty uses default", group: "safari", kind: .color, defaultValue: "", rebuild: true),
         .init(key: "safariBarTintColorHex", title: "SafariVC bar tint before iOS 26, empty uses default", group: "safari", kind: .color, defaultValue: "", rebuild: true),
-        .init(key: "safariWidthRatio", title: "SafariVC width ratio", group: "safari", kind: .number(0.25...1), defaultValue: 1.0),
-        .init(key: "safariHeightRatio", title: "SafariVC height ratio, 0 selects App preset", group: "safari", kind: .number(0.25...1, special: BarConstants.appHeightPreset), defaultValue: 0.82),
         .init(key: "useCallbackTestPage", title: "Use Walnut's callback test page for SafariVC launches", group: "safari", kind: .boolean, defaultValue: false, canPersist: false),
     ]
 }

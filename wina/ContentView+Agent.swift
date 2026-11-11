@@ -1,3 +1,4 @@
+import SafariServices
 import SwiftUI
 import WebKit
 
@@ -72,7 +73,12 @@ extension ContentView {
         }
         let rebuild = settings.browserRevision(safari: useSafariWebView)
         settings.reset()
-        if !agentSession.isRunning && rebuild != settings.browserRevision(safari: useSafariWebView) { recreateAgentBrowser() }
+        guard rebuild != settings.browserRevision(safari: useSafariWebView) else { return }
+        if useSafariWebView {
+            if (try? requireSafariPresentationAvailable()) != nil { recreateAgentBrowser() }
+        } else if !agentSession.isRunning {
+            recreateAgentBrowser()
+        }
     }
 
     private func agentCall(_ name: String, _ arguments: [String: Any]) async throws -> Any {
@@ -86,6 +92,10 @@ extension ContentView {
         }
         guard let tool = Self.agentTools.first(where: { $0["name"] as? String == name }) else {
             throw AgentError("Unknown Walnut tool.")
+        }
+        if name == "menus", let menu = arguments["menu"] as? String,
+           ["safari_toolbar", "safari_app_bar"].contains(menu) {
+            throw AgentError("SafariVC uses Safari’s system toolbar. Walnut menu layout settings apply to WKWebView.")
         }
         try AgentTool.validate(arguments, using: tool)
         let pageAction = name == "page_interact" && ["scroll", "click", "fill", "select", "move", "click_at", "press"].contains(arguments["action"] as? String ?? "")
@@ -104,7 +114,8 @@ extension ContentView {
 
     private func agentPageEvidence() -> [String: Any] {
         let navigation = agentNavigation
-        let evidence: [String: Any] = showWebView ? navigation.evidence : ["phase": "idle"]
+        let hasSafariDismissal = useSafariWebView && navigation.phase == "dismissed"
+        let evidence: [String: Any] = showWebView || hasSafariDismissal ? navigation.evidence : ["phase": "idle"]
         var envelope: [String: Any] = ["runId": navigation.runID.uuidString, "mode": agentMode]
         envelope["navigation"] = evidence
         if let document = navigation.documentID, showWebView {
@@ -112,7 +123,10 @@ extension ContentView {
         }
         if showWebView {
             var settings = AgentSettings.configuredBrowserSettings(safari: useSafariWebView)
-            if !useSafariWebView {
+            if useSafariWebView, let controller = navigation.captureController as? SFSafariViewController {
+                settings["safariEntersReaderIfAvailable"] = controller.configuration.entersReaderIfAvailable
+                settings["safariBarCollapsingEnabled"] = controller.configuration.barCollapsingEnabled
+            } else if !useSafariWebView {
                 settings["privateBrowsing"] = effectivePrivateBrowsing
                 envelope["userAgentOverride"] = webViewNavigator.agentEffectiveUserAgent
                 envelope["webViewState"] = webViewNavigator.agentWebViewState
@@ -145,18 +159,31 @@ extension ContentView {
     }
 
     private func callAgentSettings(_ name: String, _ arguments: [String: Any]) async throws -> Any {
+        let safariRevision = showWebView && useSafariWebView ? webViewID : nil
+        if safariRevision != nil, name == "settings_apply" || name == "settings_reset" {
+            try requireSafariPresentationAvailable()
+        }
         let previous = agentNavigation.runID
         let settings = AgentBrowserSettings.shared
         let rebuildID = settings.browserRevision(safari: useSafariWebView)
         let wasPrivate = effectivePrivateBrowsing
         let result = try await AgentSettings.call(
             name, arguments: arguments, navigator: showWebView && !useSafariWebView ? webViewNavigator : nil,
+            validateApplyTarget: {
+                if let safariRevision {
+                    guard showWebView, useSafariWebView, webViewID == safariRevision else {
+                        throw AgentError("The SafariVC page changed while approving the settings. Try again.")
+                    }
+                    try requireSafariPresentationAvailable()
+                }
+            },
             authorize: agentSession.authorize
         )
         if showWebView && !useSafariWebView && wasPrivate && !effectivePrivateBrowsing {
             returnHome()
         }
         if showWebView, settings.browserRevision(safari: useSafariWebView) != rebuildID {
+            if useSafariWebView { recreateAgentBrowser() }
             try await waitForAgentNavigation(previous: previous, timeout: 15)
         } else if showWebView && !useSafariWebView {
             webViewNavigator.applyAgentUserAgent()
@@ -195,6 +222,7 @@ extension ContentView {
         case "status":
             break
         case "home":
+            if showWebView && useSafariWebView { try requireSafariPresentationAvailable() }
             returnHome()
         case "open", "callback":
             let previousURL = !useSafariWebView && showWebView ? webViewNavigator.currentURL : nil
@@ -221,6 +249,7 @@ extension ContentView {
     private func openAgentURL(_ arguments: [String: Any], callback: Bool) async throws -> (UUID, WKNavigation?) {
         let settings = AgentBrowserSettings.shared
         let newSafari = callback || ((arguments["mode"] as? String).map { $0 == "safarivc" } ?? useSafariWebView)
+        if newSafari || (showWebView && useSafariWebView) { try requireSafariPresentationAvailable() }
         let callbackPage = callback || (newSafari && settings.value("useCallbackTestPage", fallback: useCallbackTestPage))
         let candidate = callbackPage ? CallbackTestManager.testPageURL.absoluteString : arguments["url"] as? String ?? ""
         guard URLValidator.isValidURL(candidate),
@@ -230,6 +259,7 @@ extension ContentView {
         }
         let recordsHistory = !callbackPage && arguments["recordHistory"] as? Bool == true
         let previous = newSafari ? agentSafariNavigation.runID : webViewNavigator.agentNavigation.runID
+        let safariRevision = showWebView && useSafariWebView ? webViewID : nil
         var expected: WKNavigation?
         if arguments["cleanStart"] as? Bool == true {
             guard !newSafari, !isPreparingCleanStart else { throw AgentError("Clean Start requires an available WKWebView.") }
@@ -237,6 +267,12 @@ extension ContentView {
                 throw AgentError("Clean Start was denied.")
             }
             try Task.checkCancellation()
+            if let safariRevision {
+                guard showWebView, useSafariWebView, webViewID == safariRevision else {
+                    throw AgentError("The SafariVC page changed while approving Clean Start. Try again.")
+                }
+                try requireSafariPresentationAvailable()
+            }
             guard !isPreparingCleanStart else { throw AgentError("Another Clean Start is in progress.") }
             isPreparingCleanStart = true
             guard await completeCleanStart(url.absoluteString, recordsHistory: recordsHistory) else {
@@ -257,6 +293,7 @@ extension ContentView {
 
     private func navigateAgentHistory(_ action: String, previous: UUID, timeout: Double) async throws {
         if useSafariWebView && showWebView && action == "reload" {
+            try requireSafariPresentationAvailable()
             webViewID = UUID()
             try await waitForAgentNavigation(previous: previous, timeout: timeout)
             return
@@ -349,7 +386,8 @@ extension ContentView {
         let navigator = safari ? nil : webViewNavigator
         let documentID = navigator?.documentID
         let url = navigator?.attachedPageURL ?? agentNavigation.url
-        let safariView = safari ? agentSafariNavigation.captureView : nil
+        let safariController = safari ? agentSafariNavigation.captureController : nil
+        let safariView = safariController?.viewIfLoaded
         let safariWindow = safariView?.window
         if safari {
             guard safariWindow != nil, agentNavigation.isTerminal else {
@@ -374,11 +412,14 @@ extension ContentView {
             await agentSession.authorize("Share this screenshot with the connected Mac and its agent?" + photosNote, preview: image)
         } validateTarget: {
             try Task.checkCancellation()
-            let sameView = safari ? agentSafariNavigation.captureView === safariView && safariView?.window === safariWindow
+            let sameView = safari ? agentSafariNavigation.captureController === safariController && safariView?.window === safariWindow
                 : webViewNavigator === navigator && navigator?.documentID == documentID && navigator?.agentIsLoading == false
             guard showWebView, useSafariWebView == safari, webViewID == viewID, agentNavigation.runID == runID, sameView,
                   (navigator?.attachedPageURL ?? agentNavigation.url) == url else {
                 throw AgentError("The test page changed while approving or capturing the screenshot. Try again.")
+            }
+            if safariController?.presentedViewController != nil {
+                throw AgentError("Close other Safari sheets before taking a screenshot.")
             }
         }
     }
@@ -391,13 +432,23 @@ extension ContentView {
         switch arguments["action"] as? String {
         case "start":
             guard showWebView else { throw AgentError("Open a test page first.") }
+            let revision = webViewID
+            let safari = useSafariWebView
             let photosNote = save ? " Walnut will also save the video to Photos." : ""
             guard await agentSession.authorize("Record the app screen and share the video with the connected Mac and its agent?" + photosNote) else {
                 throw AgentError("Recording was denied.")
             }
             if save { try await AgentCapture.requirePhotos() }
             try Task.checkCancellation()
-            guard showWebView else { throw AgentError("Open a test page first.") }
+            guard showWebView, webViewID == revision, useSafariWebView == safari else {
+                throw AgentError("The test page changed while approving the recording. Try again.")
+            }
+            if safari {
+                guard let controller = agentSafariNavigation.captureController, controller.viewIfLoaded?.window != nil,
+                      controller.presentedViewController == nil else {
+                    throw AgentError("Open SafariVC and close other sheets before recording.")
+                }
+            }
             let activeRecorder = useSafariWebView ? screenRecorder : webViewNavigator.recorder
             guard activeRecorder.state == .idle, (agentCaptureRecorder?.state ?? .idle) == .idle else {
                 throw AgentError("A screen recording is already active.")

@@ -178,6 +178,7 @@ extension AgentSettings {
         let settings = AgentBrowserSettings.shared
         return [
             "source": "safariviewcontroller_public_api",
+            "presentation": "full_screen",
             "settings": Dictionary(uniqueKeysWithValues: AgentSetting.entries.filter { $0.group == "safari" }.map { ($0.key, settings.effectiveValue(for: $0)) }),
             "contentInspection": false,
             "hostAccessibleWebsiteData": false,

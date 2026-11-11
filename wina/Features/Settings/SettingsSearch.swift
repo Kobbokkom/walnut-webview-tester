@@ -2,14 +2,14 @@ import Foundation
 
 enum SettingsSearchScreen: String, CaseIterable {
     case settings, loaded, safari, app, menu, live, configuration, emulation, permissions
-    case safariMenu, safariConfiguration
+    case safariConfiguration
 
     var title: String {
         switch self {
         case .settings, .loaded: "Settings"
         case .safari: "SafariVC Settings"
         case .app: "App Settings"
-        case .menu, .safariMenu: "Menu"
+        case .menu: "Menu"
         case .live: "Live Settings"
         case .configuration, .safariConfiguration: "Configuration"
         case .emulation: "Emulation"
@@ -21,7 +21,7 @@ enum SettingsSearchScreen: String, CaseIterable {
         switch self {
         case .settings: [.app]
         case .loaded: [.app, .menu, .live, .configuration, .emulation, .permissions]
-        case .safari: [.app, .safariMenu, .safariConfiguration]
+        case .safari: [.app, .safariConfiguration]
         default: []
         }
     }

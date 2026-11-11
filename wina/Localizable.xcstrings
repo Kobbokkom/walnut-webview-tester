@@ -64847,6 +64847,16 @@
         }
       }
     },
+    "Full Screen" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "전체 화면"
+          }
+        }
+      }
+    },
     "Full support on iPad only." : {
       "localizations" : {
         "ar" : {
@@ -115100,6 +115110,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "prefers-reduced-transparency\n\n停用模糊和透明效果。"
+          }
+        }
+      }
+    },
+    "Presentation" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "표시 방식"
           }
         }
       }
@@ -170656,6 +170676,66 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "연결 시작"
+          }
+        }
+      }
+    },
+    "Save Screenshot" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "스크린샷 저장"
+          }
+        }
+      }
+    },
+    "Start Recording" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "녹화 시작"
+          }
+        }
+      }
+    },
+    "Stop Recording" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "녹화 중지"
+          }
+        }
+      }
+    },
+    "Stop Mac Agent" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mac Agent 연결 중지"
+          }
+        }
+      }
+    },
+    "Screenshot Not Saved" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "스크린샷을 저장하지 못했습니다"
+          }
+        }
+      }
+    },
+    "Allow Walnut to add to Photos in Settings." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "설정에서 Walnut이 사진 보관함에 항목을 추가하도록 허용하세요."
           }
         }
       }

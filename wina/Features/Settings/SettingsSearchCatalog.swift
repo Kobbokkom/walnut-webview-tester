@@ -18,12 +18,6 @@ enum SettingsSearchCatalog {
             } + AppBarMenuItem.allCases.map {
                 SettingsSearchItem("appBar." + $0.rawValue, $0.titleKey.key, "App Bar", $0.descriptionKey.key)
             }
-        case .safariMenu:
-            SafariVCToolbarMenuItem.allCases.map {
-                SettingsSearchItem("toolbar." + $0.rawValue, $0.titleKey.key, "Toolbar", $0.descriptionKey.key)
-            } + SafariVCAppBarMenuItem.allCases.map {
-                SettingsSearchItem("appBar." + $0.rawValue, $0.titleKey.key, "App Bar", $0.descriptionKey.key)
-            }
         }
     }
 
@@ -87,6 +81,5 @@ enum SettingsSearchCatalog {
         SettingsSearchItem("safariDismissButtonStyle", "Dismiss Button", "UI Style"),
         SettingsSearchItem("safariControlTintColorHex", "Control Tint", "Colors", "Tint color for buttons and other controls."),
         SettingsSearchItem("safariBarTintColorHex", "Bar Tint", "Colors", "Background color of the navigation bar."),
-        SettingsSearchItem("webViewSize", "WebView Size", "Size", keywords: ["Width", "Height", "Presets"]),
     ]
 }

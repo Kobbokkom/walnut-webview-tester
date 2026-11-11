@@ -42,13 +42,14 @@ enum AgentSettings {
         _ tool: String,
         arguments: [String: Any],
         navigator: WebViewNavigator?,
+        validateApplyTarget: () throws -> Void = {},
         authorize: @escaping (String) async -> Bool
     ) async throws -> Any {
         let input = AgentSettingsInput(arguments: arguments, authorize: authorize)
         try Task.checkCancellation()
         switch tool {
         case "settings_get": return settingsSnapshot()
-        case "settings_apply": return try await apply(input)
+        case "settings_apply": return try await apply(input, validateTarget: validateApplyTarget)
         case "settings_reset": return try reset(input)
         case "diagnostics": return try await diagnostics(input.string("section"), navigator: navigator)
         case "permissions": return try await permissions(input)
@@ -94,10 +95,12 @@ enum AgentSettings {
                 return true
             }
         }
-        return Dictionary(uniqueKeysWithValues: entries.map { ($0.key, settings.effectiveValue(for: $0)) })
+        var configured = Dictionary(uniqueKeysWithValues: entries.map { ($0.key, settings.effectiveValue(for: $0)) })
+        if safari { configured["presentation"] = "full_screen" }
+        return configured
     }
 
-    private static func apply(_ input: AgentSettingsInput) async throws -> Any {
+    private static func apply(_ input: AgentSettingsInput, validateTarget: () throws -> Void) async throws -> Any {
         guard let raw = input.arguments["settings"] as? [String: Any] else {
             throw AgentError("Provide a settings object.")
         }
@@ -124,6 +127,7 @@ enum AgentSettings {
                 : "Apply changes to Walnut’s testing settings for this Mac connection?"
             try await input.confirm(([question] + effects).joined(separator: "\n\n"))
         }
+        try validateTarget()
         AgentBrowserSettings.shared.apply(values, persist: persist)
         return [
             "applied": values.mapValues(\.base),

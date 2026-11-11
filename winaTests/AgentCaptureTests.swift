@@ -1,9 +1,39 @@
+import SafariServices
 import UIKit
 import XCTest
 @testable import wina
 
 @MainActor
 final class AgentCaptureTests: XCTestCase {
+    func testSafariShareActionsFollowRecorderAndAgentState() async {
+        let safari = SFSafariViewController(url: URL(string: "https://example.com")!)
+        let recorder = WebViewRecorder(startCapture: { _ in }, stopCapture: {})
+        func actionNames(_ actions: [UIActivity]) -> [String] {
+            actions.compactMap { $0.activityType?.rawValue.components(separatedBy: ".").last }
+        }
+
+        let idle = SafariCaptureActivities.make(for: safari, recorder: recorder) { true }
+        XCTAssertEqual(actionNames(idle), ["screenshot", "startRecording"])
+
+        let started = await recorder.startRecording()
+        XCTAssertTrue(started)
+        defer { recorder.stopRecording() }
+        let active = SafariCaptureActivities.make(for: safari, recorder: recorder, stopMacAgent: {}, isCurrent: { true })
+        XCTAssertEqual(actionNames(active), ["screenshot", "stopRecording", "stopMacAgent"])
+    }
+
+    func testSafariRecordingIndicatorRespectsTheReservedSystemInset() throws {
+        let bounds = CGRect(x: 0, y: 0, width: 390, height: 844)
+        let label = CGSize(width: 62, height: 16)
+        let inset = UIEdgeInsets(top: 59, left: 0, bottom: 34, right: 0)
+        let frame = try XCTUnwrap(SafariRecordingIndicator.indicatorFrame(in: bounds, safeArea: inset, labelSize: label))
+        XCTAssertGreaterThanOrEqual(frame.minY, bounds.maxY - inset.bottom)
+        XCTAssertLessThanOrEqual(frame.maxY, bounds.maxY)
+        XCTAssertLessThanOrEqual(frame.maxX, bounds.width / 4)
+        XCTAssertNil(SafariRecordingIndicator.indicatorFrame(in: bounds, safeArea: .zero, labelSize: label))
+        XCTAssertNil(SafariRecordingIndicator.indicatorFrame(in: bounds, safeArea: inset, labelSize: CGSize(width: 120, height: 16)))
+    }
+
     func testTransparentScreenshotIsRejectedWithoutRejectingOpaqueBlackPage() {
         let format = UIGraphicsImageRendererFormat()
         format.opaque = false

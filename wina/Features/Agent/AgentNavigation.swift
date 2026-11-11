@@ -10,7 +10,8 @@ final class AgentNavigation {
     private(set) var status: Int?
     private(set) var error: String?
     private var identity: ObjectIdentifier?
-    @ObservationIgnored weak var captureView: UIView?
+    @ObservationIgnored weak var captureController: UIViewController?
+    var captureView: UIView? { captureController?.viewIfLoaded }
 
     var isTerminal: Bool { phase == "finished" || phase == "failed" }
 
@@ -45,6 +46,13 @@ final class AgentNavigation {
         phase = error == nil ? "finished" : "failed"
         if let url { self.url = url }
         self.error = error.map { ($0 as NSError).domain + " " + String(($0 as NSError).code) }
+    }
+
+    func dismiss(_ object: AnyObject) {
+        guard matches(object) else { return }
+        identity = nil
+        captureController = nil
+        phase = "dismissed"
     }
 
     func matches(_ object: AnyObject?) -> Bool {

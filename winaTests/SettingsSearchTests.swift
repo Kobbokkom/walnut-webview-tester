@@ -82,6 +82,12 @@ final class SettingsSearchTests: XCTestCase {
         search.query = "Reader"
         XCTAssertEqual(search.results(in: .safari, locale: english).map(\.item.id), ["safariEntersReaderIfAvailable"])
         XCTAssertTrue(search.results(in: .loaded, locale: english).isEmpty)
+
+        for query in ["Width", "Toolbar"] {
+            search.query = query
+            XCTAssertFalse(search.results(in: .loaded, locale: english).isEmpty)
+            XCTAssertTrue(search.results(in: .safari, locale: english).isEmpty)
+        }
     }
 
     func testOldJavaScriptSearchFindsOneContentSwitch() {

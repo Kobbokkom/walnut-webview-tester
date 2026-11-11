@@ -5,11 +5,26 @@
 //  Created by 박지원 on 12/6/25.
 //
 
+import SafariServices
 import SwiftUI
 import SwiftUIBackports
 import WebKit
 
 struct ContentView: View {
+    @MainActor
+    @Observable
+    fileprivate final class BrowserState {
+        var usesSafari = false
+        var isOpen = false
+        var url = ""
+        var revision = UUID()
+        @ObservationIgnored weak var window: UIWindow?
+
+        var safariRequest: (url: URL?, revision: UUID?) {
+            (isOpen && usesSafari ? URL(string: URLValidator.normalizeURL(url)) : nil, revision)
+        }
+    }
+
     // MARK: - State Properties (internal for extension access)
 
     @State var urlText: String = ""
@@ -24,12 +39,9 @@ struct ContentView: View {
     @State private var urlInputText: String = ""
     @State var showAbout: Bool = false
     @State var urlValidationState: URLValidationState = .empty
-    @State var useSafariWebView: Bool = false
-    @State var showWebView: Bool = false
+    @State private var browserState = BrowserState()
     @State var isPreparingCleanStart = false
     @State private var showCleanStartOptionsChanged = false
-    @State var loadedURL = ""
-    @State var webViewID = UUID()
     @State var validationTask: Task<Void, Never>?
     @State var webViewNavigator = WebViewNavigator()
     @State var screenRecorder = WebViewRecorder()
@@ -40,11 +52,13 @@ struct ContentView: View {
     @State private var safariUnsupportedURL = ""
     @FocusState var textFieldFocused: Bool
     @Environment(\.scenePhase) private var agentScenePhase
+    @Environment(\.locale) private var locale
     @State var agentSession = AgentSession()
     @State var agentSafariNavigation = AgentNavigation()
     @State var agentCaptureRecorder: WebViewRecorder?
     @State var agentCaptureDefaults: (console: Bool, network: Bool, resources: Bool)?
     @State var showAgentConnection = false
+    @State private var safariRecordingIndicator = SafariRecordingIndicator()
 
     // Shared URL storage
     var urlStorage: URLStorageManager { URLStorageManager.shared }
@@ -56,10 +70,6 @@ struct ContentView: View {
     @State var useCallbackTestPage: Bool = false
     var isCallbackTestPageActive: Bool { useSafariWebView && useCallbackTestPage }
     @AppStorage("colorSchemeOverride") private var colorSchemeOverride: String?
-
-    // Safari configuration settings (for onChange detection)
-    @AppStorage("safariEntersReaderIfAvailable") private var safariEntersReaderIfAvailable = false
-    @AppStorage("safariBarCollapsingEnabled") private var safariBarCollapsingEnabled = true
 
     // Eruda mode (third-party in-page console)
     @AppStorage("erudaModeEnabled") private var erudaModeEnabled = false
@@ -76,18 +86,12 @@ struct ContentView: View {
     // WebView size settings (for fullscreen detection)
     @AppStorage("webViewWidthRatio") private var webViewWidthRatio: Double = 1.0
     @AppStorage("webViewHeightRatio") private var webViewHeightRatio: Double = 0.82
-    @AppStorage("safariWidthRatio") private var safariWidthRatio: Double = 1.0
-    @AppStorage("safariHeightRatio") private var safariHeightRatio: Double = 0.82
 
     // Bars are expanded (fixed position) when WebView is NOT fullscreen
     // Fullscreen = both width and height at 99%+ (matches isFullSize in WebViewContainer)
     private var shouldBarsBeExpanded: Bool {
-        let widthRatio = useSafariWebView
-            ? agentBrowserSettings?.value("safariWidthRatio", fallback: safariWidthRatio) ?? safariWidthRatio
-            : agentBrowserSettings?.value("webViewWidthRatio", fallback: webViewWidthRatio) ?? webViewWidthRatio
-        let heightRatio = useSafariWebView
-            ? agentBrowserSettings?.value("safariHeightRatio", fallback: safariHeightRatio) ?? safariHeightRatio
-            : agentBrowserSettings?.value("webViewHeightRatio", fallback: webViewHeightRatio) ?? webViewHeightRatio
+        let widthRatio = agentBrowserSettings?.value("webViewWidthRatio", fallback: webViewWidthRatio) ?? webViewWidthRatio
+        let heightRatio = agentBrowserSettings?.value("webViewHeightRatio", fallback: webViewHeightRatio) ?? webViewHeightRatio
         let isFullSize = widthRatio >= 0.99 && heightRatio >= 0.99
         return !isFullSize
     }
@@ -131,7 +135,7 @@ struct ContentView: View {
 
     var inputWidth: CGFloat { min(340, max(0, containerSize.width - 32)) }
 
-    var body: some View {
+    private var browserSurface: some View {
         GeometryReader { geometry in
             let fold = foldRegion(in: geometry)
             let hasRoomForPanel = verticalSizeClass == .regular || fold.isPresent
@@ -166,9 +170,10 @@ struct ContentView: View {
                 devToolsState.isDocked = newValue
             }
         }
+        .background { safariPresentation }
         .environment(\.agentBrowserSettings, agentBrowserSettings)
         .overlay(alignment: .top) {
-            if showWebView && agentSession.isRunning {
+            if showWebView && !useSafariWebView && agentSession.isRunning {
                 let isRecording = agentCaptureRecorder?.isRecording == true
                 GlassIconButton(
                     icon: isRecording ? "record.circle.fill" : "network",
@@ -185,14 +190,31 @@ struct ContentView: View {
                 .preferredColorScheme(preferredScheme)
         }
         .background {
-            AgentApprovalPresenter(request: agentSession.approval, resolve: agentSession.resolveApproval)
+            BrowserSheetPresenter(
+                request: { [weak agentSession] in agentSession?.approval },
+                resolve: agentSession.resolveApproval,
+                showsCallback: { CallbackTestManager.shared.showResultAlert },
+                dismissCallback: { CallbackTestManager.shared.showResultAlert = false },
+                onBackground: stopBackgroundSession,
+                onWindowAttached: { [weak browserState] in browserState?.window = $0 }
+            )
                 .frame(width: 0, height: 0)
                 .accessibilityHidden(true)
         }
         .onChange(of: agentScenePhase) { _, phase in
-            if phase == .background { agentSession.stop() }
+            if phase == .background { stopBackgroundSession() }
         }
-        .onDisappear { agentSession.stop() }
+        .onDisappear {
+            // The underlying SwiftUI content disappears while UIKit presents Safari full screen.
+            if agentSafariNavigation.captureController?.presentingViewController == nil { agentSession.stop() }
+        }
+        .onAppear {
+            safariRecordingIndicator.observe(
+                recorder: screenRecorder,
+                captureView: { [weak navigation = agentSafariNavigation] in navigation?.captureView },
+                locale: locale
+            )
+        }
         .onChange(of: ObjectIdentifier(webViewNavigator)) { _, _ in
             webViewNavigator.agentTrackingEnabled = agentSession.isConnected
         }
@@ -202,9 +224,10 @@ struct ContentView: View {
         .onChange(of: AgentBrowserSettings.shared.rebuildID) { _, _ in
             if agentSession.isRunning && !useSafariWebView { recreateAgentBrowser() }
         }
-        .onChange(of: AgentBrowserSettings.shared.safariRebuildID) { _, _ in
-            if agentSession.isRunning && useSafariWebView { recreateAgentBrowser() }
-        }
+    }
+
+    var body: some View {
+        browserSurface
         .alert("Browser options changed", isPresented: $showCleanStartOptionsChanged) {
             Button("OK", role: .cancel) {}
         } message: {
@@ -212,13 +235,13 @@ struct ContentView: View {
         }
         .sheet(isPresented: $showSettings) {
             if useSafariWebView {
-                SafariVCSettingsView(webViewID: $webViewID)
+                SafariVCSettingsView(webViewID: webViewIDBinding)
                     .fullSizeSheet()
                     .preferredColorScheme(preferredScheme)
             } else {
                 LoadedSettingsView(
-                    webViewID: $webViewID,
-                    loadedURL: $loadedURL,
+                    webViewID: webViewIDBinding,
+                    loadedURL: loadedURLBinding,
                     navigator: webViewNavigator
                 )
                 .fullSizeSheet()
@@ -265,15 +288,15 @@ struct ContentView: View {
         }
         .sheet(isPresented: $showInfo) {
             if useSafariWebView {
-                SafariVCInfoView(webViewID: $webViewID)
+                SafariVCInfoView(webViewID: webViewIDBinding)
                     .fullSizeSheet()
                     .preferredColorScheme(preferredScheme)
             } else {
                 // Pass navigator only when WebView is loaded (for live page testing)
                 InfoView(
                     navigator: showWebView ? webViewNavigator : nil,
-                    webViewID: showWebView ? $webViewID : nil,
-                    loadedURL: showWebView ? $loadedURL : nil
+                    webViewID: showWebView ? webViewIDBinding : nil,
+                    loadedURL: showWebView ? loadedURLBinding : nil
                 )
                 .fullSizeSheet()
                 .preferredColorScheme(preferredScheme)
@@ -323,17 +346,6 @@ struct ContentView: View {
         } message: {
             Text("SafariVC supports only http and https URLs.\n\n\(safariUnsupportedURL)")
         }
-        // Recreate SafariVC when configuration settings change
-        .onChange(of: safariEntersReaderIfAvailable) { _, _ in
-            if useSafariWebView && showWebView {
-                webViewID = UUID()
-            }
-        }
-        .onChange(of: safariBarCollapsingEnabled) { _, _ in
-            if useSafariWebView && showWebView {
-                webViewID = UUID()
-            }
-        }
         // Eruda mode: inject/destroy when toggled
         .onChange(of: effectiveErudaMode) { _, newValue in
             guard showWebView && !useSafariWebView else { return }
@@ -360,14 +372,12 @@ struct ContentView: View {
 
     private func browserContent(hasDockedDevTools: Bool) -> some View {
         ZStack {
-            if showWebView {
+            if showWebView && !useSafariWebView {
                 // WebView screen
                 WebViewContainer(
                     urlString: loadedURL,
-                    useSafari: useSafariWebView,
-                    webViewID: $webViewID,
-                    navigator: useSafariWebView ? nil : webViewNavigator,
-                    safariNavigation: agentSafariNavigation
+                    webViewID: webViewIDBinding,
+                    navigator: webViewNavigator
                 )
                 .ignoresSafeArea(edges: .bottom)
             } else {
@@ -376,17 +386,17 @@ struct ContentView: View {
             }
 
             // Menu bars
-            if showWebView {
+            if showWebView && !useSafariWebView {
                 OverlayMenuBars(
                     showWebView: showWebView,
                     hasBookmarks: !urlStorage.bookmarks.isEmpty,
-                    useSafariVC: useSafariWebView,
+                    useSafariVC: false,
                     isOverlayMode: !shouldBarsBeExpanded,
                     erudaModeEnabled: effectiveErudaMode,
                     hasDockedDevTools: hasDockedDevTools,
                     onHome: returnHome,
                     onURLChange: { navigateDisplayedURL($0) },
-                    navigator: useSafariWebView ? nil : webViewNavigator,
+                    navigator: webViewNavigator,
                     recorder: screenRecorder,
                     urlStorage: urlStorage,
                     showURLInput: $showURLInput,
@@ -476,6 +486,7 @@ struct ContentView: View {
 
     func openSubmittedURL(_ targetURL: String, recordsHistory: Bool) {
         if recordsHistory { urlStorage.addToHistory(targetURL) }
+        if useSafariWebView { textFieldFocused = false }
         if let url = URL(string: URLValidator.normalizeURL(targetURL)) {
             webViewNavigator.setInitialURL(url)
         }
@@ -581,7 +592,6 @@ extension ContentView {
     }
 
     func returnHome() {
-        screenRecorder.stopRecording()
         webViewNavigator.recorder.stopRecording()
         devToolsState.closeAll()
         consoleSession = ConsoleSession()
@@ -592,6 +602,16 @@ extension ContentView {
         urlInputText = ""
         webViewNavigator.clearInitialURL()
         withAnimation(.easeOut(duration: 0.2)) { showWebView = false }
+    }
+
+    private func stopSafariRecording() {
+        safariRecordingIndicator.update(captureView: nil, isRecording: false)
+        screenRecorder.stopRecording()
+    }
+
+    private func stopBackgroundSession() {
+        agentSession.stop()
+        stopSafariRecording()
     }
 
     func navigateDisplayedURL(
@@ -623,7 +643,8 @@ extension ContentView {
         let originalViewID = webViewID
         func browserUnchanged() -> Bool {
             usesPrivateStore == effectivePrivateBrowsing && startedInSafari == useSafariWebView &&
-                expectedPageVisibility == showWebView && originalViewID == webViewID
+                expectedPageVisibility == showWebView && originalViewID == webViewID &&
+                (!startedInSafari || (try? requireSafariPresentationAvailable()) != nil)
         }
         if closePage {
             // Wait for SwiftUI to dismantle the active view before WebKit removes its data.
@@ -671,5 +692,79 @@ extension ContentView {
         webViewID = UUID()
         openSubmittedURL(targetURL, recordsHistory: recordsHistory)
         return true
+    }
+}
+
+extension ContentView {
+    var useSafariWebView: Bool {
+        get { browserState.usesSafari }
+        nonmutating set {
+            if browserState.usesSafari && !newValue { stopSafariRecording() }
+            browserState.usesSafari = newValue
+        }
+    }
+
+    var showWebView: Bool {
+        get { browserState.isOpen }
+        nonmutating set {
+            if browserState.usesSafari && !newValue { stopSafariRecording() }
+            browserState.isOpen = newValue
+        }
+    }
+
+    var loadedURL: String {
+        get { browserState.url }
+        nonmutating set { browserState.url = newValue }
+    }
+
+    var webViewID: UUID {
+        get { browserState.revision }
+        nonmutating set {
+            if browserState.usesSafari && browserState.revision != newValue { stopSafariRecording() }
+            browserState.revision = newValue
+        }
+    }
+
+    private var webViewIDBinding: Binding<UUID> { Binding(get: { webViewID }, set: { webViewID = $0 }) }
+    private var loadedURLBinding: Binding<String> { Binding(get: { loadedURL }, set: { loadedURL = $0 }) }
+
+    func requireSafariPresentationAvailable() throws {
+        guard let presented = browserState.window?.rootViewController?.presentedViewController else { return }
+        guard agentSafariNavigation.matches(presented), presented.presentedViewController == nil else {
+            throw AgentError("Close the open sheet in Walnut before changing the SafariVC page.")
+        }
+    }
+
+    private var safariPresentation: some View {
+        let state = browserState
+        return SafariModalPresenter(
+            url: nil,
+            navigation: agentSafariNavigation,
+            observeRequest: { state.safariRequest },
+            observeSettings: { [weak agentSession] in agentSession?.isRunning == true ? AgentBrowserSettings.shared : nil },
+            onDismiss: { revision in
+                if showWebView && useSafariWebView && webViewID == revision { returnHome() }
+            },
+            activities: { controller, revision in safariActivities(for: controller, revision: revision) }
+        )
+        .frame(width: 0, height: 0)
+        .accessibilityHidden(true)
+    }
+
+    private func safariActivities(for controller: SFSafariViewController, revision: UUID?) -> [UIActivity] {
+        let stopMacAgent: (() -> Void)?
+        if agentSession.isRunning {
+            stopMacAgent = { agentSession.stop() }
+        } else {
+            stopMacAgent = nil
+        }
+        return SafariCaptureActivities.make(
+            for: controller, recorder: screenRecorder, locale: locale,
+            stopMacAgent: stopMacAgent,
+            isCurrent: { [weak controller] in
+                guard let controller, showWebView, useSafariWebView, webViewID == revision else { return false }
+                return agentSafariNavigation.captureController === controller
+            }
+        )
     }
 }

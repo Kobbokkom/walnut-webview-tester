@@ -1,3 +1,4 @@
+import Observation
 import SwiftUI
 import UIKit
 import UniformTypeIdentifiers
@@ -247,40 +248,116 @@ private struct AgentApprovalView: View {
     }
 }
 
-struct AgentApprovalPresenter: UIViewControllerRepresentable {
-    let request: AgentApprovalGate.Request?
+struct BrowserSheetPresenter: UIViewControllerRepresentable {
+    @Environment(\.locale) private var locale
+    let request: () -> AgentApprovalGate.Request?
     let resolve: (UUID, Bool) -> Void
+    let showsCallback: () -> Bool
+    let dismissCallback: () -> Void
+    var onBackground: () -> Void = {}
+    var onWindowAttached: (UIWindow) -> Void = { _ in }
 
     func makeUIViewController(context: Context) -> Presenter { Presenter() }
 
     func updateUIViewController(_ controller: Presenter, context: Context) {
-        controller.update(request: request, resolve: resolve)
+        controller.update(self)
     }
 
-    final class Presenter: UIViewController {
+    final class Presenter: UIViewController, UISheetPresentationControllerDelegate {
+        private final class WindowAnchor: UIView {
+            var didAttach: ((UIWindow) -> Void)?
+
+            override func didMoveToWindow() {
+                super.didMoveToWindow()
+                if let window { didAttach?(window) }
+            }
+        }
+
         private var request: AgentApprovalGate.Request?
+        private var requestProvider: (() -> AgentApprovalGate.Request?)?
         private var resolve: ((UUID, Bool) -> Void)?
-        private var presentedApproval: (id: UUID, controller: UIViewController)?
+        private var showsCallback = false
+        private var callbackProvider: (() -> Bool)?
+        private var dismissCallback: (() -> Void)?
+        private var onBackground: (() -> Void)?
+        private var onWindowAttached: ((UIWindow) -> Void)?
+        private var locale = Locale.current
+        private weak var sceneWindow: UIWindow?
+        private weak var observedScene: UIWindowScene?
+        private var approval: (id: UUID, controller: UIViewController)?
+        private var callback: UIViewController?
         private var transitioning = false
+
+        override func loadView() {
+            let anchor = WindowAnchor()
+            anchor.didAttach = { [weak self] window in self?.attach(to: window) }
+            view = anchor
+        }
 
         override func viewDidAppear(_ animated: Bool) {
             super.viewDidAppear(animated)
+            if let window = view.window { attach(to: window) }
             reconcile()
         }
 
-        func update(request: AgentApprovalGate.Request?, resolve: @escaping (UUID, Bool) -> Void) {
-            self.request = request
-            self.resolve = resolve
+        func update(_ input: BrowserSheetPresenter) {
+            let needsObservation = requestProvider == nil
+            requestProvider = input.request
+            resolve = input.resolve
+            callbackProvider = input.showsCallback
+            dismissCallback = input.dismissCallback
+            onBackground = input.onBackground
+            onWindowAttached = input.onWindowAttached
+            locale = input.locale
+            // Safari's full-screen presentation temporarily detaches this view from its window.
+            if let window = viewIfLoaded?.window { attach(to: window) }
+            if needsObservation { observeRequests() } else { reconcile() }
+        }
+
+        private func attach(to window: UIWindow) {
+            sceneWindow = window
+            onWindowAttached?(window)
+            guard let scene = window.windowScene, scene !== observedScene else { return }
+            let notification = UIScene.didEnterBackgroundNotification
+            NotificationCenter.default.removeObserver(self, name: notification, object: observedScene)
+            NotificationCenter.default.addObserver(self, selector: #selector(sceneDidEnterBackground), name: notification, object: scene)
+            observedScene = scene
+        }
+
+        @objc private func sceneDidEnterBackground(_: Notification) { onBackground?() }
+
+        private func observeRequests() {
+            // UIKit keeps its presentation even while the SwiftUI host stops updating.
+            (request, showsCallback) = withObservationTracking {
+                (requestProvider?(), callbackProvider?() ?? false)
+            } onChange: { [weak self] in
+                Task { @MainActor [weak self] in self?.observeRequests() }
+            }
             reconcile()
         }
 
         private func reconcile() {
             guard !transitioning else { return }
-            if let presentedApproval {
-                if presentedApproval.id != request?.id { dismiss(presentedApproval.controller) }
+            if let approval {
+                if approval.controller.presentingViewController != nil {
+                    if request?.id != approval.id {
+                        dismiss(approval.controller) { [weak self] in self?.approval = nil }
+                    }
+                    return
+                }
+                self.approval = nil
+                if request?.id == approval.id {
+                    request = nil
+                    resolve?(approval.id, false)
+                }
+            }
+            if callback?.presentingViewController == nil { callback = nil }
+            if let callback, !showsCallback {
+                dismiss(callback) { [weak self] in self?.callback = nil }
                 return
             }
-            guard let request, var host = view.window?.rootViewController else { return }
+            guard request != nil || (showsCallback && callback == nil),
+                  var host = sceneWindow?.rootViewController else { return }
             while let presented = host.presentedViewController { host = presented }
 
             transitioning = true
@@ -289,37 +366,81 @@ struct AgentApprovalPresenter: UIViewControllerRepresentable {
                    self?.finishTransition()
                }) { return }
 
+            if let request {
+                presentApproval(request, from: host)
+            } else {
+                presentCallback(from: host)
+            }
+        }
+
+        private func presentApproval(_ request: AgentApprovalGate.Request, from host: UIViewController) {
             let id = request.id
-            let approval = UIHostingController(rootView: AgentApprovalView(request: request) { [weak self] allow in
+            let controller = UIHostingController(rootView: AgentApprovalView(request: request) { [weak self] allow in
                 self?.choose(id, allow: allow)
-            })
-            approval.modalPresentationStyle = .formSheet
-            approval.isModalInPresentation = true
-            presentedApproval = (request.id, approval)
-            host.present(approval, animated: true) { [weak self] in self?.finishTransition() }
-            if approval.presentingViewController == nil {
-                presentedApproval = nil
+            }.environment(\.locale, locale))
+            controller.isModalInPresentation = true
+            controller.modalPresentationStyle = .formSheet
+            approval = (id, controller)
+            host.present(controller, animated: true) { [weak self] in self?.finishTransition() }
+            if controller.presentingViewController == nil {
+                approval = nil
+                transitioning = false
                 self.request = nil
-                resolve?(request.id, false)
-                finishTransition()
+                resolve?(id, false)
+            }
+        }
+
+        private func presentCallback(from host: UIViewController) {
+            let controller = UIHostingController(rootView: CallbackResultSheet { [weak self] in self?.closeCallback() }
+                .environment(\.locale, locale))
+            controller.modalPresentationStyle = .formSheet
+            if let presentation = controller.sheetPresentationController {
+                presentation.detents = [.custom { $0.maximumDetentValue * 0.35 }, .medium(), .large()]
+                presentation.selectedDetentIdentifier = host.traitCollection.horizontalSizeClass == .regular ? .large : .medium
+                presentation.prefersGrabberVisible = true
+                presentation.delegate = self
+            }
+            callback = controller
+            host.present(controller, animated: true) { [weak self] in self?.finishTransition() }
+            if controller.presentingViewController == nil {
+                callback = nil
+                transitioning = false
             }
         }
 
         private func choose(_ id: UUID, allow: Bool) {
-            guard !transitioning, let presentedApproval, presentedApproval.id == id, request?.id == id else { return }
+            guard !transitioning, let approval, approval.id == id, request?.id == id else { return }
             // Wait for UIKit to remove the approval sheet before the action captures the app window.
-            dismiss(presentedApproval.controller) { [weak self] in
-                guard let self, self.request?.id == id else { return }
+            dismiss(approval.controller) { [weak self] in
+                guard let self else { return }
+                self.approval = nil
+                guard self.request?.id == id else { return }
                 self.request = nil
                 self.resolve?(id, allow)
             }
         }
 
-        private func dismiss(_ controller: UIViewController, completion: (() -> Void)? = nil) {
+        private func closeCallback() {
+            guard !transitioning, approval == nil, let callback else { return }
+            dismiss(callback) { [weak self] in self?.callbackClosed() }
+        }
+
+        func presentationControllerDidDismiss(_ presentationController: UIPresentationController) {
+            guard callback === presentationController.presentedViewController else { return }
+            callbackClosed()
+            reconcile()
+        }
+
+        private func callbackClosed() {
+            callback = nil
+            showsCallback = false
+            dismissCallback?()
+        }
+
+        private func dismiss(_ controller: UIViewController, completion: @escaping () -> Void) {
             transitioning = true
             let finish = { [weak self] in
-                self?.presentedApproval = nil
-                completion?()
+                completion()
                 self?.finishTransition()
             }
             if controller.presentingViewController != nil {

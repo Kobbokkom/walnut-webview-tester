@@ -2,12 +2,11 @@
 //  WebViewContainer.swift
 //  wina
 //
-//  WebView container with WKWebView and SafariViewController support.
+//  WKWebView container.
 //
 
 import SwiftUI
 import WebKit
-import SafariServices
 import os
 
 // MARK: - WebView Container
@@ -15,10 +14,8 @@ import os
 struct WebViewContainer: View {
     @Environment(\.agentBrowserSettings) private var agentSettings
     let urlString: String
-    let useSafari: Bool
     @Binding var webViewID: UUID
     let navigator: WebViewNavigator?
-    var safariNavigation: AgentNavigation?
 
     // Loading State
     @State private var isLoading: Bool = true
@@ -138,32 +135,14 @@ struct WebViewContainer: View {
         agentSettings?.value("webViewHeightRatio", fallback: storedWebViewHeightRatio) ?? storedWebViewHeightRatio
     }
 
-    // SafariVC Size (separate settings)
-    @AppStorage("safariWidthRatio") private var storedSafariWidthRatio = 1.0
-    private var safariWidthRatio: Double {
-        agentSettings?.value("safariWidthRatio", fallback: storedSafariWidthRatio) ?? storedSafariWidthRatio
-    }
-    @AppStorage("safariHeightRatio") private var storedSafariHeightRatio = 0.82
-    private var safariHeightRatio: Double {
-        agentSettings?.value("safariHeightRatio", fallback: storedSafariHeightRatio) ?? storedSafariHeightRatio
-    }
-
-    private var currentWidthRatio: Double {
-        useSafari ? safariWidthRatio : webViewWidthRatio
-    }
-
-    private var currentHeightRatio: Double {
-        useSafari ? safariHeightRatio : webViewHeightRatio
-    }
-
     private var isFullSize: Bool {
-        currentWidthRatio >= 0.99 && currentHeightRatio >= 0.99
+        webViewWidthRatio >= 0.99 && webViewHeightRatio >= 0.99
     }
 
     var body: some View {
         GeometryReader { geometry in
-            let webViewWidth = geometry.size.width * currentWidthRatio
-            let webViewHeight = geometry.size.height * BarConstants.effectiveHeightRatio(currentHeightRatio, for: geometry.size.height)
+            let webViewWidth = geometry.size.width * webViewWidthRatio
+            let webViewHeight = geometry.size.height * BarConstants.effectiveHeightRatio(webViewHeightRatio, for: geometry.size.height)
 
             ZStack {
                 // Background (only shown when size is less than 100%)
@@ -176,51 +155,39 @@ struct WebViewContainer: View {
                         .ignoresSafeArea()
                 }
 
-                // WebView
-                if useSafari {
-                    SafariWebView(urlString: normalizedURL, agentNavigation: safariNavigation)
-                        .id(webViewID)
-                        .frame(width: webViewWidth, height: webViewHeight)
-                        .clipShape(RoundedRectangle(cornerRadius: isFullSize ? 0 : 12))
-                        .shadow(color: .black.opacity(isFullSize ? 0 : 0.15), radius: 8, y: 2)
-                        // Offset up to balance gap between top bar and bottom bar (only in non-fullscreen mode)
-                        // Uses safe area ratio with fallback for devices without safe area (e.g. SE)
-                        .offset(y: isFullSize ? 0 : -10)
-                } else {
-                    WKWebViewRepresentable(
-                        urlString: normalizedURL,
-                        configuration: webViewConfiguration,
-                        isLoading: $isLoading,
-                        navigator: navigator
-                    )
-                    .id(webViewID)
-                    .frame(width: webViewWidth, height: webViewHeight)
-                    .clipShape(RoundedRectangle(cornerRadius: isFullSize ? 0 : 12))
-                    .shadow(color: .black.opacity(isFullSize ? 0 : 0.15), radius: 8, y: 2)
-                    // Offset up to balance gap between top bar and bottom bar (only in non-fullscreen mode)
-                    // Uses safe area ratio with fallback for devices without safe area (e.g. SE)
-                    .offset(y: isFullSize ? 0 : -10)
-                    .overlay(alignment: .top) {
-                        // Subtle top loading bar
-                        if isLoading {
-                            LoadingProgressBar()
-                        }
+                WKWebViewRepresentable(
+                    urlString: normalizedURL,
+                    configuration: webViewConfiguration,
+                    isLoading: $isLoading,
+                    navigator: navigator
+                )
+                .id(webViewID)
+                .frame(width: webViewWidth, height: webViewHeight)
+                .clipShape(RoundedRectangle(cornerRadius: isFullSize ? 0 : 12))
+                .shadow(color: .black.opacity(isFullSize ? 0 : 0.15), radius: 8, y: 2)
+                // Offset up to balance gap between top bar and bottom bar (only in non-fullscreen mode)
+                // Uses safe area ratio with fallback for devices without safe area (e.g. SE)
+                .offset(y: isFullSize ? 0 : -10)
+                .overlay(alignment: .top) {
+                    // Subtle top loading bar
+                    if isLoading {
+                        LoadingProgressBar()
                     }
-                    .overlay {
-                        // Screenshot flash effect
-                        if navigator?.showScreenshotFlash == true {
-                            Color.white
-                                .opacity(0.7)
-                                .clipShape(RoundedRectangle(cornerRadius: isFullSize ? 0 : 12))
-                                .allowsHitTesting(false)
-                        }
+                }
+                .overlay {
+                    // Screenshot flash effect
+                    if navigator?.showScreenshotFlash == true {
+                        Color.white
+                            .opacity(0.7)
+                            .clipShape(RoundedRectangle(cornerRadius: isFullSize ? 0 : 12))
+                            .allowsHitTesting(false)
                     }
-                    .overlay(alignment: .bottom) {
-                        // Screenshot saved toast
-                        if navigator?.showScreenshotSavedToast == true {
-                            CopiedFeedbackToast(message: "Saved to Photos")
-                                .transition(.move(edge: .bottom).combined(with: .opacity))
-                        }
+                }
+                .overlay(alignment: .bottom) {
+                    // Screenshot saved toast
+                    if navigator?.showScreenshotSavedToast == true {
+                        CopiedFeedbackToast(message: "Saved to Photos")
+                            .transition(.move(edge: .bottom).combined(with: .opacity))
                     }
                 }
             }
@@ -593,99 +560,7 @@ private struct CheckerboardPattern: View {
     }
 }
 
-// MARK: - Safari WebView
-
-struct SafariWebView: UIViewControllerRepresentable {
-    @Environment(\.agentBrowserSettings) private var agentSettings
-    let urlString: String
-    var agentNavigation: AgentNavigation?
-
-    // Configuration settings (require recreation)
-    @AppStorage("safariEntersReaderIfAvailable") private var storedEntersReaderIfAvailable = false
-    private var entersReaderIfAvailable: Bool {
-        agentSettings?.value("safariEntersReaderIfAvailable", fallback: storedEntersReaderIfAvailable) ?? storedEntersReaderIfAvailable
-    }
-    @AppStorage("safariBarCollapsingEnabled") private var storedBarCollapsingEnabled = true
-    private var barCollapsingEnabled: Bool {
-        agentSettings?.value("safariBarCollapsingEnabled", fallback: storedBarCollapsingEnabled) ?? storedBarCollapsingEnabled
-    }
-
-    // Runtime-changeable settings
-    @AppStorage("safariDismissButtonStyle") private var storedDismissButtonStyle = 0
-    private var dismissButtonStyle: Int {
-        agentSettings?.value("safariDismissButtonStyle", fallback: storedDismissButtonStyle) ?? storedDismissButtonStyle
-    }
-    @AppStorage("safariControlTintColorHex") private var storedControlTintColorHex = ""
-    private var controlTintColorHex: String {
-        agentSettings?.value("safariControlTintColorHex", fallback: storedControlTintColorHex) ?? storedControlTintColorHex
-    }
-    @AppStorage("safariBarTintColorHex") private var storedBarTintColorHex = ""
-    private var barTintColorHex: String {
-        agentSettings?.value("safariBarTintColorHex", fallback: storedBarTintColorHex) ?? storedBarTintColorHex
-    }
-
-    func makeCoordinator() -> Coordinator { Coordinator(navigation: agentNavigation) }
-
-    final class Coordinator: NSObject, SFSafariViewControllerDelegate {
-        let navigation: AgentNavigation?
-
-        init(navigation: AgentNavigation?) { self.navigation = navigation }
-
-        func safariViewController(_ controller: SFSafariViewController, initialLoadDidRedirectTo url: URL) {
-            navigation?.redirect(controller, url: url)
-        }
-
-        func safariViewController(_ controller: SFSafariViewController, didCompleteInitialLoad didLoadSuccessfully: Bool) {
-            let error = didLoadSuccessfully ? nil : URLError(.cannotLoadFromNetwork)
-            navigation?.finish(controller, url: nil, error: error)
-        }
-    }
-
-    func makeUIViewController(context: Context) -> SFSafariViewController {
-        guard let url = URL(string: urlString),
-              let scheme = url.scheme?.lowercased(),
-              scheme == "http" || scheme == "https" else {
-            return SFSafariViewController(url: URL(string: "https://example.com")!)
-        }
-        let config = SFSafariViewController.Configuration()
-        config.entersReaderIfAvailable = entersReaderIfAvailable
-        config.barCollapsingEnabled = barCollapsingEnabled
-        let vc = SFSafariViewController(url: url, configuration: config)
-        vc.delegate = context.coordinator
-        agentNavigation?.start(vc, url: url)
-        agentNavigation?.captureView = vc.view
-
-        // Apply runtime settings
-        applyRuntimeSettings(to: vc)
-
-        return vc
-    }
-
-    func updateUIViewController(_ uiViewController: SFSafariViewController, context: Context) {
-        // Only runtime-changeable properties can be updated
-        applyRuntimeSettings(to: uiViewController)
-    }
-
-    private func applyRuntimeSettings(to vc: SFSafariViewController) {
-        // Dismiss button style
-        switch dismissButtonStyle {
-        case 1: vc.dismissButtonStyle = .close
-        case 2: vc.dismissButtonStyle = .cancel
-        default: vc.dismissButtonStyle = .done
-        }
-
-        if #unavailable(iOS 26.0) {
-            if let color = UIColor(hex: controlTintColorHex) {
-                vc.preferredControlTintColor = color
-            }
-            if let color = UIColor(hex: barTintColorHex) {
-                vc.preferredBarTintColor = color
-            }
-        }
-    }
-}
-
 #Preview {
     @Previewable @State var id = UUID()
-    WebViewContainer(urlString: "https://apple.com", useSafari: false, webViewID: $id, navigator: nil)
+    WebViewContainer(urlString: "https://apple.com", webViewID: $id, navigator: nil)
 }

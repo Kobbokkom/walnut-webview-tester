@@ -2,7 +2,7 @@ import Foundation
 
 extension AgentSettings {
     static let menuTools = [
-        AgentTool.definition("menus", "Inspect, reorder, hide, or restore the WKWebView and SafariVC toolbar and App Bar items. Omitted items in visibleOrder are hidden.", [
+        AgentTool.definition("menus", "Inspect, reorder, hide, or restore Walnut's WKWebView toolbar and App Bar items. Omitted items in visibleOrder are hidden.", [
             "menu": choices(AgentMenu.allCases.map(\.rawValue)),
             "action": choices(["get", "apply", "reset"]),
             "visibleOrder": ["type": "array", "items": ["type": "string"], "uniqueItems": true],
@@ -11,7 +11,9 @@ extension AgentSettings {
     ]
 
     static func menus(_ input: AgentSettingsInput) async throws -> Any {
-        guard let menu = AgentMenu(rawValue: try input.string("menu")) else { throw AgentError("Unknown menu.") }
+        guard let menu = AgentMenu(rawValue: try input.string("menu")) else {
+            throw AgentError("Walnut menu layout settings apply to WKWebView. Choose wk_toolbar or wk_app_bar.")
+        }
         let settings = AgentBrowserSettings.shared
         switch try input.string("action") {
         case "get": break
@@ -44,8 +46,6 @@ extension AgentSettings {
 private enum AgentMenu: String, CaseIterable {
     case wkToolbar = "wk_toolbar"
     case wkAppBar = "wk_app_bar"
-    case safariToolbar = "safari_toolbar"
-    case safariAppBar = "safari_app_bar"
 
     struct Row: Codable {
         let menuItem: String
@@ -56,8 +56,6 @@ private enum AgentMenu: String, CaseIterable {
         switch self {
         case .wkToolbar: "toolbarItemsOrder"
         case .wkAppBar: "appBarItemsOrder"
-        case .safariToolbar: "safariToolbarItemsOrder"
-        case .safariAppBar: "safariAppBarItemsOrder"
         }
     }
 
@@ -65,8 +63,6 @@ private enum AgentMenu: String, CaseIterable {
         switch self {
         case .wkToolbar: DevToolsMenuItem.defaultOrder.map(\.rawValue)
         case .wkAppBar: AppBarMenuItem.defaultOrder.map(\.rawValue)
-        case .safariToolbar: SafariVCToolbarMenuItem.defaultOrder.map(\.rawValue)
-        case .safariAppBar: SafariVCAppBarMenuItem.defaultOrder.map(\.rawValue)
         }
     }
 }

@@ -27,12 +27,7 @@ enum AgentCapture {
         if let navigator {
             image = await navigator.agentScreenshot()
         } else {
-            guard let window = safariWindow, !window.bounds.isEmpty else { throw AgentError("Screenshot unavailable.") }
-            var captured = false
-            let frame = UIGraphicsImageRenderer(size: window.bounds.size).image { _ in
-                captured = window.drawHierarchy(in: window.bounds, afterScreenUpdates: true)
-            }
-            image = captured ? frame : nil
+            image = safariWindow.flatMap(captureHostWindow)
         }
         try validateTarget()
         guard let image else {
@@ -47,16 +42,21 @@ enum AgentCapture {
         return result
     }
 
+    static func captureHostWindow(_ window: UIWindow) -> UIImage? {
+        guard !window.bounds.isEmpty else { return nil }
+        var captured = false
+        let frame = UIGraphicsImageRenderer(size: window.bounds.size).image { _ in
+            captured = window.drawHierarchy(in: window.bounds, afterScreenUpdates: true)
+        }
+        return captured ? frame : nil
+    }
+
     static func exportScreenshot(
         _ image: UIImage,
         saveToPhotos: Bool,
         validateTarget: () throws -> Void,
         requestPhotos: () async throws -> Void = { try await AgentCapture.requirePhotos() },
-        savePhoto: (UIImage) async throws -> Void = { image in
-            try await PHPhotoLibrary.shared().performChanges {
-                PHAssetCreationRequest.creationRequestForAsset(from: image)
-            }
-        }
+        savePhoto: (UIImage) async throws -> Void = { try await AgentCapture.savePhoto($0) }
     ) async throws -> [String: Any] {
         guard let png = image.pngData() else { throw AgentError("Screenshot unavailable.") }
         if saveToPhotos {
@@ -65,6 +65,12 @@ enum AgentCapture {
             try await savePhoto(image)
         }
         return ["mimeType": "image/png", "data": png.base64EncodedString(), "savedToPhotos": saveToPhotos]
+    }
+
+    static func savePhoto(_ image: UIImage) async throws {
+        try await PHPhotoLibrary.shared().performChanges {
+            PHAssetCreationRequest.creationRequestForAsset(from: image)
+        }
     }
 
     static func requirePhotos() async throws {
