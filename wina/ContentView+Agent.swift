@@ -88,8 +88,9 @@ extension ContentView {
             throw AgentError("Unknown Walnut tool.")
         }
         try AgentTool.validate(arguments, using: tool)
-        let pageAction = name == "page_interact" && ["click", "fill", "select", "move", "click_at", "press"].contains(arguments["action"] as? String ?? "")
-        let fixedTarget = pageAction || ["walnut_screenshot", "storage_write", "storage_clear"].contains(name) ? agentPageEvidence() : nil
+        let pageAction = name == "page_interact" && ["scroll", "click", "fill", "select", "move", "click_at", "press"].contains(arguments["action"] as? String ?? "")
+        let logExport = ["console_list", "network_list"].contains(name) && ["text", "json"].contains(arguments["format"] as? String ?? "")
+        let fixedTarget = pageAction || logExport || ["walnut_screenshot", "storage_write", "storage_clear"].contains(name) ? agentPageEvidence() : nil
         let result = try await performAgentCall(name, arguments)
         var envelope = fixedTarget ?? agentPageEvidence()
         if name == "performance_read", let measurement = result as? [String: Any],

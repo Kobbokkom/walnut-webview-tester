@@ -104,8 +104,13 @@ final class AgentPageRegressionTests: XCTestCase {
         let after = try XCTUnwrap((scroll["after"] as? [String: Any])?["y"] as? Double)
         XCTAssertEqual(scroll["moved"] as? Bool, true)
         XCTAssertGreaterThan(after, before)
+        XCTAssertNotNil(scroll["settled"] as? Bool)
 
         let form = try await call("page_interact", ["action": "observe"], navigator)
+        let observed = try XCTUnwrap((form["viewport"] as? [String: Any])?["y"] as? Double)
+        XCTAssertEqual(observed, after, accuracy: 1, "Scroll evidence must agree with the next observed viewport")
+        let maximum = try await webView.evaluateJavaScript("document.scrollingElement.scrollHeight - innerHeight") as? Double
+        XCTAssertLessThanOrEqual(after, try XCTUnwrap(maximum) + 1)
         let field = try interactionRef(form, label: "Delivery reference", capability: "canFill")
         let fill = try await applyInteraction(["action": "fill", "documentId": document, "ref": field, "text": "WK-417"], navigator)
         XCTAssertEqual(fill["applied"] as? Bool, true)

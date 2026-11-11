@@ -3,8 +3,8 @@ import Foundation
 
 @MainActor
 extension AgentDevTools {
-    private static let consoleChunkSize = 256 * 1024
-    private static let consoleByteOffset = ["type": "integer", "minimum": 0, "maximum": Int(Int32.max)] as [String: Any]
+    private static let logChunkSize = 256 * 1024
+    private static let logByteOffset = ["type": "integer", "minimum": 0, "maximum": Int(Int32.max)] as [String: Any]
 
     static let logTools: [[String: Any]] = [
         AgentTool.definition("console_configure", "Read or set Console options. Preserve and clear strategy are session-only unless saved.", [
@@ -12,14 +12,14 @@ extension AgentDevTools {
             "regex": flag, "types": ["type": "array", "items": options(ConsoleLog.LogType.displayableTypes.map(\.rawValue))],
             "save": flag
         ]),
-        AgentTool.definition("console_list", "Read or export retained Console records. Optional document ID limits results to that document. For a long text export, append records from each chunk and pass nextByteOffset as byteOffset with contentId and the same filters. Text searches and raw content require confirmation.", [
+        AgentTool.definition("console_list", "Read or export retained Console records. Optional document ID limits results to that document. For a long text or JSON export, append records from each chunk and pass nextByteOffset as byteOffset with contentId and the same filters. Text searches and raw content require confirmation.", [
             "type": options(ConsoleLog.LogType.displayableTypes.map(\.rawValue)), "query": query, "regex": flag,
             "includeCollapsed": flag, "raw": raw, "format": options(["structured", "text", "json"]),
             "documentId": identifier, "offset": offset, "limit": limit,
-            "byteOffset": consoleByteOffset, "contentId": identifier
+            "byteOffset": logByteOffset, "contentId": identifier
         ]),
         AgentTool.definition("console_detail", "Read full Console record details by ID. For a large record, concatenate the content chunks and parse them as JSON. Pass nextByteOffset as byteOffset with contentId and the same ID. Requires confirmation.", [
-            "id": identifier, "byteOffset": consoleByteOffset, "contentId": identifier
+            "id": identifier, "byteOffset": logByteOffset, "contentId": identifier
         ], required: ["id"]),
         AgentTool.definition("console_group", "Set the collapsed state of a Console group.", [
             "id": identifier, "collapsed": flag
@@ -29,12 +29,12 @@ extension AgentDevTools {
         AgentTool.definition("network_configure", "Read or set Network and Resources capture, preserve on reload and navigation clear strategy.", [
             "capture": flag, "preserveOnReload": flag, "clearStrategy": options(LogClearStrategy.self), "save": flag
         ]),
-        AgentTool.definition("network_list", "Read retained Network requests and resource timings. Raw URLs require confirmation.", [
+        AgentTool.definition("network_list", "Read or export retained Network requests and resource timings. For a long text or JSON export, append export from each chunk and pass nextByteOffset as byteOffset with contentId and the same filters. Exports and raw URLs require confirmation.", [
             "category": options(NetworkResourceFilter.self), "query": query, "method": query, "host": query,
             "minStatus": ["type": "integer", "minimum": 100, "maximum": 599],
             "maxStatus": ["type": "integer", "minimum": 100, "maximum": 599],
             "documentId": identifier, "raw": raw, "offset": offset, "limit": limit,
-            "format": options(["structured", "text", "json"])
+            "format": options(["structured", "text", "json"]), "byteOffset": logByteOffset, "contentId": identifier
         ]),
         AgentTool.definition("network_detail", "Read request overview, headers, request, response, or copy-as-cURL representation by ID. Full content requires confirmation.", [
             "id": identifier, "section": options(["overview", "headers", "request", "response", "curl"]), "raw": raw,
@@ -62,15 +62,17 @@ extension AgentDevTools {
             return try await listConsole(input, context, console)
         case "console_detail":
             let id = try input.uuid("id")
-            let cursor = try consoleCursor(input)
+            let cursor = try logCursor(input, source: "Console")
             try await context.confirm("Share the selected Console entry with the Mac?")
             guard let log = navigator.consoleManager.logs.first(where: { $0.id == id }) else {
                 throw AgentError("Console record not found.")
             }
             let record = consoleRecord(log, includeContent: true, fullContent: true)
             let data = try JSONSerialization.data(withJSONObject: record, options: [.sortedKeys])
-            if cursor.offset == 0, data.count <= consoleChunkSize { return record }
-            var result = try consoleChunk(data, key: "content", cursor: cursor)
+            if cursor.offset == 0, data.count <= logChunkSize { return record }
+            var export = LogExport(offset: cursor.offset)
+            export.append(data)
+            var result = try export.result(key: "content", contentId: cursor.id, source: "Console")
             result["id"] = log.id.uuidString
             return result
         case "console_group":
@@ -227,8 +229,8 @@ extension AgentDevTools {
         let includeCollapsed = try input.bool("includeCollapsed") ?? true
         let format = try input.string("format") ?? "structured"
         guard ["structured", "text", "json"].contains(format) else { throw AgentError("Invalid Console format.") }
-        let cursor = try consoleCursor(input)
-        guard format == "text" || cursor.offset == 0 else { throw AgentError("A byte offset requires Console text export.") }
+        let cursor = try logCursor(input, source: "Console")
+        guard format != "structured" || cursor.offset == 0 else { throw AgentError("A byte offset requires Console text or JSON export.") }
         let includeContent = (try input.bool("raw") ?? false) || format != "structured"
         let compiled: NSRegularExpression?
         if regex && !query.isEmpty {
@@ -239,6 +241,7 @@ extension AgentDevTools {
         } else {
             compiled = nil
         }
+        let runID = context.navigator.agentNavigation.runID
         if includeContent || !query.isEmpty {
             try await context.confirm("Read the contents of Walnut's Console logs on the Mac?")
         }
@@ -261,50 +264,108 @@ extension AgentDevTools {
         }
         let page = try paginate(input, filtered)
         var result: [String: Any] = ["capture": manager.isCapturing, "total": filtered.count, "retained": document == nil]
+        var export = LogExport(offset: cursor.offset)
         switch format {
         case "text":
-            let text = ConsoleExporter.exportAsText(Array(page), includeObjects: true)
-            result.merge(try consoleChunk(Data(text.utf8), key: "records", cursor: cursor)) { _, new in new }
+            try await export.appendLines(ConsoleExporter.textLines(page, includeObjects: true), separator: "\n\n")
         case "json":
-            let data = try JSONSerialization.data(withJSONObject: page.map { consoleRecord($0, includeContent: true) })
-            guard let output = String(data: data, encoding: .utf8) else { throw AgentError("Could not encode logs.") }
-            result["records"] = output
-        default: result["records"] = page.map { consoleRecord($0, includeContent: includeContent) }
+            try await export.appendJSONRows(page) { consoleRecord($0, includeContent: true, fullContent: true) }
+        default:
+            result["records"] = page.map { consoleRecord($0, includeContent: includeContent) }
+            return result
         }
+        try checkLogExportTarget(context, runID: runID)
+        result.merge(try export.result(key: "records", contentId: cursor.id, source: "Console")) { _, new in new }
         return result
     }
 
-    private static func consoleCursor(_ input: AgentDevInput) throws -> (offset: Int, id: String?) {
+    private static func checkLogExportTarget(_ context: AgentDevContext, runID: UUID) throws {
+        try context.checkDocument()
+        guard context.navigator.agentNavigation.runID == runID else {
+            throw AgentError("The active WKWebView navigation changed. Try again.")
+        }
+    }
+
+    private static func logCursor(_ input: AgentDevInput, source: String) throws -> (offset: Int, id: String?) {
         let offset = try input.int("byteOffset", default: 0, range: 0...Int(Int32.max))
         let id = try input.string("contentId", maxLength: 64)
         guard (offset > 0) == (id != nil) else {
-            throw AgentError("A Console continuation requires its byte offset and content ID.")
+            throw AgentError("A \(source) continuation requires its byte offset and content ID.")
         }
         return (offset, id)
     }
 
-    private static func consoleChunk(_ data: Data, key: String, cursor: (offset: Int, id: String?)) throws -> [String: Any] {
-        let start = cursor.offset
-        let id = start > 0 || data.count > consoleChunkSize
-            ? SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
-            : nil
-        guard cursor.id == nil || cursor.id == id else {
-            throw AgentError("The Console content changed. Start reading it again.")
+    @MainActor
+    private struct LogExport {
+        let offset: Int
+        private var hash = SHA256()
+        private var chunk = Data()
+        private var byteCount = 0
+
+        init(offset: Int) {
+            self.offset = offset
         }
-        guard start == 0 || (start < data.count && data[start] & 0xc0 != 0x80) else {
-            throw AgentError("Invalid Console byte offset. Use nextByteOffset from the previous chunk.")
+
+        mutating func append(_ data: Data) {
+            hash.update(data: data)
+            let start = max(offset - byteCount, 0)
+            // Keep one extra byte to locate the last complete UTF-8 scalar in the response.
+            let end = min(offset + logChunkSize + 1 - byteCount, data.count)
+            if start < end {
+                chunk.append(contentsOf: data[(data.startIndex + start)..<(data.startIndex + end)])
+            }
+            byteCount += data.count
         }
-        var end = min(data.count, start + consoleChunkSize)
-        while end < data.count && data[end] & 0xc0 == 0x80 { end -= 1 }
-        guard let content = String(bytes: data[start..<end], encoding: .utf8) else {
-            throw AgentError("Could not encode Console content.")
+
+        mutating func append(_ text: String) {
+            append(Data(text.utf8))
         }
-        var result: [String: Any] = [key: content]
-        if end < data.count {
-            result["contentId"] = id
-            result["nextByteOffset"] = end
+
+        mutating func appendLines(_ lines: some Collection<String>, separator: String) async throws {
+            for (index, position) in lines.indices.enumerated() {
+                await Task.yield()
+                try Task.checkCancellation()
+                if index > 0 { append(separator) }
+                append(lines[position])
+            }
         }
-        return result
+
+        mutating func appendJSONRows<Row>(_ rows: some Sequence<Row>, encode: (Row) -> [String: Any]) async throws {
+            append("[")
+            for (index, row) in rows.enumerated() {
+                await Task.yield()
+                try Task.checkCancellation()
+                if index > 0 { append(",") }
+                let data = try autoreleasepool {
+                    try JSONSerialization.data(withJSONObject: encode(row), options: [.sortedKeys])
+                }
+                append(data)
+            }
+            append("]")
+        }
+
+        func result(key: String, contentId: String?, source: String) throws -> [String: Any] {
+            let id = offset > 0 || chunk.count > logChunkSize
+                ? hash.finalize().map { String(format: "%02x", $0) }.joined()
+                : nil
+            guard contentId == nil || contentId == id else {
+                throw AgentError("The \(source) content changed. Start reading it again.")
+            }
+            guard offset == 0 || chunk.first.map({ $0 & 0xc0 != 0x80 }) == true else {
+                throw AgentError("Invalid \(source) byte offset. Use nextByteOffset from the previous chunk.")
+            }
+            var end = min(chunk.count, logChunkSize)
+            while end < chunk.count && chunk[end] & 0xc0 == 0x80 { end -= 1 }
+            guard let content = String(bytes: chunk.prefix(end), encoding: .utf8) else {
+                throw AgentError("Could not encode \(source) content.")
+            }
+            var result: [String: Any] = [key: content]
+            if end < chunk.count {
+                result["contentId"] = id
+                result["nextByteOffset"] = offset + end
+            }
+            return result
+        }
     }
 
     private static func regexMatch(_ regex: NSRegularExpression, _ text: String, deadline: ContinuousClock.Instant) throws -> Bool {
@@ -374,9 +435,12 @@ extension AgentDevTools {
         guard minStatus <= maxStatus else { throw AgentError("minStatus must not exceed maxStatus.") }
         let format = try input.string("format") ?? "structured"
         guard ["structured", "text", "json"].contains(format) else { throw AgentError("Invalid Network format.") }
+        let cursor = try logCursor(input, source: "Network")
+        guard format != "structured" || cursor.offset == 0 else { throw AgentError("A byte offset requires Network text or JSON export.") }
         let includeContent = (try input.bool("raw") ?? false) || format != "structured"
-        if includeContent { try await context.confirm("Share captured request and resource URLs with the Mac?") }
         let navigator = context.navigator
+        let runID = navigator.agentNavigation.runID
+        if includeContent { try await context.confirm("Share captured request and resource URLs with the Mac?") }
         let requests = navigator.networkManager.requests.reversed().filter { request in
             guard filter.matchesNetworkRequest(request), document == nil || document == request.agentDocumentID else { return false }
             if let method, request.method.caseInsensitiveCompare(method) != .orderedSame { return false }
@@ -399,20 +463,27 @@ extension AgentDevTools {
             "retained": document == nil, "capture": navigator.networkManager.isCapturing,
             "resourceCapture": navigator.resourceManager.isCapturing, "requestCount": requests.count, "resourceCount": resources.count
         ]
-        let rows = pageRequests.map { networkRecord($0, includeContent: includeContent) }
-        let timings = pageResources.map { resourceRecord($0, includeContent: includeContent) }
+        var export = LogExport(offset: cursor.offset)
         switch format {
-        case "json":
-            let data = try JSONSerialization.data(withJSONObject: ["requests": rows, "resources": timings])
-            result["export"] = String(bytes: data, encoding: .utf8)
         case "text":
-            let lines = pageRequests.map { "\($0.method) \($0.url) \($0.status.map(String.init) ?? "–")" }
-                + pageResources.map { "\($0.initiatorType.rawValue) \($0.name) \($0.displayDuration)" }
-            result["export"] = clipped(lines.joined(separator: "\n"), limit: 32_768)
+            let requestLines = pageRequests.lazy.map { "\($0.method) \($0.url) \($0.status.map(String.init) ?? "–")" }
+            let resourceLines = pageResources.lazy.map { "\($0.initiatorType.rawValue) \($0.name) \($0.displayDuration)" }
+            try await export.appendLines(requestLines, separator: "\n")
+            if !pageRequests.isEmpty && !pageResources.isEmpty { export.append("\n") }
+            try await export.appendLines(resourceLines, separator: "\n")
+        case "json":
+            export.append("{\"requests\":")
+            try await export.appendJSONRows(pageRequests) { networkRecord($0, includeContent: true, fullContent: true) }
+            export.append(",\"resources\":")
+            try await export.appendJSONRows(pageResources) { resourceRecord($0, includeContent: true, fullContent: true) }
+            export.append("}")
         default:
-            result["requests"] = rows
-            result["resources"] = timings
+            result["requests"] = pageRequests.map { networkRecord($0, includeContent: includeContent) }
+            result["resources"] = pageResources.map { resourceRecord($0, includeContent: includeContent) }
+            return result
         }
+        try checkLogExportTarget(context, runID: runID)
+        result.merge(try export.result(key: "export", contentId: cursor.id, source: "Network")) { _, new in new }
         return result
     }
 
@@ -447,17 +518,20 @@ extension AgentDevTools {
             }
             row["command"] = command
         default:
-            if includeContent { row["stack"] = try request.stackFrames.map { try AgentTool.json(Array($0.prefix(50))) } }
+            if includeContent { row["stack"] = try request.stackFrames.map { try AgentTool.json($0) } }
         }
         return row
     }
 
-    private static func networkRecord(_ request: NetworkRequest, includeContent: Bool) -> [String: Any] {
+    private static func networkRecord(_ request: NetworkRequest, includeContent: Bool, fullContent: Bool = false) -> [String: Any] {
+        func content(_ value: String, limit: Int = 4096) -> String {
+            fullContent ? value : clipped(value, limit: limit)
+        }
         var row: [String: Any] = [
             "id": request.id.uuidString, "type": request.requestType.rawValue,
             "timestamp": request.startTime.timeIntervalSince1970,
-            "method": clipped(request.method, limit: 32),
-            "url": includeContent ? clipped(request.url) : safeURL(request.url),
+            "method": content(request.method, limit: 32),
+            "url": includeContent ? content(request.url) : safeURL(request.url),
             "pending": request.isPending, "failed": request.error != nil || (request.status ?? 0) >= 400,
             "mixedContent": request.isMixedContent
         ]
@@ -465,17 +539,18 @@ extension AgentDevTools {
         row["status"] = request.status
         row["durationMs"] = request.duration.map { $0 * 1000 }
         if includeContent {
-            row["error"] = request.error.map { clipped($0) }
-            row["statusText"] = request.statusText.map { clipped($0) }
+            row["error"] = request.error.map { content($0) }
+            row["statusText"] = request.statusText.map { content($0) }
         }
         return row
     }
 
-    private static func resourceRecord(_ entry: ResourceEntry, includeContent: Bool) -> [String: Any] {
+    private static func resourceRecord(_ entry: ResourceEntry, includeContent: Bool, fullContent: Bool = false) -> [String: Any] {
+        let url = if includeContent { fullContent ? entry.name : clipped(entry.name) } else { safeURL(entry.name) }
         var row: [String: Any] = [
             "id": entry.id.uuidString, "type": entry.initiatorType.rawValue,
             "timestamp": entry.timestamp.timeIntervalSince1970,
-            "url": includeContent ? clipped(entry.name) : safeURL(entry.name),
+            "url": url,
             "startMs": entry.startTime, "durationMs": entry.duration,
             "transferBytes": entry.transferSize, "encodedBytes": entry.encodedBodySize, "decodedBytes": entry.decodedBodySize,
             "dnsMs": entry.dnsTime, "tcpMs": entry.tcpTime, "tlsMs": entry.tlsTime,

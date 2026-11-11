@@ -9,6 +9,7 @@ extension AgentDevTools {
         "Observe and interact with the visible page or a same-origin frame in WKWebView. Observe shares text near the viewport after iPhone approval. " +
             "Use move or click_at with viewport CSS coordinates from observe. Press sends a key to the focused element. " +
             "Use select with optionIndexes or unique values returned by observe. Move, click, fill, select and press require iPhone approval. " +
+            "Top-level document scroll reports settled=false if WebKit did not confirm the requested offset before the timeout. " +
             "After an action, observe again to verify its outcome.",
         [
             "action": options(["observe", "scroll", "fill", "select", "click", "move", "click_at", "press"]),
@@ -185,8 +186,24 @@ extension AgentDevTools {
     private static func interactionResult(_ request: [String: Any], _ context: AgentDevContext) async throws -> [String: Any] {
         let input = try JSONSerialization.data(withJSONObject: request)
         guard let json = String(bytes: input, encoding: .utf8) else { throw AgentError("Could not encode the page interaction.") }
-        let script = "JSON.stringify((\(interactionScript))(\(json)))"
-        let value = try await context.navigator.evaluateJavaScriptReportingErrors(script, contentWorld: interactionWorld)
+        let expression = "(\(interactionScript))(\(json))"
+        let isDocumentScroll = request["action"] as? String == "scroll" &&
+            (request["ref"] as? String)?.isEmpty != false && (request["framePath"] as? [String])?.isEmpty != false
+        let value: Any?
+        if isDocumentScroll {
+            let runID = context.navigator.agentNavigation.runID
+            value = try await context.navigator.callAsyncJavaScriptReportingErrors(
+                "return JSON.stringify(await \(expression));", contentWorld: interactionWorld
+            )
+            try checkInteractionDocument(context)
+            guard context.navigator.agentNavigation.runID == runID else {
+                throw AgentError("A different navigation interrupted the scroll. Observe the current page first.")
+            }
+        } else {
+            value = try await context.navigator.evaluateJavaScriptReportingErrors(
+                "JSON.stringify(\(expression))", contentWorld: interactionWorld
+            )
+        }
         guard let result = try parseJSON(value) as? [String: Any] else {
             throw AgentError("Invalid response from the page.")
         }
@@ -387,7 +404,7 @@ extension AgentDevTools {
         const viewport = () => {
             const {scrollX: x, scrollY: y, innerWidth: width, innerHeight: height} = window;
             const end = document.scrollingElement?.scrollHeight ?? height;
-            return {x, y, width, height, visual, atTop: y <= 1, atBottom: y + height >= end - 1};
+            return {x, y, width, height, visual: visualBounds(window), atTop: y <= 1, atBottom: y + height >= end - 1};
         };
         function inView(rect) {
             const left = Math.max(visual.left, rect.left), right = Math.min(visual.left + visual.width, rect.right);
@@ -560,10 +577,34 @@ extension AgentDevTools {
                 return {before, after, moved: before.y !== after.y};
             }
             const before = viewport();
-            window.scrollBy({top: Math.max(1, Math.floor(before.height * 0.8)) * (request.direction === 'up' ? -1 : 1),
-                behavior: 'instant'});
-            const after = viewport();
-            return {before, after, moved: before.y !== after.y};
+            const step = Math.max(1, Math.floor(before.height * 0.8)) * (request.direction === 'up' ? -1 : 1);
+            if (ancestors.length) {
+                window.scrollBy({top: step, behavior: 'instant'});
+                const after = viewport();
+                return {before, after, moved: before.y !== after.y};
+            }
+            const end = document.scrollingElement?.scrollHeight ?? before.height;
+            const target = Math.max(0, Math.min(end - before.height, before.y + step));
+            if (target === before.y) return {before, after: before, moved: false, settled: true};
+            window.scrollBy({top: target - before.y, behavior: 'instant'});
+            // WebKit can briefly report the requested offset before the viewport adopts it.
+            return new Promise(resolve => {
+                let frame;
+                let stable = 0;
+                function finish(settled) {
+                    window.clearTimeout(timeout);
+                    window.cancelAnimationFrame(frame);
+                    const after = viewport();
+                    resolve({before, after, moved: before.y !== after.y, settled});
+                }
+                const timeout = window.setTimeout(() => finish(false), 250);
+                function sample() {
+                    stable = Math.abs(window.scrollY - target) < 1 ? stable + 1 : 0;
+                    if (stable >= 2) finish(true);
+                    else frame = window.requestAnimationFrame(sample);
+                }
+                frame = window.requestAnimationFrame(sample);
+            });
         }
         \#(pointerKeyboardScript)
         const state = globalThis.walnutInteraction;

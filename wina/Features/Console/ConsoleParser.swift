@@ -161,21 +161,23 @@ enum ConsoleExporter {
     /// Export logs as formatted text
     /// - Returns: Formatted text string with blank lines between entries
     static func exportAsText(_ logs: [ConsoleLog], includeObjects: Bool = false) -> String {
+        textLines(logs, includeObjects: includeObjects).joined(separator: "\n\n")
+    }
+
+    static func textLines(_ logs: some Collection<ConsoleLog>, includeObjects: Bool) -> some Collection<String> {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss.SSS"
 
-        return logs
-            .map { log in
-                var line = "[\(dateFormatter.string(from: log.timestamp))] [\(log.type.shortLabel)] \(log.message)"
-                if let source = log.source {
-                    line += " (\(source))"
-                }
-                if includeObjects, let object = log.objectValue {
-                    line += "\n" + object.copyableString
-                }
-                return line
+        return logs.lazy.map { log in
+            var line = "[\(dateFormatter.string(from: log.timestamp))] [\(log.type.shortLabel)] \(log.message)"
+            if let source = log.source {
+                line += " (\(source))"
             }
-            .joined(separator: "\n\n")
+            if includeObjects, let object = log.objectValue {
+                line += "\n" + object.copyableString
+            }
+            return line
+        }
     }
 
     /// Export logs as JSON array

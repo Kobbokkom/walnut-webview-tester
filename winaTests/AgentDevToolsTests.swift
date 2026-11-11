@@ -106,7 +106,7 @@ final class AgentDevToolsTests: XCTestCase {
         withExtendedLifetime(webView) {}
     }
 
-    func testConsoleDetailContinuesFullRetainedRecord() async throws {
+    func testConsoleDetailAndJSONExportContinueFullRetainedRecord() async throws {
         let webView = WKWebView()
         let navigator = WebViewNavigator()
         navigator.attach(to: webView)
@@ -147,6 +147,26 @@ final class AgentDevToolsTests: XCTestCase {
         XCTAssertEqual(record["stack"] as? String, stack)
         XCTAssertEqual(record["object"] as? String, log.objectValue?.copyableString)
         XCTAssertEqual(record["table"] as? [[String: String]], table)
+
+        func export(_ cursor: [String: Any] = [:]) async throws -> [String: Any] {
+            var arguments = cursor
+            arguments["format"] = "json"
+            let response = try await AgentDevTools.call(
+                "console_list", arguments: arguments, navigator: navigator,
+                storage: storage, console: console, authorize: { _ in true }
+            )
+            return try XCTUnwrap(response as? [String: Any])
+        }
+
+        let firstExport = try await export()
+        let exportPrefix = try XCTUnwrap(firstExport["records"] as? String)
+        let exportOffset = try XCTUnwrap(firstExport["nextByteOffset"] as? Int)
+        let exportId = try XCTUnwrap(firstExport["contentId"] as? String)
+        XCTAssertEqual(exportPrefix.utf8.count, exportOffset)
+        let lastExport = try await export(["byteOffset": exportOffset, "contentId": exportId])
+        let exportSuffix = try XCTUnwrap(lastExport["records"] as? String)
+        XCTAssertEqual(exportPrefix + exportSuffix, "[" + prefix + suffix + "]")
+        XCTAssertNil(lastExport["nextByteOffset"])
         withExtendedLifetime(webView) {}
     }
 
@@ -201,6 +221,49 @@ final class AgentDevToolsTests: XCTestCase {
         } catch {
             XCTAssertEqual(error.localizedDescription, "The Console content changed. Start reading it again.")
         }
+
+        let empty = ConsoleLog(type: .log, message: "", source: nil, timestamp: newer.timestamp)
+        let headingLength = ConsoleExporter.exportAsText([empty]).utf8.count
+        let boundary = ConsoleLog(
+            type: .log, message: String(repeating: "x", count: 256 * 1024 - headingLength),
+            source: nil, timestamp: newer.timestamp
+        )
+        navigator.consoleManager.logs = [older, boundary]
+        let boundaryStart = try await export()
+        let boundaryOffset = try XCTUnwrap(boundaryStart["nextByteOffset"] as? Int)
+        let boundaryId = try XCTUnwrap(boundaryStart["contentId"] as? String)
+        XCTAssertEqual(boundaryOffset, 256 * 1024)
+        XCTAssertEqual(boundaryStart["records"] as? String, ConsoleExporter.exportAsText([boundary]))
+        let boundaryEnd = try await export(["byteOffset": boundaryOffset, "contentId": boundaryId])
+        XCTAssertEqual(boundaryEnd["records"] as? String, "\n\n" + ConsoleExporter.exportAsText([older]))
+        withExtendedLifetime(webView) {}
+    }
+
+    func testConsoleExportAllowsCancellationAfterApproval() async throws {
+        let webView = WKWebView()
+        let navigator = WebViewNavigator()
+        navigator.attach(to: webView)
+        navigator.consoleManager.logs = (0..<30).map {
+            ConsoleLog(type: .log, message: "record \($0)", source: nil, timestamp: Date())
+        }
+
+        var exportTask: Task<Void, Error>?
+        exportTask = Task { @MainActor in
+            _ = try await AgentDevTools.call(
+                "console_list", arguments: ["format": "json"], navigator: navigator,
+                storage: StorageManager(), console: ConsoleSession(), authorize: { _ in
+                    Task { @MainActor in exportTask?.cancel() }
+                    return true
+                }
+            )
+        }
+        let task = try XCTUnwrap(exportTask)
+        do {
+            try await task.value
+            XCTFail("The export must let the queued cancellation run before returning")
+        } catch is CancellationError {
+            // Expected.
+        }
         withExtendedLifetime(webView) {}
     }
 
@@ -227,6 +290,103 @@ final class AgentDevToolsTests: XCTestCase {
             storage: storage, console: console, authorize: { _ in true }
         )
         XCTAssertEqual((approved as? [String: Any])?["resourceCount"] as? Int, 1)
+        withExtendedLifetime(webView) {}
+    }
+
+    func testNetworkTextAndJSONExportsContinueWithoutMixingChangedPages() async throws {
+        let webView = WKWebView()
+        let navigator = WebViewNavigator()
+        navigator.attach(to: webView)
+        let request = NetworkRequest(
+            id: UUID(), method: "GET", url: "https://example.com/" + String(repeating: "🙂", count: 70_000),
+            requestHeaders: nil, startTime: Date(), pageIsSecure: true, status: 200, requestType: .fetch
+        )
+        let resource = ResourceEntry(
+            id: UUID(), name: "https://example.com/final.css", initiatorType: .link,
+            startTime: 1, duration: 1, transferSize: 1, encodedBodySize: 1, decodedBodySize: 1,
+            dnsTime: 0, tcpTime: 0, tlsTime: 0, requestTime: 0, responseTime: 0, timestamp: Date()
+        )
+        navigator.resourceManager.resources = [resource]
+
+        let storage = StorageManager()
+        let console = ConsoleSession()
+        func export(_ format: String, cursor: [String: Any] = [:], approved: Bool = true) async throws -> [String: Any] {
+            var arguments = cursor
+            arguments["format"] = format
+            let response = try await AgentDevTools.call(
+                "network_list", arguments: arguments, navigator: navigator,
+                storage: storage, console: console, authorize: { _ in approved }
+            )
+            return try XCTUnwrap(response as? [String: Any])
+        }
+
+        for format in ["text", "json"] {
+            navigator.networkManager.requests = [request]
+            let first = try await export(format)
+            let prefix = try XCTUnwrap(first["export"] as? String)
+            let next = try XCTUnwrap(first["nextByteOffset"] as? Int)
+            let contentId = try XCTUnwrap(first["contentId"] as? String)
+            XCTAssertEqual(prefix.utf8.count, next)
+            XCTAssertLessThanOrEqual(next, 256 * 1024)
+            let cursor: [String: Any] = ["byteOffset": next, "contentId": contentId]
+            let last = try await export(format, cursor: cursor)
+            let suffix = try XCTUnwrap(last["export"] as? String)
+            XCTAssertNil(last["nextByteOffset"])
+            XCTAssertEqual(last["requestCount"] as? Int, 1)
+            XCTAssertEqual(last["resourceCount"] as? Int, 1)
+            if format == "text" {
+                XCTAssertEqual(prefix + suffix, "GET \(request.url) 200\nlink \(resource.name) \(resource.displayDuration)")
+            } else {
+                let rows = try XCTUnwrap(AgentDevTools.parseJSON(prefix + suffix) as? [String: [[String: Any]]])
+                XCTAssertEqual(rows["requests"]?.first?["url"] as? String, request.url)
+                XCTAssertEqual(rows["resources"]?.first?["url"] as? String, resource.name)
+            }
+
+            do {
+                _ = try await export(format, cursor: cursor, approved: false)
+                XCTFail("A Network continuation still needs approval")
+            } catch {
+                XCTAssertEqual(error.localizedDescription, "The iPhone did not approve this action.")
+            }
+            navigator.networkManager.requests = []
+            do {
+                _ = try await export(format, cursor: cursor)
+                XCTFail("A Network continuation must reject a changed page")
+            } catch {
+                XCTAssertEqual(error.localizedDescription, "The Network content changed. Start reading it again.")
+            }
+            let small = try await export(format)
+            XCTAssertNotNil(small["export"] as? String)
+            XCTAssertNil(small["nextByteOffset"])
+        }
+        withExtendedLifetime(webView) {}
+    }
+
+    func testNetworkOverviewReturnsCapturedStackOnlyWithRawApproval() async throws {
+        let webView = WKWebView()
+        let navigator = WebViewNavigator()
+        navigator.attach(to: webView)
+        let frames = (0..<10).map {
+            StackFrame(functionName: "function\($0)", fileName: "https://example.com/test.js", lineNumber: $0, columnNumber: 1)
+        }
+        let request = NetworkRequest(
+            id: UUID(), method: "GET", url: "https://example.com/", requestHeaders: nil, startTime: Date(),
+            pageIsSecure: true, requestType: .fetch, stackFrames: frames
+        )
+        navigator.networkManager.requests = [request]
+        let storage = StorageManager()
+        let console = ConsoleSession()
+        let sanitized = try await AgentDevTools.call(
+            "network_detail", arguments: ["id": request.id.uuidString], navigator: navigator,
+            storage: storage, console: console, authorize: { _ in false }
+        )
+        XCTAssertNil((sanitized as? [String: Any])?["stack"])
+        let approved = try await AgentDevTools.call(
+            "network_detail", arguments: ["id": request.id.uuidString, "raw": true], navigator: navigator,
+            storage: storage, console: console, authorize: { _ in true }
+        )
+        let stack = try XCTUnwrap((approved as? [String: Any])?["stack"] as? [[String: Any]])
+        XCTAssertEqual(stack.compactMap { $0["functionName"] as? String }, frames.map(\.functionName))
         withExtendedLifetime(webView) {}
     }
 
