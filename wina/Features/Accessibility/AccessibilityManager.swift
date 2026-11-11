@@ -19,6 +19,7 @@ class AccessibilityManager {
     var isScanning: Bool = false
     var hasScanned: Bool = false
     private(set) var hasUntestedFrames = false
+    private(set) var attemptDocumentID: UUID?
     private(set) var auditedURL: String?
     private(set) var auditedDocumentID: UUID?
     private(set) var auditedAt: Date?
@@ -31,6 +32,7 @@ class AccessibilityManager {
         issues = []
         hasScanned = false
         hasUntestedFrames = false
+        attemptDocumentID = nil
         auditedURL = nil
         auditedDocumentID = nil
         auditedAt = nil
@@ -43,6 +45,7 @@ class AccessibilityManager {
     func runAudit(navigator: WebViewNavigator) async {
         guard !isScanning else { return }
         let document = navigator.documentID
+        attemptDocumentID = document
         isScanning = true
         issues = []
         hasScanned = false
@@ -51,7 +54,10 @@ class AccessibilityManager {
         auditedDocumentID = nil
         auditedAt = nil
         errorMessage = nil
-        defer { isScanning = false }
+        defer {
+            isScanning = false
+            if !hasScanned && errorMessage == nil { attemptDocumentID = nil }
+        }
 
         do {
             let axeLoaded = try await navigator.evaluateJavaScriptReportingErrors(

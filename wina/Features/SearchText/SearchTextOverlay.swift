@@ -8,10 +8,13 @@
 
 import SwiftUI
 import SwiftUIBackports
+import WebKit
 
 // MARK: - Search Text Overlay
 
 struct SearchTextOverlay: View {
+    static let searchWorld = WKContentWorld.world(name: "WalnutPageSearch")
+
     let navigator: WebViewNavigator
     @Binding var isPresented: Bool
     let bottomPaddingCalculator: (CGFloat) -> CGFloat
@@ -87,7 +90,7 @@ struct SearchTextOverlay: View {
                                 size: .small,
                                 isDisabled: matchCount <= 1
                             ) {
-                                navigateToPrevious()
+                                navigate(using: Self.previousScript)
                             }
 
                             // 다음 매치로 이동
@@ -96,7 +99,7 @@ struct SearchTextOverlay: View {
                                 size: .small,
                                 isDisabled: matchCount <= 1
                             ) {
-                                navigateToNext()
+                                navigate(using: Self.nextScript)
                             }
                         }
                     } else if !searchText.isEmpty && hasCompletedSearch {
@@ -141,16 +144,13 @@ struct SearchTextOverlay: View {
 
         let document = navigator.documentID
         let query = searchText
+        let readyScript = Self.readySearchScript(script, waitForDocument: waitForDocument)
         searchTask = Task {
             if debounce { try? await Task.sleep(for: .milliseconds(300)) }
             // The new document may not have a body yet when WebKit commits it.
             while navigator.isAttached {
                 guard !Task.isCancelled, navigator.documentID == document, searchText == query else { return }
-                let result = await navigator.evaluateJavaScript("""
-                if (document.readyState === 'loading' && (\(waitForDocument) || !document.body)) { 'wait'; }
-                else if (document.body) { \(script) }
-                else { JSON.stringify({count: 0, index: 0}); }
-                """)
+                let result = try? await navigator.evaluateJavaScriptReportingErrors(readyScript, contentWorld: Self.searchWorld)
                 guard !Task.isCancelled, navigator.documentID == document, searchText == query,
                       let jsonString = result as? String else { return }
                 if let data = jsonString.data(using: .utf8),
@@ -166,7 +166,15 @@ struct SearchTextOverlay: View {
         }
     }
 
-    static func searchScript(for keyword: String) -> String? {
+    static func readySearchScript(_ script: String, waitForDocument: Bool) -> String {
+        """
+        if (document.readyState === 'loading' && (\(waitForDocument) || !document.body)) { 'wait'; }
+        else if (document.body) { \(script) }
+        else { JSON.stringify({count: 0, index: 0}); }
+        """
+    }
+
+    static func searchScript(for keyword: String, sharingWith scope: UUID? = nil) -> String? {
         guard let keywordData = try? JSONSerialization.data(
             withJSONObject: keyword,
             options: .fragmentsAllowed
@@ -175,8 +183,10 @@ struct SearchTextOverlay: View {
             return nil
         }
 
+        let sharedScope = scope.map { "'\($0.uuidString)'" } ?? "null"
         return """
         (function() {
+            window.__wina_search_scope__ = null;
             // Remove previous highlights
             document.querySelectorAll('.__wina_search_highlight__').forEach(el => {
                 const parent = el.parentNode;
@@ -229,95 +239,67 @@ struct SearchTextOverlay: View {
 
             window.__wina_search_elements__ = elements;
             window.__wina_search_index__ = 0;
+            window.__wina_search_scope__ = \(sharedScope);
 
             return JSON.stringify({count: matchCount, index: 0});
         })();
         """
     }
 
-    static let nextScript = """
+    static let nextScript = navigationScript(step: 1)
+    static let previousScript = navigationScript(step: -1)
+
+    static func navigationScript(step: Int, sharingWith scope: UUID? = nil) -> String {
+        let requireSharedSearch = scope.map { scope in
+            """
+            if (window.__wina_search_scope__ !== '\(scope.uuidString)') {
+                return JSON.stringify({index: 0, requiresFind: true});
+            }
+            """
+        } ?? ""
+        return """
         (function() {
-            const elements = window.__wina_search_elements__ || [];
-            if (elements.length === 0) return JSON.stringify({index: 0});
-
-            let index = window.__wina_search_index__ || 0;
-
-            // Reset previous highlight
-            if (elements[index]) {
-                elements[index].style.backgroundColor = '#FFEB3B';
+            \(requireSharedSearch)
+            const previousElements = window.__wina_search_elements__ || [];
+            const previousIndex = window.__wina_search_index__ || 0;
+            const previous = previousElements[previousIndex];
+            const inDocument = element => element.isConnected && element.ownerDocument === document;
+            const elements = previousElements.filter(inDocument);
+            const count = elements.length;
+            window.__wina_search_elements__ = elements;
+            if (!count) {
+                window.__wina_search_index__ = 0;
+                return JSON.stringify({count: 0, index: 0, moved: false});
             }
 
-            // Move to next
-            index = (index + 1) % elements.length;
+            const current = elements.indexOf(previous);
+            let offset = current + \(step);
+            if (current < 0) {
+                const precedingCount = previousElements.slice(0, previousIndex).filter(inDocument).length;
+                offset = precedingCount + Math.min(\(step), 0);
+            }
+            const index = (offset + count) % count;
             window.__wina_search_index__ = index;
-
-            // Highlight current
-            if (elements[index]) {
-                elements[index].style.backgroundColor = '#FF9800';
-                elements[index].scrollIntoView({behavior: 'smooth', block: 'center'});
-            }
-
-            return JSON.stringify({index: index});
+            if (current >= 0) previous.style.backgroundColor = '#FFEB3B';
+            elements[index].style.backgroundColor = '#FF9800';
+            elements[index].scrollIntoView({behavior: 'smooth', block: 'center'});
+            return JSON.stringify({count, index, moved: current !== index});
         })();
         """
-
-    private func navigateToNext() {
-        let script = Self.nextScript
-
-        let document = navigator.documentID
-        let query = searchText
-        Task {
-            let result = await navigator.evaluateJavaScript(script)
-            await MainActor.run {
-                guard navigator.documentID == document, searchText == query else { return }
-                if let jsonString = result as? String,
-                   let data = jsonString.data(using: .utf8),
-                   let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
-                    currentIndex = json["index"] as? Int ?? 0
-                }
-            }
-        }
     }
 
-    static let previousScript = """
-        (function() {
-            const elements = window.__wina_search_elements__ || [];
-            if (elements.length === 0) return JSON.stringify({index: 0});
-
-            let index = window.__wina_search_index__ || 0;
-
-            // Reset previous highlight
-            if (elements[index]) {
-                elements[index].style.backgroundColor = '#FFEB3B';
-            }
-
-            // Move to previous
-            index = (index - 1 + elements.length) % elements.length;
-            window.__wina_search_index__ = index;
-
-            // Highlight current
-            if (elements[index]) {
-                elements[index].style.backgroundColor = '#FF9800';
-                elements[index].scrollIntoView({behavior: 'smooth', block: 'center'});
-            }
-
-            return JSON.stringify({index: index});
-        })();
-        """
-
-    private func navigateToPrevious() {
-        let script = Self.previousScript
-
+    private func navigate(using script: String) {
         let document = navigator.documentID
         let query = searchText
         Task {
-            let result = await navigator.evaluateJavaScript(script)
+            let result = try? await navigator.evaluateJavaScriptReportingErrors(script, contentWorld: Self.searchWorld)
             await MainActor.run {
                 guard navigator.documentID == document, searchText == query else { return }
                 if let jsonString = result as? String,
                    let data = jsonString.data(using: .utf8),
                    let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
                     currentIndex = json["index"] as? Int ?? 0
+                    matchCount = json["count"] as? Int ?? 0
                 }
             }
         }
@@ -325,6 +307,7 @@ struct SearchTextOverlay: View {
 
     static let clearScript = """
         (function() {
+            window.__wina_search_scope__ = null;
             document.querySelectorAll('.__wina_search_highlight__').forEach(el => {
                 const parent = el.parentNode;
                 parent.replaceChild(document.createTextNode(el.textContent), el);
@@ -342,9 +325,11 @@ struct SearchTextOverlay: View {
         hasCompletedSearch = false
 
         let script = Self.clearScript
+        let document = navigator.documentID
 
         Task {
-            await navigator.evaluateJavaScript(script)
+            guard navigator.documentID == document else { return }
+            _ = try? await navigator.evaluateJavaScriptReportingErrors(script, contentWorld: Self.searchWorld)
         }
     }
 }

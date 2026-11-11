@@ -10,7 +10,8 @@ final class WalnutAgentTests: XCTestCase {
         defer { try? FileManager.default.removeItem(at: directory) }
         let file = directory.appendingPathComponent("pairing.json")
         let expected = Pairing(version: 1, serviceName: "Walnut-Test", port: 44_333, key: Data(repeating: 13, count: 32))
-        let token = try "walnut-agent:" + JSONEncoder().encode(expected).base64EncodedString()
+        let encoded = try JSONEncoder().encode(expected).base64EncodedString()
+        let token = "walnut-agent:" + encoded
             .replacingOccurrences(of: "+", with: "-")
             .replacingOccurrences(of: "/", with: "_")
             .replacingOccurrences(of: "=", with: "")
@@ -84,6 +85,21 @@ final class WalnutAgentTests: XCTestCase {
         let result = try XCTUnwrap(reply?["result"] as? [String: Any])
         let structured = try XCTUnwrap(result["structuredContent"] as? [String: Any])
         XCTAssertEqual((structured["data"] as? [String: Int])?["total"], 7)
+    }
+
+    func testMCPRejectsNonUTF8Requests() async throws {
+        let server = MCPServer { _, _ in throw AgentError("Unexpected device call") }
+        let ping = #"{"jsonrpc":"2.0","id":7,"method":"ping"}"#
+        let malformed = Data(#"{"jsonrpc":"2.0","id":7,"method":"ping","value":""#.utf8)
+            + Data([0xff]) + Data("\"}".utf8)
+        for input in [malformed, try XCTUnwrap(ping.data(using: .utf16LittleEndian))] {
+            let response = await server.respond(to: input)
+            XCTAssertTrue(response?["id"] is NSNull)
+            XCTAssertEqual((response?["error"] as? [String: Any])?["code"] as? Int, -32700)
+        }
+        let response = await server.respond(to: Data(ping.utf8))
+        XCTAssertEqual(response?["id"] as? Int, 7)
+        XCTAssertNotNil(response?["result"])
     }
 
     func testTLSRejectsWrongKeyAndKeepsOneConnectionForTwoCalls() async throws {

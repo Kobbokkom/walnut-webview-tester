@@ -196,9 +196,7 @@ extension ContentView {
             authorize: agentSession.authorize
         )
         var reloaded = false
-        if showWebView && !useSafariWebView && wasPrivate && !effectivePrivateBrowsing {
-            returnHome()
-        }
+        closeWKPageIfPrivacyEnded(wasPrivate: wasPrivate)
         if showWebView, settings.browserRevision(safari: useSafariWebView) != rebuildID {
             if useSafariWebView { recreateAgentBrowser() }
             try await waitForAgentNavigation(previous: previous, timeout: 15)

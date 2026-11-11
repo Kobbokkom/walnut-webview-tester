@@ -246,65 +246,15 @@ final class SearchTextDOMIntegrationTests: XCTestCase {
     }
 
     private func createClearScript() -> String {
-        """
-        (function() {
-            document.querySelectorAll('.__wina_search_highlight__').forEach(el => {
-                const parent = el.parentNode;
-                parent.replaceChild(document.createTextNode(el.textContent), el);
-                parent.normalize();
-            });
-            window.__wina_search_elements__ = [];
-            window.__wina_search_index__ = 0;
-        })();
-        """
+        SearchTextOverlay.clearScript
     }
 
     private func createNavigateNextScript() -> String {
-        """
-        (function() {
-            const elements = window.__wina_search_elements__ || [];
-            if (elements.length === 0) return JSON.stringify({index: 0});
-
-            let index = window.__wina_search_index__ || 0;
-
-            if (elements[index]) {
-                elements[index].style.backgroundColor = '#FFEB3B';
-            }
-
-            index = (index + 1) % elements.length;
-            window.__wina_search_index__ = index;
-
-            if (elements[index]) {
-                elements[index].style.backgroundColor = '#FF9800';
-            }
-
-            return JSON.stringify({index: index});
-        })();
-        """
+        SearchTextOverlay.nextScript
     }
 
     private func createNavigatePreviousScript() -> String {
-        """
-        (function() {
-            const elements = window.__wina_search_elements__ || [];
-            if (elements.length === 0) return JSON.stringify({index: 0});
-
-            let index = window.__wina_search_index__ || 0;
-
-            if (elements[index]) {
-                elements[index].style.backgroundColor = '#FFEB3B';
-            }
-
-            index = (index - 1 + elements.length) % elements.length;
-            window.__wina_search_index__ = index;
-
-            if (elements[index]) {
-                elements[index].style.backgroundColor = '#FF9800';
-            }
-
-            return JSON.stringify({index: index});
-        })();
-        """
+        SearchTextOverlay.previousScript
     }
 
     // MARK: - Basic Search Tests
@@ -858,6 +808,138 @@ final class SearchTextDOMIntegrationTests: XCTestCase {
 }
 
 extension SearchTextDOMIntegrationTests {
+    func testAgentPageSearchIgnoresPageGlobalsAndCountsOnlyRemainingMatches() async throws {
+        try await loadTestHTML("""
+        <html><body><p>Walnut Walnut Walnut</p><script>
+        window.__wina_search_elements__ = [document.body];
+        JSON.stringify = () => '{"count":900,"index":1,"moved":true}';
+        </script></body></html>
+        """)
+        let navigator = WebViewNavigator()
+        navigator.attach(to: webView)
+        defer { navigator.detach() }
+        var approvals = 0
+        let context = AgentDevContext(navigator: navigator) { _ in approvals += 1; return true }
+        func search(_ action: String, query: String? = nil) async throws -> [String: Any] {
+            var arguments = ["action": action]
+            arguments["query"] = query
+            let value = try await AgentDevTools.callPage("page_search", AgentDevInput(values: arguments), context)
+            return try XCTUnwrap(value as? [String: Any])
+        }
+
+        let initial = try await search("next")
+        XCTAssertEqual(initial["requiresFind"] as? Bool, true)
+        XCTAssertNil(initial["count"])
+        let nativeSearch = try XCTUnwrap(SearchTextOverlay.searchScript(for: "Walnut"))
+        _ = try await navigator.evaluateJavaScriptReportingErrors(nativeSearch, contentWorld: SearchTextOverlay.searchWorld)
+        let native = try await search("next")
+        XCTAssertEqual(native["requiresFind"] as? Bool, true)
+        XCTAssertNil(native["count"])
+        XCTAssertNil(native["moved"])
+        let nativeIndex = try await navigator.evaluateJavaScriptReportingErrors(
+            "window.__wina_search_index__", contentWorld: SearchTextOverlay.searchWorld
+        )
+        XCTAssertEqual(nativeIndex as? Int, 0)
+        let found = try await search("find", query: "Walnut")
+        XCTAssertEqual(found["count"] as? Int, 3)
+        let second = try await search("next")
+        XCTAssertEqual(second["index"] as? Int, 1)
+        XCTAssertEqual(second["moved"] as? Bool, true)
+
+        _ = try await webView.evaluateJavaScript("document.querySelectorAll('.__wina_search_highlight__')[1].remove(); void 0")
+        let previous = try await search("previous")
+        XCTAssertEqual(previous["count"] as? Int, 2)
+        XCTAssertEqual(previous["index"] as? Int, 0)
+        XCTAssertEqual(previous["moved"] as? Bool, true)
+        _ = try await webView.evaluateJavaScript("document.querySelectorAll('.__wina_search_highlight__').forEach(node => node.remove()); void 0")
+        let removed = try await search("next")
+        XCTAssertEqual(removed["count"] as? Int, 0)
+        XCTAssertEqual(removed["moved"] as? Bool, false)
+        navigator.agentTrackingEnabled = false
+        let reconnected = try await search("previous")
+        XCTAssertEqual(reconnected["requiresFind"] as? Bool, true)
+        XCTAssertNil(reconnected["count"])
+        XCTAssertEqual(approvals, 1)
+    }
+
+    func testAgentPageSearchUsesBodyBeforeDocumentFinishesLoading() async throws {
+        try await loadTestHTML("<html><body>Initial page</body></html>")
+        _ = try await webView.evaluateJavaScript("document.open(); document.write('<body><p>Walnut Walnut</p>'); void 0")
+        let navigator = WebViewNavigator()
+        navigator.attach(to: webView)
+        defer { navigator.detach() }
+        let loading = try await webView.evaluateJavaScript("document.readyState === 'loading' && !!document.body")
+        XCTAssertEqual(loading as? Bool, true)
+
+        let found = try await AgentDevTools.callPage(
+            "page_search", AgentDevInput(values: ["action": "find", "query": "Walnut"]),
+            AgentDevContext(navigator: navigator) { _ in true }
+        ) as? [String: Any]
+        XCTAssertEqual(found?["count"] as? Int, 2)
+        let state = try await webView.evaluateJavaScript("document.readyState")
+        XCTAssertEqual(state as? String, "loading")
+        _ = try await webView.evaluateJavaScript("document.close(); void 0")
+    }
+
+    func testRetainedAccessibilityStatusDistinguishesFailureFromEmptyResults() async throws {
+        try await loadTestHTML("<html><body>Audit fixture</body></html>")
+        let navigator = WebViewNavigator()
+        navigator.attach(to: webView)
+        defer { navigator.detach() }
+        let manager = navigator.accessibilityManager
+        let context = AgentDevContext(navigator: navigator) { _ in
+            XCTFail("Reading status or rejecting an incomplete report must not ask to share page data.")
+            return false
+        }
+        let retained = AgentDevInput(values: ["run": false])
+        let export = AgentDevInput(values: ["run": false, "format": "markdown"])
+        func assertCannotExport(_ expected: String) async {
+            do {
+                _ = try await AgentDevTools.callPage("accessibility_audit", export, context)
+                XCTFail("An incomplete audit must not export an empty report.")
+            } catch {
+                XCTAssertEqual(error.localizedDescription, expected)
+            }
+        }
+        let initial = try await AgentDevTools.callPage("accessibility_audit", retained, context) as? [String: Any]
+        XCTAssertEqual(initial?["status"] as? String, "not_run")
+        XCTAssertNil(initial?["error"])
+        XCTAssertNil(initial?["documentId"])
+        await assertCannotExport("Run an accessibility audit before exporting its report.")
+
+        _ = try await navigator.evaluateJavaScriptReportingErrors("""
+        window.axe = {run: () => new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('untrusted exception text')), 3000);
+        })}; void 0
+        """, contentWorld: AccessibilityManager.auditWorld)
+        let attemptedDocument = navigator.documentID
+        let audit = Task { await manager.runAudit(navigator: navigator) }
+        let deadline = ContinuousClock.now + .seconds(1)
+        while !manager.isScanning && ContinuousClock.now < deadline { try await Task.sleep(for: .milliseconds(5)) }
+        let running = try await AgentDevTools.callPage("accessibility_audit", retained, context) as? [String: Any]
+        XCTAssertEqual(running?["status"] as? String, "running")
+        XCTAssertEqual(running?["documentId"] as? String, attemptedDocument.uuidString)
+        await assertCannotExport("An accessibility audit is already running.")
+        await audit.value
+        let failed = try await AgentDevTools.callPage("accessibility_audit", retained, context) as? [String: Any]
+        XCTAssertEqual(failed?["status"] as? String, "failed")
+        XCTAssertEqual(failed?["documentId"] as? String, attemptedDocument.uuidString)
+        XCTAssertEqual(failed?["hasScanned"] as? Bool, false)
+        XCTAssertNil(manager.auditedDocumentID)
+        XCTAssertEqual(failed?["total"] as? Int, 0)
+        let error = try XCTUnwrap(manager.errorMessage)
+        XCTAssertEqual(failed?["error"] as? String, error)
+        XCTAssertFalse(error.contains("untrusted exception text"))
+        await assertCannotExport(error)
+
+        try await loadTestHTML("<html><body>A different document</body></html>")
+        navigator.documentDidChange(in: webView)
+        XCTAssertNotEqual(navigator.documentID, attemptedDocument)
+        let current = AgentDevContext(navigator: navigator) { _ in false }
+        let prior = try await AgentDevTools.callPage("accessibility_audit", retained, current) as? [String: Any]
+        XCTAssertEqual(prior?["documentId"] as? String, attemptedDocument.uuidString)
+    }
+
     func testAccessibilityExportContinuesWithoutSplittingUTF8OrRerunning() async throws {
         try await loadTestHTML("<html><body>Audit fixture</body></html>")
         let navigator = WebViewNavigator()
@@ -917,6 +999,8 @@ extension SearchTextDOMIntegrationTests {
         XCTAssertTrue(markdown.contains("# Accessibility Audit Report"))
         XCTAssertTrue(markdown.contains("- Rule: image-alt"))
         XCTAssertTrue(markdown.contains("<img"))
+        XCTAssertEqual(report?["status"] as? String, "complete")
+        XCTAssertNil(report?["error"])
         XCTAssertEqual(report?["scope"] as? String, "main-frame")
         XCTAssertEqual(report?["hasUntestedFrames"] as? Bool, false)
         XCTAssertEqual(report?["exportTruncated"] as? Bool, false)

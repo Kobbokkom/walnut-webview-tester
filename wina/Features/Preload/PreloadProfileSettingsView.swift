@@ -45,7 +45,8 @@ struct PreloadProfileSettingsState {
     }
 
     mutating func applyCurrentProfile(
-        defaults: UserDefaults = .standard
+        defaults: UserDefaults = .standard,
+        onApply: ((WebViewPreloadProfile) -> Void)? = nil
     ) {
         guard validationMessage == nil else { return }
 
@@ -55,7 +56,11 @@ struct PreloadProfileSettingsState {
 
         // Persist whatever enabled state the user chose (the Enable toggle / loading a saved
         // setup). Apply no longer force-enables, so editing a disabled setup keeps it off.
-        PreloadProfileStore.saveActiveProfile(profile, defaults: defaults)
+        if let onApply {
+            onApply(profile)
+        } else {
+            PreloadProfileStore.saveActiveProfile(profile, defaults: defaults)
+        }
     }
 
     mutating func deleteSavedProfiles(
@@ -101,6 +106,8 @@ enum PreloadProfileValidation {
 }
 
 struct PreloadProfileSettingsView: View {
+    let onApply: (WebViewPreloadProfile) -> Void
+
     @Environment(\.dismiss) private var dismiss
 
     @State private var state = PreloadProfileSettingsState()
@@ -126,7 +133,7 @@ struct PreloadProfileSettingsView: View {
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Apply") {
-                        state.applyCurrentProfile()
+                        state.applyCurrentProfile(onApply: onApply)
                         dismiss()
                     }
                     .fontWeight(.semibold)

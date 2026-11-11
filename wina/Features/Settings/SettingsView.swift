@@ -224,8 +224,13 @@ struct LoadedSettingsView: View {
     @Binding var loadedURL: String
     let navigator: WebViewNavigator
 
-    @AppStorage("erudaModeEnabled") private var erudaModeEnabled: Bool = false
+    @Environment(\.agentBrowserSettings) private var agentSettings
+    @AppStorage(AgentSetting.erudaKey) private var savedErudaModeEnabled = false
     @State private var showErudaWarning: Bool = false
+
+    private var erudaModeEnabled: Bool {
+        agentSettings?.value(AgentSetting.erudaKey, fallback: savedErudaModeEnabled) ?? savedErudaModeEnabled
+    }
 
     var body: some View {
         NavigationStack {
@@ -310,7 +315,7 @@ struct LoadedSettingsView: View {
                             if newValue {
                                 showErudaWarning = true
                             } else {
-                                erudaModeEnabled = false
+                                AgentBrowserSettings.saveErudaMode(false, agentSettings: agentSettings)
                             }
                         }
                     )) {
@@ -362,7 +367,7 @@ struct LoadedSettingsView: View {
             .alert("Enable Eruda Console", isPresented: $showErudaWarning) {
                 Button("Cancel", role: .cancel) { }
                 Button("Enable") {
-                    erudaModeEnabled = true
+                    AgentBrowserSettings.saveErudaMode(true, agentSettings: agentSettings)
                 }
             } message: {
                 Text("""
@@ -490,8 +495,13 @@ struct SettingsView: View {
     @AppStorage("webViewHeightRatio") private var webViewHeightRatio: Double = 0.82
 
     // Eruda Mode
-    @AppStorage("erudaModeEnabled") private var erudaModeEnabled: Bool = false
+    @Environment(\.agentBrowserSettings) private var agentSettings
+    @AppStorage(AgentSetting.erudaKey) private var savedErudaModeEnabled = false
     @State private var showErudaWarning: Bool = false
+
+    private var erudaModeEnabled: Bool {
+        agentSettings?.value(AgentSetting.erudaKey, fallback: savedErudaModeEnabled) ?? savedErudaModeEnabled
+    }
 
     // App Language
     @AppStorage("appLanguage") private var appLanguage: String = ""
@@ -532,7 +542,7 @@ struct SettingsView: View {
             .alert("Enable Eruda Console", isPresented: $showErudaWarning) {
                 Button("Cancel", role: .cancel) { }
                 Button("Enable") {
-                    erudaModeEnabled = true
+                    AgentBrowserSettings.saveErudaMode(true, agentSettings: agentSettings)
                 }
             } message: {
                 Text("""
@@ -557,7 +567,7 @@ struct SettingsView: View {
                     if newValue {
                         showErudaWarning = true
                     } else {
-                        erudaModeEnabled = false
+                        AgentBrowserSettings.saveErudaMode(false, agentSettings: agentSettings)
                     }
                 }
             )) {
@@ -927,7 +937,7 @@ struct SettingsView: View {
         webViewHeightRatio = BarConstants.appHeightPreset
 
         // Third-Party Tools
-        erudaModeEnabled = false
+        AgentBrowserSettings.saveErudaMode(false, agentSettings: agentSettings)
     }
 
     private func searchDestination(_ result: SettingsSearchResult) -> some View {

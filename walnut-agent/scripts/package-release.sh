@@ -29,7 +29,8 @@ for arch in arm64 x86_64; do
     binaries+=("$(swift build "${build[@]}" --show-bin-path)/walnut-agent")
 done
 xcrun lipo -create "${binaries[@]}" -output "$binary"
-xcrun lipo "$binary" -verify_arch arm64 x86_64
+xcrun lipo "$binary" -verify_arch arm64
+xcrun lipo "$binary" -verify_arch x86_64
 chmod 755 "$binary"
 install -m 644 "$package/../.agents/skills/walnut/SKILL.md" "$staging/skill/SKILL.md"
 install -m 644 "$staging/skill/SKILL.md" "$app/Contents/Resources/SKILL.md"

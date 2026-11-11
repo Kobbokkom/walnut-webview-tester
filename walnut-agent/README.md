@@ -96,7 +96,7 @@ The CLI starts `iproxy` on `127.0.0.1` and forwards to the port in the pairing t
 
 ## Use an MCP client
 
-Register the same binary as a local stdio server with its absolute path as the command and `mcp` as the argument. Use `mcp --usb` for USB. The tool list comes from the connected iPhone. If the phone was unavailable at startup, reload the client after starting Mac Agent.
+Register the same binary as a local stdio server with its absolute path as the command and `mcp` as the argument. Use `mcp --usb` for USB. MCP requests use UTF-8 JSON lines up to 512 KiB, including the JSON-RPC envelope. The tool list comes from the connected iPhone. If the phone was unavailable at startup, reload the client after starting Mac Agent.
 
 ## Inspect the WebKit engine
 
@@ -137,6 +137,8 @@ For the WKWebView interaction test, give your agent a goal such as “Open `/che
 For a repeatable device check, use a dedicated QA installation of Walnut and run `python3 walnut-agent/Tests/Fixtures/verify-device.py http://MAC_LAN_IP:8874`. Keep the fixture running and approve each test action on the iPhone. The script exercises both browser modes, saves the capture paths, and reports which advertised tools it called successfully. For a Wi-Fi-off USB test, pass `--usb --udid DEVICE_UDID` and use a fixture URL reachable by the phone over its remaining connection.
 
 Run `--suite settings` to check live emulation, retained back history, and both menu layouts. Run `--suite log_options --alternate-origin http://MAC_LAN_IP:8875` to check Console, Network, and Resources capture, filtering, preserve on reload, and navigation clear strategies. For `log_options`, start a second copy of `checkout.py` on port `8875` so the iPhone can navigate between two fixture origins.
+
+Run `--suite auxiliary` for WKWebView configuration, viewport size, User-Agent, and device/browser diagnostics. Run `--suite documents` for accessibility filtering, report evidence, and snippet undo. Run `--suite storage_options` for storage encoding, rename, clearing, and exact cookie scopes. The storage checks use Walnut's nonpersistent data store. Run `--suite startup_options` for temporary document-start scripts, bridge logging, disable, and reset.
 
 For the WebKit engine check, enable **Browse in private session** on Walnut's start screen and open `/agent-e2e` on the iPhone. Close any other CLI sessions and run `python3 walnut-agent/Tests/Fixtures/verify-device.py http://MAC_LAN_IP:8874 --suite engine --udid DEVICE_UDID`. Add `--wifi` for Apple-trusted Wi-Fi inspection or `--usb` to route the Walnut connection through the USB forwarder too. Approve inspector access and the requested commands on the iPhone. This check reads the retained HTML and confirms that a breakpoint can pause an evaluation, inspect a local argument, step, and resume it.
 

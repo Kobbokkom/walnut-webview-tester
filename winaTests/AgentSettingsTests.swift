@@ -53,6 +53,79 @@ final class AgentSettingsTests: XCTestCase {
         XCTAssertFalse(settings.isolatesPreloadCookies)
     }
 
+    func testHomePreloadToggleChangesTemporaryProfileWithoutSavingIt() throws {
+        let suite = "AgentSettingsTests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let saved = WebViewPreloadProfile(name: "On-device setup", isEnabled: false)
+        let temporary = WebViewPreloadProfile(name: "Temporary setup", isEnabled: true, cookies: [PreloadCookie(name: "fixture", value: "1")])
+        PreloadProfileStore.saveActiveProfile(saved, defaults: defaults)
+        let settings = AgentBrowserSettings()
+        settings.setPreloadProfile(temporary, persist: false, defaults: defaults)
+
+        settings.setPreloadEnabledFromHome(false, defaults: defaults)
+        var disabled = temporary
+        disabled.isEnabled = false
+        XCTAssertEqual(settings.preloadProfile(fallback: saved), disabled)
+        XCTAssertFalse(settings.isolatesPreloadCookies)
+        XCTAssertEqual(PreloadProfileStore.activeProfile(defaults: defaults), saved)
+
+        settings.setPreloadEnabledFromHome(true, defaults: defaults)
+        XCTAssertEqual(settings.preloadProfile(fallback: saved), temporary)
+        XCTAssertTrue(settings.isolatesPreloadCookies)
+        XCTAssertEqual(PreloadProfileStore.activeProfile(defaults: defaults), saved)
+    }
+
+    func testApplyingOnDevicePreloadDraftRequiresClosingThePrivateWKPage() throws {
+        let suite = "AgentSettingsTests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let saved = WebViewPreloadProfile(name: "On-device setup", isEnabled: false)
+        PreloadProfileStore.saveActiveProfile(saved, defaults: defaults)
+        let settings = AgentBrowserSettings.shared
+        defer { settings.reset() }
+        settings.apply(["privateBrowsing": false], persist: false, defaults: defaults)
+        settings.setPreloadProfile(.nativeBridgeDemoPreset, persist: false, defaults: defaults)
+        let owner = ContentView()
+        let session = owner.agentSession
+        session.start(handler: { _, _ in true }, onDisconnect: {})
+        defer { session.stop() }
+        let browser = ContentView.BrowserState()
+        browser.isOpen = true
+        let wasPrivate = owner.effectivePrivateBrowsing
+        XCTAssertTrue(wasPrivate)
+        var state = PreloadProfileSettingsState()
+        state.loadIfNeeded(activeProfile: { PreloadProfileStore.activeProfile(defaults: defaults) }, savedProfiles: { [] })
+
+        state.applyCurrentProfile(defaults: defaults) { owner.applyPreloadProfileFromEditor($0, defaults: defaults) }
+        XCTAssertTrue(browser.shouldCloseWKPageAfterPrivacyChange(wasPrivate: wasPrivate, isPrivate: owner.effectivePrivateBrowsing))
+        XCTAssertEqual(settings.preloadProfile(fallback: saved), saved)
+        XCTAssertEqual(PreloadProfileStore.activeProfile(defaults: defaults), saved)
+        XCTAssertFalse(settings.isolatesPreloadCookies)
+
+        settings.setPreloadEnabledFromHome(true, defaults: defaults)
+        let active = PreloadProfileStore.activeProfile(defaults: defaults)
+        XCTAssertTrue(active.isEnabled)
+        XCTAssertEqual(active.id, saved.id)
+    }
+
+    func testUnpairedPreloadEditorKeepsAnotherWindowsTemporaryProfile() throws {
+        let suite = "AgentSettingsTests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let settings = AgentBrowserSettings.shared
+        defer { settings.reset() }
+        let temporary = WebViewPreloadProfile.nativeBridgeDemoPreset
+        settings.setPreloadProfile(temporary, persist: false, defaults: defaults)
+        let saved = WebViewPreloadProfile(name: "Other window draft", isEnabled: false)
+
+        ContentView().applyPreloadProfileFromEditor(saved, defaults: defaults)
+
+        XCTAssertEqual(PreloadProfileStore.activeProfile(defaults: defaults), saved)
+        XCTAssertEqual(settings.preloadProfile(fallback: saved), temporary)
+        XCTAssertTrue(settings.isolatesPreloadCookies)
+    }
+
     func testSessionSettingsDoNotPersistAndResetRevealsSavedValue() throws {
         let suite = "AgentSettingsTests.\(UUID().uuidString)"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))

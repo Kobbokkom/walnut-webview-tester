@@ -50,24 +50,44 @@ final class AgentPageRegressionTests: XCTestCase {
     }
 
     func testPageSearchReturnsOnlyValidatedNumericFields() async throws {
-        let webView = await load("""
-            <p>search needle</p>
-            <script>JSON.stringify = () => '{"index":2,"count":4,"secret":"private data"}';</script>
-            """)
+        let webView = await load("<p>search needle</p>")
         defer { withExtendedLifetime(webView) {} }
         let navigator = WebViewNavigator()
         navigator.attach(to: webView)
+        let approved = try await call("page_search", ["action": "find", "query": "needle"], navigator)
+        XCTAssertEqual(approved as? [String: Int], ["index": 0, "count": 1])
+
+        func stubSearchResult(_ json: String) async throws {
+            let literal = try XCTUnwrap(String(data: JSONEncoder().encode(json), encoding: .utf8))
+            _ = try await navigator.evaluateJavaScriptReportingErrors(
+                "JSON.stringify = () => \(literal); void 0;", contentWorld: SearchTextOverlay.searchWorld
+            )
+        }
+
+        try await stubSearchResult(#"{"index":2,"count":4,"moved":true,"secret":"private data"}"#)
         let next = try await call("page_search", ["action": "next"], navigator)
-        XCTAssertEqual(next as? [String: Int], ["index": 2])
+        XCTAssertEqual(Set(next.keys), ["index", "count", "moved"])
+        XCTAssertEqual(next["index"] as? Int, 2)
+        XCTAssertEqual(next["count"] as? Int, 4)
+        XCTAssertEqual(next["moved"] as? Bool, true)
         let find = try await call("page_search", ["action": "find", "query": "needle"], navigator)
         XCTAssertEqual(find as? [String: Int], ["index": 2, "count": 4])
 
-        _ = try await webView.evaluateJavaScript("JSON.stringify = () => '{\"index\":true}'; void 0;")
-        do {
-            _ = try await call("page_search", ["action": "previous"], navigator)
-            XCTFail("A Boolean index is invalid")
-        } catch {
-            XCTAssertEqual(error.localizedDescription, "Invalid page search result.")
+        for invalid in [
+            #"{"index":true,"count":4,"moved":true}"#,
+            #"{"index":0,"count":true,"moved":true}"#,
+            #"{"index":1.5,"count":4,"moved":true}"#,
+            #"{"index":4,"count":4,"moved":true}"#,
+            #"{"index":0,"count":-1,"moved":true}"#,
+            #"{"index":0,"count":4,"moved":1}"#
+        ] {
+            try await stubSearchResult(invalid)
+            do {
+                _ = try await call("page_search", ["action": "previous"], navigator)
+                XCTFail("Invalid page search result was accepted: \(invalid)")
+            } catch {
+                XCTAssertEqual(error.localizedDescription, "Invalid page search result.")
+            }
         }
     }
 

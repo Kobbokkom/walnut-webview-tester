@@ -425,7 +425,11 @@ struct StorageAddSheet: View {
             .alert("Could not add item", isPresented: $showSaveFailure) {
                 Button("OK", role: .cancel) {}
             } message: {
-                Text("Check the current page, key and available storage, then try again.")
+                if let error = storageManager.errorMessage {
+                    Text(error)
+                } else {
+                    Text("Check the current page, key and available storage, then try again.")
+                }
             }
         }
     }

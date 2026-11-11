@@ -28,6 +28,8 @@ extension WKHTTPCookieStore: StorageCookieStore {}
 
 @Observable
 class StorageManager {
+    @MainActor private static var pendingCookieAdds = Set<StorageCookieAddKey>()
+
     var items: [StorageItem] = []
     var lastRefreshTime: Date?
     var errorMessage: String?
@@ -205,69 +207,63 @@ class StorageManager {
         guard let navigator else { return false }
         errorMessage = nil
 
-        let operation: String
-        let arguments: [String]
-        switch type {
-        case .localStorage, .sessionStorage:
-            arguments = [key, value]
-            let storage = type == .localStorage ? "localStorage" : "sessionStorage"
-            operation = """
+        if type == .cookies {
+            return await addCookie(key: key, value: value, pageURL: pageURL, scope: nil) {
+                agentDocumentIsCurrent?() != false
+            } != nil
+        }
+
+        let storage = type == .localStorage ? "localStorage" : "sessionStorage"
+        let operation = """
             const [key, value] = args;
             if (\(storage).getItem(key) !== null) return false;
             \(storage).setItem(key, value);
             """
-        case .cookies:
-            guard let cookie = Self.cookieFields(key: key, value: value) else { return false }
-            arguments = [Self.cookieDocumentPath(pageURL), "\(cookie.key)=\(cookie.value)"]
-            operation = """
-            const [path, cookie] = args;
-            if (location.pathname !== path) return false;
-            const matches = item => item.trimStart() === cookie;
-            if (document.cookie.split(';').some(matches)) return false;
-            document.cookie = cookie;
-            if (!document.cookie.split(';').some(matches)) return false;
-            """
-        }
 
         guard agentDocumentIsCurrent?() != false,
-              let script = pageStorageScript(pageURL: pageURL, arguments: arguments, operation: operation) else { return false }
+              let script = pageStorageScript(pageURL: pageURL, arguments: [key, value], operation: operation) else { return false }
         return await Self.evaluateStorageScript(script, with: navigator, isolated: agentDocumentIsCurrent != nil) as? Bool == true
     }
 
     @MainActor
     func addCookie(
-        key: String, value: String, pageURL: URL, scope: StorageCookieAddScope, isCurrentDocument: () -> Bool
+        key: String, value: String, pageURL: URL, scope: StorageCookieAddScope?, isCurrentDocument: () -> Bool
     ) async -> HTTPCookie? {
         errorMessage = nil
         guard let navigator = navigator as? WebViewNavigator, let store = navigator.attachedCookieStore,
               let host = pageURL.host?.lowercased(), let cookie = Self.cookieFields(key: key, value: value) else { return nil }
-        let domain = scope.domain ?? host
-        let existing = await store.allCookies()
-        guard isCurrentDocument() else { return nil }
-        guard !existing.contains(where: {
-            $0.name == cookie.key && $0.path == scope.path && [domain, ".\(domain)"].contains($0.domain.lowercased())
-        }) else {
-            errorMessage = "A cookie with this name already exists at \(scope.path)."
+        let document = navigator.documentID
+        let documentPath = StorageCookieAddScope.documentPath(for: pageURL)
+        let path = scope?.path ?? StorageCookieAddScope.defaultPath(for: documentPath)
+        let domain = scope?.domain ?? host
+        let addKey = StorageCookieAddKey(store: ObjectIdentifier(store), name: cookie.key, domain: domain, path: path)
+        guard Self.pendingCookieAdds.insert(addKey).inserted else {
+            errorMessage = "An add for this cookie is already in progress at \(path)."
             return nil
         }
-        let attributes = "; Path=\(scope.path)" + (scope.domain.map { "; Domain=\($0)" } ?? "")
+        defer { Self.pendingCookieAdds.remove(addKey) }
+
+        let existing = await store.allCookies()
+        guard isCurrentDocument(), self.navigator === navigator, navigator.documentID == document,
+              navigator.attachedCookieStore === store else { return nil }
+        guard !existing.contains(where: addKey.matches) else {
+            errorMessage = "A cookie with this name already exists at \(path)."
+            return nil
+        }
+        // Native Add lets WebKit assign the document-directory path.
+        let attributes = (scope.map { "; Path=\($0.path)" } ?? "") + (scope?.domain.map { "; Domain=\($0)" } ?? "")
         let operation = "if (location.pathname !== args[0]) return false; document.cookie = args[1];"
-        let arguments = [Self.cookieDocumentPath(pageURL), "\(cookie.key)=\(cookie.value)\(attributes)"]
+        let arguments = [documentPath, "\(cookie.key)=\(cookie.value)\(attributes)"]
         guard let script = pageStorageScript(pageURL: pageURL, arguments: arguments, operation: operation),
               let accepted = try? await navigator.evaluateJavaScriptReportingErrors(script, contentWorld: .defaultClient),
               accepted as? Bool == true else { return nil }
-        let expected = scope.domain.map { ".\($0)" } ?? host
+        let expected = scope?.domain.map { ".\($0)" } ?? host
         return await store.allCookies().first { entry in
             let storedDomain = entry.domain.lowercased()
             // WebKit may turn an exact-host public suffix into a host-only cookie.
-            return entry.name == cookie.key && entry.value == cookie.value && entry.path == scope.path && !entry.isHTTPOnly
+            return entry.name == cookie.key && entry.value == cookie.value && entry.path == path && !entry.isHTTPOnly
                 && (storedDomain == expected || (domain == host && storedDomain == host))
         }
-    }
-
-    private static func cookieDocumentPath(_ pageURL: URL) -> String {
-        let path = URLComponents(url: pageURL, resolvingAgainstBaseURL: false)?.percentEncodedPath ?? ""
-        return path.isEmpty ? "/" : path
     }
 
     private static func cookieFields(key: String, value: String) -> (key: String, value: String)? {

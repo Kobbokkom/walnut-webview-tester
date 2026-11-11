@@ -269,11 +269,7 @@ extension ContentView {
                 HStack(spacing: 0) {
                     // Tapping the row toggles enable/disable — same behavior as the chips above.
                     Button {
-                        if isPreloadProfileEnabled {
-                            disablePreloadProfileFromHome()
-                        } else {
-                            enablePreloadProfileFromHome()
-                        }
+                        setPreloadProfileEnabledFromHome(!isPreloadProfileEnabled)
                     } label: {
                         HStack(spacing: 10) {
                             Image(systemName: isPreloadProfileEnabled ? "checkmark.circle.fill" : "circle")

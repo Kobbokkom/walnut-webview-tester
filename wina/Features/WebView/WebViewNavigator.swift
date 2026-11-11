@@ -50,6 +50,7 @@ class WebViewNavigator {
     let agentNavigation = AgentNavigation()
     var agentLogSettings = AgentLogSettings()
     @ObservationIgnored var agentInspectorGrant: AgentInspectorGrant?
+    @ObservationIgnored private(set) var agentSearchScope = UUID()
 
     func setAgentDocument(_ documentID: UUID?) {
         consoleManager.agentDocumentID = documentID
@@ -116,12 +117,15 @@ class WebViewNavigator {
     @ObservationIgnored
     private var reloadPreparationHandler: (() -> Void)?
 
-    // Eruda 설정 키를 한 곳에서 관리합니다.
-    private static let erudaModeKey = "erudaModeEnabled"
     // Eruda 로드 여부를 확인하는 JavaScript입니다.
     static let erudaLoadedCheckScript = "typeof eruda !== 'undefined'"
     // Eruda 엔트리 버튼 존재 여부를 확인하는 JavaScript입니다.
-    static let erudaEntryButtonCheckScript = "typeof eruda !== 'undefined' && !!document.querySelector('.eruda-entry-btn')"
+    static let erudaEntryButtonCheckScript = """
+        (() => {
+            const container = document.getElementById('eruda');
+            return typeof eruda !== 'undefined' && !!(container?.shadowRoot ?? container)?.querySelector('.eruda-entry-btn');
+        })()
+        """
     // Eruda를 초기화하고 엔트리 버튼을 표시하는 JavaScript입니다.
     static let erudaInitializeScript = """
         if (typeof eruda !== 'undefined' && typeof eruda.init === 'function') {
@@ -221,13 +225,17 @@ class WebViewNavigator {
         emulationNeedsNavigation = self.emulationRevision != emulationRevision
         hideAgentPointer()
         agentInspectorGrant = nil
+        agentSearchScope = UUID()
         documentID = UUID()
         setAgentDocument(agentTrackingEnabled ? documentID : nil)
         performanceManager.clear()
     }
 
     var agentTrackingEnabled = false {
-        didSet { setAgentDocument(agentTrackingEnabled ? documentID : nil) }
+        didSet {
+            if !agentTrackingEnabled { agentSearchScope = UUID() }
+            setAgentDocument(agentTrackingEnabled ? documentID : nil)
+        }
     }
 
     func detach(from previousWebView: WKWebView? = nil) {
@@ -482,12 +490,15 @@ class WebViewNavigator {
 
     // MARK: - Eruda Console
 
+    var erudaModeEnabled: Bool {
+        let saved = UserDefaults.standard.bool(forKey: AgentSetting.erudaKey)
+        return agentTrackingEnabled ? AgentBrowserSettings.shared.value(AgentSetting.erudaKey, fallback: saved) : saved
+    }
+
     // 현재 설정값 기준으로 Eruda 상태를 페이지에 동기화합니다.
     func syncErudaWithSettings(forceInit: Bool = false) async {
-        guard webView != nil else { return }
-        let saved = UserDefaults.standard.bool(forKey: Self.erudaModeKey)
-        let isEnabled = agentTrackingEnabled ? AgentBrowserSettings.shared.value(Self.erudaModeKey, fallback: saved) : saved
-        if isEnabled {
+        guard webView != nil, !Task.isCancelled else { return }
+        if erudaModeEnabled {
             await injectEruda(forceInit: forceInit)
         } else {
             await destroyEruda()
@@ -497,17 +508,23 @@ class WebViewNavigator {
     /// Inject Eruda console into the current page
     /// Eruda is loaded from bundled JS file to bypass CSP restrictions
     func injectEruda(forceInit: Bool = false) async {
-        guard webView != nil else { return }
+        let document = documentID
+        func canInject() -> Bool {
+            webView != nil && documentID == document && erudaModeEnabled && !Task.isCancelled
+        }
+        guard canInject() else { return }
 
         // 현재 페이지에 Eruda 스크립트가 이미 로드됐는지 확인합니다.
         var erudaLoaded = await evaluateJavaScript(Self.erudaLoadedCheckScript) as? Bool ?? false
+        guard canInject() else { return }
 
         // 스크립트가 없으면 번들 스크립트를 주입합니다.
         if !erudaLoaded {
             guard let erudaScript = erudaBundleScript() else { return }
-            _ = await evaluateJavaScript(erudaScript)
+            _ = await evaluateJavaScript("if (typeof eruda === 'undefined') {\n\(erudaScript)\n}")
+            guard canInject() else { return }
             erudaLoaded = await evaluateJavaScript(Self.erudaLoadedCheckScript) as? Bool ?? false
-            guard erudaLoaded else { return }
+            guard erudaLoaded, canInject() else { return }
         }
 
         // 새로고침 경로에서는 강제 재초기화로 엔트리 버튼 누락을 복구합니다.
@@ -518,6 +535,7 @@ class WebViewNavigator {
 
         // 엔트리 버튼이 없으면 init을 다시 수행하고, 있으면 표시 상태만 복구합니다.
         let hasEntryButton = await evaluateJavaScript(Self.erudaEntryButtonCheckScript) as? Bool ?? false
+        guard canInject() else { return }
         if hasEntryButton {
             _ = await evaluateJavaScript(Self.erudaEnsureEntryVisibleScript)
         } else {

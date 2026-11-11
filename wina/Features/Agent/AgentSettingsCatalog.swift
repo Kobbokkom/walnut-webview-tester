@@ -18,6 +18,11 @@ final class AgentBrowserSettings {
         overrides[key]?.base as? T ?? fallback
     }
 
+    static func saveErudaMode(_ enabled: Bool, agentSettings: AgentBrowserSettings?, defaults: UserDefaults = .standard) {
+        defaults.set(enabled, forKey: AgentSetting.erudaKey)
+        agentSettings?.reset(keys: [AgentSetting.erudaKey])
+    }
+
     var isolatesPreloadCookies: Bool {
         profile?.isEnabled == true && profile?.cookies.contains(where: \.isEnabled) == true
     }
@@ -26,12 +31,19 @@ final class AgentBrowserSettings {
         profile ?? fallback
     }
 
-    func setPreloadProfile(_ next: WebViewPreloadProfile?, persist: Bool) {
+    func setPreloadProfile(_ next: WebViewPreloadProfile?, persist: Bool, defaults: UserDefaults = .standard) {
         if let next, persist {
-            PreloadProfileStore.saveActiveProfile(next)
+            PreloadProfileStore.saveActiveProfile(next, defaults: defaults)
         }
         profile = persist ? nil : next
         rebuildID = UUID()
+    }
+
+    func setPreloadEnabledFromHome(_ isEnabled: Bool, defaults: UserDefaults = .standard) {
+        var next = preloadProfile(fallback: PreloadProfileStore.activeProfile(defaults: defaults))
+        guard next.isEnabled != isEnabled else { return }
+        next.isEnabled = isEnabled
+        setPreloadProfile(next, persist: profile == nil, defaults: defaults)
     }
 
     func effectiveValue(for setting: AgentSetting, defaults: UserDefaults = .standard) -> Any {
@@ -159,6 +171,7 @@ struct AgentSetting {
     static let entries = browserConfiguration + browserLive + emulation + safari
     static let catalog = Dictionary(uniqueKeysWithValues: entries.map { ($0.key, $0) })
     static let emulationKeys = Set(emulation.map(\.key))
+    static let erudaKey = "erudaModeEnabled"
 
     private static let browserConfiguration: [Self] = [
         .init(key: "allowsContentJavaScript", title: "Page JavaScript (app scripts stay available)", group: "configuration", kind: .boolean, defaultValue: true, rebuild: true),
@@ -192,7 +205,7 @@ struct AgentSetting {
         .init(key: "webViewWidthRatio", title: "WKWebView width ratio", group: "live", kind: .number(0.25...1), defaultValue: 1.0),
         .init(key: "webViewHeightRatio", title: "WKWebView height ratio, 0 selects App preset", group: "live", kind: .number(0.25...1, special: BarConstants.appHeightPreset), defaultValue: 0.82),
         .init(key: "cleanStart", title: "Default for local WKWebView fresh-data launches; remote deletion requires explicit approval", group: "startup", kind: .boolean, defaultValue: true),
-        .init(key: "erudaModeEnabled", title: "Enable third-party Eruda Console", group: "developer_tools", kind: .boolean, defaultValue: false, rebuild: true),
+        .init(key: erudaKey, title: "Enable third-party Eruda Console in WKWebView", group: "developer_tools", kind: .boolean, defaultValue: false),
     ]
 
     private static let emulation: [Self] = [

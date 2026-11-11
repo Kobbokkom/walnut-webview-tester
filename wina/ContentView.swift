@@ -13,7 +13,7 @@ import WebKit
 struct ContentView: View {
     @MainActor
     @Observable
-    fileprivate final class BrowserState {
+    final class BrowserState {
         var usesSafari = false
         var isOpen = false
         var url = ""
@@ -22,6 +22,10 @@ struct ContentView: View {
 
         var safariRequest: (url: URL?, revision: UUID?) {
             (isOpen && usesSafari ? URL(string: URLValidator.normalizeURL(url)) : nil, revision)
+        }
+
+        func shouldCloseWKPageAfterPrivacyChange(wasPrivate: Bool, isPrivate: Bool) -> Bool {
+            isOpen && !usesSafari && wasPrivate && !isPrivate
         }
     }
 
@@ -35,7 +39,6 @@ struct ContentView: View {
     @State var devToolsState = DevToolsOverlayState()
     @State private var showURLInput: Bool = false
     @State var showPreloadSettings: Bool = false
-    @State var preloadProfileBeforeSettings: WebViewPreloadProfile = .defaultSavedSetup
     @State private var urlInputText: String = ""
     @State var showAbout: Bool = false
     @State var urlValidationState: URLValidationState = .empty
@@ -72,15 +75,19 @@ struct ContentView: View {
     @AppStorage("colorSchemeOverride") private var colorSchemeOverride: String?
 
     // Eruda mode (third-party in-page console)
-    @AppStorage("erudaModeEnabled") private var erudaModeEnabled = false
+    @AppStorage(AgentSetting.erudaKey) private var erudaModeEnabled = false
     @AppStorage(PreloadProfileStore.activeProfileKey) var preloadActiveProfileData = Data()
 
     private var agentBrowserSettings: AgentBrowserSettings? {
         agentSession.isRunning ? AgentBrowserSettings.shared : nil
     }
 
+    private var erudaAgentSettings: AgentBrowserSettings? {
+        agentSession.isConnected ? agentBrowserSettings : nil
+    }
+
     private var effectiveErudaMode: Bool {
-        agentBrowserSettings?.value("erudaModeEnabled", fallback: erudaModeEnabled) ?? erudaModeEnabled
+        erudaAgentSettings?.value(AgentSetting.erudaKey, fallback: erudaModeEnabled) ?? erudaModeEnabled
     }
 
     // WebView size settings (for fullscreen detection)
@@ -240,15 +247,13 @@ struct ContentView: View {
                     loadedURL: loadedURLBinding,
                     navigator: webViewNavigator
                 )
+                .environment(\.agentBrowserSettings, erudaAgentSettings)
                 .fullSizeSheet()
                 .preferredColorScheme(preferredScheme)
             }
         }
-        .sheet(
-            isPresented: $showPreloadSettings,
-            onDismiss: applyPreloadSettingsChangeIfNeeded
-        ) {
-            PreloadProfileSettingsView()
+        .sheet(isPresented: $showPreloadSettings) {
+            PreloadProfileSettingsView { applyPreloadProfileFromEditor($0) }
                 .fullSizeSheet()
                 .preferredColorScheme(preferredScheme)
         }
@@ -294,6 +299,7 @@ struct ContentView: View {
                     webViewID: showWebView ? webViewIDBinding : nil,
                     loadedURL: showWebView ? loadedURLBinding : nil
                 )
+                .environment(\.agentBrowserSettings, erudaAgentSettings)
                 .fullSizeSheet()
                 .preferredColorScheme(preferredScheme)
             }
@@ -342,16 +348,9 @@ struct ContentView: View {
         } message: {
             Text("SafariVC supports only http and https URLs.\n\n\(safariUnsupportedURL)")
         }
-        // Eruda mode: inject/destroy when toggled
-        .onChange(of: effectiveErudaMode) { _, newValue in
+        .task(id: effectiveErudaMode) {
             guard showWebView && !useSafariWebView else { return }
-            Task {
-                if newValue {
-                    await webViewNavigator.injectEruda()
-                } else {
-                    await webViewNavigator.destroyEruda()
-                }
-            }
+            await webViewNavigator.syncErudaWithSettings()
         }
         .environment(\.webViewContainerSize, browserSize == .zero ? containerSize : browserSize)
     }
@@ -523,39 +522,34 @@ struct ContentView: View {
 
     // MARK: - Performance Data Collection
 
-    private func applyPreloadSettingsChangeIfNeeded() {
-        guard !useSafariWebView,
-            showWebView,
-            preloadProfileBeforeSettings != PreloadProfileStore.activeProfile()
-        else {
+    func applyPreloadProfileFromEditor(_ profile: WebViewPreloadProfile, defaults: UserDefaults = .standard) {
+        if let agentBrowserSettings {
+            let wasPrivate = effectivePrivateBrowsing
+            agentBrowserSettings.setPreloadProfile(profile, persist: true, defaults: defaults)
+            closeWKPageIfPrivacyEnded(wasPrivate: wasPrivate)
             return
         }
 
-        webViewID = UUID()
+        let previous = PreloadProfileStore.activeProfile(defaults: defaults)
+        PreloadProfileStore.saveActiveProfile(profile, defaults: defaults)
+        if !useSafariWebView, previous != profile { recreateAgentBrowser() }
     }
 
     func openPreloadSettingsFromHome() {
-        preloadProfileBeforeSettings = PreloadProfileStore.activeProfile()
         showPreloadSettings = true
     }
 
-    func enablePreloadProfileFromHome() {
-        var profile = PreloadProfileStore.activeProfile()
-        guard !profile.isEnabled else { return }
-
-        profile.isEnabled = true
-        PreloadProfileStore.saveActiveProfile(profile)
-
-        if !useSafariWebView, showWebView {
-            webViewID = UUID()
+    func setPreloadProfileEnabledFromHome(_ isEnabled: Bool) {
+        if let agentBrowserSettings {
+            let wasPrivate = effectivePrivateBrowsing
+            agentBrowserSettings.setPreloadEnabledFromHome(isEnabled)
+            closeWKPageIfPrivacyEnded(wasPrivate: wasPrivate)
+            return
         }
-    }
-
-    func disablePreloadProfileFromHome() {
         var profile = PreloadProfileStore.activeProfile()
-        guard profile.isEnabled else { return }
+        guard profile.isEnabled != isEnabled else { return }
 
-        profile.isEnabled = false
+        profile.isEnabled = isEnabled
         PreloadProfileStore.saveActiveProfile(profile)
 
         if !useSafariWebView, showWebView {
@@ -579,6 +573,12 @@ extension ContentView {
     }
 
     var agentRequiresPrivateBrowsing: Bool { agentBrowserSettings?.isolatesPreloadCookies == true }
+
+    func closeWKPageIfPrivacyEnded(wasPrivate: Bool) {
+        if browserState.shouldCloseWKPageAfterPrivacyChange(wasPrivate: wasPrivate, isPrivate: effectivePrivateBrowsing) {
+            returnHome()
+        }
+    }
 
     func setLocalCleanStart(_ value: Bool) {
         cleanStart = value

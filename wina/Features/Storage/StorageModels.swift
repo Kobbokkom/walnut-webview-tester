@@ -5,6 +5,27 @@ import SwiftUI
 struct StorageCookieAddScope {
     let domain: String?
     let path: String
+
+    static func documentPath(for pageURL: URL) -> String {
+        let path = URLComponents(url: pageURL, resolvingAgainstBaseURL: false)?.percentEncodedPath ?? ""
+        return path.isEmpty ? "/" : path
+    }
+
+    static func defaultPath(for documentPath: String) -> String {
+        guard let slash = documentPath.lastIndex(of: "/"), slash != documentPath.startIndex else { return "/" }
+        return String(documentPath[..<slash])
+    }
+}
+
+struct StorageCookieAddKey: Hashable {
+    let store: ObjectIdentifier
+    let name: String
+    let domain: String
+    let path: String
+
+    func matches(_ cookie: HTTPCookie) -> Bool {
+        cookie.name == name && cookie.path == path && [domain, ".\(domain)"].contains(cookie.domain.lowercased())
+    }
 }
 
 struct StorageShareContent: Identifiable {

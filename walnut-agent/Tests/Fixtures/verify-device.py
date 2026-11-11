@@ -11,6 +11,7 @@ import subprocess
 import time
 from pathlib import Path
 from urllib.parse import urlsplit
+from uuid import uuid4
 
 
 def require(condition, description):
@@ -228,6 +229,216 @@ class Verification:
                     f"The {menu} did not keep the ordered hidden row")
             require(self.data("menus", menu=menu, action="reset")["items"] == saved, f"The {menu} did not restore its saved layout")
         print(json.dumps({"passed": "live emulation, retained browser history and ordered toolbar and App Bar visibility"}), flush=True)
+
+    def verify_auxiliary(self):
+        baseline = self.open("/agent-e2e")
+        original = baseline["webViewState"]
+        options = {
+            key: not original[key] for key in
+            ("allowsBackForwardGestures", "allowsLinkPreview", "textInteractionEnabled", "findInteractionEnabled")
+        }
+        options.update(pageZoom=1.25 if original["pageZoom"] != 1.25 else 1.5)
+        configured = baseline["configuredBrowserSettings"]
+        live = {
+            **options,
+            "webViewWidthRatio": 0.75 if configured["webViewWidthRatio"] != 0.75 else 0.85,
+            "webViewHeightRatio": 0.65 if configured["webViewHeightRatio"] != 0.65 else 0.75,
+        }
+        applied = self.call("settings_apply", settings=live)
+        require(not applied["data"]["browserRecreationRequested"], "Live WKWebView options requested recreation")
+        for _ in range(20):
+            status = self.call("walnut_browser", action="status")
+            view = status["webViewState"]
+            resized = all(view[key] > 0 and abs(view[key] - original[key]) > 1 for key in ("widthPoints", "heightPoints"))
+            if resized and all(view.get(key) == value for key, value in options.items()):
+                break
+            time.sleep(0.1)
+        else:
+            raise RuntimeError("The live WKWebView did not apply its interaction settings, size or zoom")
+        require(status["documentId"] == baseline["documentId"], "A live setting replaced the document")
+        require(all(status["configuredBrowserSettings"][key] == value for key, value in live.items()),
+                "The applied WebView settings did not match")
+        require(status["webViewState"]["privateBrowsing"], "Fixture did not use the private data store")
+
+        self.data("settings_apply", settings={"allowsContentJavaScript": False})
+        disabled = self.open("/agent-e2e")
+        require(not disabled["configuredBrowserSettings"]["allowsContentJavaScript"], "Page JavaScript was not disabled")
+        require(self.data("network_list", method="POST", documentId=disabled["documentId"])["requestCount"] == 0,
+                "The fixture page executed a script while JavaScript was disabled")
+        self.data("settings_apply", settings={"allowsContentJavaScript": True})
+        enabled = self.open("/agent-e2e")["documentId"]
+        for _ in range(20):
+            requests = self.data("network_list", method="POST", minStatus=201, maxStatus=201, documentId=enabled)
+            if requests["requestCount"]:
+                break
+            time.sleep(0.25)
+        else:
+            raise RuntimeError("Re-enabled JavaScript did not produce the fixture POST 201")
+
+        presets = self.data("user_agent", action="presets", query="Firefox")
+        require(presets and all(entry["browser"] == "Firefox" for entry in presets), "UA preset search did not match")
+        ua = self.data("user_agent", action="build", browser="Chrome", platform="Windows 10/11 64-bit", version="131.0.0.0")["userAgent"]
+        parsed = self.data("user_agent", action="parse", userAgent=ua)
+        require(parsed["browser"] == "Chrome" and parsed["browserVersion"] == "131.0.0.0", "Built UA did not parse back to Chrome")
+        self.data("settings_apply", settings={"customUserAgent": ua})
+        override = self.open("/checkout-a")
+        require(override["userAgentOverride"] == ua, "The WebView did not set the custom UA")
+        browser = self.data("diagnostics", section="browser")
+        require(browser["source"] == "live_wkwebview" and browser["data"]["userAgent"] == ua, "Browser Info did not observe the UA")
+
+        api = self.data("diagnostics", section="api")
+        require(api["source"] == "live_wkwebview" and api["data"]["supportsFetch"], "Browser API capabilities were unavailable")
+        display = self.data("diagnostics", section="display")["data"]
+        require(all(display[key].endswith(" px") and int(display[key][:-3]) > 0 for key in ("screenWidth", "screenHeight")),
+                "Display Info lacked dimensions")
+        codecs = self.data("diagnostics", section="codecs")["data"]
+        require({"h264", "hevc", "aac", "opus", "mp4", "webm"}.issubset(codecs), "Media Codec Info was incomplete")
+        device = self.data("diagnostics", section="device")
+        require(device["source"] == "device" and device["data"]["modelIdentifier"] and device["data"]["systemVersion"],
+                "Device Info lacked hardware or OS evidence")
+        benchmark = self.data("diagnostics", section="benchmark")
+        require(benchmark["source"] == "temporary_benchmark_webview" and benchmark["data"]["totalScore"] > 0,
+                "The benchmark did not complete a measured run")
+        permissions = self.data("permissions", action="status")
+        require(permissions == self.data("diagnostics", section="permissions") and {"camera", "microphone", "location"}.issubset(permissions),
+                "The two permission status views disagreed")
+        callback = self.data("callbacks", action="test_page")
+        require(urlsplit(callback["url"]).scheme == "https" and callback["scheme"] == "walnut", "Callback test URL was not configured")
+        require("received" in self.data("callbacks", action="get"), "Callback observation was unavailable")
+        for action in ("list", "history"):
+            page = self.data("bookmarks", action=action, query="walnut-qa-no-saved-entry.invalid")
+            require(page["redacted"] and page["total"] == 0 and not page["urls"], f"{action} query exposed unrelated saved URLs")
+        print(json.dumps({"passed": "WKWebView configuration, UA, device, browser, API, display, codecs, benchmark, permissions, callback and URL lists"}), flush=True)
+
+    def verify_documents(self):
+        document = self.open("/agent-e2e")["documentId"]
+        initial = self.data("accessibility_audit", run=True)
+        issue = next(row for row in initial["issues"] if row.get("ruleId") == "image-alt")
+        require(initial["hasScanned"] and initial["documentId"] == document, "The audit was not tied to the active document")
+        require(initial["scope"] == "main-frame" and initial["hasUntestedFrames"], "Accessibility scope did not report the fixture iframe")
+        filters = {"severity": issue["severity"], "category": issue["category"]}
+        retained = self.data("accessibility_audit", run=False, query="image-alt", **filters)
+        require(retained["total"] and all(row["ruleId"] == "image-alt" and all(row[key] == value for key, value in filters.items())
+                                           for row in retained["issues"]), "The retained audit search or filters selected other rules")
+        other_severity = "info" if issue["severity"] != "info" else "error"
+        mismatched = self.data("accessibility_audit", run=False, severity=other_severity)
+        require(mismatched["total"] < initial["total"] and all(row["severity"] == other_severity for row in mismatched["issues"]),
+                "The severity filter retained findings from another level")
+        other_category = "links" if issue["category"] != "links" else "images"
+        mismatched = self.data("accessibility_audit", run=False, category=other_category)
+        require(mismatched["total"] < initial["total"] and all(row["category"] == other_category for row in mismatched["issues"]),
+                "The category filter retained findings from another category")
+        rerun = self.data("accessibility_audit", run=True, **filters)
+        fresh = next(row for row in rerun["issues"] if row.get("ruleId") == "image-alt")
+        require(fresh["id"] != issue["id"] and rerun["documentId"] == document, "The audit was not rerun on the same document")
+        detail = self.data("accessibility_detail", id=fresh["id"])
+        require(detail.get("failure") and "<img" in detail.get("html", ""), "The image-alt finding lacked markup or failure evidence")
+        report = self.data("accessibility_audit", run=False, format="markdown", **filters)
+        require("- Rule: image-alt" in report["export"], "The Markdown report did not contain the finding")
+        self.data("accessibility_clear")
+        require(not self.data("accessibility_audit", run=False)["hasScanned"], "The cleared audit still reported results")
+
+        snippet = self.data("snippets_list", category="Layout", query="Border All")
+        require([entry["id"] for entry in snippet] == ["border_all"], "Snippet category and text did not select Border All")
+        enabled = self.data("snippets_run", id="border_all", enabled=True)
+        require(enabled["active"] and enabled["result"] == "Borders enabled", "The snippet did not add its stylesheet")
+        disabled = self.data("snippets_run", id="border_all")
+        require(not disabled["active"] and disabled["result"] == "Borders disabled", "The snippet toggle did not undo its stylesheet")
+        self.data("snippets_run", id="border_all", enabled=True)
+        self.data("snippets_reset")
+        require(not self.data("snippets_list", category="Layout", query="Border All")[0]["active"], "The reset left the snippet active")
+        style = self.data("console_evaluate", script="document.getElementById('__wina_border_style__') ? 'present' : 'removed'")
+        require(style["result"] == "removed",
+                "The snippet reset left its stylesheet in the live document")
+        print(json.dumps({"passed": "Accessibility rerun, filters, failure evidence, export, clear and live snippet toggle/undo"}), flush=True)
+
+    def verify_storage_options(self):
+        page = self.open("/agent-e2e")
+        require(page["webViewState"]["privateBrowsing"], "Storage checks require the isolated fixture data store")
+        key = "walnut-e2e-encoded"
+        renamed = key + "-renamed"
+        value = "Walnut + café %"
+        self.data("storage_write", action="add", type="localStorage", key=key, value=value, encode=True)
+        self.data("storage_write", action="edit", type="localStorage", key=key, newKey=renamed, value=value, encode=True)
+        encoded = self.data("storage_list", type="localStorage", query=key, raw=True)["entries"]
+        decoded = self.data("storage_list", type="localStorage", query=key, raw=True, decode=True)["entries"]
+        require(len(encoded) == 1 and encoded[0]["key"] == renamed and encoded[0]["value"] != value,
+                "The rename left the original key or lost percent encoding")
+        require(len(decoded) == 1 and decoded[0]["value"] == value, "Storage decode did not round-trip the text")
+        require(self.data("storage_list", type="sessionStorage")["total"] > 0, "The fixture had no Session Storage")
+        for kind in ("localStorage", "sessionStorage"):
+            self.data("storage_clear", type=kind)
+            require(self.data("storage_list", type=kind)["total"] == 0, f"{kind} still contained entries after clear")
+
+        cookie = "walnut-e2e-scope"
+        for path, cookie_value in (("/qa-one", "one"), ("/qa-two", "two")):
+            self.data("storage_write", type="cookies", action="add", key=cookie, path=path, value=cookie_value)
+        self.data("storage_write", type="cookies", action="edit", key=cookie, newKey=cookie + "-renamed",
+                  path="/qa-one", value="updated", cookieScope="current")
+        cookies = self.data("storage_list", type="cookies", query=cookie, raw=True, cookieScope="current")["entries"]
+        require({(row["key"], row["path"], row["value"]) for row in cookies} ==
+                {(cookie + "-renamed", "/qa-one", "updated"), (cookie, "/qa-two", "two")},
+                "The cookie rename changed the other path or kept the original identity")
+        removed = self.data("storage_write", type="cookies", action="remove", key=cookie + "-renamed", path="/qa-one", cookieScope="current")
+        require(removed["applied"], "The selected cookie was not removed")
+        cleared_path = self.data("storage_list", type="cookies", path="/qa-one", cookieScope="current")
+        require(cleared_path["total"] == 0, "The removed cookie still existed at its exact path")
+        scoped = self.data("storage_list", type="cookies", domain=urlsplit(self.origin).hostname, path="/qa-two",
+                           raw=True, cookieScope="all")["entries"]
+        require([(row["key"], row["path"], row["value"]) for row in scoped] == [(cookie, "/qa-two", "two")],
+                "The exact domain and path query did not preserve the other cookie")
+        self.data("storage_clear", type="cookies", cookieScope="current")
+        require(self.data("storage_list", type="cookies")["total"] == 0, "Current-host cookies remained after clear")
+        print(json.dumps({"passed": "Storage encoding and rename, local/session clear and cookie domain/path isolation"}), flush=True)
+
+    def verify_startup_options(self):
+        saved = self.data("preload", action="get")
+        profile = self.data("preload", action="template", preset="empty")
+        profile.update(id=str(uuid4()), name="Walnut QA temporary startup", isEnabled=True, capturesWindowPostMessage=True)
+        event = str(uuid4())
+        source = """
+        document.addEventListener('DOMContentLoaded', () => {
+            const marker = document.createElement('div');
+            marker.id = 'walnut-preload-marker';
+            document.body.append(marker);
+            window.postMessage({walnutQA: 'QA_EVENT'}, '*');
+        });
+        """.replace("QA_EVENT", event)
+        profile["customScripts"] = [{
+            "id": str(uuid4()), "name": "QA startup event", "isEnabled": True, "forMainFrameOnly": True, "source": source
+        }]
+        try:
+            self.data("walnut_browser", action="home")
+            self.data("preload", action="disable")
+            self.open("/agent-e2e")
+            baseline = {row["id"] for row in self.data("preload", action="logs", limit=200)}
+            self.data("walnut_browser", action="home")
+            applied = self.data("preload", action="apply", profile=profile)
+            require(applied["enabled"] and applied["scriptCount"] == 1 and applied["capturesWindowPostMessage"],
+                    "The temporary startup profile was not effective")
+            self.open("/agent-e2e")
+            self.data("walnut_browser", action="wait", selector="#walnut-preload-marker")
+            for _ in range(20):
+                logs = self.data("preload", action="logs", limit=10)
+                entry = next((row for row in logs if row["id"] not in baseline
+                              and row["channel"] == "winaPostMessage" and row["direction"] == "received"), None)
+                if entry:
+                    break
+                time.sleep(0.25)
+            require(entry and "body" not in entry, "The redacted startup event was not retained")
+            raw = self.data("preload", action="logs", raw=True, logId=entry["id"])
+            require(json.loads(raw["body"]) == {"origin": self.origin, "data": {"walnutQA": event}},
+                    "The retained bridge log was not the test startup event")
+            require(not self.data("preload", action="disable")["enabled"], "The temporary profile was not disabled")
+            self.open("/agent-e2e")
+            script = "document.getElementById('walnut-preload-marker') ? 'present' : 'absent'"
+            require(self.data("console_evaluate", script=script)["result"] == "absent", "The disabled profile still injected its script")
+        finally:
+            self.data("walnut_browser", action="home")
+            restored = self.data("preload", action="reset")
+        require(all(restored[key] == saved[key] for key in ("name", "enabled", "cookieCount", "windowItemCount", "scriptCount")),
+                "Reset did not restore the saved startup profile")
+        print(json.dumps({"passed": "Document-start script, redacted and approved bridge log, disable and saved profile restoration"}), flush=True)
 
     def verify_tools(self):
         page = self.open("/agent-e2e")
@@ -512,7 +723,8 @@ def main():
     connection.add_argument("--wifi", action="store_true", help="Use Apple-trusted Wi-Fi for the engine suite")
     parser.add_argument("--udid", help="Select the iPhone by UDID")
     suites = ("diagnostics", "tools", "capture", "controls", "safari")
-    parser.add_argument("--suite", choices=(*suites, "engine", "log_options", "settings"), action="append", help="Run a specific suite. May be repeated.")
+    option_suites = ("log_options", "settings", "auxiliary", "documents", "storage_options", "startup_options")
+    parser.add_argument("--suite", choices=(*suites, *option_suites, "engine"), action="append", help="Run a specific suite. May be repeated.")
     parser.add_argument("--alternate-origin", help="Second checkout fixture origin for --suite log_options")
     args = parser.parse_args()
     if "engine" in (args.suite or []):

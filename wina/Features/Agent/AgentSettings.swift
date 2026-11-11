@@ -126,7 +126,7 @@ enum AgentSettings {
         if values["privateBrowsing"]?.base as? Bool == false {
             effects.append("Turning off private browsing lets Walnut use its persistent WKWebView website data. If Clean Start is on, opening a page from home will clear that data.")
         }
-        if values["erudaModeEnabled"]?.base as? Bool == true {
+        if values[AgentSetting.erudaKey]?.base as? Bool == true {
             effects.append("Eruda runs third-party JavaScript on the page.")
         }
         if values["fraudulentWebsiteWarning"]?.base as? Bool == false {

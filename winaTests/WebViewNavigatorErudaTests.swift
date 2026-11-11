@@ -11,6 +11,10 @@ final class WebViewNavigatorErudaTests: XCTestCase {
 
         var loadedResponses: [Bool] = []
         var entryResponses: [Bool] = []
+        var isEnabled = true
+        var disableDuringLoadCheck = false
+
+        override var erudaModeEnabled: Bool { isEnabled }
 
         var loadedCheckCount: Int = 0
         var entryCheckCount: Int = 0
@@ -26,6 +30,7 @@ final class WebViewNavigatorErudaTests: XCTestCase {
         override func evaluateJavaScript(_ script: String) async -> Any? {
             if script == WebViewNavigator.erudaLoadedCheckScript {
                 loadedCheckCount += 1
+                if disableDuringLoadCheck { isEnabled = false }
                 if !loadedResponses.isEmpty {
                     return loadedResponses.removeFirst()
                 }
@@ -38,7 +43,7 @@ final class WebViewNavigatorErudaTests: XCTestCase {
                 }
                 return false
             }
-            if script == Self.testBundleScript {
+            if script.contains(Self.testBundleScript) {
                 bundleLoadCount += 1
                 return nil
             }
@@ -127,6 +132,84 @@ final class WebViewNavigatorErudaTests: XCTestCase {
         XCTAssertEqual(navigator.bundleLoadCount, 1)
         XCTAssertEqual(navigator.reinitializeScriptCount, 1)
         XCTAssertEqual(navigator.entryCheckCount, 0)
+    }
+
+    func testErudaDoesNotInjectIfDisabledDuringCheck() async {
+        let navigator = makeNavigator()
+        navigator.disableDuringLoadCheck = true
+
+        await navigator.injectEruda()
+
+        XCTAssertEqual(navigator.loadedCheckCount, 1)
+        XCTAssertEqual(navigator.bundleLoadCount, 0)
+        XCTAssertEqual(navigator.initScriptCount, 0)
+    }
+
+    func testSessionErudaShowsAndRemovesEntryInTheExistingDocument() async throws {
+        let key = AgentSetting.erudaKey
+        let settings = AgentBrowserSettings.shared
+        let defaults = UserDefaults.standard
+        let saved = defaults.object(forKey: key)
+        defaults.set(false, forKey: key)
+        defer {
+            settings.reset(keys: [key])
+            defaults.set(saved, forKey: key)
+        }
+
+        let configuration = WKWebViewConfiguration()
+        configuration.websiteDataStore = .nonPersistent()
+        let webView = WKWebView(frame: CGRect(x: 0, y: 0, width: 320, height: 640), configuration: configuration)
+        await webView.loadHTMLStringAsync("<!doctype html><p>Eruda fixture</p>", baseURL: URL(string: "https://walnut-fixture.example"))
+        let navigator = WebViewNavigator()
+        navigator.attach(to: webView)
+        navigator.agentTrackingEnabled = true
+        defer { navigator.detach() }
+        let documentID = navigator.documentID
+        let browserRevision = settings.rebuildID
+
+        let applied = try await AgentSettings.call("settings_apply", arguments: ["settings": [key: true]], navigator: navigator) { prompt in
+            XCTAssertTrue(prompt.contains("Eruda runs third-party JavaScript"))
+            return true
+        } as? [String: Any]
+        XCTAssertEqual(applied?["browserRecreationRequested"] as? Bool, false)
+        XCTAssertEqual(settings.rebuildID, browserRevision)
+        XCTAssertFalse(defaults.bool(forKey: key))
+        await navigator.syncErudaWithSettings()
+        let displayed = try await webView.evaluateJavaScript(WebViewNavigator.erudaEntryButtonCheckScript) as? Bool
+        XCTAssertEqual(displayed, true)
+
+        let otherWebView = WKWebView(frame: .zero, configuration: configuration)
+        await otherWebView.loadHTMLStringAsync("<!doctype html><p>Other window</p>", baseURL: URL(string: "https://walnut-fixture.example"))
+        let otherNavigator = WebViewNavigator()
+        otherNavigator.attach(to: otherWebView)
+        defer { otherNavigator.detach() }
+        await otherNavigator.syncErudaWithSettings()
+        let displayedInOtherWindow = try await otherWebView.evaluateJavaScript(WebViewNavigator.erudaEntryButtonCheckScript) as? Bool
+        XCTAssertEqual(displayedInOtherWindow, false)
+
+        _ = try await AgentSettings.call("settings_reset", arguments: ["keys": [key]], navigator: navigator) { _ in false }
+        await navigator.syncErudaWithSettings()
+        let removed = try await webView.evaluateJavaScript(WebViewNavigator.erudaEntryButtonCheckScript) as? Bool
+        XCTAssertEqual(removed, false)
+        XCTAssertEqual(settings.rebuildID, browserRevision)
+        XCTAssertEqual(navigator.documentID, documentID)
+    }
+
+    func testUnpairedNativeErudaEditDoesNotClearPeerOverride() async throws {
+        let key = AgentSetting.erudaKey
+        let suite = "ErudaModeTests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        defaults.set(true, forKey: key)
+        let settings = AgentBrowserSettings()
+        settings.apply([key: true], persist: false)
+
+        AgentBrowserSettings.saveErudaMode(false, agentSettings: nil, defaults: defaults)
+        XCTAssertFalse(defaults.bool(forKey: key))
+        XCTAssertTrue(settings.value(key, fallback: false))
+
+        AgentBrowserSettings.saveErudaMode(false, agentSettings: settings, defaults: defaults)
+        XCTAssertFalse(settings.value(key, fallback: defaults.bool(forKey: key)))
     }
 
     func testReloadCallsPreparationHandler() {

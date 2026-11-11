@@ -10,30 +10,46 @@ struct MCPServer: Sendable {
     }
 
     func run() async throws {
-        let input = AsyncStream<Data> { continuation in
+        let input = AsyncThrowingStream<Data, Error> { continuation in
             DispatchQueue(label: "walnut-agent.stdin").async {
-                while let line = readLine() {
-                    if case .terminated = continuation.yield(Data(line.utf8)) { break }
+                let reader = CLILineReader(
+                    limit: 2 * DeviceBridge.requestLimit,
+                    oversizedError: AgentError("The MCP request exceeds 512 KiB.")
+                )
+                do {
+                    while let frame = try reader.next() {
+                        // An oversized line has no reliable request ID. Report a parse error and continue.
+                        if case .terminated = continuation.yield((try? frame.get()) ?? Data()) { break }
+                    }
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
                 }
-                continuation.finish()
             }
         }
         try await run(input: input) { try FileHandle.standardOutput.write(contentsOf: $0) }
     }
 
-    func run(input: AsyncStream<Data>, write: @escaping @Sendable (Data) throws -> Void) async throws {
+    func run<Input: AsyncSequence>(input: Input, write: @escaping @Sendable (Data) throws -> Void) async throws where Input.Element == Data {
         let queue = MCPRequestQueue { data in
             guard let response = await respond(to: data), !Task.isCancelled else { return }
             var payload = try JSONSerialization.data(withJSONObject: response, options: [.withoutEscapingSlashes])
             payload.append(0x0A)
             if !Task.isCancelled { try write(payload) }
         }
-        for await data in input { await queue.receive(data) }
+        do {
+            for try await data in input {
+                await queue.receive(Self.isUTF8Frame(data) ? data : Data())
+            }
+        } catch {
+            try? await queue.finish()
+            throw error
+        }
         try await queue.finish()
     }
 
     func respond(to data: Data) async -> [String: Any]? {
-        guard let object = try? JSONSerialization.jsonObject(with: data, options: .fragmentsAllowed) else {
+        guard Self.isUTF8Frame(data), let object = try? JSONSerialization.jsonObject(with: data, options: .fragmentsAllowed) else {
             return error(id: NSNull(), code: -32700, message: "Parse error")
         }
         guard let request = object as? [String: Any], request["jsonrpc"] as? String == "2.0",
@@ -93,16 +109,23 @@ struct MCPServer: Sendable {
         }
     }
 
+    private static func isUTF8Frame(_ data: Data) -> Bool {
+        !data.contains(0) && String(bytes: data, encoding: .utf8) != nil
+    }
+
     private func toolResult(_ result: Any, name: String) throws -> [String: Any] {
         if name == "walnut_screenshot", var envelope = result as? [String: Any],
            var image = envelope["data"] as? [String: Any], image["mimeType"] as? String == "image/png",
            let base64 = image["data"] as? String {
             image.removeValue(forKey: "data")
             envelope["data"] = image
-            return ["content": [
-                ["type": "image", "mimeType": "image/png", "data": base64],
-                text(try jsonText(envelope))
-            ], "structuredContent": envelope]
+            return [
+                "content": [
+                    ["type": "image", "mimeType": "image/png", "data": base64],
+                    text(try jsonText(envelope))
+                ],
+                "structuredContent": envelope
+            ]
         }
         var response: [String: Any] = ["content": [text(try jsonText(result))]]
         if let object = result as? [String: Any] { response["structuredContent"] = object }
@@ -111,7 +134,8 @@ struct MCPServer: Sendable {
 
     private func jsonText(_ value: Any) throws -> String {
         let data = try JSONSerialization.data(withJSONObject: value, options: [.fragmentsAllowed, .withoutEscapingSlashes])
-        return String(decoding: data, as: UTF8.self)
+        guard let text = String(bytes: data, encoding: .utf8) else { throw AgentError("Could not encode the MCP tool result.") }
+        return text
     }
 
     private func text(_ value: String) -> [String: String] {

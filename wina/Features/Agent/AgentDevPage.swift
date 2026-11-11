@@ -26,7 +26,7 @@ extension AgentDevTools {
             "raw": raw, "offset": offset, "limit": limit
         ]),
         AgentTool.definition("performance_clear", "Clear collected Performance data. Requires confirmation.", [:]),
-        AgentTool.definition("accessibility_audit", "Run the main-frame axe-core audit or read retained results. Markdown report export and page content require confirmation.", [
+        AgentTool.definition("accessibility_audit", "Run the main-frame axe-core audit or read its retained status and results with run=false. Markdown export requires a completed audit. Export and page content require confirmation.", [
             "run": flag, "severity": options(AccessibilityIssue.Severity.self),
             "category": options(AccessibilityIssue.Category.self), "query": query, "raw": raw,
             "offset": offset, "limit": limit, "format": options(["entries", "markdown"]),
@@ -47,7 +47,7 @@ extension AgentDevTools {
             "id": identifier, "enabled": flag
         ], required: ["id"]),
         AgentTool.definition("snippets_reset", "Undo all active built-in snippets. Requires confirmation.", [:]),
-        AgentTool.definition("page_search", "Find and highlight text, move to the next or previous result, or clear highlights.", [
+        AgentTool.definition("page_search", "Find and highlight text, move to the next or previous result, or clear highlights. After an approved search in this Mac connection, navigation returns the remaining count, zero-based index, and whether the selected match changed.", [
             "action": options(["find", "next", "previous", "clear"]), "query": query
         ], required: ["action"]),
         pageInteractionTool
@@ -131,23 +131,24 @@ extension AgentDevTools {
 
     private static func searchPage(_ input: AgentDevInput, _ context: AgentDevContext) async throws -> Any {
         let navigator = context.navigator
+        let scope = navigator.agentSearchScope
         let action = try input.required("action")
         let script: String
         switch action {
         case "find":
             let query = try input.required("query")
-            guard let search = SearchTextOverlay.searchScript(for: query) else {
+            guard let search = SearchTextOverlay.searchScript(for: query, sharingWith: scope) else {
                 throw AgentError("Could not encode the search query.")
             }
             try await context.confirm("Find and highlight text on the current page and share the match count with the Mac?")
-            script = search
+            script = SearchTextOverlay.readySearchScript(search, waitForDocument: false)
         case "next":
-            script = SearchTextOverlay.nextScript
+            script = SearchTextOverlay.navigationScript(step: 1, sharingWith: scope)
         case "previous":
-            script = SearchTextOverlay.previousScript
+            script = SearchTextOverlay.navigationScript(step: -1, sharingWith: scope)
         case "clear":
             do {
-                _ = try await navigator.evaluateJavaScriptReportingErrors(SearchTextOverlay.clearScript)
+                _ = try await navigator.evaluateJavaScriptReportingErrors(SearchTextOverlay.clearScript, contentWorld: SearchTextOverlay.searchWorld)
             } catch {
                 try context.checkDocument()
                 throw AgentError("Could not clear page search highlights.")
@@ -157,19 +158,36 @@ extension AgentDevTools {
         default:
             throw AgentError("Unknown search action.")
         }
-        let result = await navigator.evaluateJavaScript(script)
-        try context.checkDocument()
-        guard let values = (try? parseJSON(result)) as? [String: Any],
-              let index = try? AgentDevInput(values: values).int("index", default: -1, range: 0...Int.max),
-              index >= 0 else {
+        let result = try await runPageSearch(script, context)
+        guard let values = (try? parseJSON(result)) as? [String: Any] else {
             throw AgentError("Invalid page search result.")
         }
-        guard action == "find" else { return ["index": index] }
-        guard let count = try? AgentDevInput(values: values).int("count", default: -1, range: 0...Int.max),
-              count >= 0, index < max(1, count) else {
+        if values["requiresFind"] as? Bool == true { return ["index": 0, "requiresFind": true] as [String: Any] }
+        guard let index = try? AgentDevInput(values: values).int("index", default: -1, range: 0...Int.max),
+              let count = try? AgentDevInput(values: values).int("count", default: -1, range: 0...Int.max),
+              count >= 0, index >= 0, index < max(1, count) else {
             throw AgentError("Invalid page search result.")
         }
-        return ["count": count, "index": index]
+        var response: [String: Any] = ["count": count, "index": index]
+        if action != "find" {
+            guard let moved = try? AgentDevInput(values: values).bool("moved") else {
+                throw AgentError("Invalid page search result.")
+            }
+            response["moved"] = moved
+        }
+        return response
+    }
+
+    private static func runPageSearch(_ script: String, _ context: AgentDevContext) async throws -> Any? {
+        let deadline = ContinuousClock.now + .seconds(5)
+        repeat {
+            try context.checkDocument()
+            let result = try? await context.navigator.evaluateJavaScriptReportingErrors(script, contentWorld: SearchTextOverlay.searchWorld)
+            try context.checkDocument()
+            guard result as? String == "wait" else { return result }
+            try await Task.sleep(for: .milliseconds(100))
+        } while ContinuousClock.now < deadline
+        throw AgentError("The page is still loading. Wait for it to finish and try the search again.")
     }
 
     private static func readPerformance(_ input: AgentDevInput, _ context: AgentDevContext) async throws -> [String: Any] {
@@ -260,6 +278,9 @@ extension AgentDevTools {
         guard exportOffset == 0 ? exportID == nil : (export && !shouldRun && exportID != nil) else {
             throw AgentError("Continue the retained Markdown report with its exportId, without rerunning the audit.")
         }
+        if export, !shouldRun {
+            try requireCompletedAccessibilityAudit(manager)
+        }
         if export {
             try await context.confirm("Export Walnut's accessibility report, including its page URL and markup, to the Mac?")
         } else if includeContent || !query.isEmpty {
@@ -276,17 +297,28 @@ extension AgentDevTools {
                 (issue.matchesSearch(query) || issue.failureSummary.localizedCaseInsensitiveContains(query)
                     || issue.selector?.localizedCaseInsensitiveContains(query) == true)
         }
+        let status = if manager.isScanning {
+            "running"
+        } else if manager.errorMessage != nil {
+            "failed"
+        } else if manager.hasScanned {
+            "complete"
+        } else {
+            "not_run"
+        }
         var result: [String: Any] = [
-            "total": issues.count, "hasScanned": manager.hasScanned,
+            "total": issues.count, "hasScanned": manager.hasScanned, "status": status,
             "issues": try paginate(input, issues).map { issueRecord($0, includeContent: includeContent) }
         ]
-        result["documentId"] = manager.auditedDocumentID?.uuidString
+        result["error"] = manager.errorMessage
+        result["documentId"] = (manager.auditedDocumentID ?? manager.attemptDocumentID)?.uuidString
         result["timestamp"] = manager.auditedAt?.timeIntervalSince1970
         if manager.hasScanned {
             result["scope"] = "main-frame"
             result["hasUntestedFrames"] = manager.hasUntestedFrames
         }
         if export {
+            try requireCompletedAccessibilityAudit(manager)
             let report = Data(manager.report(for: issues).utf8)
             let id = SHA256.hash(data: report).map { String(format: "%02x", $0) }.joined()
             guard exportID == nil || exportID == id else {
@@ -305,6 +337,13 @@ extension AgentDevTools {
             if next < report.count { result["nextExportOffset"] = next }
         }
         return result
+    }
+
+    private static func requireCompletedAccessibilityAudit(_ manager: AccessibilityManager) throws {
+        guard !manager.isScanning else { throw AgentError("An accessibility audit is already running.") }
+        guard manager.hasScanned else {
+            throw AgentError(manager.errorMessage ?? "Run an accessibility audit before exporting its report.")
+        }
     }
 
     private static func issueRecord(_ issue: AccessibilityIssue, includeContent: Bool, fullContent: Bool = false) -> [String: Any] {

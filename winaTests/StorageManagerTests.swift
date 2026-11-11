@@ -413,7 +413,8 @@ final class StorageManagerTests: XCTestCase {
         configuration.websiteDataStore = .nonPersistent()
         let webView = WKWebView(frame: .zero, configuration: configuration)
         await webView.loadHTMLStringAsync("<html></html>", baseURL: url)
-        let navigator = CookieStoreTestNavigator()
+        let cookieStore = MockStorageNavigator()
+        let navigator = CookieStoreTestNavigator(store: cookieStore)
         navigator.attach(to: webView)
         defer { navigator.detach() }
         let storage = StorageManager()
@@ -424,14 +425,14 @@ final class StorageManagerTests: XCTestCase {
         ]
         for (tool, arguments, resultKey) in cases {
             let document = navigator.documentID
-            navigator.cookieStore.cookies = [makeCookie(name: "target", value: "one", domain: "example.com")]
-            navigator.cookieStore.afterDeletingCookie = { navigator.documentDidChange(in: webView) }
+            cookieStore.cookies = [makeCookie(name: "target", value: "one", domain: "example.com")]
+            cookieStore.afterDeletingCookie = { navigator.documentDidChange(in: webView) }
             let result = try await AgentDevTools.call(
                 tool, arguments: arguments, navigator: navigator, storage: storage, console: ConsoleSession(), authorize: { _ in true }
             ) as? [String: Any]
             XCTAssertEqual(result?[resultKey] as? Bool, true)
             XCTAssertNotEqual(navigator.documentID, document)
-            XCTAssertTrue(navigator.cookieStore.cookies.isEmpty)
+            XCTAssertTrue(cookieStore.cookies.isEmpty)
         }
         XCTAssertNil(storage.lastRefreshTime)
     }
@@ -441,7 +442,8 @@ final class StorageManagerTests: XCTestCase {
         let url = try XCTUnwrap(URL(string: "https://example.com/account"))
         let webView = WKWebView()
         await webView.loadHTMLStringAsync("<html></html>", baseURL: url)
-        let navigator = CookieStoreTestNavigator()
+        let cookieStore = MockStorageNavigator()
+        let navigator = CookieStoreTestNavigator(store: cookieStore)
         navigator.attach(to: webView)
         defer { navigator.detach() }
         let storage = StorageManager()
@@ -453,7 +455,6 @@ final class StorageManagerTests: XCTestCase {
             ("storage_clear", ["type": "cookies", "cookieScope": "all"], false)
         ]
         for (tool, arguments, readFirst) in cases {
-            let cookieStore = navigator.cookieStore
             cookieStore.cookies = [makeCookie(name: "target", value: "one", domain: "example.com")]
             let navigate = { navigator.documentDidChange(in: webView) }
             cookieStore.afterReadingCookies = readFirst ? { cookieStore.afterReadingCookies = navigate } : navigate
@@ -730,10 +731,150 @@ final class StorageManagerTests: XCTestCase {
     }
 }
 
+final class StorageCookieAdditionTests: XCTestCase {
+    @MainActor
+    func testOverlappingNativeAndScopedAddsReserveOnlyTheSameCookie() async throws {
+        let url = try XCTUnwrap(URL(string: "https://example.com/account/settings"))
+        let configuration = WKWebViewConfiguration()
+        configuration.websiteDataStore = .nonPersistent()
+        let nativeView = WKWebView(frame: .zero, configuration: configuration)
+        let scopedView = WKWebView(frame: .zero, configuration: configuration)
+        await nativeView.loadHTMLStringAsync("<html></html>", baseURL: url)
+        await scopedView.loadHTMLStringAsync("<html></html>", baseURL: url)
+        let cookieStore = InterleavedCookieStore(store: configuration.websiteDataStore.httpCookieStore)
+        let nativeNavigator = CookieStoreTestNavigator(store: cookieStore)
+        let scopedNavigator = CookieStoreTestNavigator(store: cookieStore)
+        nativeNavigator.attach(to: nativeView)
+        scopedNavigator.attach(to: scopedView)
+        defer {
+            nativeNavigator.detach()
+            scopedNavigator.detach()
+        }
+        let native = StorageManager()
+        native.setNavigator(nativeNavigator)
+        let scoped = StorageManager()
+        scoped.setNavigator(scopedNavigator)
+        let account = StorageCookieAddScope(domain: "example.com", path: "/account")
+        let root = StorageCookieAddScope(domain: nil, path: "/")
+        cookieStore.afterFirstRead = {
+            let duplicate = await scoped.addCookie(key: "fixture", value: "overwrite", pageURL: url, scope: account) { true }
+            XCTAssertNil(duplicate)
+            XCTAssertTrue(scoped.errorMessage?.contains("already in progress") == true)
+
+            let independent = await scoped.addCookie(key: "fixture", value: "root", pageURL: url, scope: root) { true }
+            XCTAssertEqual(independent?.value, "root")
+        }
+
+        let added = await native.addItem(key: "fixture", value: "native", type: .cookies, pageURL: url)
+        XCTAssertTrue(added)
+        let duplicate = await scoped.addCookie(key: "fixture", value: "overwrite", pageURL: url, scope: account) { true }
+        XCTAssertNil(duplicate)
+        XCTAssertTrue(scoped.errorMessage?.contains("already exists") == true)
+        let cookies = await cookieStore.allCookies()
+        XCTAssertEqual(cookies.first(where: { $0.name == "fixture" && $0.path == "/account" })?.value, "native")
+
+        let aborted = await scoped.addCookie(key: "retry", value: "stale", pageURL: url, scope: account) { false }
+        XCTAssertNil(aborted)
+        let retry = await scoped.addCookie(key: "retry", value: "current", pageURL: url, scope: account) { true }
+        XCTAssertEqual(retry?.value, "current")
+    }
+
+    @MainActor
+    func testNativeAddCookieDoesNotWriteToAReplacementViewAtTheSameURL() async throws {
+        let url = try XCTUnwrap(URL(string: "https://example.com/account"))
+        let firstConfiguration = WKWebViewConfiguration()
+        firstConfiguration.websiteDataStore = .nonPersistent()
+        let replacementConfiguration = WKWebViewConfiguration()
+        replacementConfiguration.websiteDataStore = .nonPersistent()
+        let first = WKWebView(frame: .zero, configuration: firstConfiguration)
+        let replacement = WKWebView(frame: .zero, configuration: replacementConfiguration)
+        await first.loadHTMLStringAsync("<html></html>", baseURL: url)
+        await replacement.loadHTMLStringAsync("<html></html>", baseURL: url)
+        let replacementStore = replacementConfiguration.websiteDataStore.httpCookieStore
+        await replacementStore.setCookie(makeCookie(name: "fixture", value: "keep", domain: "example.com"))
+        let cookieStore = MockStorageNavigator()
+        let navigator = CookieStoreTestNavigator(store: cookieStore)
+        navigator.attach(to: first)
+        defer { navigator.detach() }
+        let storage = StorageManager()
+        storage.setNavigator(navigator)
+        let document = navigator.documentID
+        cookieStore.afterReadingCookies = { navigator.attach(to: replacement) }
+
+        let added = await storage.addItem(key: "fixture", value: "overwrite", type: .cookies, pageURL: url)
+
+        XCTAssertNotEqual(navigator.documentID, document)
+        XCTAssertEqual(navigator.attachedPageURL, url)
+        XCTAssertFalse(added)
+        let cookies = await replacementStore.allCookies()
+        XCTAssertEqual(cookies.first(where: { $0.name == "fixture" })?.value, "keep")
+    }
+
+    @MainActor
+    func testNativeAddCookieKeepsExistingValueInItsDefaultPathAfterNavigation() async throws {
+        let url = try XCTUnwrap(URL(string: "https://example.com/account/settings"))
+        let nextURL = try XCTUnwrap(URL(string: "https://example.com/orders/details"))
+        let configuration = WKWebViewConfiguration()
+        configuration.websiteDataStore = .nonPersistent()
+        let webView = WKWebView(frame: .zero, configuration: configuration)
+        await webView.loadHTMLStringAsync("<html></html>", baseURL: url)
+        let navigator = WebViewNavigator()
+        navigator.attach(to: webView)
+        defer { navigator.detach() }
+        let storage = StorageManager()
+        storage.setNavigator(navigator)
+        let cookieStore = configuration.websiteDataStore.httpCookieStore
+        await cookieStore.setCookie(makeCookie(name: "fixture", value: "root", domain: "example.com"))
+
+        let added = await storage.addItem(key: "fixture", value: "directory", type: .cookies, pageURL: url)
+        XCTAssertTrue(added)
+        let duplicate = await storage.addItem(key: "fixture", value: "overwrite", type: .cookies, pageURL: url)
+        XCTAssertFalse(duplicate)
+        XCTAssertTrue(storage.errorMessage?.contains("/account") == true)
+
+        await webView.loadHTMLStringAsync("<html></html>", baseURL: nextURL)
+        let stale = await storage.addItem(key: "stale", value: "wrong", type: .cookies, pageURL: url)
+        XCTAssertFalse(stale)
+        let scoped = await storage.addItem(key: "fixture", value: "second", type: .cookies, pageURL: nextURL)
+        XCTAssertTrue(scoped)
+        let newDuplicate = await storage.addItem(key: "fixture", value: "overwrite", type: .cookies, pageURL: nextURL)
+        XCTAssertFalse(newDuplicate)
+        XCTAssertTrue(storage.errorMessage?.contains("/orders") == true)
+
+        let cookies = await cookieStore.allCookies()
+        XCTAssertFalse(cookies.contains { $0.name == "stale" })
+        XCTAssertEqual(cookies.first(where: { $0.name == "fixture" && $0.path == "/" })?.value, "root")
+        XCTAssertEqual(cookies.first(where: { $0.name == "fixture" && $0.path == "/account" })?.value, "directory")
+        XCTAssertEqual(cookies.first(where: { $0.name == "fixture" && $0.path == "/orders" })?.value, "second")
+    }
+}
+
 @MainActor
 private final class CookieStoreTestNavigator: WebViewNavigator {
-    let cookieStore = MockStorageNavigator()
-    override var attachedCookieStore: (any StorageCookieStore)? { cookieStore }
+    private let store: any StorageCookieStore
+
+    init(store: any StorageCookieStore) { self.store = store }
+
+    override var attachedCookieStore: (any StorageCookieStore)? { store }
+}
+
+@MainActor
+private final class InterleavedCookieStore: StorageCookieStore {
+    private let store: WKHTTPCookieStore
+    var afterFirstRead: (() async -> Void)?
+
+    init(store: WKHTTPCookieStore) { self.store = store }
+
+    func allCookies() async -> [HTTPCookie] {
+        let callback = afterFirstRead
+        afterFirstRead = nil
+        let cookies = await store.allCookies()
+        await callback?()
+        return cookies
+    }
+
+    func setCookie(_ cookie: HTTPCookie) async { await store.setCookie(cookie) }
+    func deleteCookie(_ cookie: HTTPCookie) async { await store.deleteCookie(cookie) }
 }
 
 @MainActor
