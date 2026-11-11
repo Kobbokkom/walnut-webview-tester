@@ -14,7 +14,8 @@ import os
 struct WebViewContainer: View {
     @Environment(\.agentBrowserSettings) private var agentSettings
     let urlString: String
-    @Binding var webViewID: UUID
+    // The initial URL and its view identity must come from the same parent render.
+    let webViewID: UUID
     let navigator: WebViewNavigator?
 
     // Loading State
@@ -533,6 +534,5 @@ private struct CheckerboardPattern: View {
 }
 
 #Preview {
-    @Previewable @State var id = UUID()
-    WebViewContainer(urlString: "https://apple.com", webViewID: $id, navigator: nil)
+    WebViewContainer(urlString: "https://apple.com", webViewID: UUID(), navigator: nil)
 }

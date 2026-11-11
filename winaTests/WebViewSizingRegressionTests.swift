@@ -11,7 +11,7 @@ final class WebViewSizingRegressionTests: XCTestCase {
 
         var body: some View {
             WebViewContainer(urlString: "https://example.invalid/initial",
-                             webViewID: $identifier, navigator: navigator)
+                             webViewID: identifier, navigator: navigator)
         }
     }
 

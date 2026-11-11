@@ -380,7 +380,7 @@ struct ContentView: View {
                 // WebView screen
                 WebViewContainer(
                     urlString: loadedURL,
-                    webViewID: webViewIDBinding,
+                    webViewID: webViewID,
                     navigator: webViewNavigator
                 )
                 .ignoresSafeArea(edges: .bottom)
