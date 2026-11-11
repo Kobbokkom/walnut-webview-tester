@@ -4,8 +4,8 @@ import Foundation
 @MainActor
 enum AgentSettings {
     static let tools: [[String: Any]] = [
-        AgentTool.definition("settings_get", "List available browser testing settings and their effective and saved values."),
-        AgentTool.definition("settings_apply", "Apply a validated patch. Emulation reloads a known GET or HEAD document in place unless the patch recreates WKWebView. If emulationNeedsNavigation is true, the settings take effect on a new document. Session overrides expire when the connection ends. Persistent edits, enabling Clean Start or Eruda, and disabling private browsing or site protections need iPhone confirmation.", [
+        AgentTool.definition("settings_get", "List browser testing settings, their availability on this iOS version, and their effective and saved values."),
+        AgentTool.definition("settings_apply", "Apply a validated patch. Unsupported Safari tints can only be persisted, in which case they appear in savedOnly. Emulation reloads a known GET or HEAD document in place unless the patch recreates WKWebView. If emulationNeedsNavigation is true, the settings take effect on a new document. Session overrides expire when the connection ends. Persistent edits, enabling Clean Start or Eruda, and disabling private browsing or site protections need iPhone confirmation.", [
             "settings": [
                 "type": "object",
                 "properties": AgentSetting.catalog.mapValues(\.schema),
@@ -86,9 +86,10 @@ enum AgentSettings {
                 "key": item.key,
                 "group": item.group,
                 "schema": item.schema,
-                "value": settings.effectiveValue(for: item),
+                "available": item.isAvailable,
+                "value": item.isAvailable ? settings.effectiveValue(for: item) : NSNull(),
                 "saved": settings.savedValue(for: item),
-                "recreatesBrowser": item.rebuild,
+                "recreatesBrowser": item.recreatesBrowser,
                 "canPersist": item.canPersist,
             ]
         }
@@ -97,13 +98,10 @@ enum AgentSettings {
     static func configuredBrowserSettings(safari: Bool) -> [String: Any] {
         let settings = AgentBrowserSettings.shared
         let entries = AgentSetting.entries.filter { item in
-            guard (item.group == "safari") == safari else { return false }
+            guard item.isAvailable, (item.group == "safari") == safari else { return false }
             switch item.key {
             case "cleanStart", "customUserAgent", "useCallbackTestPage":
                 return false
-            case "safariControlTintColorHex", "safariBarTintColorHex":
-                if #available(iOS 26.0, *) { return false }
-                return true
             default:
                 return true
             }
@@ -119,7 +117,12 @@ enum AgentSettings {
         }
         let persist = try input.flag("persist")
         let values = try AgentSetting.validatePatch(raw, persist: persist)
+        let applied = values.filter { AgentSetting.catalog[$0.key]?.isAvailable == true }
+        let savedOnly = values.filter { applied[$0.key] == nil }
         var effects: [String] = []
+        if !savedOnly.isEmpty {
+            effects.append("Safari tint colors will be saved for older iOS versions.")
+        }
         if values["cleanStart"]?.base as? Bool == true {
             effects.append("With Clean Start on, opening a page from Walnut’s home screen clears all WKWebView website data unless private browsing is on.")
         }
@@ -142,11 +145,13 @@ enum AgentSettings {
         }
         try validateTarget()
         AgentBrowserSettings.shared.apply(values, persist: persist)
-        return [
-            "applied": values.mapValues(\.base),
+        var result: [String: Any] = [
+            "applied": applied.mapValues(\.base),
             "persisted": persist,
-            "browserRecreationRequested": values.keys.contains { AgentSetting.catalog[$0]?.rebuild == true },
-        ] as [String: Any]
+            "browserRecreationRequested": applied.keys.contains { AgentSetting.catalog[$0]?.recreatesBrowser == true },
+        ]
+        if !savedOnly.isEmpty { result["savedOnly"] = savedOnly.mapValues(\.base) }
+        return result
     }
 
     private static func reset(_ input: AgentSettingsInput) throws -> Any {

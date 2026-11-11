@@ -14,6 +14,72 @@ final class AgentSettingsTests: XCTestCase {
         XCTAssertNotEqual(settings.safariRebuildID, safari)
     }
 
+    func testSafariTintReportsActiveSettingsAndCompatibilityDefaultsSeparately() async throws {
+        let settings = AgentBrowserSettings.shared
+        let defaults = UserDefaults.standard
+        let colors = ["safariControlTintColorHex": "#123456", "safariBarTintColorHex": "#ABCDEF"]
+        let keys = colors.keys.sorted()
+        let original = keys.map { ($0, defaults.object(forKey: $0)) }
+        defer {
+            settings.reset(keys: keys + ["pageZoom"])
+            for (key, value) in original { defaults.set(value, forKey: key) }
+        }
+        let supported: Bool
+        if #available(iOS 26.0, *) { supported = false } else { supported = true }
+        let before = settings.safariRebuildID
+
+        if !supported {
+            settings.apply(["pageZoom": 1.25], persist: false)
+            let patch: [String: Any] = [keys[0]: "#FFFFFF", "pageZoom": 2.0]
+            do {
+                _ = try await AgentSettings.call(
+                    "settings_apply", arguments: ["settings": patch],
+                    navigator: nil, authorize: { _ in XCTFail("Invalid patch reached approval"); return false }
+                )
+                XCTFail("The patch applied an unavailable tint")
+            } catch {
+                XCTAssertTrue(error.localizedDescription.contains("unavailable on this iOS version"))
+            }
+            XCTAssertEqual(settings.value("pageZoom", fallback: 1.0), 1.25)
+            XCTAssertEqual(settings.safariRebuildID, before)
+        }
+
+        let response = try await AgentSettings.call(
+            "settings_apply", arguments: ["settings": colors, "persist": true], navigator: nil
+        ) { prompt in
+            XCTAssertEqual(prompt.contains("saved for older iOS versions"), !supported)
+            return true
+        }
+        let applied = try XCTUnwrap(response as? [String: Any])
+        XCTAssertEqual(applied["applied"] as? [String: String], supported ? colors : [:])
+        XCTAssertEqual(applied["savedOnly"] as? [String: String], supported ? nil : colors)
+        XCTAssertEqual(applied["browserRecreationRequested"] as? Bool, supported)
+        XCTAssertEqual(settings.safariRebuildID != before, supported)
+
+        let snapshot = try await AgentSettings.call("settings_get", arguments: [:], navigator: nil) { _ in false }
+        let rows = try XCTUnwrap(snapshot as? [[String: Any]])
+        let configured = AgentSettings.configuredBrowserSettings(safari: true)
+        for (key, color) in colors {
+            let row = try XCTUnwrap(rows.first { $0["key"] as? String == key })
+            XCTAssertEqual(row["available"] as? Bool, supported)
+            XCTAssertEqual(row["saved"] as? String, color)
+            XCTAssertEqual(row["recreatesBrowser"] as? Bool, supported)
+            if supported {
+                XCTAssertEqual(row["value"] as? String, color)
+                XCTAssertEqual(configured[key] as? String, color)
+            } else {
+                XCTAssertTrue(row["value"] is NSNull)
+                XCTAssertNil(configured[key])
+            }
+        }
+
+        let reset = try await AgentSettings.call(
+            "settings_reset", arguments: ["keys": keys], navigator: nil
+        ) { _ in false }
+        XCTAssertEqual((reset as? [String: Any])?["browserRecreationRequested"] as? Bool, false)
+        for (key, color) in colors { XCTAssertEqual(defaults.string(forKey: key), color) }
+    }
+
     func testApplyRevalidatesBrowserAfterApprovalBeforeMutating() async throws {
         let settings = AgentBrowserSettings.shared
         let keys = ["cleanStart", "safariEntersReaderIfAvailable"]

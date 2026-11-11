@@ -81,7 +81,7 @@ final class AgentBrowserSettings {
     }
 
     private func invalidateBrowser(for keys: some Sequence<String>) {
-        let settings = keys.compactMap { AgentSetting.catalog[$0] }.filter(\.rebuild)
+        let settings = keys.compactMap { AgentSetting.catalog[$0] }.filter(\.recreatesBrowser)
         if settings.contains(where: { $0.group != "safari" }) { rebuildID = UUID() }
         if settings.contains(where: { $0.group == "safari" }) { safariRebuildID = UUID() }
     }
@@ -104,6 +104,9 @@ struct AgentSetting {
     let defaultValue: AnyHashable
     var rebuild = false
     var canPersist = true
+    var isAvailable = true
+
+    var recreatesBrowser: Bool { rebuild && isAvailable }
 
     var schema: [String: Any] {
         var schema: [String: Any] = ["description": title, "default": defaultValue.base]
@@ -164,6 +167,9 @@ struct AgentSetting {
         return try Dictionary(uniqueKeysWithValues: raw.map { key, value in
             guard let setting = catalog[key] else { throw AgentError("Unknown setting: \(key).") }
             guard !persist || setting.canPersist else { throw AgentError("\(key) is session-only.") }
+            guard persist || setting.isAvailable else {
+                throw AgentError("\(key) is unavailable on this iOS version. Use persist only to save it for compatible iOS versions.")
+            }
             return (key, try setting.validate(value))
         })
     }
@@ -215,12 +221,17 @@ struct AgentSetting {
         .init(key: "emulationReducedTransparency", title: "Emulate reduced transparency", group: "emulation", kind: .boolean, defaultValue: false),
     ]
 
+    private static let safariTintsAvailable: Bool = {
+        if #available(iOS 26.0, *) { return false }
+        return true
+    }()
+
     private static let safari: [Self] = [
         .init(key: "safariEntersReaderIfAvailable", title: "Enter SafariVC Reader Mode when available", group: "safari", kind: .boolean, defaultValue: false, rebuild: true),
         .init(key: "safariBarCollapsingEnabled", title: "SafariVC bar collapsing", group: "safari", kind: .boolean, defaultValue: true, rebuild: true),
         .init(key: "safariDismissButtonStyle", title: "SafariVC dismiss style (0 done, 1 close, 2 cancel)", group: "safari", kind: .integer(0...2), defaultValue: 0),
-        .init(key: "safariControlTintColorHex", title: "SafariVC control tint before iOS 26, empty uses default", group: "safari", kind: .color, defaultValue: "", rebuild: true),
-        .init(key: "safariBarTintColorHex", title: "SafariVC bar tint before iOS 26, empty uses default", group: "safari", kind: .color, defaultValue: "", rebuild: true),
+        .init(key: "safariControlTintColorHex", title: "SafariVC control tint before iOS 26, empty uses default", group: "safari", kind: .color, defaultValue: "", rebuild: true, isAvailable: safariTintsAvailable),
+        .init(key: "safariBarTintColorHex", title: "SafariVC bar tint before iOS 26, empty uses default", group: "safari", kind: .color, defaultValue: "", rebuild: true, isAvailable: safariTintsAvailable),
         .init(key: "useCallbackTestPage", title: "Use Walnut's callback test page for SafariVC launches", group: "safari", kind: .boolean, defaultValue: false, canPersist: false),
     ]
 }
