@@ -621,7 +621,7 @@ class Verification:
         print(json.dumps({"passed": "SafariVC redirect, load and capability restrictions"}), flush=True)
         if "walnut_screenshot" in capabilities["unavailable"]:
             reason = capabilities.get("unavailableReasons", {}).get("walnut_screenshot", "")
-            require("ScreenCaptureKit" in reason or "unavailable on this device" in reason,
+            require("ScreenCaptureKit" in reason or "unavailable on this device" in reason or reason.startswith("End iPhone Mirroring"),
                     "SafariVC screenshot unavailability omitted its reason")
             print(json.dumps({"unverified": "SafariVC screenshot", "reason": reason}), flush=True)
             return

@@ -114,7 +114,9 @@ final class SafariDisplayFrameCapture: NSObject {
 
     private var timeoutMessage: String {
         switch phase {
-        case .waitingToPresent: "The SafariVC window did not become active before opening the iOS screen capture picker."
+        case .waitingToPresent:
+            AgentCapture.safariScreenshotInactiveSharingReason(in: window)
+                ?? "The SafariVC window did not become active before opening the iOS screen capture picker."
         case .picking: "The iOS screen capture picker did not respond. Close it on the device, or relaunch Walnut if it never appeared."
         case .waitingForForeground: "The SafariVC window did not become active after iOS display selection."
         case .starting: "iOS did not start the display stream in time."

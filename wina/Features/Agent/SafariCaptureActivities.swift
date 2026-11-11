@@ -13,7 +13,8 @@ enum SafariCaptureActivities {
         stopMacAgent: (() -> Void)? = nil,
         isCurrent: @escaping @MainActor () -> Bool
     ) -> [UIActivity] {
-        var actions: [CaptureActivity.Action] = AgentCapture.safariScreenshotUnavailableReason == nil ? [.screenshot] : []
+        let screenshotReason = AgentCapture.safariScreenshotUnavailableReason(in: controller.viewIfLoaded?.window)
+        var actions: [CaptureActivity.Action] = screenshotReason == nil ? [.screenshot] : []
         switch recorder.state {
         case .idle: actions.append(.startRecording)
         case .starting, .recording: actions.append(.stopRecording)
@@ -79,7 +80,8 @@ private final class CaptureActivity: UIActivity {
     override var activityImage: UIImage? { UIImage(systemName: action.icon) }
     override func canPerform(withActivityItems _: [Any]) -> Bool {
         MainActor.assumeIsolated {
-            controller != nil && (action != .screenshot || AgentCapture.safariScreenshotUnavailableReason == nil)
+            guard let controller else { return false }
+            return action != .screenshot || AgentCapture.safariScreenshotUnavailableReason(in: controller.viewIfLoaded?.window) == nil
         }
     }
     override func prepare(withActivityItems _: [Any]) {}

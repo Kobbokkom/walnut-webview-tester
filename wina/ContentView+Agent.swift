@@ -25,8 +25,8 @@ extension ContentView {
     ]
     private static let agentTools = browserTools + AgentCapture.tools + AgentDevTools.tools + AgentSettings.tools
 
-    static func agentCapabilities(safari: Bool) -> [String: Any] {
-        let screenshotUnavailableReason = safari ? AgentCapture.safariScreenshotUnavailableReason : nil
+    static func agentCapabilities(safari: Bool, safariWindow: UIWindow? = nil) -> [String: Any] {
+        let screenshotUnavailableReason = safari ? AgentCapture.safariScreenshotUnavailableReason(in: safariWindow) : nil
         var unavailable = AgentDevTools.tools.compactMap { $0["name"] as? String } + ["walnut_panel"]
         if screenshotUnavailableReason != nil { unavailable.append("walnut_screenshot") }
         let unavailableActions = [
@@ -160,7 +160,7 @@ extension ContentView {
     private func performAgentCall(_ name: String, _ arguments: [String: Any]) async throws -> Any {
         switch name {
         case "walnut_capabilities":
-            return Self.agentCapabilities(safari: useSafariWebView)
+            return Self.agentCapabilities(safari: useSafariWebView, safariWindow: showWebView ? agentSafariNavigation.captureView?.window : nil)
         case "walnut_browser":
             return try await agentBrowser(arguments)
         case "walnut_panel":
@@ -431,7 +431,7 @@ extension ContentView {
         let safariView = safariController?.viewIfLoaded
         let safariWindow = safariView?.window
         if safari {
-            if let reason = AgentCapture.safariScreenshotUnavailableReason {
+            if let reason = AgentCapture.safariScreenshotUnavailableReason(in: safariWindow) {
                 throw AgentError(reason)
             }
             guard safariWindow != nil, agentNavigation.isTerminal else {

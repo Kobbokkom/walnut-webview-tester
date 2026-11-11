@@ -13,7 +13,7 @@ final class AgentCaptureTests: XCTestCase {
         }
 
         let idle = SafariCaptureActivities.make(for: safari, recorder: recorder) { true }
-        let screenshot = AgentCapture.safariScreenshotUnavailableReason == nil ? ["screenshot"] : []
+        let screenshot = AgentCapture.safariScreenshotUnavailableReason() == nil ? ["screenshot"] : []
         XCTAssertEqual(actionNames(idle), screenshot + ["startRecording"])
 
         let started = await recorder.startRecording()
@@ -21,6 +21,16 @@ final class AgentCaptureTests: XCTestCase {
         defer { recorder.stopRecording() }
         let active = SafariCaptureActivities.make(for: safari, recorder: recorder, stopMacAgent: {}, isCurrent: { true })
         XCTAssertEqual(actionNames(active), screenshot + ["stopRecording", "stopMacAgent"])
+    }
+
+    func testSafariScreenshotSharingGuidanceRequiresAnInactiveCapturedScene() {
+        XCTAssertEqual(
+            AgentCapture.safariScreenshotInactiveSharingReason(activationState: .foregroundInactive, captureState: .active),
+            "End iPhone Mirroring or the active screen sharing session, then open Walnut on the iPhone."
+        )
+        XCTAssertNil(AgentCapture.safariScreenshotInactiveSharingReason(activationState: .foregroundActive, captureState: .active))
+        XCTAssertNil(AgentCapture.safariScreenshotInactiveSharingReason(activationState: .foregroundInactive, captureState: .inactive))
+        XCTAssertNil(AgentCapture.safariScreenshotInactiveSharingReason(activationState: .background, captureState: .active))
     }
 
     func testSafariRecordingIndicatorRespectsTheReservedSystemInset() throws {

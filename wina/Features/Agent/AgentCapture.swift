@@ -27,13 +27,29 @@ enum AgentCapture {
     static let safariScreenshotRequiresScreenCaptureKit = "SafariVC display screenshots require iOS 27 or later and a Walnut build with ScreenCaptureKit."
     static let safariScreenshotUnavailableOnDevice = "iOS display capture is currently unavailable on this device."
 
-    static var safariScreenshotUnavailableReason: String? {
+    static func safariScreenshotUnavailableReason(in window: UIWindow? = nil) -> String? {
         #if canImport(ScreenCaptureKit)
         if #available(iOS 27.0, *) {
+            if let reason = safariScreenshotInactiveSharingReason(in: window) { return reason }
             return SCContentSharingPicker.shared.isAvailable ? nil : safariScreenshotUnavailableOnDevice
         }
         #endif
         return safariScreenshotRequiresScreenCaptureKit
+    }
+
+    static func safariScreenshotInactiveSharingReason(in window: UIWindow?) -> String? {
+        guard let window, let scene = window.windowScene else { return nil }
+        return safariScreenshotInactiveSharingReason(
+            activationState: scene.activationState, captureState: window.traitCollection.sceneCaptureState
+        )
+    }
+
+    static func safariScreenshotInactiveSharingReason(
+        activationState: UIScene.ActivationState,
+        captureState: UISceneCaptureState
+    ) -> String? {
+        guard activationState == .foregroundInactive, captureState == .active else { return nil }
+        return "End iPhone Mirroring or the active screen sharing session, then open Walnut on the iPhone."
     }
 
     static func captureSafariDisplay(in window: UIWindow, validateTarget: @escaping @MainActor () throws -> Void) async throws -> UIImage {
