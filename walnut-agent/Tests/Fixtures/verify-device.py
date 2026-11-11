@@ -33,9 +33,10 @@ def verify_page_png(path):
 
 
 class Verification:
-    def __init__(self, process, origin):
+    def __init__(self, process, origin, alternate_origin=None):
         self.process = process
         self.origin = origin
+        self.alternate_origin = alternate_origin
         self.tools = set()
         self.exercised = set()
 
@@ -59,8 +60,8 @@ class Verification:
     def data(self, name, **arguments):
         return self.call(name, **arguments)["data"]
 
-    def open(self, path, status=200, mode="wkwebview"):
-        result = self.call("walnut_browser", action="open", mode=mode, url=self.origin + path, recordHistory=False)
+    def open(self, path, status=200, mode="wkwebview", origin=None):
+        result = self.call("walnut_browser", action="open", mode=mode, url=(origin or self.origin) + path, recordHistory=False)
         if mode == "wkwebview":
             require(result["navigation"].get("httpStatus") == status, "Unexpected HTTP status")
             require(result.get("documentId"), "No document committed")
@@ -103,6 +104,130 @@ class Verification:
         exported = self.data("console_list", documentId=broken["documentId"], format="json")
         require(json.loads(exported["records"]), "Console export was empty")
         print(json.dumps({"passed": "HTTP 403 vs 200 with JavaScript exception"}), flush=True)
+
+    def log_counts(self, document):
+        console = self.data("console_list", documentId=document, limit=1)
+        network = self.data("network_list", documentId=document, limit=1)
+        return console["total"], network["requestCount"], network["resourceCount"]
+
+    def require_log_capture(self, document):
+        for _ in range(20):
+            if all(self.log_counts(document)):
+                return
+            time.sleep(0.25)
+        raise RuntimeError("Console, Network and Resources did not all capture the fixture")
+
+    def verify_log_options(self):
+        self.open("/agent-e2e")
+        initial = self.data("console_configure", capture=True, preserveOnReload=True, clearStrategy="keep")
+        levels = ["log", "info", "warn", "error", "group"]
+        self.data("console_configure", types=levels)
+        try:
+            self.verify_retained_logs(levels, initial["regex"])
+        finally:
+            self.data("console_configure", types=initial["types"], regex=initial["regex"])
+
+    def verify_retained_logs(self, levels, initial_regex):
+        self.data("network_configure", capture=True, preserveOnReload=True, clearStrategy="keep")
+        first = self.call("walnut_browser", action="reload")["documentId"]
+        self.require_log_capture(first)
+
+        all_console = self.data("console_list", documentId=first)["records"]
+        group = next(row for row in all_console if row["type"] == "group" and row.get("groupId"))
+        warn = next(row for row in all_console if row["type"] == "warn" and row.get("groupId") == group["groupId"])
+        try:
+            self.data("console_group", id=group["groupId"], collapsed=True)
+            visible = self.data("console_list", documentId=first, includeCollapsed=False)["records"]
+            require(warn["id"] not in {row["id"] for row in visible}, "Collapsed child remained visible")
+        finally:
+            self.data("console_group", id=group["groupId"], collapsed=False)
+        self.data("console_configure", types=["warn"], regex=True)
+        try:
+            filtered = self.data("console_list", documentId=first, query="Walnut E2E w.rning", raw=True)["records"]
+            require([row["id"] for row in filtered] == [warn["id"]], "Console Regex or level filter did not match the fixture")
+            literal = self.data("console_list", documentId=first, query="Walnut E2E w.rning", regex=False)["records"]
+            require(not literal, "Literal Console search matched a Regex-only expression")
+        finally:
+            self.data("console_configure", types=levels, regex=initial_regex)
+
+        for category, key in (("doc", "requests"), ("fetchXhr", "requests"), ("js", "resources"), ("css", "resources")):
+            result = self.data("network_list", documentId=first, category=category)
+            other_key = "resources" if key == "requests" else "requests"
+            require(result[key] and not result[other_key], f"Network category {category} selected the wrong records")
+        self.data("console_configure", capture=False)
+        self.data("network_configure", capture=False)
+        quiet = self.call("walnut_browser", action="reload")["documentId"]
+        time.sleep(0.5)
+        require(self.log_counts(quiet) == (0, 0, 0), "Disabled capture retained records from the new document")
+        require(all(self.log_counts(first)), "Reload with Preserve Log enabled dropped earlier records")
+
+        self.data("console_configure", capture=True, preserveOnReload=False)
+        self.data("network_configure", capture=True, preserveOnReload=False)
+        recent = self.call("walnut_browser", action="reload")["documentId"]
+        self.require_log_capture(recent)
+        require(self.log_counts(first) == (0, 0, 0), "Reload with Preserve Log disabled retained earlier records")
+
+        self.data("console_configure", clearStrategy="page")
+        self.data("network_configure", clearStrategy="origin")
+        self.open("/checkout-b")
+        logs, requests, resources = self.log_counts(recent)
+        require(not logs and requests and resources, "Clear on every page and keep same-origin were not independent")
+
+        self.data("console_configure", clearStrategy="origin")
+        self.data("network_configure", clearStrategy="page")
+        same_origin = self.open("/agent-e2e")["documentId"]
+        self.require_log_capture(same_origin)
+        require(self.log_counts(recent) == (0, 0, 0), "Page strategy kept old Network or Resources records")
+        broken = self.open("/checkout-b")["documentId"]
+        logs, requests, resources = self.log_counts(same_origin)
+        require(logs and not requests and not resources, "Same-origin navigation did not preserve Console alone")
+        errors = self.data("console_list", documentId=broken, type="error")
+        require(errors["total"], "Fixture script error was not captured")
+
+        self.data("network_configure", clearStrategy="origin")
+        before_origin_change = self.open("/agent-e2e")["documentId"]
+        self.require_log_capture(before_origin_change)
+        after_origin_change = self.open("/agent-e2e", origin=self.alternate_origin)["documentId"]
+        self.require_log_capture(after_origin_change)
+        require(self.log_counts(before_origin_change) == (0, 0, 0), "Cross-origin navigation retained the old logs")
+        print(json.dumps({"passed": "Console, Network and Resources capture, filters, reload preservation and clear strategies"}), flush=True)
+
+    def verify_settings(self):
+        self.open("/agent-e2e")
+        second = self.open("/checkout-b")
+        require(second["data"]["canGoBack"], "Fixture navigation did not create back history")
+        baseline = self.data("diagnostics", section="accessibility")["data"]
+        scheme = "light" if baseline["colorScheme"] == "Dark" else "dark"
+        emulation = {
+            "emulationColorScheme": scheme,
+            "emulationReducedMotion": True,
+            "emulationHighContrast": True,
+            "emulationReducedTransparency": True,
+        }
+        applied = self.call("settings_apply", settings=emulation)
+        require(applied["data"]["browserReloadRequested"] and not applied["data"]["browserRecreationRequested"],
+                "Emulation did not reload the existing WKWebView")
+        require(applied["documentId"] != second["documentId"], "Emulation reload did not commit a document")
+        require(self.data("walnut_browser", action="status")["canGoBack"], "Emulation apply dropped back history")
+        detected = self.data("diagnostics", section="accessibility")
+        expected = {"colorScheme": scheme.title(), "contrast": "More", "reducedMotion": "Reduce", "reducedTransparency": "Reduce"}
+        require(detected["source"] == "live_wkwebview" and all(detected["data"].get(key) == value for key, value in expected.items()),
+                "The live WKWebView did not observe the emulated preferences")
+        restored = self.call("settings_reset", keys=list(emulation))
+        require(restored["data"]["browserReloadRequested"] and restored["documentId"] != applied["documentId"],
+                "Emulation reset did not reload the current document")
+        require(self.data("walnut_browser", action="status")["canGoBack"], "Emulation reset dropped back history")
+        observed = self.data("diagnostics", section="accessibility")["data"]
+        require(all(observed[key] == baseline[key] for key in expected), "Emulation reset did not restore the previous preferences")
+
+        for menu, visible, hidden in (("wk_toolbar", "console", "network"), ("wk_app_bar", "home", "back")):
+            saved = self.data("menus", menu=menu, action="get")["items"]
+            rows = [{"menuItem": hidden, "isVisible": False}, {"menuItem": visible, "isVisible": True}]
+            result = self.data("menus", menu=menu, action="apply", items=rows)
+            require(result["items"][:2] == rows and result["visibleOrder"] == [visible],
+                    f"The {menu} did not keep the ordered hidden row")
+            require(self.data("menus", menu=menu, action="reset")["items"] == saved, f"The {menu} did not restore its saved layout")
+        print(json.dumps({"passed": "live emulation, retained browser history and ordered toolbar and App Bar visibility"}), flush=True)
 
     def verify_tools(self):
         page = self.open("/agent-e2e")
@@ -387,7 +512,8 @@ def main():
     connection.add_argument("--wifi", action="store_true", help="Use Apple-trusted Wi-Fi for the engine suite")
     parser.add_argument("--udid", help="Select the iPhone by UDID")
     suites = ("diagnostics", "tools", "capture", "controls", "safari")
-    parser.add_argument("--suite", choices=(*suites, "engine"), action="append", help="Run a specific suite. May be repeated.")
+    parser.add_argument("--suite", choices=(*suites, "engine", "log_options", "settings"), action="append", help="Run a specific suite. May be repeated.")
+    parser.add_argument("--alternate-origin", help="Second checkout fixture origin for --suite log_options")
     args = parser.parse_args()
     if "engine" in (args.suite or []):
         if args.suite != ["engine"] or not args.udid:
@@ -398,11 +524,14 @@ def main():
         parser.error("--wifi requires --suite engine")
     if args.udid and not args.usb:
         parser.error("--udid requires --usb")
+    if "log_options" in (args.suite or []):
+        if not args.alternate_origin or urlsplit(args.alternate_origin).netloc == urlsplit(args.origin).netloc:
+            parser.error("--suite log_options requires a checkout fixture at a different --alternate-origin (e.g. a different port)")
     command = [args.cli, "session"] + (["--usb"] if args.usb else [])
     if args.udid:
         command += ["--udid", args.udid]
     process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True, encoding="utf-8")
-    verification = Verification(process, args.origin.rstrip("/"))
+    verification = Verification(process, args.origin.rstrip("/"), (args.alternate_origin or "").rstrip("/"))
     try:
         verification.verify(args.suite or suites)
     finally:

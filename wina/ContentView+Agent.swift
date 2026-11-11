@@ -73,7 +73,12 @@ extension ContentView {
         }
         let rebuild = settings.browserRevision(safari: useSafariWebView)
         settings.reset()
-        guard rebuild != settings.browserRevision(safari: useSafariWebView) else { return }
+        if rebuild == settings.browserRevision(safari: useSafariWebView) {
+            if showWebView && !useSafariWebView {
+                webViewNavigator.installEmulation(configScript: WebViewScripts.emulationConfigScript(agentSettings: nil))
+            }
+            return
+        }
         if useSafariWebView {
             if (try? requireSafariPresentationAvailable()) != nil { recreateAgentBrowser() }
         } else if !agentSession.isRunning {
@@ -130,6 +135,7 @@ extension ContentView {
                 settings["privateBrowsing"] = effectivePrivateBrowsing
                 envelope["userAgentOverride"] = webViewNavigator.agentEffectiveUserAgent
                 envelope["webViewState"] = webViewNavigator.agentWebViewState
+                if webViewNavigator.emulationNeedsNavigation { envelope["emulationNeedsNavigation"] = true }
             }
             envelope["configuredBrowserSettings"] = settings
         }
@@ -160,25 +166,36 @@ extension ContentView {
 
     private func callAgentSettings(_ name: String, _ arguments: [String: Any]) async throws -> Any {
         let safariRevision = showWebView && useSafariWebView ? webViewID : nil
-        if safariRevision != nil, name == "settings_apply" || name == "settings_reset" {
+        let changesSettings = name == "settings_apply" || name == "settings_reset"
+        if safariRevision != nil, changesSettings {
             try requireSafariPresentationAvailable()
         }
+        let wkNavigator = showWebView && !useSafariWebView ? webViewNavigator : nil
+        let wkRevision = webViewID
+        let wkDocument = wkNavigator?.documentID
         let previous = agentNavigation.runID
         let settings = AgentBrowserSettings.shared
         let rebuildID = settings.browserRevision(safari: useSafariWebView)
         let wasPrivate = effectivePrivateBrowsing
         let result = try await AgentSettings.call(
-            name, arguments: arguments, navigator: showWebView && !useSafariWebView ? webViewNavigator : nil,
+            name, arguments: arguments, navigator: wkNavigator,
             validateApplyTarget: {
                 if let safariRevision {
                     guard showWebView, useSafariWebView, webViewID == safariRevision else {
                         throw AgentError("The SafariVC page changed while approving the settings. Try again.")
                     }
                     try requireSafariPresentationAvailable()
+                } else if let wkNavigator {
+                    guard showWebView, !useSafariWebView, webViewID == wkRevision,
+                          webViewNavigator === wkNavigator, wkNavigator.documentID == wkDocument,
+                          agentNavigation.runID == previous else {
+                        throw AgentError("The WKWebView page changed while approving the settings. Try again.")
+                    }
                 }
             },
             authorize: agentSession.authorize
         )
+        var reloaded = false
         if showWebView && !useSafariWebView && wasPrivate && !effectivePrivateBrowsing {
             returnHome()
         }
@@ -187,8 +204,17 @@ extension ContentView {
             try await waitForAgentNavigation(previous: previous, timeout: 15)
         } else if showWebView && !useSafariWebView {
             webViewNavigator.applyAgentUserAgent()
+            if AgentSettings.changesEmulation(name, arguments: arguments) {
+                let script = WebViewScripts.emulationConfigScript(agentSettings: settings)
+                if let expected = webViewNavigator.applyEmulation(configScript: script, onlyReloadSafeRequest: true) {
+                    reloaded = true
+                    try await waitForAgentNavigation(previous: previous, timeout: 15, expected: expected)
+                }
+            }
         }
-        return result
+        guard changesSettings, var metadata = result as? [String: Any] else { return result }
+        metadata["browserReloadRequested"] = reloaded
+        return metadata
     }
 
     private func requireWKWebView() throws {

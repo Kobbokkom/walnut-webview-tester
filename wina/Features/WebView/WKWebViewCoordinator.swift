@@ -357,7 +357,8 @@ class WKWebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
     private struct DocumentRequest {
         let id = UUID().uuidString
         let url: URL
-        let method: String
+        let method: String?
+        var emulationRevision: UUID?
     }
 
     private var nextDocumentRequest: DocumentRequest?
@@ -383,7 +384,10 @@ class WKWebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
         }
 
         if navigationAction.targetFrame?.isMainFrame == true, let url = navigationAction.request.url {
-            nextDocumentRequest = DocumentRequest(url: url, method: navigationAction.request.httpMethod ?? "GET")
+            nextDocumentRequest = DocumentRequest(
+                url: url, method: navigationAction.request.httpMethod,
+                emulationRevision: navigationAction.navigationType == .backForward ? nil : navigator?.emulationRevision
+            )
         }
 
         // Allow default WKWebView behavior (including universal links opening external apps)
@@ -407,10 +411,12 @@ class WKWebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
     }
 
     func webView(_ webView: WKWebView, didReceiveServerRedirectForProvisionalNavigation navigation: WKNavigation!) {
-        guard let navigation, let next = nextDocumentRequest else { return }
+        guard let navigation, var next = nextDocumentRequest else { return }
         let id = ObjectIdentifier(navigation)
         guard provisionalDocumentNavigation == id, next.url == webView.url else { return }
-        if let previous = documentRequests[id] {
+        let previous = documentRequests[id]
+        next.emulationRevision = previous?.emulationRevision
+        if let previous {
             // WebKit confirms the redirect but does not provide the intermediate HTTP status.
             navigator?.networkManager.updateRequest(
                 id: previous.id, status: nil, statusText: "Redirect", responseHeaders: nil, responseBody: nil, error: nil
@@ -479,15 +485,8 @@ class WKWebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
         }
         committedDocumentNavigation = navigationID
         if provisionalDocumentNavigation == navigationID { provisionalDocumentNavigation = nil }
-        if let navigator {
-            navigator.documentDidChange(in: webView)
-            navigator.agentNavigation.commit(navigator.documentID, navigation: navigation)
-            if navigator.agentTrackingEnabled {
-                navigator.networkManager.assignAgentDocument(
-                    navigator.documentID, requestID: navigationID.flatMap { documentRequests[$0]?.id }
-                )
-            }
-        }
+        let request = navigationID.flatMap { documentRequests[$0] }
+        updateCommittedDocument(in: webView, navigation: navigation, request: request)
 
         if let navigation, navigation === reloadNavigation {
             reloadNavigation = nil
@@ -498,7 +497,7 @@ class WKWebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
         applyClearStrategies(
             currentURL: lastCommittedMainFrameURL,
             newURL: committedURL,
-            preserving: navigationID.flatMap { documentRequests[$0]?.id }
+            preserving: request?.id
         )
         resetActiveSnippets()
         lastCommittedMainFrameURL = committedURL
@@ -652,12 +651,24 @@ private extension WKWebViewCoordinator {
         documentRequests[navigation] = request
         navigator?.networkManager.addRequest(
             id: request.id,
-            method: request.method,
+            method: request.method ?? "GET",
             url: request.url.absoluteString,
             requestType: "document",
             headers: nil,
             body: nil
         )
+    }
+
+    private func updateCommittedDocument(in webView: WKWebView, navigation: WKNavigation?, request: DocumentRequest?) {
+        guard let navigator else { return }
+        navigator.documentDidChange(
+            in: webView, requestMethod: request?.url == webView.url ? request?.method : nil,
+            emulationRevision: request?.emulationRevision
+        )
+        navigator.agentNavigation.commit(navigator.documentID, navigation: navigation)
+        if navigator.agentTrackingEnabled {
+            navigator.networkManager.assignAgentDocument(navigator.documentID, requestID: request?.id)
+        }
     }
 
     func finishDocumentRequest(_ navigation: ObjectIdentifier, error: Error? = nil) {

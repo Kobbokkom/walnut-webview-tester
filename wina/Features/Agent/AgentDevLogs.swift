@@ -5,15 +5,16 @@ import Foundation
 extension AgentDevTools {
     private static let exportChunkSize = 256 * 1024
     static let exportByteOffset = ["type": "integer", "minimum": 0, "maximum": Int(Int32.max)] as [String: Any]
+    private static let consoleTypes = ["type": "array", "items": options(ConsoleLog.LogType.displayableTypes.map(\.rawValue))] as [String: Any]
 
     static let logTools: [[String: Any]] = [
         AgentTool.definition("console_configure", "Read or set Console options. Preserve and clear strategy are session-only unless saved.", [
             "capture": flag, "preserveOnReload": flag, "clearStrategy": options(LogClearStrategy.self),
-            "regex": flag, "types": ["type": "array", "items": options(ConsoleLog.LogType.displayableTypes.map(\.rawValue))],
+            "regex": flag, "types": consoleTypes,
             "save": flag
         ]),
-        AgentTool.definition("console_list", "Read or export retained Console records. Optional document ID limits results to that document. For a long text or JSON export, append records from each chunk and pass nextByteOffset as byteOffset with contentId and the same filters. Text searches and raw content require confirmation.", [
-            "type": options(ConsoleLog.LogType.displayableTypes.map(\.rawValue)), "query": query, "regex": flag,
+        AgentTool.definition("console_list", "Read or export retained Console records. Use either type or types to filter log levels for this query. Optional document ID limits results to that document. For a long text or JSON export, append records from each chunk and pass nextByteOffset as byteOffset with contentId and the same filters. Text searches and raw content require confirmation.", [
+            "type": options(ConsoleLog.LogType.displayableTypes.map(\.rawValue)), "types": consoleTypes, "query": query, "regex": flag,
             "includeCollapsed": flag, "raw": raw, "format": options(["structured", "text", "json"]),
             "documentId": identifier, "offset": offset, "limit": limit,
             "byteOffset": exportByteOffset, "contentId": identifier
@@ -137,17 +138,7 @@ extension AgentDevTools {
         let strategy = try input.option("clearStrategy", as: LogClearStrategy.self)
         let save = try input.bool("save") ?? false
         let regex = try input.bool("regex")
-        let types: Set<ConsoleLog.LogType>?
-        if let requested = input.values["types"] {
-            guard let names = requested as? [String], names.count <= ConsoleLog.LogType.displayableTypes.count else {
-                throw AgentError("types must be an array of Console log levels.")
-            }
-            let valid = ConsoleLog.LogType.displayableTypes.filter { names.contains($0.rawValue) }
-            guard Set(names).count == valid.count else { throw AgentError("Invalid Console log level.") }
-            types = Set(valid)
-        } else {
-            types = nil
-        }
+        let types = try consoleLogTypes(input)
         let defaults = UserDefaults.standard
         let policies = LogClearStrategyResolver(defaults: defaults).resolveStrategies()
         let isConsole = console != nil
@@ -196,6 +187,17 @@ extension AgentDevTools {
         ]
     }
 
+    private static func consoleLogTypes(_ input: AgentDevInput) throws -> Set<ConsoleLog.LogType>? {
+        guard let requested = input.values["types"] else { return nil }
+        let displayable = ConsoleLog.LogType.displayableTypes
+        guard let names = requested as? [String], names.count <= displayable.count else {
+            throw AgentError("types must be an array of Console log levels.")
+        }
+        let valid = displayable.filter { names.contains($0.rawValue) }
+        guard Set(names).count == valid.count else { throw AgentError("Invalid Console log level.") }
+        return Set(valid)
+    }
+
     private static func confirmLogSettings(
         _ context: AgentDevContext,
         prefix: String,
@@ -217,6 +219,9 @@ extension AgentDevTools {
     ) async throws -> [String: Any] {
         let document = try input.values["documentId"].map { _ in try input.uuid("documentId") }
         let type = try input.option("type", as: ConsoleLog.LogType.self)
+        let types = try consoleLogTypes(input)
+        guard type == nil || types == nil else { throw AgentError("Choose either type or types.") }
+        let levels = type.map { Set([$0]) } ?? types ?? console.enabledLogTypes
         let query = try input.string("query") ?? ""
         let regex = try input.bool("regex") ?? console.useRegex
         let includeCollapsed = try input.bool("includeCollapsed") ?? true
@@ -242,7 +247,7 @@ extension AgentDevTools {
         let deadline = ContinuousClock.now + .milliseconds(150)
         let candidates = manager.logs.reversed().filter { log in
             guard log.type != .groupEnd, document == nil || log.agentDocumentID == document,
-                  type.map({ $0 == log.type }) ?? console.enabledLogTypes.contains(log.type) else { return false }
+                  levels.contains(log.type) else { return false }
             return includeCollapsed || [.group, .groupCollapsed].contains(log.type)
                 || (log.groupId.map { !manager.collapsedGroups.contains($0) } ?? true)
         }
@@ -445,7 +450,9 @@ extension AgentDevTools {
         let includeContent = (try input.bool("raw") ?? false) || format != "structured"
         let navigator = context.navigator
         let runID = navigator.agentNavigation.runID
-        if includeContent { try await context.confirm("Share captured request and resource URLs with the Mac?") }
+        if includeContent {
+            try await context.confirm("Share captured Network and Resource details with the Mac, including full URLs and request errors?")
+        }
         let requests = navigator.networkManager.requests.reversed().filter { request in
             guard filter.matchesNetworkRequest(request), document == nil || document == request.agentDocumentID else { return false }
             if let method, request.method.caseInsensitiveCompare(method) != .orderedSame { return false }
@@ -471,11 +478,9 @@ extension AgentDevTools {
         var export = TextExport(offset: cursor.offset)
         switch format {
         case "text":
-            let requestLines = pageRequests.lazy.map { "\($0.method) \($0.url) \($0.status.map(String.init) ?? "–")" }
-            let resourceLines = pageResources.lazy.map { "\($0.initiatorType.rawValue) \($0.name) \($0.displayDuration)" }
-            try await export.appendLines(requestLines, separator: "\n")
-            if !pageRequests.isEmpty && !pageResources.isEmpty { export.append("\n") }
-            try await export.appendLines(resourceLines, separator: "\n")
+            try await export.appendLines(NetworkExporter.requestTextLines(pageRequests), separator: "\n\n")
+            if !pageRequests.isEmpty && !pageResources.isEmpty { export.append("\n\n") }
+            try await export.appendLines(NetworkExporter.resourceTextLines(pageResources), separator: "\n\n")
         case "json":
             export.append("{\"requests\":")
             try await export.appendJSONRows(pageRequests) { networkRecord($0, includeContent: true, fullContent: true) }

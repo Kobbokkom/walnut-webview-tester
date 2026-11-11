@@ -186,9 +186,12 @@ final class SharedInfoCacheRegressionTests: XCTestCase {
 
 @MainActor
 final class EmulationInstallationTests: XCTestCase {
-    private final class LoadDelegate: NSObject, WKNavigationDelegate {
+    private final class LoadDelegate: WKWebViewCoordinator {
         var completion: (() -> Void)?
-        func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        var lastNavigation: WKNavigation?
+        override func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+            super.webView(webView, didFinish: navigation)
+            lastNavigation = navigation
             let action = completion
             completion = nil
             action?()
@@ -208,7 +211,7 @@ final class EmulationInstallationTests: XCTestCase {
         let navigator = WebViewNavigator()
         navigator.attach(to: webView)
         defer { navigator.detach() }
-        let delegate = LoadDelegate()
+        let delegate = LoadDelegate(isLoading: .constant(false), navigator: navigator)
         webView.navigationDelegate = delegate
         let loaded = expectation(description: "Emulation reload completed")
         delegate.completion = { loaded.fulfill() }
@@ -223,5 +226,119 @@ final class EmulationInstallationTests: XCTestCase {
         XCTAssertEqual(config, "dark")
         let effects = try await webView.evaluateJavaScript("window.__before && window.__after && window.matchMedia('(prefers-reduced-motion: reduce)').matches && !!document.getElementById('wina-emulation-style')") as? Bool
         XCTAssertEqual(effects, true)
+    }
+
+    func testSessionEmulationReloadsExistingHistoryAndRestoresSavedSettings() async throws {
+        let suite = "EmulationInstallationTests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        defaults.set("light", forKey: "emulationColorScheme")
+
+        let settings = AgentBrowserSettings()
+        let configuration = WKWebViewConfiguration()
+        configuration.websiteDataStore = .nonPersistent()
+        let controller = configuration.userContentController
+        let savedScript = WebViewScripts.emulationConfigScript(agentSettings: nil, defaults: defaults)
+        for script in [savedScript, WebViewScripts.emulationBootstrap] {
+            controller.addUserScript(WKUserScript(source: script, injectionTime: .atDocumentStart, forMainFrameOnly: false))
+        }
+        let webView = WKWebView(frame: .zero, configuration: configuration)
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: false)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let initial = folder.appendingPathComponent("initial.html")
+        let current = folder.appendingPathComponent("current.html")
+        let navigator = WebViewNavigator()
+        navigator.attach(to: webView)
+        defer { webView.navigationDelegate = nil; navigator.detach() }
+        let delegate = LoadDelegate(isLoading: .constant(false), navigator: navigator)
+        webView.navigationDelegate = delegate
+        for url in [initial, current] {
+            try "<p>\(url.lastPathComponent)</p>".write(to: url, atomically: true, encoding: .utf8)
+            let loaded = expectation(description: "Load \(url.lastPathComponent)")
+            delegate.completion = { loaded.fulfill() }
+            webView.loadFileURL(url, allowingReadAccessTo: folder)
+            await fulfillment(of: [loaded], timeout: 10)
+        }
+        let history = webView.backForwardList.backList.map(\.url.lastPathComponent)
+        XCTAssertEqual(history, [initial.lastPathComponent])
+
+        let revision = settings.rebuildID
+        let patch = try AgentSetting.validatePatch([
+            "emulationColorScheme": "dark", "emulationReducedMotion": true,
+            "emulationHighContrast": true, "emulationReducedTransparency": true,
+        ], persist: false)
+        settings.apply(patch, persist: false, defaults: defaults)
+        let sessionScript = WebViewScripts.emulationConfigScript(agentSettings: settings, defaults: defaults)
+        let applied = expectation(description: "Session emulation reload")
+        delegate.completion = { applied.fulfill() }
+        let applyNavigation = try XCTUnwrap(navigator.applyEmulation(configScript: sessionScript, onlyReloadSafeRequest: true))
+        await fulfillment(of: [applied], timeout: 10)
+        XCTAssertTrue(delegate.lastNavigation === applyNavigation)
+        let oldRevision = navigator.emulationRevision
+        XCTAssertFalse(navigator.emulationNeedsNavigation)
+        XCTAssertNil(navigator.applyEmulation(configScript: sessionScript))
+        let session = try await webView.evaluateJavaScript("Object.values(window.__winaEmulationConfig)") as? [AnyHashable]
+        XCTAssertEqual(session, ["dark", true, true, true])
+
+        navigator.documentDidChange(in: webView, requestMethod: "POST", emulationRevision: oldRevision)
+        settings.reset()
+        let restoredScript = WebViewScripts.emulationConfigScript(agentSettings: settings, defaults: defaults)
+        XCTAssertEqual(restoredScript, savedScript)
+        XCTAssertNil(navigator.applyEmulation(configScript: restoredScript, onlyReloadSafeRequest: true))
+        XCTAssertTrue(navigator.emulationNeedsNavigation)
+        let unchanged = try await webView.evaluateJavaScript("window.__winaEmulationConfig.colorScheme") as? String
+        XCTAssertEqual(unchanged, "dark")
+        navigator.documentDidChange(in: webView, requestMethod: "GET", emulationRevision: oldRevision)
+        XCTAssertTrue(navigator.emulationNeedsNavigation)
+        let restored = expectation(description: "Saved emulation reload")
+        delegate.completion = { restored.fulfill() }
+        let resetNavigation = try XCTUnwrap(navigator.applyEmulation(configScript: restoredScript, onlyReloadSafeRequest: true))
+        await fulfillment(of: [restored], timeout: 10)
+        XCTAssertTrue(delegate.lastNavigation === resetNavigation)
+        XCTAssertFalse(navigator.emulationNeedsNavigation)
+        let saved = try await webView.evaluateJavaScript("Object.values(window.__winaEmulationConfig)") as? [AnyHashable]
+        XCTAssertEqual(saved, ["light", false, false, false])
+        XCTAssertEqual(webView.url?.lastPathComponent, current.lastPathComponent)
+        XCTAssertEqual(webView.backForwardList.backList.map(\.url.lastPathComponent), history)
+
+        let back = expectation(description: "Back through preserved history")
+        delegate.completion = { back.fulfill() }
+        XCTAssertNotNil(navigator.goBack())
+        await fulfillment(of: [back], timeout: 10)
+        XCTAssertEqual(webView.url?.lastPathComponent, initial.lastPathComponent)
+        XCTAssertTrue(navigator.emulationNeedsNavigation)
+
+        let forward = expectation(description: "Forward through preserved history")
+        delegate.completion = { forward.fulfill() }
+        XCTAssertNotNil(navigator.goForward())
+        await fulfillment(of: [forward], timeout: 10)
+        XCTAssertEqual(webView.url?.lastPathComponent, current.lastPathComponent)
+        XCTAssertTrue(navigator.emulationNeedsNavigation)
+        XCTAssertEqual(settings.rebuildID, revision)
+
+        let beforeStaging = try await webView.evaluateJavaScript("window.__winaEmulationConfig.colorScheme") as? String
+        let beforeStagingNavigation = delegate.lastNavigation
+        navigator.installEmulation(configScript: sessionScript)
+        XCTAssertFalse(webView.isLoading)
+        let afterStaging = try await webView.evaluateJavaScript("window.__winaEmulationConfig.colorScheme") as? String
+        XCTAssertEqual(afterStaging, beforeStaging)
+        XCTAssertTrue(delegate.lastNavigation === beforeStagingNavigation)
+
+        let fresh = expectation(description: "Staged emulation runs on a new document")
+        delegate.completion = { fresh.fulfill() }
+        webView.loadFileURL(initial, allowingReadAccessTo: folder)
+        await fulfillment(of: [fresh], timeout: 10)
+        let staged = try await webView.evaluateJavaScript("window.__winaEmulationConfig.colorScheme") as? String
+        XCTAssertEqual(staged, "dark")
+        XCTAssertFalse(navigator.emulationNeedsNavigation)
+    }
+
+    func testOnlyEmulationChangesCanRetryPendingReload() {
+        XCTAssertFalse(AgentSettings.changesEmulation("settings_apply", arguments: ["settings": ["pageZoom": 1.5]]))
+        XCTAssertTrue(AgentSettings.changesEmulation("settings_apply", arguments: ["settings": ["emulationColorScheme": "dark"]]))
+        XCTAssertFalse(AgentSettings.changesEmulation("settings_reset", arguments: ["keys": ["pageZoom"]]))
+        XCTAssertTrue(AgentSettings.changesEmulation("settings_reset", arguments: ["keys": ["emulationReducedMotion"]]))
+        XCTAssertTrue(AgentSettings.changesEmulation("settings_reset", arguments: [:]))
     }
 }

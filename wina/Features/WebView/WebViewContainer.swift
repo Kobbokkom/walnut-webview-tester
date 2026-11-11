@@ -299,24 +299,6 @@ struct WKWebViewRepresentable: UIViewRepresentable {
         agentSettings?.value("customUserAgent", fallback: storedCustomUserAgent) ?? storedCustomUserAgent
     }
 
-    // Emulation
-    @AppStorage("emulationColorScheme") private var storedEmulationColorScheme = "system"
-    private var emulationColorScheme: String {
-        agentSettings?.value("emulationColorScheme", fallback: storedEmulationColorScheme) ?? storedEmulationColorScheme
-    }
-    @AppStorage("emulationReducedMotion") private var storedEmulationReducedMotion = false
-    private var emulationReducedMotion: Bool {
-        agentSettings?.value("emulationReducedMotion", fallback: storedEmulationReducedMotion) ?? storedEmulationReducedMotion
-    }
-    @AppStorage("emulationHighContrast") private var storedEmulationHighContrast = false
-    private var emulationHighContrast: Bool {
-        agentSettings?.value("emulationHighContrast", fallback: storedEmulationHighContrast) ?? storedEmulationHighContrast
-    }
-    @AppStorage("emulationReducedTransparency") private var storedEmulationReducedTransparency = false
-    private var emulationReducedTransparency: Bool {
-        agentSettings?.value("emulationReducedTransparency", fallback: storedEmulationReducedTransparency) ?? storedEmulationReducedTransparency
-    }
-
     func makeCoordinator() -> Coordinator {
         let saved = PreloadProfileStore.activeProfile()
         return Coordinator(
@@ -383,21 +365,11 @@ struct WKWebViewRepresentable: UIViewRepresentable {
         userContentController.addUserScript(resourceScript)
 
         // Performance observer hook (for LCP, CLS)
-        let performanceScript = WKUserScript(
-            source: WebViewScripts.performanceObserver,
-            injectionTime: .atDocumentStart,
-            forMainFrameOnly: true
-        )
-        userContentController.addUserScript(performanceScript)
+        userContentController.addUserScript(PerformanceManager.observerUserScript)
 
         // Emulation: config script first, then bootstrap (order matters)
         let emulationConfigScript = WKUserScript(
-            source: WebViewScripts.emulationConfigScript(
-                colorScheme: emulationColorScheme,
-                reducedMotion: emulationReducedMotion,
-                highContrast: emulationHighContrast,
-                reducedTransparency: emulationReducedTransparency
-            ),
+            source: WebViewScripts.emulationConfigScript(agentSettings: agentSettings),
             injectionTime: .atDocumentStart,
             forMainFrameOnly: false
         )

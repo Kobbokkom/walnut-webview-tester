@@ -23,6 +23,42 @@ final class AgentSourceResourceTests: XCTestCase {
         withExtendedLifetime(webView) {}
     }
 
+    func testComputedStyleGroupingUsesNativeCategoriesAndPropertyOffsets() async throws {
+        let webView = WKWebView(frame: .zero)
+        await webView.loadHTMLStringAsync("<html style='width: 42px; color: rgb(11, 22, 33)'><body>Fixture</body></html>", baseURL: nil)
+        let navigator = WebViewNavigator()
+        navigator.attach(to: webView)
+        let input: [String: Any] = ["path": "0", "section": "computedStyles", "allComputedStyles": true, "query": "width", "limit": 3]
+        let baseline = try await detail("element", index: 0, navigator: navigator, values: input)
+        let first = try await detail("element", index: 0, navigator: navigator, values: input.merging(["groupComputedStyles": true]) { _, new in new })
+        let groups = try XCTUnwrap(first["groups"] as? [[String: Any]])
+        XCTAssertEqual(first["total"] as? Int, baseline["total"] as? Int)
+        XCTAssertEqual(first["documentId"] as? String, baseline["documentId"] as? String)
+        XCTAssertNil(first["entries"])
+        let rows = try XCTUnwrap(baseline["entries"] as? [[String: Any]])
+        var groupedKeys: [String] = []
+        for group in groups {
+            let category = try XCTUnwrap(group["category"] as? String)
+            let entries = try XCTUnwrap(group["entries"] as? [[String: Any]])
+            for row in entries {
+                let key = try XCTUnwrap(row["key"] as? String)
+                XCTAssertEqual(category, CSSPropertyCategory.category(for: key))
+                groupedKeys.append(key)
+            }
+        }
+        XCTAssertEqual(groupedKeys.sorted(), rows.compactMap { $0["key"] as? String }.sorted())
+        let next = try XCTUnwrap(first["nextOffset"] as? Int)
+        XCTAssertEqual(next, rows.count)
+        let second = try await detail("element", index: 0, navigator: navigator, values: input.merging([
+            "groupComputedStyles": true, "offset": next
+        ]) { _, new in new })
+        let secondGroups = try XCTUnwrap(second["groups"] as? [[String: Any]])
+        let secondKeys = secondGroups.flatMap { ($0["entries"] as? [[String: Any]] ?? []).compactMap { $0["key"] as? String } }
+        XCTAssertFalse(secondKeys.isEmpty)
+        XCTAssertTrue(Set(groupedKeys).isDisjoint(with: secondKeys))
+        withExtendedLifetime(webView) {}
+    }
+
     func testExternalSourceReadsRespectCORSAndKeepPagination() async throws {
         let source = "/*" + String(repeating: "a", count: 20_000) + "needle-😀*/window.loaded = true;"
         let sameOrigin = try await server(source, type: "text/javascript")

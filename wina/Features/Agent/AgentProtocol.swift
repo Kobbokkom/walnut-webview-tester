@@ -83,13 +83,3 @@ struct AgentRequest: Decodable {
         return (request, arguments)
     }
 }
-
-struct AgentLogSettings {
-    // nil inherits the user’s saved log setting.
-    // swiftlint:disable:next discouraged_optional_boolean
-    var consolePreserveLog: Bool?
-    // swiftlint:disable:next discouraged_optional_boolean
-    var networkPreserveLog: Bool?
-    var consoleClearStrategy: LogClearStrategy?
-    var networkClearStrategy: LogClearStrategy?
-}

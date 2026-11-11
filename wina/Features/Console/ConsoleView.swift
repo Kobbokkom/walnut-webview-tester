@@ -23,14 +23,14 @@ final class ConsoleSession {
 struct ConsoleView: View {
     let consoleManager: ConsoleManager
     var navigator: WebViewNavigator?  // Optional - for JS execution
+    var onCaptureChanged: ((Bool) -> Void)?
     @Environment(\.closeDevTools) private var closeDevTools
     @Environment(\.dismiss) private var dismiss
     @Bindable var session = ConsoleSession()
     @State var shareItem: ShareContent?
     @State var showSettings: Bool = false
-    // AppStorage for settings indicator (matches ConsoleSettingsSheet)
-    @AppStorage("consolePreserveLog") private var preserveLog: Bool = false
-    @AppStorage(LogClearStrategy.consoleDefaultsKey) private var clearStrategyRaw: String = LogClearStrategy.keep.rawValue
+    @AppStorage("consolePreserveLog") private var savedPreserveLog = false
+    @AppStorage(LogClearStrategy.consoleDefaultsKey) private var savedClearStrategy = LogClearStrategy.keep
     let maxCommandHistory = 100
     @FocusState var isInputFocused: Bool
     @FocusState var isFilterFocused: Bool
@@ -80,9 +80,16 @@ struct ConsoleView: View {
 
     // Settings button highlight when any setting is active
     private var settingsActive: Bool {
-        session.useRegex || preserveLog ||
-        clearStrategyRaw != LogClearStrategy.keep.rawValue ||
+        session.useRegex || preserveLog.wrappedValue || clearStrategy.wrappedValue != .keep ||
         session.enabledLogTypes.count != ConsoleLog.LogType.displayableTypes.count
+    }
+
+    private var preserveLog: Binding<Bool> {
+        AgentLogSettings.binding($savedPreserveLog, navigator: navigator, override: \.consolePreserveLog)
+    }
+
+    private var clearStrategy: Binding<LogClearStrategy> {
+        AgentLogSettings.binding($savedClearStrategy, navigator: navigator, override: \.consoleClearStrategy)
     }
 
     var body: some View {
@@ -117,6 +124,8 @@ struct ConsoleView: View {
         .sheet(isPresented: $showSettings) {
             ConsoleSettingsSheet(
                 useRegex: $session.useRegex,
+                preserveLog: preserveLog,
+                clearStrategy: clearStrategy,
                 enabledLogTypes: $session.enabledLogTypes
             )
         }
@@ -159,6 +168,7 @@ struct ConsoleView: View {
                     isActive: consoleManager.isCapturing
                 ) {
                     consoleManager.isCapturing.toggle()
+                    onCaptureChanged?(consoleManager.isCapturing)
                 },
                 .init(
                     icon: "gearshape",

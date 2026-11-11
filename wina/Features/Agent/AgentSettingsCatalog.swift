@@ -158,6 +158,7 @@ struct AgentSetting {
 
     static let entries = browserConfiguration + browserLive + emulation + safari
     static let catalog = Dictionary(uniqueKeysWithValues: entries.map { ($0.key, $0) })
+    static let emulationKeys = Set(emulation.map(\.key))
 
     private static let browserConfiguration: [Self] = [
         .init(key: "allowsContentJavaScript", title: "Page JavaScript (app scripts stay available)", group: "configuration", kind: .boolean, defaultValue: true, rebuild: true),
@@ -195,10 +196,10 @@ struct AgentSetting {
     ]
 
     private static let emulation: [Self] = [
-        .init(key: "emulationColorScheme", title: "Emulated matchMedia and color-scheme property", group: "emulation", kind: .choice(["system", "light", "dark"]), defaultValue: "system", rebuild: true),
-        .init(key: "emulationReducedMotion", title: "Emulate reduced motion", group: "emulation", kind: .boolean, defaultValue: false, rebuild: true),
-        .init(key: "emulationHighContrast", title: "Emulate JavaScript high contrast", group: "emulation", kind: .boolean, defaultValue: false, rebuild: true),
-        .init(key: "emulationReducedTransparency", title: "Emulate reduced transparency", group: "emulation", kind: .boolean, defaultValue: false, rebuild: true),
+        .init(key: "emulationColorScheme", title: "Emulated matchMedia and color-scheme property", group: "emulation", kind: .choice(["system", "light", "dark"]), defaultValue: "system"),
+        .init(key: "emulationReducedMotion", title: "Emulate reduced motion", group: "emulation", kind: .boolean, defaultValue: false),
+        .init(key: "emulationHighContrast", title: "Emulate JavaScript high contrast", group: "emulation", kind: .boolean, defaultValue: false),
+        .init(key: "emulationReducedTransparency", title: "Emulate reduced transparency", group: "emulation", kind: .boolean, defaultValue: false),
     ]
 
     private static let safari: [Self] = [

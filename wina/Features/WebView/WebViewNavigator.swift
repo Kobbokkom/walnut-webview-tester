@@ -32,6 +32,9 @@ class WebViewNavigator {
     var canGoForward: Bool = false
     var currentURL: URL?
     private(set) var documentID = UUID()
+    private var committedRequestMethod: String?
+    @ObservationIgnored private(set) var emulationRevision: UUID?
+    private(set) var emulationNeedsNavigation = false
     /// 최초 입력된 URL (네비게이션 시작점)
     private(set) var initialURL: URL?
     var showScreenshotFlash: Bool = false
@@ -185,6 +188,7 @@ class WebViewNavigator {
 
     func attach(to webView: WKWebView) {
         self.webView = webView
+        emulationRevision = nil
         documentDidChange(in: webView)
 
         // Initial state
@@ -211,8 +215,10 @@ class WebViewNavigator {
         }
     }
 
-    func documentDidChange(in webView: WKWebView) {
+    func documentDidChange(in webView: WKWebView, requestMethod: String? = nil, emulationRevision: UUID? = nil) {
         guard self.webView === webView else { return }
+        committedRequestMethod = requestMethod
+        emulationNeedsNavigation = self.emulationRevision != emulationRevision
         hideAgentPointer()
         agentInspectorGrant = nil
         documentID = UUID()
@@ -241,6 +247,9 @@ class WebViewNavigator {
         canGoBack = false
         canGoForward = false
         currentURL = nil
+        committedRequestMethod = nil
+        emulationRevision = nil
+        emulationNeedsNavigation = false
         documentID = UUID()
         performanceManager.clear()
     }
@@ -290,27 +299,36 @@ class WebViewNavigator {
         return webView?.reload()
     }
 
-    func applyEmulation(configScript: String) {
+    func installEmulation(configScript: String) {
         guard let webView else { return }
         let controller = webView.configuration.userContentController
         // WebKit returns a live NSArray; materialize it before clearing the controller.
         // swiftlint:disable:next array_init
-        let scripts = controller.userScripts.map { $0 }
+        var scripts = controller.userScripts.map { $0 }
+        let index = scripts.lastIndex(where: { $0.source.hasPrefix(WebViewScripts.emulationConfigMarker) })
+        guard index.map({ scripts[$0].source }) != configScript else { return }
+        let config = WKUserScript(source: configScript, injectionTime: .atDocumentStart, forMainFrameOnly: false)
+        if let index {
+            scripts[index] = config
+        } else {
+            scripts.append(config)
+            scripts.append(WKUserScript(source: WebViewScripts.emulationBootstrap, injectionTime: .atDocumentStart, forMainFrameOnly: false))
+        }
         controller.removeAllUserScripts()
-        var replaced = false
-        for script in scripts {
-            if script.source.hasPrefix(WebViewScripts.emulationConfigMarker) {
-                controller.addUserScript(WKUserScript(source: configScript, injectionTime: .atDocumentStart, forMainFrameOnly: false))
-                replaced = true
-            } else {
-                controller.addUserScript(script)
-            }
+        scripts.forEach(controller.addUserScript)
+        emulationRevision = UUID()
+        emulationNeedsNavigation = true
+    }
+
+    @discardableResult
+    func applyEmulation(configScript: String, onlyReloadSafeRequest: Bool = false) -> WKNavigation? {
+        installEmulation(configScript: configScript)
+        guard let webView, emulationNeedsNavigation else { return nil }
+        if onlyReloadSafeRequest {
+            // A WKWebView reload may resubmit the request that produced the current document.
+            guard !webView.isLoading, committedRequestMethod == "GET" || committedRequestMethod == "HEAD" else { return nil }
         }
-        if !replaced {
-            controller.addUserScript(WKUserScript(source: configScript, injectionTime: .atDocumentStart, forMainFrameOnly: false))
-            controller.addUserScript(WKUserScript(source: WebViewScripts.emulationBootstrap, injectionTime: .atDocumentStart, forMainFrameOnly: false))
-        }
-        reload()
+        return reload()
     }
 
     func stopLoading() {

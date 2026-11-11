@@ -8,38 +8,6 @@
 import Foundation
 
 extension WebViewScripts {
-    /// Performance observer script - sets up tracking for LCP and CLS
-    /// Note: INP removed - Safari/WKWebView doesn't support Event Timing API (until 2026)
-    static let performanceObserver = """
-        (function() {
-            if (window.__webVitals_initialized) return;
-            window.__webVitals_initialized = true;
-
-            // LCP tracking (Largest Contentful Paint)
-            window.__webVitals_lcp = -1;
-            try {
-                new PerformanceObserver((list) => {
-                    const entries = list.getEntries();
-                    if (entries.length > 0) {
-                        window.__webVitals_lcp = entries[entries.length - 1].startTime;
-                    }
-                }).observe({ type: 'largest-contentful-paint', buffered: true });
-            } catch (e) {}
-
-            // CLS tracking (Cumulative Layout Shift)
-            window.__webVitals_cls = 0;
-            try {
-                new PerformanceObserver((list) => {
-                    for (const entry of list.getEntries()) {
-                        if (!entry.hadRecentInput) {
-                            window.__webVitals_cls += entry.value;
-                        }
-                    }
-                }).observe({ type: 'layout-shift', buffered: true });
-            } catch (e) {}
-        })();
-        """
-
     /// Emulation bootstrap script - reads config from window object and applies overrides
     /// Injected at document start, reads window.__winaEmulationConfig set by native code
     static let emulationBootstrap = """
@@ -124,6 +92,19 @@ extension WebViewScripts {
         """
 
     static let emulationConfigMarker = "// Walnut emulation configuration"
+
+    static func emulationConfigScript(agentSettings: AgentBrowserSettings?, defaults: UserDefaults = .standard) -> String {
+        let colorScheme = EmulatedColorScheme(rawValue: defaults.string(forKey: "emulationColorScheme") ?? "") ?? .system
+        let reducedMotion = defaults.bool(forKey: "emulationReducedMotion")
+        let highContrast = defaults.bool(forKey: "emulationHighContrast")
+        let reducedTransparency = defaults.bool(forKey: "emulationReducedTransparency")
+        return emulationConfigScript(
+            colorScheme: agentSettings?.value("emulationColorScheme", fallback: colorScheme.rawValue) ?? colorScheme.rawValue,
+            reducedMotion: agentSettings?.value("emulationReducedMotion", fallback: reducedMotion) ?? reducedMotion,
+            highContrast: agentSettings?.value("emulationHighContrast", fallback: highContrast) ?? highContrast,
+            reducedTransparency: agentSettings?.value("emulationReducedTransparency", fallback: reducedTransparency) ?? reducedTransparency
+        )
+    }
 
     /// Script to set emulation config (call before page load or reload)
     static func emulationConfigScript(

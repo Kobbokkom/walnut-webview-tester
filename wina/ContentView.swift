@@ -422,9 +422,18 @@ struct ContentView: View {
     private func devToolsContent(for tool: DevToolsOverlay) -> some View {
         switch tool {
         case .console:
-            ConsoleView(consoleManager: webViewNavigator.consoleManager, navigator: webViewNavigator, session: consoleSession)
+            ConsoleView(
+                consoleManager: webViewNavigator.consoleManager, navigator: webViewNavigator,
+                onCaptureChanged: { agentCaptureDefaults?.console = $0 }, session: consoleSession
+            )
         case .network:
-            NetworkView(networkManager: webViewNavigator.networkManager, resourceManager: webViewNavigator.resourceManager)
+            NetworkView(
+                networkManager: webViewNavigator.networkManager, resourceManager: webViewNavigator.resourceManager,
+                navigator: webViewNavigator, onCaptureChanged: { capture in
+                    agentCaptureDefaults?.network = capture
+                    agentCaptureDefaults?.resources = capture
+                }
+            )
         case .storage:
             StorageView(storageManager: storageManager, navigator: webViewNavigator, editor: $storageEditor)
         case .performance:

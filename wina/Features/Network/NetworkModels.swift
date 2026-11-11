@@ -255,6 +255,39 @@ struct NetworkRequest: Identifiable, Equatable {
     }
 }
 
+// MARK: - Network Exporter
+
+enum NetworkExporter {
+    static func requestTextLines(_ requests: some Collection<NetworkRequest>) -> some Collection<String> {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm:ss.SSS"
+        return requests.lazy.map { request in
+            var line = "[\(formatter.string(from: request.startTime))] \(request.method) \(request.url)"
+            if let status = request.status {
+                line += " → \(status)"
+            }
+            if let duration = request.duration {
+                line += " (\(String(format: "%.0fms", duration * 1000)))"
+            }
+            if let error = request.error {
+                line += " ERROR: \(error)"
+            }
+            return line
+        }
+    }
+
+    static func resourceTextLines(_ resources: some Collection<ResourceEntry>) -> some Collection<String> {
+        resources.lazy.map { resource in
+            var line = "[\(resource.initiatorType.displayName)] \(resource.name)"
+            line += "\n  Duration: \(resource.displayDuration), Size: \(resource.displaySize)"
+            if resource.isCrossOriginRestricted {
+                line += " (cross-origin)"
+            }
+            return line
+        }
+    }
+}
+
 // MARK: - Content Type
 
 enum NetworkContentType: String {

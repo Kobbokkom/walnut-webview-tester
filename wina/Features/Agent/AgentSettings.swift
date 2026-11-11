@@ -5,7 +5,7 @@ import Foundation
 enum AgentSettings {
     static let tools: [[String: Any]] = [
         AgentTool.definition("settings_get", "List available browser testing settings and their effective and saved values."),
-        AgentTool.definition("settings_apply", "Apply a validated patch. Session overrides expire when the connection ends. Persistent edits, enabling Clean Start or Eruda, and disabling private browsing or site protections need iPhone confirmation.", [
+        AgentTool.definition("settings_apply", "Apply a validated patch. Emulation reloads a known GET or HEAD document in place unless the patch recreates WKWebView. If emulationNeedsNavigation is true, the settings take effect on a new document. Session overrides expire when the connection ends. Persistent edits, enabling Clean Start or Eruda, and disabling private browsing or site protections need iPhone confirmation.", [
             "settings": [
                 "type": "object",
                 "properties": AgentSetting.catalog.mapValues(\.schema),
@@ -14,7 +14,7 @@ enum AgentSettings {
             ],
             "persist": ["type": "boolean", "default": false],
         ], required: ["settings"]),
-        AgentTool.definition("settings_reset", "Clear session testing overrides to reveal saved values. Omit keys to also clear the startup profile and menu overrides.", [
+        AgentTool.definition("settings_reset", "Clear session testing overrides to reveal saved values. If emulationNeedsNavigation is true, the settings take effect on a new document. Omit keys to also clear the startup profile and menu overrides.", [
             "keys": ["type": "array", "items": ["type": "string", "enum": AgentSetting.catalog.keys.sorted()]],
         ]),
         AgentTool.definition("diagnostics", "Run Walnut's Info diagnostics. Use the active WKWebView when attached, or a temporary WKWebView for feature detection. Benchmark always runs separately.", [
@@ -64,6 +64,19 @@ enum AgentSettings {
 
     static func choices(_ values: [String]) -> [String: Any] {
         ["type": "string", "enum": values]
+    }
+
+    static func changesEmulation(_ tool: String, arguments: [String: Any]) -> Bool {
+        switch tool {
+        case "settings_apply":
+            guard let patch = arguments["settings"] as? [String: Any] else { return false }
+            return !AgentSetting.emulationKeys.isDisjoint(with: patch.keys)
+        case "settings_reset":
+            guard let keys = arguments["keys"] as? [String] else { return true }
+            return !AgentSetting.emulationKeys.isDisjoint(with: keys)
+        default:
+            return false
+        }
     }
 
     private static func settingsSnapshot() -> [[String: Any]] {

@@ -1,11 +1,20 @@
+import CoreFoundation
 import Foundation
 
 extension AgentSettings {
     static let menuTools = [
-        AgentTool.definition("menus", "Inspect, reorder, hide, or restore Walnut's WKWebView toolbar and App Bar items. Omitted items in visibleOrder are hidden.", [
+        AgentTool.definition("menus", "Inspect or set Walnut's WKWebView toolbar and App Bar layout. Apply accepts items or visibleOrder. Reset discards the session override. Set persist to restore the saved layout to Walnut defaults.", [
             "menu": choices(AgentMenu.allCases.map(\.rawValue)),
             "action": choices(["get", "apply", "reset"]),
             "visibleOrder": ["type": "array", "items": ["type": "string"], "uniqueItems": true],
+            "items": [
+                "type": "array",
+                "description": "Ordered rows with explicit visibility. Unlisted items are placed at the end and hidden.",
+                "items": [
+                    "type": "object", "required": ["menuItem", "isVisible"], "additionalProperties": false,
+                    "properties": ["menuItem": ["type": "string"], "isVisible": ["type": "boolean"]]
+                ]
+            ],
             "persist": ["type": "boolean", "default": false],
         ], required: ["menu", "action"]),
     ]
@@ -18,13 +27,9 @@ extension AgentSettings {
         switch try input.string("action") {
         case "get": break
         case "apply":
-            let allowed = menu.items
-            guard let order = input.arguments["visibleOrder"] as? [String], Set(order).count == order.count,
-                  order.allSatisfy(allowed.contains) else { throw AgentError("Provide an ordered list of unique menu item identifiers.") }
+            let rows = try menu.rowsForApply(input.arguments)
             let persist = try input.flag("persist")
             if persist { try await input.confirm("Save the \(menu.rawValue) layout in Walnut?") }
-            let rows = order.map { AgentMenu.Row(menuItem: $0, isVisible: true) } +
-                allowed.filter { !order.contains($0) }.map { AgentMenu.Row(menuItem: $0, isVisible: false) }
             let data = try JSONEncoder().encode(rows)
             settings.apply([menu.key: data], persist: persist)
         case "reset":
@@ -38,8 +43,15 @@ extension AgentSettings {
         }
         let saved = UserDefaults.standard.data(forKey: menu.key) ?? Data()
         let data = settings.value(menu.key, fallback: saved)
-        let rows = (try? JSONDecoder().decode([AgentMenu.Row].self, from: data)).flatMap { $0.isEmpty ? nil : $0 }
-        return ["menu": menu.rawValue, "availableItems": menu.items, "visibleOrder": rows?.filter(\.isVisible).map(\.menuItem) ?? menu.items]
+        let available = menu.items
+        let decoded = try? JSONDecoder().decode([AgentMenu.Row].self, from: data)
+        let rows = decoded.flatMap { rows in
+            !rows.isEmpty && rows.allSatisfy { available.contains($0.menuItem) } ? rows : nil
+        } ?? available.map { AgentMenu.Row(menuItem: $0, isVisible: true) }
+        return [
+            "menu": menu.rawValue, "availableItems": available, "visibleOrder": rows.filter(\.isVisible).map(\.menuItem),
+            "items": try AgentTool.json(rows)
+        ]
     }
 }
 
@@ -64,5 +76,25 @@ private enum AgentMenu: String, CaseIterable {
         case .wkToolbar: DevToolsMenuItem.defaultOrder.map(\.rawValue)
         case .wkAppBar: AppBarMenuItem.defaultOrder.map(\.rawValue)
         }
+    }
+
+    func rowsForApply(_ arguments: [String: Any]) throws -> [Row] {
+        let invalid = AgentError("Provide unique menu item identifiers in either items or visibleOrder.")
+        let available = items
+        let rows: [Row]
+        if let raw = arguments["items"] as? [[String: Any]], arguments["visibleOrder"] == nil, raw.count <= available.count {
+            rows = try raw.map { row in
+                guard row.count == 2, let item = row["menuItem"] as? String,
+                      let visible = row["isVisible"] as? NSNumber, CFGetTypeID(visible) == CFBooleanGetTypeID() else { throw invalid }
+                return Row(menuItem: item, isVisible: visible.boolValue)
+            }
+        } else if let visible = arguments["visibleOrder"] as? [String], arguments["items"] == nil, visible.count <= available.count {
+            rows = visible.map { Row(menuItem: $0, isVisible: true) }
+        } else {
+            throw invalid
+        }
+        let supplied = Set(rows.map(\.menuItem))
+        guard supplied.count == rows.count, supplied.isSubset(of: available) else { throw invalid }
+        return rows + available.filter { !supplied.contains($0) }.map { Row(menuItem: $0, isVisible: false) }
     }
 }

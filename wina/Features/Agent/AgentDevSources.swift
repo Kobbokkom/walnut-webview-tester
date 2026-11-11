@@ -56,11 +56,18 @@ extension AgentDevTools {
         try checkSourceDocument(input, context)
         let kind = try input.required("kind")
         let query = try input.string("query") ?? ""
+        let groupComputedStyles = try input.bool("groupComputedStyles") ?? false
+        if groupComputedStyles {
+            guard kind == "element", try input.string("section") == "computedStyles" else {
+                throw AgentError("Grouping requires the computedStyles element section.")
+            }
+        }
         switch kind {
         case "element":
             let script = try elementDetailScript(input)
             try await context.confirm("Share the selected element details from this page with the Mac?")
-            return try await evaluateSourcePage(script, input, query: query, context: context)
+            let result = try await evaluateSourcePage(script, input, query: query, context: context)
+            return groupComputedStyles ? try groupComputedStylePage(result, input: input) : result
         case "stylesheet", "script":
             let index = try input.int("index", default: -1, range: 0...100_000)
             guard index >= 0 else { throw AgentError("A stylesheet or script index is required.") }
@@ -76,6 +83,22 @@ extension AgentDevTools {
         default:
             throw AgentError("Invalid Sources detail kind.")
         }
+    }
+
+    private static func groupComputedStylePage(_ page: [String: Any], input: AgentDevInput) throws -> [String: Any] {
+        guard let entries = page["entries"] as? [[String: Any]], let total = page["total"] as? Int else {
+            throw AgentError("No computed style properties returned.")
+        }
+        let grouped = Dictionary(grouping: entries) { CSSPropertyCategory.category(for: $0["key"] as? String ?? "") }
+        var result = page
+        result.removeValue(forKey: "entries")
+        result["groups"] = CSSPropertyCategory.allCategories.compactMap { category -> [String: Any]? in
+            guard let properties = grouped[category] else { return nil }
+            return ["category": category, "entries": properties]
+        }
+        let next = try input.int("offset", default: 0, range: 0...100_000) + entries.count
+        if next < total { result["nextOffset"] = next }
+        return result
     }
 
     private static func approveSource(_ kind: SourceResourceScript.Kind, index: Int, context: AgentDevContext) async throws -> String {

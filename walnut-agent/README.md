@@ -68,7 +68,7 @@ The `tools` response lists the connected phone's schemas in `result.data.tools` 
 
 Use `walnut_browser` with action `open` and a `url` the iPhone can reach. For a development server on the Mac, use the Mac's LAN address. `localhost` inside Walnut points to the iPhone.
 
-Applying or resetting emulation through the CLI or MCP recreates an open WKWebView. Walnut opens the current URL with a new GET request, and the replacement starts with an empty back and forward history. Temporary emulation settings expire when the connection ends.
+Applying or resetting emulation can reload an open WKWebView in place and preserve its back and forward history. Inspect `browserReloadRequested` and the new document ID. When `emulationNeedsNavigation` is true, open the next test page to apply the change. Walnut defers automatic reloads on form-submission pages to avoid replaying the request. A patch that also changes WKWebView configuration can recreate the browser. Disconnecting restores the saved emulation for the next document without automatically reloading the current page.
 
 Large `console_detail` and `accessibility_detail` responses return serialized JSON in `content` chunks. Text and JSON exports can return `records` chunks from `console_list` and `export` chunks from `network_list`. Pass `nextByteOffset` as `byteOffset` with `contentId` and the same tool arguments until there is no next offset. Concatenate the chunks in order before parsing JSON. If Walnut reports that the content changed, restart from the first chunk.
 
@@ -78,7 +78,9 @@ In WKWebView, `page_interact` action `observe` returns a `documentId`, visible c
 
 After approval, `walnut_screenshot` saves a private PNG to the Mac. If Mac storage fails after the iPhone returns the capture, the error response retains `result.data.savedToPhotos` so you can tell whether Walnut already saved it to Photos. For a completed recording, `walnut_recording` with action `read` saves a private `.mov` file to the Mac, up to 512 MiB. Successful captures return the local file in `result.data.path`.
 
-SafariVC opens full screen with Safari's native controls. On the iPhone, use Safari's Share menu to select **Save Screenshot**, **Start Recording**, or **Stop Recording**. Agent screenshots capture the host window and show an on-device preview before sharing. Screen recording depends on iOS capture availability. The `menus` tool configures Walnut's WKWebView controls.
+SafariVC opens full screen with Safari's native controls. On the iPhone, use Safari's Share menu to select **Save Screenshot**, **Start Recording**, or **Stop Recording**. Agent screenshots capture the host window and show an on-device preview before sharing. Screen recording depends on iOS capture availability.
+
+The `menus` tool configures the WKWebView toolbar and App Bar. Use `visibleOrder` to send just visible item identifiers, or `items` to place visible and hidden rows in a specific order. A row has `menuItem` and `isVisible`. `get` returns both views of the active layout. Session reset reveals the saved layout, while `reset` with `persist: true` restores Walnut's default layout after approval.
 
 If the phone shows a new pairing code, run `walnut-agent pair` again. If the connection drops mid-call, check the page and run state before retrying. The interrupted action may already have taken effect.
 
@@ -133,6 +135,8 @@ To reach it from the iPhone, pass the Mac’s LAN address with `--host` and open
 For the WKWebView interaction test, give your agent a goal such as “Open `/checkout-interaction` on the iPhone, submit the test shipment with delivery reference `WK-417`, and report the receipt number.” The agent can use `page_interact` to inspect the viewport, scroll to the form, fill the field, activate the button, and inspect the receipt. Approve page text sharing, filling, and activation on the iPhone when prompted.
 
 For a repeatable device check, use a dedicated QA installation of Walnut and run `python3 walnut-agent/Tests/Fixtures/verify-device.py http://MAC_LAN_IP:8874`. Keep the fixture running and approve each test action on the iPhone. The script exercises both browser modes, saves the capture paths, and reports which advertised tools it called successfully. For a Wi-Fi-off USB test, pass `--usb --udid DEVICE_UDID` and use a fixture URL reachable by the phone over its remaining connection.
+
+Run `--suite settings` to check live emulation, retained back history, and both menu layouts. Run `--suite log_options --alternate-origin http://MAC_LAN_IP:8875` to check Console, Network, and Resources capture, filtering, preserve on reload, and navigation clear strategies. For `log_options`, start a second copy of `checkout.py` on port `8875` so the iPhone can navigate between two fixture origins.
 
 For the WebKit engine check, enable **Browse in private session** on Walnut's start screen and open `/agent-e2e` on the iPhone. Close any other CLI sessions and run `python3 walnut-agent/Tests/Fixtures/verify-device.py http://MAC_LAN_IP:8874 --suite engine --udid DEVICE_UDID`. Add `--wifi` for Apple-trusted Wi-Fi inspection or `--usb` to route the Walnut connection through the USB forwarder too. Approve inspector access and the requested commands on the iPhone. This check reads the retained HTML and confirms that a breakpoint can pause an evaluation, inspect a local argument, step, and resume it.
 

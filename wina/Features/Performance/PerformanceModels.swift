@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import WebKit
 
 // MARK: - Performance Score Rating
 
@@ -334,6 +335,12 @@ class PerformanceManager {
     private(set) var isReloading = false
     @ObservationIgnored private var collectionID = UUID()
 
+    @MainActor static let contentWorld = WKContentWorld.world(name: "WalnutPerformance")
+
+    @MainActor static var observerUserScript: WKUserScript {
+        WKUserScript(source: observerInjectionScript, injectionTime: .atDocumentStart, forMainFrameOnly: true, in: contentWorld)
+    }
+
     // JavaScript to inject PerformanceObservers at page load (for LCP, CLS)
     // Note: INP removed - Safari/WKWebView doesn't support Event Timing API (until 2026)
     static let observerInjectionScript = """
@@ -396,12 +403,14 @@ class PerformanceManager {
         const navEntries = performance.getEntriesByType('navigation');
         if (navEntries.length > 0) {
             const nav = navEntries[0];
+            const tlsStart = nav.secureConnectionStart;
+            const hasTLS = tlsStart > 0 && tlsStart >= nav.connectStart && tlsStart <= nav.connectEnd;
             result.navigation = {
                 startTime: nav.startTime,
                 redirectTime: nav.redirectEnd - nav.redirectStart,
                 dnsTime: nav.domainLookupEnd - nav.domainLookupStart,
-                tcpTime: nav.connectEnd - nav.connectStart,
-                tlsTime: nav.secureConnectionStart > 0 ? nav.connectEnd - nav.secureConnectionStart : 0,
+                tcpTime: (hasTLS ? tlsStart : nav.connectEnd) - nav.connectStart,
+                tlsTime: hasTLS ? nav.connectEnd - tlsStart : 0,
                 timeToFirstByte: nav.responseStart - nav.startTime,
                 requestTime: nav.responseStart - nav.requestStart,
                 responseTime: nav.responseEnd - nav.responseStart,
@@ -513,7 +522,7 @@ class PerformanceManager {
             }
             let document = navigator.documentID
             if !reload || (navigation.runID != initialRun && navigation.isTerminal && navigation.documentID == document) {
-                let result = await navigator.evaluateJavaScript(script)
+                let result = try? await navigator.evaluateJavaScriptReportingErrors(script, contentWorld: Self.contentWorld)
                 guard !Task.isCancelled, collectionID == id else { return nil }
                 if navigator.documentID == document, !reload || navigation.matches(expectedReload),
                    let result = result as? String {

@@ -12,12 +12,17 @@ extension AgentDevTools {
             "kind": options(["element", "stylesheet", "script"]), "path": query,
             "index": offset, "section": options(["attributes", "computedStyles", "matchedRules", "html"]),
             "allComputedStyles": flag, "query": query, "documentId": identifier,
+            "groupComputedStyles": [
+                "type": "boolean",
+                "description": "Return groups in Walnut's CSS category order within each computed-styles page. Continue with nextOffset, which counts properties across all groups."
+            ],
             "offset": offset, "limit": limit, "textOffset": sourceTextOffset,
             "propertyOffset": offset.merging(["description": "Offset in each matched rule's properties. Follow nextPropertyOffset."]) { _, description in description }
         ], required: ["kind"]),
         AgentTool.definition("performance_read", "Collect metrics, resource timings, or navigation timings. Reload and capture a fresh run with reload=true. Use collect=false to read an existing measurement.", [
             "section": options(["all", "metrics", "resources", "timing"]), "reload": flag,
-            "collect": flag, "query": query, "resourceType": options(ResourceType.self),
+            "collect": flag, "query": query.merging(["description": "Filter resources by type name or by the URL visible in the result."]) { _, description in description },
+            "resourceType": options(ResourceType.self),
             "raw": raw, "offset": offset, "limit": limit
         ]),
         AgentTool.definition("performance_clear", "Clear collected Performance data. Requires confirmation.", [:]),
@@ -203,7 +208,7 @@ extension AgentDevTools {
         if reload, navigator.agentNavigation.documentID != measuredDocument {
             throw AgentError("A different navigation interrupted the Performance refresh.")
         }
-        var result: [String: Any] = ["documentId": measuredDocument.uuidString]
+        var result: [String: Any] = ["documentId": measuredDocument.uuidString, "measuredAt": data.timestamp.timeIntervalSince1970]
         if section == "all" || section == "metrics" {
             result["score"] = data.totalScore
             result["rating"] = data.scoreRating.rawValue
@@ -214,6 +219,9 @@ extension AgentDevTools {
             result["cls"] = data.cls >= 0 ? data.cls : nil
             result["tbtMs"] = data.tbt >= 0 ? data.tbt : nil
             result["ttfbMs"] = data.navigation?.ttfb
+            result["connectionMs"] = data.navigation?.connectionTime
+            result["totalResources"] = data.totalResources
+            result["totalResourceBytes"] = data.totalTransferSize
         }
         if section == "all" || section == "timing" {
             result["navigation"] = try data.navigation.map(AgentTool.json)
@@ -223,14 +231,16 @@ extension AgentDevTools {
             let resources = data.resources.filter { entry in
                 let url = raw ? entry.name : safeURL(entry.name)
                 return (type == nil || type == entry.resourceType) &&
-                    (query.isEmpty || url.localizedCaseInsensitiveContains(query))
+                    (query.isEmpty || entry.resourceType.rawValue.localizedCaseInsensitiveContains(query)
+                        || url.localizedCaseInsensitiveContains(query))
             }
             result["resourceCount"] = resources.count
             result["resources"] = try paginate(input, resources).map { entry -> [String: Any] in
                 [
                     "id": entry.id.uuidString, "url": raw ? clipped(entry.name) : safeURL(entry.name),
                     "type": entry.resourceType.rawValue, "startMs": entry.startTime, "durationMs": entry.duration,
-                    "transferBytes": entry.transferSize, "encodedBytes": entry.encodedBodySize, "decodedBytes": entry.decodedBodySize
+                    "transferBytes": entry.transferSize, "encodedBytes": entry.encodedBodySize, "decodedBytes": entry.decodedBodySize,
+                    "displayBytes": entry.displaySize
                 ]
             }
         }

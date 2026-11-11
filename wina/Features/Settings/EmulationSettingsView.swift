@@ -145,19 +145,13 @@ struct EmulationSettingsView: View {
     }
 
     private func applyChanges() {
-        // Save to storage
-        storedColorScheme = colorScheme.rawValue
-        storedReducedMotion = reducedMotion
-        storedHighContrast = highContrast
-        storedReducedTransparency = reducedTransparency
-
-        // Set config and reload (preserves history)
-        let configScript = WebViewScripts.emulationConfigScript(
-            colorScheme: colorScheme.rawValue,
-            reducedMotion: reducedMotion,
-            highContrast: highContrast,
-            reducedTransparency: reducedTransparency
-        )
+        AgentBrowserSettings.shared.apply([
+            "emulationColorScheme": colorScheme.rawValue,
+            "emulationReducedMotion": reducedMotion,
+            "emulationHighContrast": highContrast,
+            "emulationReducedTransparency": reducedTransparency,
+        ], persist: true)
+        let configScript = WebViewScripts.emulationConfigScript(agentSettings: nil)
         navigator.applyEmulation(configScript: configScript)
         dismiss()
     }

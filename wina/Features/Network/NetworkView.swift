@@ -97,6 +97,8 @@ enum NetworkResourceFilter: String, CaseIterable, Identifiable {
 struct NetworkView: View {
     let networkManager: NetworkManager
     let resourceManager: ResourceManager
+    var navigator: WebViewNavigator?
+    var onCaptureChanged: ((Bool) -> Void)?
     @Environment(\.closeDevTools) private var closeDevTools
     @Environment(\.dismiss) private var dismiss
     @State private var filter: NetworkResourceFilter = .all
@@ -105,8 +107,8 @@ struct NetworkView: View {
     @State private var showSettings: Bool = false
     @State private var selectedRequest: NetworkRequest?
     @State private var selectedResource: ResourceEntry?
-    @AppStorage("networkPreserveLog") private var preserveLog: Bool = false
-    @AppStorage(LogClearStrategy.networkDefaultsKey) private var clearStrategyRaw: String = LogClearStrategy.keep.rawValue
+    @AppStorage("networkPreserveLog") private var savedPreserveLog = false
+    @AppStorage(LogClearStrategy.networkDefaultsKey) private var savedClearStrategy = LogClearStrategy.keep
     @State private var scrollOffset: CGFloat = 0
     @State private var scrollViewHeight: CGFloat = 0
     @State private var contentHeight: CGFloat = 0
@@ -185,7 +187,15 @@ struct NetworkView: View {
     }
 
     private var settingsActive: Bool {
-        preserveLog || clearStrategyRaw != LogClearStrategy.keep.rawValue
+        preserveLog.wrappedValue || clearStrategy.wrappedValue != .keep
+    }
+
+    private var preserveLog: Binding<Bool> {
+        AgentLogSettings.binding($savedPreserveLog, navigator: navigator, override: \.networkPreserveLog)
+    }
+
+    private var clearStrategy: Binding<LogClearStrategy> {
+        AgentLogSettings.binding($savedClearStrategy, navigator: navigator, override: \.networkClearStrategy)
     }
 
     private var isCapturing: Bool {
@@ -240,7 +250,7 @@ struct NetworkView: View {
             ExportContentSheet(content: item.content)
         }
         .sheet(isPresented: $showSettings) {
-            NetworkSettingsSheet()
+            NetworkSettingsSheet(preserveLog: preserveLog, clearStrategy: clearStrategy)
         }
         .sheet(item: $selectedRequest) { request in
             LiveNetworkDetailView(manager: networkManager, requestID: request.id)
@@ -287,8 +297,10 @@ struct NetworkView: View {
                     activeColor: .red,
                     isActive: isCapturing
                 ) {
-                    networkManager.isCapturing.toggle()
-                    resourceManager.isCapturing.toggle()
+                    let capture = !isCapturing
+                    networkManager.isCapturing = capture
+                    resourceManager.isCapturing = capture
+                    onCaptureChanged?(capture)
                 },
                 .init(
                     icon: "gearshape",
@@ -583,8 +595,8 @@ struct NetworkView: View {
     // MARK: - Export
 
     private func exportAsText() -> String {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "HH:mm:ss.SSS"
+        let requests = filteredRequests
+        let resources = filter == .all ? allFilterResources : filteredResources
 
         // Build header with filter info
         var header = "Network & Resources Export"
@@ -595,47 +607,20 @@ struct NetworkView: View {
             header += " (Search: \(searchText))"
         }
         header += "\nExported: \(DateFormatter.localizedString(from: Date(), dateStyle: .medium, timeStyle: .medium))"
-        header += "\nRequests: \(filteredRequests.count), Resources: \(filteredResources.count)"
+        header += "\nRequests: \(requests.count), Resources: \(resources.count)"
         header += "\n" + String(repeating: "─", count: 50) + "\n\n"
 
         // Network requests
         var body = ""
-        if !filteredRequests.isEmpty {
+        if !requests.isEmpty {
             body += "=== NETWORK REQUESTS ===\n\n"
-            body += filteredRequests
-                .map { req in
-                    var line = "[\(dateFormatter.string(from: req.startTime))] \(req.method) \(req.url)"
-                    if let status = req.status {
-                        line += " → \(status)"
-                    }
-                    if let duration = req.duration {
-                        line += " (\(String(format: "%.0fms", duration * 1000)))"
-                    }
-                    if let error = req.error {
-                        line += " ERROR: \(error)"
-                    }
-                    return line
-                }
-                .joined(separator: "\n\n")
+            body += NetworkExporter.requestTextLines(requests).joined(separator: "\n\n")
         }
 
-        // Resources
-        let resourcesToExport = filter == .all ? allFilterResources : filteredResources
-
-        if !resourcesToExport.isEmpty {
+        if !resources.isEmpty {
             if !body.isEmpty { body += "\n\n" }
             body += "=== RESOURCES ===\n\n"
-            body += resourcesToExport
-                .map { res in
-                    var line = "[\(res.initiatorType.displayName)] \(res.name)"
-                    line += "\n  Duration: \(res.displayDuration)"
-                    line += ", Size: \(res.displaySize)"
-                    if res.isCrossOriginRestricted {
-                        line += " (cross-origin)"
-                    }
-                    return line
-                }
-                .joined(separator: "\n\n")
+            body += NetworkExporter.resourceTextLines(resources).joined(separator: "\n\n")
         }
 
         return header + body
@@ -843,22 +828,15 @@ private struct ResourceRow: View {
 
 private struct NetworkSettingsSheet: View {
     @Environment(\.dismiss) private var dismiss
-    @AppStorage("networkPreserveLog") private var preserveLog: Bool = false
-    @AppStorage(LogClearStrategy.networkDefaultsKey) private var clearStrategyRaw: String = LogClearStrategy.keep.rawValue
-
-    private var clearStrategy: Binding<LogClearStrategy> {
-        Binding(
-            get: { LogClearStrategy(rawValue: clearStrategyRaw) ?? .keep },
-            set: { clearStrategyRaw = $0.rawValue }
-        )
-    }
+    @Binding var preserveLog: Bool
+    @Binding var clearStrategy: LogClearStrategy
 
     var body: some View {
         NavigationStack {
             List {
                 Section("Logging") {
                     HStack {
-                        Picker("Clear Strategy", selection: clearStrategy) {
+                        Picker("Clear Strategy", selection: $clearStrategy) {
                             ForEach(LogClearStrategy.allCases, id: \.self) { strategy in
                                 Text(strategy.displayName).tag(strategy)
                             }

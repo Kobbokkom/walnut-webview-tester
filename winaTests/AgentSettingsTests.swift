@@ -218,6 +218,46 @@ final class AgentSettingsTests: XCTestCase {
         XCTAssertEqual(ToolbarSettings.visibleItems(from: data), [.screenshot, .console])
     }
 
+    func testMenuRowsKeepHiddenItemsInTheirRequestedPositions() async throws {
+        let key = "appBarItemsOrder"
+        let settings = AgentBrowserSettings.shared
+        defer { settings.reset(keys: [key]) }
+        let arguments: [String: Any] = [
+            "menu": "wk_app_bar", "action": "apply",
+            "items": [
+                ["menuItem": "refresh", "isVisible": true],
+                ["menuItem": "back", "isVisible": false],
+                ["menuItem": "home", "isVisible": true]
+            ]
+        ]
+        let response = try await AgentSettings.call("menus", arguments: arguments, navigator: nil) { _ in false }
+        let result = try XCTUnwrap(response as? [String: Any])
+        XCTAssertEqual(result["visibleOrder"] as? [String], ["refresh", "home"])
+        let rows = try XCTUnwrap(result["items"] as? [[String: Any]])
+        XCTAssertEqual(rows.compactMap { $0["menuItem"] as? String }, ["refresh", "back", "home", "initialURL", "forward"])
+        XCTAssertEqual(rows.compactMap { $0["isVisible"] as? Bool }, [true, false, true, false, false])
+        let nativeRows = try JSONDecoder().decode([AppBarItemState].self, from: settings.value(key, fallback: Data()))
+        XCTAssertEqual(nativeRows.map(\.menuItem), [.refresh, .back, .home, .initialURL, .forward])
+        XCTAssertEqual(nativeRows.filter(\.isVisible).map(\.menuItem), [.refresh, .home])
+    }
+
+    func testMenuRejectsDuplicateIDsNonBooleanVisibilityAndMixedFormats() async throws {
+        let base: [String: Any] = ["menu": "wk_toolbar", "action": "apply"]
+        let valid = ["menuItem": "network", "isVisible": true] as [String: Any]
+        for patch: [String: Any] in [
+            ["items": [valid, valid]],
+            ["items": [["menuItem": "network", "isVisible": 1]]],
+            ["items": [valid], "visibleOrder": ["network"]]
+        ] {
+            do {
+                _ = try await AgentSettings.call("menus", arguments: base.merging(patch) { _, new in new }, navigator: nil) { _ in false }
+                XCTFail("Invalid menu layout was accepted")
+            } catch {
+                XCTAssertTrue(error.localizedDescription.contains("unique menu item"))
+            }
+        }
+    }
+
     func testBookmarkPaginationKeepsDefaultLimitAndRedactsBeforeFiltering() async throws {
         let urls = (0..<65).map { "https://bookmark\($0).example.com/private?secret=\($0)" }
         let tool = try XCTUnwrap(AgentSettings.tools.first { $0["name"] as? String == "bookmarks" })

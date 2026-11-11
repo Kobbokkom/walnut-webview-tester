@@ -1,3 +1,4 @@
+import SwiftUI
 import WebKit
 import XCTest
 @testable import wina
@@ -338,16 +339,23 @@ final class AgentDevToolsTests: XCTestCase {
         let webView = WKWebView()
         let navigator = WebViewNavigator()
         navigator.attach(to: webView)
+        let requestStart = Date(timeIntervalSince1970: 1_700_000_000)
         let request = NetworkRequest(
             id: UUID(), method: "GET", url: "https://example.com/" + String(repeating: "🙂", count: 70_000),
-            requestHeaders: nil, startTime: Date(), pageIsSecure: true, status: 200, requestType: .fetch
+            requestHeaders: nil, startTime: requestStart, pageIsSecure: true, status: 503,
+            endTime: requestStart.addingTimeInterval(0.125), error: "Fixture request failed", requestType: .fetch
         )
         let resource = ResourceEntry(
             id: UUID(), name: "https://example.com/final.css", initiatorType: .link,
             startTime: 1, duration: 1, transferSize: 1, encodedBodySize: 1, decodedBodySize: 1,
             dnsTime: 0, tcpTime: 0, tlsTime: 0, requestTime: 0, responseTime: 0, timestamp: Date()
         )
-        navigator.resourceManager.resources = [resource]
+        let restrictedResource = ResourceEntry(
+            id: UUID(), name: "https://other.example/hidden.css", initiatorType: .link,
+            startTime: 1, duration: 42, transferSize: 0, encodedBodySize: 0, decodedBodySize: 0,
+            dnsTime: 0, tcpTime: 0, tlsTime: 0, requestTime: 0, responseTime: 0, timestamp: Date()
+        )
+        navigator.resourceManager.resources = [restrictedResource, resource]
 
         let storage = StorageManager()
         let console = ConsoleSession()
@@ -374,9 +382,19 @@ final class AgentDevToolsTests: XCTestCase {
             let suffix = try XCTUnwrap(last["export"] as? String)
             XCTAssertNil(last["nextByteOffset"])
             XCTAssertEqual(last["requestCount"] as? Int, 1)
-            XCTAssertEqual(last["resourceCount"] as? Int, 1)
+            XCTAssertEqual(last["resourceCount"] as? Int, 2)
             if format == "text" {
-                XCTAssertEqual(prefix + suffix, "GET \(request.url) 200\nlink \(resource.name) \(resource.displayDuration)")
+                let timestamp = DateFormatter()
+                timestamp.dateFormat = "HH:mm:ss.SSS"
+                XCTAssertEqual(prefix + suffix, """
+                    [\(timestamp.string(from: requestStart))] GET \(request.url) → 503 (125ms) ERROR: Fixture request failed
+
+                    [Stylesheet] \(resource.name)
+                      Duration: 1ms, Size: \(resource.displaySize)
+
+                    [Stylesheet] \(restrictedResource.name)
+                      Duration: 42ms, Size: — (cross-origin)
+                    """)
             } else {
                 let rows = try XCTUnwrap(AgentDevTools.parseJSON(prefix + suffix) as? [String: [[String: Any]]])
                 XCTAssertEqual(rows["requests"]?.first?["url"] as? String, request.url)
@@ -455,6 +473,70 @@ final class AgentDevToolsTests: XCTestCase {
         XCTAssertEqual(navigator.agentLogSettings.consoleClearStrategy, .keep)
         XCTAssertEqual(navigator.agentLogSettings.consolePreserveLog, true)
         withExtendedLifetime(webView) {}
+    }
+
+    func testNativeLogSettingsShowSessionValuesAndSaveOnlyEditedOptions() {
+        let navigator = WebViewNavigator()
+        navigator.agentLogSettings.consolePreserveLog = true
+        navigator.agentLogSettings.consoleClearStrategy = .page
+        navigator.agentLogSettings.networkClearStrategy = .origin
+        var savedPreserve = false
+        var savedStrategy = LogClearStrategy.keep
+        let preserve = AgentLogSettings.binding(
+            Binding(get: { savedPreserve }, set: { savedPreserve = $0 }),
+            navigator: navigator, override: \.consolePreserveLog
+        )
+        let strategy = AgentLogSettings.binding(
+            Binding(get: { savedStrategy }, set: { savedStrategy = $0 }),
+            navigator: navigator, override: \.networkClearStrategy
+        )
+
+        XCTAssertTrue(preserve.wrappedValue)
+        XCTAssertEqual(strategy.wrappedValue, .origin)
+        XCTAssertFalse(savedPreserve)
+        XCTAssertEqual(savedStrategy, .keep)
+
+        preserve.wrappedValue = false
+        strategy.wrappedValue = .page
+        XCTAssertNil(navigator.agentLogSettings.consolePreserveLog)
+        XCTAssertNil(navigator.agentLogSettings.networkClearStrategy)
+        XCTAssertEqual(navigator.agentLogSettings.consoleClearStrategy, .page)
+
+        navigator.agentLogSettings = AgentLogSettings()
+        XCTAssertFalse(preserve.wrappedValue)
+        XCTAssertEqual(strategy.wrappedValue, .page)
+    }
+
+    func testConsoleLevelFiltersApplyOnlyToTheQuery() async throws {
+        let webView = WKWebView()
+        let navigator = WebViewNavigator()
+        navigator.attach(to: webView)
+        defer { withExtendedLifetime(webView) {} }
+        navigator.consoleManager.logs = [ConsoleLog.LogType.log, .warn, .error].map {
+            ConsoleLog(type: $0, message: $0.rawValue, source: nil, timestamp: Date())
+        }
+        let storage = StorageManager()
+        let console = ConsoleSession()
+        console.enabledLogTypes = [.log]
+
+        func list(_ arguments: [String: Any]) async throws -> [String] {
+            let result = try await AgentDevTools.call(
+                "console_list", arguments: arguments, navigator: navigator,
+                storage: storage, console: console, authorize: { _ in false }
+            )
+            let response = try XCTUnwrap(result as? [String: Any])
+            let rows = try XCTUnwrap(response["records"] as? [[String: Any]])
+            return rows.compactMap { $0["type"] as? String }
+        }
+
+        let filters: [[String: Any]] = [["types": ["warn", "error"]], ["type": "warn"], ["types": [String]()], [:]]
+        for (filter, expected) in zip(filters, [["error", "warn"], ["warn"], [], ["log"]]) {
+            let result = try await list(filter)
+            XCTAssertEqual(result, expected)
+        }
+        let conflicting = try? await list(["type": "warn", "types": ["error"]])
+        XCTAssertNil(conflicting)
+        XCTAssertEqual(console.enabledLogTypes, [.log])
     }
 
     func testValidationSeparatesBooleansFromIntegers() throws {

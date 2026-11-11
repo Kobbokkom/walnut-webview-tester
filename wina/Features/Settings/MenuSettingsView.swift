@@ -22,25 +22,20 @@ struct MenuSettingsView: View {
     // Local state (editable)
     @State private var toolbarItems: [ToolbarItemState] = []
     @State private var appBarItems: [AppBarItemState] = []
+    @State private var initialToolbarItems: [ToolbarItemState] = []
+    @State private var initialAppBarItems: [AppBarItemState] = []
+    @State private var didResetAll = false
 
     private var hasChanges: Bool {
         hasToolbarChanges || hasAppBarChanges
     }
 
     private var hasToolbarChanges: Bool {
-        guard let stored = try? JSONDecoder().decode([ToolbarItemState].self, from: storedToolbarData) else {
-            let defaults = DevToolsMenuItem.defaultOrder.map { ToolbarItemState(menuItem: $0, isVisible: true) }
-            return toolbarItems != defaults
-        }
-        return toolbarItems != stored
+        toolbarItems != initialToolbarItems || didResetAll && toolbarItems != toolbarRows(from: storedToolbarData)
     }
 
     private var hasAppBarChanges: Bool {
-        guard let stored = try? JSONDecoder().decode([AppBarItemState].self, from: storedAppBarData) else {
-            let defaults = AppBarMenuItem.defaultOrder.map { AppBarItemState(menuItem: $0, isVisible: true) }
-            return appBarItems != defaults
-        }
-        return appBarItems != stored
+        appBarItems != initialAppBarItems || didResetAll && appBarItems != appBarRows(from: storedAppBarData)
     }
 
     var body: some View {
@@ -137,41 +132,40 @@ struct MenuSettingsView: View {
 
     // MARK: - Storage
 
-    private func loadFromStorage() {
-        // Load toolbar items
-        if let decoded = try? JSONDecoder().decode([ToolbarItemState].self, from: storedToolbarData),
-           !decoded.isEmpty {
-            var loadedItems = decoded
-            let loadedIds = Set(loadedItems.map { $0.menuItem })
-            for menuItem in DevToolsMenuItem.allCases where !loadedIds.contains(menuItem) {
-                loadedItems.append(ToolbarItemState(menuItem: menuItem, isVisible: true))
-            }
-            toolbarItems = loadedItems
-        } else {
-            toolbarItems = DevToolsMenuItem.defaultOrder.map { ToolbarItemState(menuItem: $0, isVisible: true) }
-        }
+    private func toolbarRows(from data: Data) -> [ToolbarItemState] {
+        if let rows = try? JSONDecoder().decode([ToolbarItemState].self, from: data), !rows.isEmpty { return rows }
+        return DevToolsMenuItem.defaultOrder.map { ToolbarItemState(menuItem: $0, isVisible: true) }
+    }
 
-        // Load app bar items
-        if let decoded = try? JSONDecoder().decode([AppBarItemState].self, from: storedAppBarData),
-           !decoded.isEmpty {
-            var loadedItems = decoded
-            let loadedIds = Set(loadedItems.map { $0.menuItem })
-            for menuItem in AppBarMenuItem.allCases where !loadedIds.contains(menuItem) {
-                loadedItems.append(AppBarItemState(menuItem: menuItem, isVisible: true))
-            }
-            appBarItems = loadedItems
-        } else {
-            appBarItems = AppBarMenuItem.defaultOrder.map { AppBarItemState(menuItem: $0, isVisible: true) }
-        }
+    private func appBarRows(from data: Data) -> [AppBarItemState] {
+        if let rows = try? JSONDecoder().decode([AppBarItemState].self, from: data), !rows.isEmpty { return rows }
+        return AppBarMenuItem.defaultOrder.map { AppBarItemState(menuItem: $0, isVisible: true) }
+    }
+
+    private func loadFromStorage() {
+        let settings = AgentBrowserSettings.shared
+        let toolbarData = settings.value("toolbarItemsOrder", fallback: storedToolbarData)
+        let appBarData = settings.value("appBarItemsOrder", fallback: storedAppBarData)
+        initialToolbarItems = toolbarRows(from: toolbarData)
+        initialAppBarItems = appBarRows(from: appBarData)
+
+        let toolbarIds = Set(initialToolbarItems.map(\.menuItem))
+        toolbarItems = initialToolbarItems + DevToolsMenuItem.allCases.filter { !toolbarIds.contains($0) }
+            .map { ToolbarItemState(menuItem: $0, isVisible: true) }
+        let appBarIds = Set(initialAppBarItems.map(\.menuItem))
+        appBarItems = initialAppBarItems + AppBarMenuItem.allCases.filter { !appBarIds.contains($0) }
+            .map { AppBarItemState(menuItem: $0, isVisible: true) }
     }
 
     private func applyChanges() {
-        if let encoded = try? JSONEncoder().encode(toolbarItems) {
-            storedToolbarData = encoded
+        var changes: [String: AnyHashable] = [:]
+        if hasToolbarChanges, let encoded = try? JSONEncoder().encode(toolbarItems) {
+            changes["toolbarItemsOrder"] = encoded
         }
-        if let encoded = try? JSONEncoder().encode(appBarItems) {
-            storedAppBarData = encoded
+        if hasAppBarChanges, let encoded = try? JSONEncoder().encode(appBarItems) {
+            changes["appBarItemsOrder"] = encoded
         }
+        AgentBrowserSettings.shared.apply(changes, persist: true)
         dismiss()
     }
 
@@ -235,6 +229,7 @@ struct MenuSettingsView: View {
 
     private func resetToDefaults() {
         withAnimation {
+            didResetAll = true
             toolbarItems = DevToolsMenuItem.defaultOrder.map { ToolbarItemState(menuItem: $0, isVisible: true) }
             appBarItems = AppBarMenuItem.defaultOrder.map { AppBarItemState(menuItem: $0, isVisible: true) }
         }

@@ -447,16 +447,9 @@ struct ConsoleTypeBadge: View {
 struct ConsoleSettingsSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Binding var useRegex: Bool
-    @AppStorage("consolePreserveLog") private var preserveLog: Bool = false
-    @AppStorage(LogClearStrategy.consoleDefaultsKey) private var clearStrategyRaw: String = LogClearStrategy.keep.rawValue
+    @Binding var preserveLog: Bool
+    @Binding var clearStrategy: LogClearStrategy
     @Binding var enabledLogTypes: Set<ConsoleLog.LogType>
-
-    private var clearStrategy: Binding<LogClearStrategy> {
-        Binding(
-            get: { LogClearStrategy(rawValue: clearStrategyRaw) ?? .keep },
-            set: { clearStrategyRaw = $0.rawValue }
-        )
-    }
 
     var body: some View {
         NavigationStack {
@@ -470,7 +463,7 @@ struct ConsoleSettingsSheet: View {
 
                 Section("Logging") {
                     HStack {
-                        Picker("Clear Strategy", selection: clearStrategy) {
+                        Picker("Clear Strategy", selection: $clearStrategy) {
                             ForEach(LogClearStrategy.allCases, id: \.self) { strategy in
                                 Text(strategy.displayName).tag(strategy)
                             }
