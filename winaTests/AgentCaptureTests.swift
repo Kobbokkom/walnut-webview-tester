@@ -47,6 +47,19 @@ final class AgentCaptureTests: XCTestCase {
         XCTAssertTrue(WebViewNavigator.hasVisiblePixels(black))
     }
 
+    func testSafariRejectsTransparentWindowBeforePreview() async {
+        let window = EmptyDrawingWindow(frame: CGRect(x: 0, y: 0, width: 30, height: 30))
+        do {
+            _ = try await AgentCapture.screenshot(navigator: nil, safariWindow: window, saveToPhotos: false) { _ in
+                XCTFail("A transparent window must not be offered for sharing.")
+                return true
+            } validateTarget: {}
+            XCTFail("A transparent window must not be exported.")
+        } catch {
+            XCTAssertEqual(error.localizedDescription, "iOS did not capture visible pixels from the SafariVC host window.")
+        }
+    }
+
     func testNavigationDuringPhotoSaveStillReportsTheCommittedImage() async throws {
         let image = UIGraphicsImageRenderer(size: CGSize(width: 1, height: 1)).image { _ in }
         var targetChanged = false
@@ -60,5 +73,12 @@ final class AgentCaptureTests: XCTestCase {
         XCTAssertTrue(targetChanged)
         XCTAssertEqual(result["savedToPhotos"] as? Bool, true)
         XCTAssertEqual(result["data"] as? String, image.pngData()?.base64EncodedString())
+    }
+}
+
+@MainActor
+private final class EmptyDrawingWindow: UIWindow {
+    override func drawHierarchy(in rect: CGRect, afterScreenUpdates afterUpdates: Bool) -> Bool {
+        true
     }
 }

@@ -31,7 +31,9 @@ enum AgentCapture {
         }
         try validateTarget()
         guard let image else {
-            throw AgentError(navigator == nil ? "Screenshot unavailable." : "WebKit did not capture visible pixels from the page.")
+            throw AgentError(navigator == nil
+                ? "iOS did not capture visible pixels from the SafariVC host window."
+                : "WebKit did not capture visible pixels from the page.")
         }
         if safariWindow != nil {
             guard await approveSafariPreview(image) else { throw AgentError("Screenshot sharing was denied.") }
@@ -48,7 +50,7 @@ enum AgentCapture {
         let frame = UIGraphicsImageRenderer(size: window.bounds.size).image { _ in
             captured = window.drawHierarchy(in: window.bounds, afterScreenUpdates: true)
         }
-        return captured ? frame : nil
+        return captured && WebViewNavigator.hasVisiblePixels(frame) ? frame : nil
     }
 
     static func exportScreenshot(

@@ -459,7 +459,9 @@ extension ContentView {
             let revision = webViewID
             let safari = useSafariWebView
             let photosNote = save ? " Walnut will also save the video to Photos." : ""
-            guard await agentSession.authorize("Record the app screen and share the video with the connected Mac and its agent?" + photosNote) else {
+            let prompt = "Record the app screen and share the video with the connected Mac and its agent?"
+            let systemNote = " If iOS asks separately, approve screen capture on the iPhone."
+            guard await agentSession.authorize(prompt + systemNote + photosNote) else {
                 throw AgentError("Recording was denied.")
             }
             if save { try await AgentCapture.requirePhotos() }

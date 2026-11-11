@@ -78,6 +78,8 @@ In WKWebView, `page_interact` action `observe` returns a `documentId`, visible c
 
 After approval, `walnut_screenshot` saves a private PNG to the Mac. If Mac storage fails after the iPhone returns the capture, the error response retains `result.data.savedToPhotos` so you can tell whether Walnut already saved it to Photos. For a completed recording, `walnut_recording` with action `read` saves a private `.mov` file to the Mac, up to 512 MiB. Successful captures return the local file in `result.data.path`.
 
+For recording, approve the request in Walnut and the separate iOS screen-capture prompt if it appears. Wait for `state: recording` before stopping. If start times out, decline any pending iOS prompt and wait for `walnut_recording` status to return `state: idle` before retrying.
+
 SafariVC opens full screen with Safari's native controls. On the iPhone, use Safari's Share menu to select **Save Screenshot**, **Start Recording**, or **Stop Recording**. Agent screenshots capture the host window and show an on-device preview before sharing. Screen recording depends on iOS capture availability.
 
 The `menus` tool configures the WKWebView toolbar and App Bar. Use `visibleOrder` to send just visible item identifiers, or `items` to place visible and hidden rows in a specific order. A row has `menuItem` and `isVisible`. `get` returns both views of the active layout. Session reset reveals the saved layout, while `reset` with `persist: true` restores Walnut's default layout after approval.
