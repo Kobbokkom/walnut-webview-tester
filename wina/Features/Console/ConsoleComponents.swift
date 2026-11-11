@@ -449,7 +449,7 @@ struct ConsoleSettingsSheet: View {
     @Binding var useRegex: Bool
     @Binding var preserveLog: Bool
     @Binding var clearStrategy: LogClearStrategy
-    @Binding var enabledLogTypes: Set<ConsoleLog.LogType>
+    var logTypeEnabled: (ConsoleLog.LogType) -> Binding<Bool>
 
     var body: some View {
         NavigationStack {
@@ -486,18 +486,7 @@ struct ConsoleSettingsSheet: View {
 
                 Section("Log Types in 'All' Tab") {
                     ForEach(ConsoleLog.LogType.settingsDisplayTypes, id: \.self) { type in
-                        Toggle(isOn: Binding(
-                            get: { type.relatedTypes.allSatisfy { enabledLogTypes.contains($0) } },
-                            set: { isEnabled in
-                                for relatedType in type.relatedTypes {
-                                    if isEnabled {
-                                        enabledLogTypes.insert(relatedType)
-                                    } else {
-                                        enabledLogTypes.remove(relatedType)
-                                    }
-                                }
-                            }
-                        )) {
+                        Toggle(isOn: logTypeEnabled(type)) {
                             HStack(spacing: 8) {
                                 Image(systemName: type.icon)
                                     .foregroundStyle(type.color)

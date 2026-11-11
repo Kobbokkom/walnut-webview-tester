@@ -506,7 +506,9 @@ final class AgentDevToolsTests: XCTestCase {
         XCTAssertFalse(preserve.wrappedValue)
         XCTAssertEqual(strategy.wrappedValue, .page)
     }
+}
 
+extension AgentDevToolsTests {
     func testConsoleLevelFiltersApplyOnlyToTheQuery() async throws {
         let webView = WKWebView()
         let navigator = WebViewNavigator()
@@ -537,6 +539,54 @@ final class AgentDevToolsTests: XCTestCase {
         let conflicting = try? await list(["type": "warn", "types": ["error"]])
         XCTAssertNil(conflicting)
         XCTAssertEqual(console.enabledLogTypes, [.log])
+
+        func configure(_ arguments: [String: Any] = [:]) async throws -> [String: Any] {
+            let result = try await AgentDevTools.call(
+                "console_configure", arguments: arguments, navigator: navigator,
+                storage: storage, console: console, authorize: { _ in false }
+            )
+            return try XCTUnwrap(result as? [String: Any])
+        }
+
+        let configured = try await configure(["regex": true, "types": ["error"]])
+        XCTAssertEqual(configured["regex"] as? Bool, true)
+        XCTAssertEqual(configured["types"] as? [String], ["error"])
+        XCTAssertFalse(console.useRegex)
+        XCTAssertEqual(console.enabledLogTypes, [.log])
+        let agentDefault = try await list([:])
+        XCTAssertEqual(agentDefault, ["error"])
+        let explicitLevel = try await list(["type": "warn"])
+        XCTAssertEqual(explicitLevel, ["warn"])
+
+        navigator.agentLogSettings = AgentLogSettings()
+        let reconnected = try await configure()
+        XCTAssertEqual(reconnected["regex"] as? Bool, false)
+        XCTAssertEqual(reconnected["types"] as? [String], ["log"])
+        let nativeDefault = try await list([:])
+        XCTAssertEqual(nativeDefault, ["log"])
+    }
+
+    func testNativeConsoleGroupTogglePreservesUnrelatedLevelsDuringConnection() {
+        let navigator = WebViewNavigator()
+        navigator.agentLogSettings.consoleTypes = [.warn, .timeLog]
+        var nativeTypes: Set<ConsoleLog.LogType> = [.error, .timeEnd]
+        let group = AgentLogSettings.consoleTypeBinding(
+            Binding(get: { nativeTypes }, set: { nativeTypes = $0 }), navigator: navigator, group: .time
+        )
+        XCTAssertFalse(group.wrappedValue)
+
+        group.wrappedValue = true
+        XCTAssertTrue(group.wrappedValue)
+        XCTAssertEqual(nativeTypes, [.error, .time, .timeLog, .timeEnd])
+        XCTAssertEqual(navigator.agentLogSettings.consoleTypes, [.warn, .time, .timeLog, .timeEnd])
+
+        group.wrappedValue = false
+        XCTAssertEqual(nativeTypes, [.error])
+        XCTAssertEqual(navigator.agentLogSettings.consoleTypes, [.warn])
+
+        navigator.agentLogSettings = AgentLogSettings()
+        XCTAssertFalse(group.wrappedValue)
+        XCTAssertEqual(nativeTypes, [.error])
     }
 
     func testValidationSeparatesBooleansFromIntegers() throws {

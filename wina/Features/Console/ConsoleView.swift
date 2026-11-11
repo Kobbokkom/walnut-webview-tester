@@ -59,15 +59,17 @@ struct ConsoleView: View {
             result = result.filter { $0.type == filterType }
         } else {
             // "All" tab - filter by user-selected log types
-            result = result.filter { session.enabledLogTypes.contains($0.type) }
+            let enabledTypes = enabledLogTypes
+            result = result.filter { enabledTypes.contains($0.type) }
         }
 
         if !session.searchText.isEmpty {
-            if session.useRegex, case .success(let regex) = RegexFilter.compile(session.searchText) {
+            let regexEnabled = useRegex.wrappedValue
+            if regexEnabled, case .success(let regex) = RegexFilter.compile(session.searchText) {
                 result = result.filter { log in
                     RegexFilter.matchesLog(message: log.message, source: log.source, regex: regex)
                 }
-            } else if !session.useRegex {
+            } else if !regexEnabled {
                 result = result.filter {
                     $0.message.localizedCaseInsensitiveContains(session.searchText)
                     || ($0.source?.localizedCaseInsensitiveContains(session.searchText) ?? false)
@@ -80,8 +82,16 @@ struct ConsoleView: View {
 
     // Settings button highlight when any setting is active
     private var settingsActive: Bool {
-        session.useRegex || preserveLog.wrappedValue || clearStrategy.wrappedValue != .keep ||
-        session.enabledLogTypes.count != ConsoleLog.LogType.displayableTypes.count
+        useRegex.wrappedValue || preserveLog.wrappedValue || clearStrategy.wrappedValue != .keep ||
+        enabledLogTypes.count != ConsoleLog.LogType.displayableTypes.count
+    }
+
+    private var useRegex: Binding<Bool> {
+        AgentLogSettings.binding($session.useRegex, navigator: navigator, override: \.consoleRegex)
+    }
+
+    private var enabledLogTypes: Set<ConsoleLog.LogType> {
+        navigator?.agentLogSettings.consoleTypes ?? session.enabledLogTypes
     }
 
     private var preserveLog: Binding<Bool> {
@@ -123,10 +133,12 @@ struct ConsoleView: View {
         }
         .sheet(isPresented: $showSettings) {
             ConsoleSettingsSheet(
-                useRegex: $session.useRegex,
+                useRegex: useRegex,
                 preserveLog: preserveLog,
                 clearStrategy: clearStrategy,
-                enabledLogTypes: $session.enabledLogTypes
+                logTypeEnabled: { group in
+                    AgentLogSettings.consoleTypeBinding($session.enabledLogTypes, navigator: navigator, group: group)
+                }
             )
         }
         .task {
@@ -187,7 +199,7 @@ struct ConsoleView: View {
         HStack {
             Image(systemName: "magnifyingglass")
                 .foregroundStyle(.secondary)
-            TextField(session.useRegex ? "Regex" : "Filter", text: $session.searchText)
+            TextField(useRegex.wrappedValue ? "Regex" : "Filter", text: $session.searchText)
                 .textFieldStyle(.plain)
                 .focused($isFilterFocused)
             if !session.searchText.isEmpty {

@@ -8,7 +8,7 @@ extension AgentDevTools {
     private static let consoleTypes = ["type": "array", "items": options(ConsoleLog.LogType.displayableTypes.map(\.rawValue))] as [String: Any]
 
     static let logTools: [[String: Any]] = [
-        AgentTool.definition("console_configure", "Read or set Console options. Preserve and clear strategy are session-only unless saved.", [
+        AgentTool.definition("console_configure", "Read or set Console options for this connection. Only preserve and clear strategy can be saved.", [
             "capture": flag, "preserveOnReload": flag, "clearStrategy": options(LogClearStrategy.self),
             "regex": flag, "types": consoleTypes,
             "save": flag
@@ -163,13 +163,14 @@ extension AgentDevTools {
         }
         if let console {
             if let capture { navigator.consoleManager.isCapturing = capture }
-            if let regex { console.useRegex = regex }
-            if let types { console.enabledLogTypes = types }
+            if let regex { navigator.agentLogSettings.consoleRegex = regex }
+            if let types { navigator.agentLogSettings.consoleTypes = types }
             if preserve != nil { navigator.agentLogSettings.consolePreserveLog = save ? nil : preserve }
             if strategy != nil { navigator.agentLogSettings.consoleClearStrategy = save ? nil : strategy }
             return [
-                "capture": navigator.consoleManager.isCapturing, "regex": console.useRegex,
-                "types": console.enabledLogTypes.map(\.rawValue).sorted(),
+                "capture": navigator.consoleManager.isCapturing,
+                "regex": navigator.agentLogSettings.consoleRegex ?? console.useRegex,
+                "types": (navigator.agentLogSettings.consoleTypes ?? console.enabledLogTypes).map(\.rawValue).sorted(),
                 "preserveOnReload": navigator.agentLogSettings.consolePreserveLog ?? navigator.consoleManager.preserveLog,
                 "clearStrategy": (navigator.agentLogSettings.consoleClearStrategy ?? (save ? strategy : nil) ?? policies.console).rawValue
             ]
@@ -221,9 +222,10 @@ extension AgentDevTools {
         let type = try input.option("type", as: ConsoleLog.LogType.self)
         let types = try consoleLogTypes(input)
         guard type == nil || types == nil else { throw AgentError("Choose either type or types.") }
-        let levels = type.map { Set([$0]) } ?? types ?? console.enabledLogTypes
+        let overrides = context.navigator.agentLogSettings
+        let levels = type.map { Set([$0]) } ?? types ?? overrides.consoleTypes ?? console.enabledLogTypes
         let query = try input.string("query") ?? ""
-        let regex = try input.bool("regex") ?? console.useRegex
+        let regex = try input.bool("regex") ?? overrides.consoleRegex ?? console.useRegex
         let includeCollapsed = try input.bool("includeCollapsed") ?? true
         let format = try input.string("format") ?? "structured"
         guard ["structured", "text", "json"].contains(format) else { throw AgentError("Invalid Console format.") }
