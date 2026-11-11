@@ -1,8 +1,24 @@
+import Darwin
 import Foundation
 import XCTest
 @testable import WalnutAgent
 
 final class CLILineReaderTests: XCTestCase {
+    func testNonblockingInputWaitsForTheNextFrame() throws {
+        let pipe = Pipe()
+        let input = pipe.fileHandleForReading.fileDescriptor
+        let flags = fcntl(input, F_GETFL)
+        XCTAssertEqual(fcntl(input, F_SETFL, flags | O_NONBLOCK), 0)
+        let writer = pipe.fileHandleForWriting
+        DispatchQueue.global().asyncAfter(deadline: .now() + .milliseconds(20)) {
+            try? writer.write(contentsOf: Data("next\n".utf8))
+            try? writer.close()
+        }
+        let reader = CLILineReader(descriptor: input)
+        XCTAssertEqual(try reader.next()?.get(), Data("next".utf8))
+        XCTAssertNil(try reader.next())
+    }
+
     func testReadsFramesAndDiscardsOversizedLine() throws {
         let exact = Data(repeating: 0x61, count: DeviceBridge.requestLimit)
         var bytes = Data([0x0A])

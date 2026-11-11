@@ -171,6 +171,7 @@ struct AccessibilityAuditView: View {
     private var issues: [AccessibilityIssue] { manager?.issues ?? [] }
     private var isScanning: Bool { manager?.isScanning ?? false }
     private var hasScanned: Bool { manager?.hasScanned ?? false }
+    private var hasUntestedFrames: Bool { manager?.hasUntestedFrames ?? false }
     private var filterSeverity: AccessibilityIssue.Severity? { manager?.filterSeverity }
     private var searchText: String { manager?.searchText ?? "" }
 
@@ -203,6 +204,17 @@ struct AccessibilityAuditView: View {
             searchBar
             filterTabs
 
+            if hasScanned {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Main frame only")
+                    if hasUntestedFrames { Text("Embedded frames were skipped.") }
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .padding(.horizontal)
+                .padding(.vertical, 6)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
             Divider()
 
             if isScanning {
@@ -226,7 +238,7 @@ struct AccessibilityAuditView: View {
         .copiedFeedbackOverlay($feedbackState.message)
         .dismissKeyboardOnTap()
         .sheet(isPresented: $showingShareSheet) {
-            ShareSheet(content: generateShareText())
+            ShareSheet(content: manager?.report(for: issues) ?? "")
         }
         .task {
             await AdManager.shared.showInterstitialAd(
@@ -268,62 +280,6 @@ struct AccessibilityAuditView: View {
                 }
             ]
         )
-    }
-
-    private func generateShareText() -> String {
-        var lines: [String] = []
-
-        // Header
-        lines.append("# Accessibility Audit Report")
-        lines.append("")
-        if let url = manager?.auditedURL {
-            lines.append("URL: \(url)")
-        }
-        if let date = manager?.auditedAt {
-            lines.append("Date: \(date.formatted(date: .abbreviated, time: .shortened))")
-        }
-        lines.append("")
-
-        // Summary
-        let errorCount = issueCountBySeverity[.error] ?? 0
-        let warningCount = issueCountBySeverity[.warning] ?? 0
-        let infoCount = issueCountBySeverity[.info] ?? 0
-        lines.append("## Summary")
-        lines.append("- Errors: \(errorCount)")
-        lines.append("- Warnings: \(warningCount)")
-        lines.append("- Info: \(infoCount)")
-        lines.append("- Total: \(issues.count)")
-        lines.append("")
-
-        // Issues by severity
-        for severity in AccessibilityIssue.Severity.allCases {
-            let severityIssues = issues.filter { $0.severity == severity }
-            if severityIssues.isEmpty { continue }
-
-            lines.append("## \(severity.label) (\(severityIssues.count))")
-            lines.append("")
-
-            for (index, issue) in severityIssues.enumerated() {
-                lines.append("### \(index + 1). \(issue.help)")
-                if let ruleId = issue.ruleId {
-                    lines.append("- Rule: \(ruleId)")
-                }
-                lines.append("- Category: \(issue.category.label)")
-                if !issue.failureSummary.isEmpty {
-                    lines.append("- Details: \(issue.failureSummary)")
-                }
-                if let selector = issue.selector {
-                    lines.append("- Selector: \(selector)")
-                }
-                lines.append("- HTML: \(issue.fullHtml)")
-                if let helpUrl = issue.helpUrl {
-                    lines.append("- Help: \(helpUrl)")
-                }
-                lines.append("")
-            }
-        }
-
-        return lines.joined(separator: "\n")
     }
 
     // MARK: - Search Bar
@@ -442,18 +398,12 @@ struct AccessibilityAuditView: View {
             ScrollView {
                 VStack(spacing: 8) {
                     Spacer(minLength: 0)
-                    Image(systemName: "checkmark.seal.fill")
+                    Image(systemName: hasUntestedFrames ? "info.circle" : "checkmark.seal.fill")
                         .font(.system(size: 36))
-                        .foregroundStyle(.green)
+                        .foregroundStyle(hasUntestedFrames ? Color.secondary : .green)
                     Text(issues.isEmpty ? "No issues found" : "No matching issues")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
-                    if issues.isEmpty {
-                        Text("Great! This page passes basic accessibility checks.")
-                            .font(.caption)
-                            .foregroundStyle(.tertiary)
-                            .multilineTextAlignment(.center)
-                    }
                     Spacer(minLength: 0)
                 }
                 .padding()

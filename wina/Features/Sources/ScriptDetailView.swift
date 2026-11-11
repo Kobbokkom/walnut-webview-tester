@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import WebKit
 
 // MARK: - Script Detail View
 
@@ -16,6 +17,7 @@ struct ScriptDetailView: View {
 
     @Environment(\.dismiss) private var dismiss
     @State private var scriptContent: String = ""
+    @State private var isTruncated: Bool = false
     @State private var isLoading: Bool = true
     @State private var errorMessage: String?
     @State private var feedbackState = CopiedFeedbackState()
@@ -25,6 +27,11 @@ struct ScriptDetailView: View {
             header
 
             metadataBadges
+            if let url = script.src {
+                ExpandableURLView(url: url) { feedbackState.showCopied("URL") }
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 8)
+            }
 
             Divider()
 
@@ -33,9 +40,13 @@ struct ScriptDetailView: View {
             } else if isLoading {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if script.isExternal {
-                corsLimitationView
             } else {
+                if isTruncated {
+                    Text("Showing the first 50,000 characters.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .padding(.top, 8)
+                }
                 ScrollView(.vertical) {
                     ScrollView(.horizontal, showsIndicators: true) {
                         CodeBlock(code: scriptContent, language: .javascript)
@@ -114,46 +125,18 @@ struct ScriptDetailView: View {
         .background(Color(uiColor: .systemBackground))
     }
 
-    /// View explaining CORS limitation for external scripts
-    private var corsLimitationView: some View {
-        ScrollView {
-            VStack(spacing: 16) {
-                Image(systemName: "lock.shield")
-                    .font(.system(size: 40))
-                    .foregroundStyle(.tertiary)
-
-                Text("External Script")
-                    .font(.headline)
-
-                Text("Content unavailable due to CORS policy.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-
-                if let src = script.src {
-                    ExpandableURLView(url: src) {
-                        feedbackState.showCopied("URL")
-                    }
-                }
-            }
-            .frame(maxWidth: .infinity)
-            .padding()
-        }
-        .background(Color(uiColor: .systemBackground))
-    }
-
-    static func inlineContentScript(
+    static func contentScript(
         index: Int,
-        result: String = "JSON.stringify({content: script.textContent.substring(0, 50000)})"
+        expected: String,
+        result: String = "JSON.stringify({content: content.slice(0, 50000).toWellFormed(), truncated: content.length > 50000})"
     ) -> String {
-        """
-        (function() {
-            const scripts = document.scripts;
-            const script = scripts[\(index)];
-            if (!script) return JSON.stringify({error: 'Script not found'});
-            if (script.src) return JSON.stringify({error: 'External script source is unavailable'});
-            return \(result);
-        })();
-        """
+        SourceResourceScript.read(.script, index: index, expected: expected, body: """
+        const retrieval = approved.url ? 'requested-resource' : 'inline';
+        const content = approved.url
+            ? await fetchSource(approved.url, approved.credentials, approved.referrerPolicy)
+            : source.textContent;
+        return \(result);
+        """)
     }
 
     private func fetchDetails() async {
@@ -163,26 +146,25 @@ struct ScriptDetailView: View {
             return
         }
 
-        if script.isExternal {
-            // External scripts cannot be fetched due to CORS
-            // Show limitation view instead of trying to fetch
-            isLoading = false
-            return
-        } else {
-            // Get inline script content
-            let script = Self.inlineContentScript(index: index)
-
-            if let result = await navigator.evaluateJavaScript(script) as? String,
+        let document = navigator.documentID
+        do {
+            guard let expected = script.selection else { throw AgentError("Refresh Sources and select the script again.") }
+            let source = Self.contentScript(index: index, expected: expected)
+            let result = try await navigator.callAsyncJavaScriptReportingErrors("return \(source)", contentWorld: .defaultClient)
+            guard navigator.documentID == document else {
+                throw AgentError("The active WKWebView document changed. Try again.")
+            }
+            if let result = result as? String,
                let data = result.data(using: .utf8),
-               let json = try? JSONSerialization.jsonObject(with: data) as? [String: String] {
-                if let error = json["error"] {
-                    errorMessage = error
-                } else {
-                    scriptContent = json["content"] ?? ""
-                }
+               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                errorMessage = json["error"] as? String
+                scriptContent = json["content"] as? String ?? ""
+                isTruncated = json["truncated"] as? Bool ?? false
             } else {
                 errorMessage = "Failed to fetch script"
             }
+        } catch {
+            errorMessage = error.localizedDescription
         }
 
         isLoading = false

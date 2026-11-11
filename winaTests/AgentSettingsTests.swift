@@ -111,4 +111,46 @@ final class AgentSettingsTests: XCTestCase {
         XCTAssertEqual(ToolbarSettings.visibleItems(from: data), [.screenshot, .console])
     }
 
+    func testBookmarkPaginationKeepsDefaultLimitAndRedactsBeforeFiltering() async throws {
+        let urls = (0..<65).map { "https://bookmark\($0).example.com/private?secret=\($0)" }
+        let tool = try XCTUnwrap(AgentSettings.tools.first { $0["name"] as? String == "bookmarks" })
+        let first = try await AgentSettings.savedURLPage(
+            AgentSettingsInput(arguments: [:], authorize: { _ in false }), action: "list", collection: { urls }
+        )
+        XCTAssertEqual((first["urls"] as? [String])?.count, 50)
+        XCTAssertEqual(first["total"] as? Int, 65)
+        let offset = try XCTUnwrap(first["nextOffset"] as? Int)
+        let arguments: [String: Any] = ["action": "list", "offset": offset, "limit": 30]
+        try AgentTool.validate(arguments, using: tool)
+        let next = try await AgentSettings.savedURLPage(
+            AgentSettingsInput(arguments: arguments, authorize: { _ in false }), action: "list", collection: { urls }
+        )
+        XCTAssertEqual(next["urls"] as? [String], (50..<65).map { "https://bookmark\($0).example.com" })
+        XCTAssertNil(next["nextOffset"])
+        XCTAssertEqual(next["redacted"] as? Bool, true)
+
+        let filtered = try await AgentSettings.savedURLPage(
+            AgentSettingsInput(arguments: ["query": "private"], authorize: { _ in false }), action: "list", collection: { urls }
+        )
+        XCTAssertEqual(filtered["total"] as? Int, 0)
+        XCTAssertThrowsError(try AgentTool.validate(["action": "list", "offset": true], using: tool))
+        XCTAssertThrowsError(try AgentTool.validate(["action": "history", "limit": 101], using: tool))
+    }
+
+    func testRawHistoryPageRequiresApprovalBeforeReadingSavedURLs() async throws {
+        let url = "https://example.com/path?token=fixture"
+        let arguments: [String: Any] = ["raw": true, "limit": 1, "offset": 1]
+        var approved = false
+        let input = AgentSettingsInput(arguments: arguments) { _ in
+            approved = true
+            return true
+        }
+        let page = try await AgentSettings.savedURLPage(input, action: "history") {
+            XCTAssertTrue(approved)
+            return ["https://other.example.com/", url]
+        }
+        XCTAssertEqual(page["urls"] as? [String], [url])
+        XCTAssertEqual(page["redacted"] as? Bool, false)
+    }
+
 }

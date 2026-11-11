@@ -2,6 +2,45 @@ import SwiftUI
 
 // MARK: - Storage Item Model
 
+struct StorageCookieAddScope {
+    let domain: String?
+    let path: String
+}
+
+struct StorageShareContent: Identifiable {
+    let id = UUID()
+    let content: String
+}
+
+struct StorageScrollMetrics: Equatable {
+    let offset: CGFloat
+    let contentHeight: CGFloat
+    let viewportHeight: CGFloat
+}
+
+struct StorageEditorTarget: Identifiable {
+    enum Action {
+        case edit(StorageItem)
+        case add(StorageItem.StorageType, URL)
+    }
+
+    let id = UUID()
+    let action: Action
+}
+
+enum StorageExporter {
+    static func heading(for type: StorageItem.StorageType?) -> String {
+        let title = type.map { "\($0.label) Storage Export" } ?? "All Storage Export"
+        return "# \(title)\n# \(Date().formatted())\n\n"
+    }
+
+    static func line(_ item: StorageItem, includeType: Bool, decode: Bool = false) -> String {
+        let prefix = includeType ? "[\(item.storageType.label)] " : ""
+        let value = decode ? item.value.removingPercentEncoding ?? item.value : item.value
+        return "\(prefix)\(item.key) = \(value)\n"
+    }
+}
+
 struct StorageItem: Identifiable, Equatable {
     let id = UUID()
     var key: String

@@ -1,13 +1,14 @@
+import CryptoKit
 import Foundation
 
 @MainActor
 extension AgentDevTools {
     static let pageTools: [[String: Any]] = [
-        AgentTool.definition("sources_list", "Inspect DOM tree, raw HTML, stylesheets, or scripts. DOM and source data require confirmation.", [
+        AgentTool.definition("sources_list", "Inspect DOM tree, serialized live DOM HTML, stylesheets, or scripts. DOM and source data require confirmation.", [
             "section": options(["tree", "html", "stylesheets", "scripts"]), "query": query,
             "raw": raw, "documentId": identifier, "offset": offset, "limit": limit, "textOffset": sourceTextOffset
         ]),
-        AgentTool.definition("sources_detail", "Read an element path, stylesheet index, or inline script index from sources_list. Requires confirmation.", [
+        AgentTool.definition("sources_detail", "Read an element path, stylesheet index, or script index from sources_list. External source requests obey the page's network policy. Requires confirmation.", [
             "kind": options(["element", "stylesheet", "script"]), "path": query,
             "index": offset, "section": options(["attributes", "computedStyles", "matchedRules", "html"]),
             "allComputedStyles": flag, "query": query, "documentId": identifier,
@@ -20,10 +21,15 @@ extension AgentDevTools {
             "raw": raw, "offset": offset, "limit": limit
         ]),
         AgentTool.definition("performance_clear", "Clear collected Performance data. Requires confirmation.", [:]),
-        AgentTool.definition("accessibility_audit", "Run the axe-core audit or read retained results. Page text and markup require confirmation.", [
+        AgentTool.definition("accessibility_audit", "Run the main-frame axe-core audit or read retained results. Markdown report export and page content require confirmation.", [
             "run": flag, "severity": options(AccessibilityIssue.Severity.self),
             "category": options(AccessibilityIssue.Category.self), "query": query, "raw": raw,
-            "offset": offset, "limit": limit
+            "offset": offset, "limit": limit, "format": options(["entries", "markdown"]),
+            "exportId": identifier,
+            "exportOffset": [
+                "type": "integer", "minimum": 0, "maximum": Int(Int32.max),
+                "description": "Follow nextExportOffset with exportId and the same filters to read the retained Markdown report."
+            ]
         ]),
         AgentTool.definition("accessibility_detail", "Read the selected axe issue's full details. Requires confirmation.", [
             "id": identifier
@@ -223,10 +229,19 @@ extension AgentDevTools {
         let category = try input.option("category", as: AccessibilityIssue.Category.self)
         let query = try input.string("query") ?? ""
         let includeContent = try input.bool("raw") ?? false
-        if includeContent || !query.isEmpty {
+        let export = try input.string("format") == "markdown"
+        let exportOffset = try input.int("exportOffset", default: 0, range: 0...Int(Int32.max))
+        let exportID = try input.string("exportId", maxLength: 64)
+        let shouldRun = try input.bool("run") ?? (exportOffset == 0)
+        guard exportOffset == 0 ? exportID == nil : (export && !shouldRun && exportID != nil) else {
+            throw AgentError("Continue the retained Markdown report with its exportId, without rerunning the audit.")
+        }
+        if export {
+            try await context.confirm("Export Walnut's accessibility report, including its page URL and markup, to the Mac?")
+        } else if includeContent || !query.isEmpty {
             try await context.confirm("Share or search details from Walnut's accessibility results on the Mac?")
         }
-        if try input.bool("run") ?? true {
+        if shouldRun {
             guard !manager.isScanning else { throw AgentError("An accessibility audit is already running.") }
             await manager.runAudit(navigator: context.navigator)
             try context.checkDocument()
@@ -243,6 +258,28 @@ extension AgentDevTools {
         ]
         result["documentId"] = manager.auditedDocumentID?.uuidString
         result["timestamp"] = manager.auditedAt?.timeIntervalSince1970
+        if manager.hasScanned {
+            result["scope"] = "main-frame"
+            result["hasUntestedFrames"] = manager.hasUntestedFrames
+        }
+        if export {
+            let report = Data(manager.report(for: issues).utf8)
+            let id = SHA256.hash(data: report).map { String(format: "%02x", $0) }.joined()
+            guard exportID == nil || exportID == id else {
+                throw AgentError("The Markdown report changed. Start exporting it again.")
+            }
+            let remaining = report.dropFirst(exportOffset)
+            guard exportOffset <= report.count, remaining.first.map({ $0 & 0xc0 != 0x80 }) ?? true else {
+                throw AgentError("Invalid Markdown report offset. Use nextExportOffset from the same audit.")
+            }
+            let bytes = remaining.prefix(256 * 1024)
+            let part = (0...3).lazy.compactMap { String(bytes: bytes.dropLast($0), encoding: .utf8) }.first ?? ""
+            let next = exportOffset + part.utf8.count
+            result["export"] = part
+            result["exportId"] = id
+            result["exportTruncated"] = next < report.count
+            if next < report.count { result["nextExportOffset"] = next }
+        }
         return result
     }
 

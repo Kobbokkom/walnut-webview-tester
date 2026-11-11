@@ -5,6 +5,9 @@ import UniformTypeIdentifiers
 struct AgentConnectionView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var copyFeedback = CopiedFeedbackState()
+    @State private var showPairingCode = false
+    @State private var pairingFile: AgentPairingFile?
+    @State private var pairingShareFailed = false
     let session: AgentSession
     let start: () -> Void
 
@@ -38,6 +41,23 @@ struct AgentConnectionView: View {
             }
         }
         .copiedFeedbackOverlay($feedback.message)
+        .sheet(item: $pairingFile) { file in
+            ShareSheet(fileURL: file.url)
+                .onDisappear { file.remove() }
+        }
+        .alert("Could not prepare pairing file", isPresented: $pairingShareFailed) {
+            Button("OK", role: .cancel) {}
+        }
+        .onChange(of: session.pairingCode) { _, _ in
+            showPairingCode = false
+            clearPairingFile()
+        }
+        .onChange(of: session.isConnected) { _, connected in
+            if connected {
+                showPairingCode = false
+                clearPairingFile()
+            }
+        }
     }
 
     private var installSection: some View {
@@ -95,21 +115,7 @@ struct AgentConnectionView: View {
                 if session.isConnected {
                     Label("Mac connected", systemImage: "checkmark.circle.fill")
                 } else if let code = session.pairingCode {
-                    Text("On the Mac, run walnut-agent pair and paste the code. Keep the code private.")
-                        .font(.subheadline)
-                    Button {
-                        UIPasteboard.general.setItems(
-                            [[UTType.plainText.identifier: code]],
-                            options: [.expirationDate: Date().addingTimeInterval(120)]
-                        )
-                        copyFeedback.show("Pairing code copied")
-                        UIAccessibility.post(notification: .announcement, argument: String(localized: "Pairing code copied"))
-                    } label: {
-                        Label("Copy pairing code", systemImage: "doc.on.doc")
-                            .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.large)
+                    pairingOptions(code)
                     Text("After pairing, ask your coding agent to use Walnut or run `walnut-agent session` in Terminal.")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
@@ -144,6 +150,62 @@ struct AgentConnectionView: View {
             }
             .font(.footnote)
         }
+    }
+
+    private func pairingOptions(_ code: String) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("On the Mac, run walnut-agent pair and paste the code. Keep the code private.")
+                .font(.subheadline)
+            Button {
+                UIPasteboard.general.setItems(
+                    [[UTType.plainText.identifier: code]],
+                    options: [.expirationDate: Date().addingTimeInterval(120)]
+                )
+                copyFeedback.show("Pairing code copied")
+                UIAccessibility.post(notification: .announcement, argument: String(localized: "Pairing code copied"))
+            } label: {
+                Label("Copy pairing code", systemImage: "doc.on.doc")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
+            Button {
+                do {
+                    clearPairingFile()
+                    pairingFile = try AgentPairingFile(code: code)
+                } catch {
+                    pairingShareFailed = true
+                }
+            } label: {
+                Label("Share pairing file", systemImage: "square.and.arrow.up")
+                    .frame(maxWidth: .infinity, minHeight: 44)
+            }
+            .buttonStyle(.bordered)
+            Text("If clipboard sharing is unavailable, AirDrop the pairing file to your Mac while keeping Walnut open.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+            Text(verbatim: "walnut-agent pair --file")
+                .font(.caption.monospaced())
+                .textSelection(.enabled)
+            Text("In Terminal, type this command followed by a space, drag in the file you just received, and press Return.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+            DisclosureGroup("Show pairing code", isExpanded: $showPairingCode) {
+                Text(verbatim: code)
+                    .font(.caption2.monospaced())
+                    .textSelection(.enabled)
+                    .padding(.top, 4)
+            }
+            .font(.footnote)
+            Text("The code and file allow a Mac to connect to this session. Share only with your Mac. Stopping the connection or leaving Walnut invalidates them. Delete the received file after pairing.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private func clearPairingFile() {
+        pairingFile?.remove()
+        pairingFile = nil
     }
 }
 

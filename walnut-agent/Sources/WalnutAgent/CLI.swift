@@ -3,12 +3,16 @@ import Foundation
 
 @main
 enum CLI {
-    static let version = "0.1.1"
+    static let version = "0.1.2"
 
     static func main() async {
         do {
             let arguments = Array(CommandLine.arguments.dropFirst())
             switch arguments.first {
+            case "pair" where arguments.count == 3 && arguments[1] == "--file":
+                let pairing = try Pairing.fromFile(at: URL(fileURLWithPath: arguments[2]))
+                try pairing.save(to: Pairing.file)
+                print("Saved Walnut pairing.")
             case "pair" where arguments.count == 1:
                 var buffer = [CChar](repeating: 0, count: 1025)
                 guard readpassphrase("Walnut pairing token: ", &buffer, buffer.count, RPP_REQUIRE_TTY) != nil else {
@@ -37,6 +41,8 @@ enum CLI {
                 FileHandle.standardOutput.write(Data("\(version)\n".utf8))
             case "update" where arguments.count == 1:
                 try await CLIUpdate.run()
+            case "inspect":
+                try await EngineInspector.run(arguments: Array(arguments.dropFirst()))
             case "--help", "-h", nil:
                 print(usage)
             default:
@@ -53,8 +59,10 @@ enum CLI {
       walnut-agent --version
       walnut-agent update
       walnut-agent pair
+      walnut-agent pair --file PATH
       walnut-agent session [--usb [--local-port PORT] [--udid UDID]]
       walnut-agent mcp [--usb [--local-port PORT] [--udid UDID]]
+      walnut-agent inspect --udid UDID [--usb | --wifi]
 
     In a session, send one JSON request per line on stdin. Start with {"op":"tools"}.
     """

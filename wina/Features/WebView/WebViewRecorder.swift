@@ -137,6 +137,7 @@ final class WebViewRecorder {
     private(set) var state: RecordingState = .idle
     private(set) var recordingDuration: TimeInterval = 0
     private(set) var lastResult: RecordingResult?
+    private(set) var startFailure: String?
     private(set) var failedOutputURL: URL?
     private var stopRequested = false
     private var isAgentCapture = false
@@ -190,6 +191,7 @@ final class WebViewRecorder {
 
     func startRecording(retainForAgent: Bool = false, saveToPhotos: Bool = true) async -> Bool {
         guard state == .idle else { return false }
+        startFailure = nil
 
         // Note: Photo library permission should be checked by caller before calling this method
         // This avoids race conditions where permission was just granted but status hasn't propagated
@@ -240,6 +242,7 @@ final class WebViewRecorder {
             cleanupWriter()
             if let url { try? FileManager.default.removeItem(at: url) }
             state = .idle
+            startFailure = error.localizedDescription
             return false
         }
     }

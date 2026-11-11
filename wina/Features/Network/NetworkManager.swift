@@ -267,7 +267,8 @@ class NetworkManager {
         url: String,
         requestType: String,
         headers: [String: String]?,
-        body: String?
+        body: String?,
+        initiator: (frames: [StackFrame]?, function: String?) = (nil, nil)
     ) {
         guard isCapturing else { return }
 
@@ -291,6 +292,8 @@ class NetworkManager {
             startTime: Date(),
             pageIsSecure: pageIsSecure,
             requestType: type,
+            stackFrames: initiator.frames,
+            initiatorFunction: initiator.function,
             agentDocumentID: type == .document ? nil : agentDocumentID
         )
 

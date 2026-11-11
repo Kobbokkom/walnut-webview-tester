@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import WebKit
 
 // MARK: - CSS Rule Info
 
@@ -31,6 +32,7 @@ struct StylesheetDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var cssRules: [CSSRuleInfo] = []
     @State private var rawCSS: String = ""
+    @State private var isTruncated: Bool = false
     @State private var isLoading: Bool = true
     @State private var errorMessage: String?
     @State private var showRaw: Bool = false
@@ -46,6 +48,12 @@ struct StylesheetDetailView: View {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
+                if isTruncated {
+                    Text("Showing the first 50,000 characters.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .padding(.vertical, 8)
+                }
                 content
             }
         }
@@ -111,28 +119,41 @@ struct StylesheetDetailView: View {
         .padding()
     }
 
-    static func detailScript(index: Int, result: String = "JSON.stringify({rules, raw: rawCSS})") -> String {
-        """
-        (function() {
-            const sheet = document.styleSheets[\(index)];
-            if (!sheet) return JSON.stringify({error: 'Sheet not found'});
-            const rules = [];
-            let rawCSS = '';
-            try {
-                for (const rule of sheet.cssRules) {
-                    rules.push({
-                        selector: rule.selectorText || rule.cssText.substring(0, 50),
-                        text: rule.cssText
-                    });
-                    rawCSS += rule.cssText + '\\n\\n';
-                }
-            } catch(e) {
-                return JSON.stringify({error: 'Cannot access rules (CORS)'});
-            }
-            return \(result);
-        })();
-        """
+    static func contentScript(index: Int, expected: String, result: String? = nil) -> String {
+        let output = result.map { "return \($0);" } ?? nativePreview
+        return SourceResourceScript.read(.stylesheet, index: index, expected: expected, body: """
+        function ruleRows(sheet) {
+            return Array.from(sheet.cssRules, rule => ({
+                selector: rule.selectorText || rule.cssText.substring(0, 50), text: rule.cssText
+            }));
+        }
+        let rules, rawCSS, retrieval = 'loaded-cssom';
+        try {
+            rules = ruleRows(source);
+            rawCSS = rules.map(rule => rule.text).join('\\n\\n');
+        } catch (_) {
+            if (!approved.url) throw new Error('Stylesheet source is unavailable.');
+            rawCSS = await fetchSource(approved.url, approved.credentials, approved.referrerPolicy);
+            retrieval = 'requested-resource';
+            // A detached parser keeps fetched CSS from changing the inspected page.
+            const parsed = new CSSStyleSheet();
+            parsed.replaceSync(rawCSS);
+            rules = ruleRows(parsed);
+        }
+        \(output)
+        """)
     }
+
+    private static let nativePreview = """
+    const previewRules = [];
+    let remaining = 50000;
+    for (const rule of rules) {
+        if (remaining <= 0) break;
+        previewRules.push({selector: rule.selector.slice(0, remaining).toWellFormed(), text: rule.text.slice(0, remaining).toWellFormed()});
+        remaining -= rule.text.length + 2;
+    }
+    return JSON.stringify({rules: previewRules, raw: rawCSS.slice(0, 50000).toWellFormed(), truncated: rawCSS.length > 50000 || previewRules.length < rules.length});
+    """
 
     private func fetchDetails() async {
         guard let navigator else {
@@ -141,9 +162,20 @@ struct StylesheetDetailView: View {
             return
         }
 
-        let script = Self.detailScript(index: index)
-
-        if let result = await navigator.evaluateJavaScript(script) as? String,
+        guard let expected = sheet.selection else {
+            errorMessage = "Refresh Sources and select the stylesheet again."
+            isLoading = false
+            return
+        }
+        let script = Self.contentScript(index: index, expected: expected)
+        let document = navigator.documentID
+        let result = try? await navigator.callAsyncJavaScriptReportingErrors("return \(script)", contentWorld: .defaultClient)
+        guard navigator.documentID == document else {
+            errorMessage = "The active WKWebView document changed. Try again."
+            isLoading = false
+            return
+        }
+        if let result = result as? String,
            let data = result.data(using: .utf8),
            let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
             if let error = json["error"] as? String {
@@ -157,6 +189,7 @@ struct StylesheetDetailView: View {
                     )
                 }
                 rawCSS = json["raw"] as? String ?? ""
+                isTruncated = json["truncated"] as? Bool ?? false
             }
         } else {
             errorMessage = "Failed to fetch stylesheet"

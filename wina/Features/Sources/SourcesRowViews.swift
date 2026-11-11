@@ -268,20 +268,10 @@ struct ScriptRow: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
-            // Icon with lock overlay for external scripts
-            ZStack(alignment: .bottomTrailing) {
-                Image(systemName: script.isExternal ? "link" : "doc.text")
-                    .font(.system(size: 16))
-                    .foregroundStyle(.secondary)
-                    .frame(width: 24, height: 24)
-
-                if script.isExternal {
-                    Image(systemName: "lock.fill")
-                        .font(.system(size: 8))
-                        .foregroundStyle(.tertiary)
-                        .offset(x: 2, y: 2)
-                }
-            }
+            Image(systemName: script.isExternal ? "link" : "doc.text")
+                .font(.system(size: 16))
+                .foregroundStyle(.secondary)
+                .frame(width: 24, height: 24)
 
             // Content
             VStack(alignment: .leading, spacing: 4) {
@@ -321,12 +311,6 @@ struct ScriptRow: View {
                         .lineLimit(1)
                 }
 
-                // CORS notice for external scripts
-                if script.isExternal {
-                    Text("External (view-only metadata)")
-                        .font(.system(size: 11))
-                        .foregroundStyle(.tertiary)
-                }
             }
         }
         .padding(.horizontal, 16)

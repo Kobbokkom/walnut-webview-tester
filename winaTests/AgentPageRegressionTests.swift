@@ -12,6 +12,12 @@ final class AgentPageRegressionTests: XCTestCase {
             resultBytes = (value as? String)?.utf8.count ?? 0
             return value
         }
+
+        override func callAsyncJavaScriptReportingErrors(_ script: String, contentWorld: WKContentWorld) async throws -> Any? {
+            let value = try await super.callAsyncJavaScriptReportingErrors(script, contentWorld: contentWorld)
+            resultBytes = (value as? String)?.utf8.count ?? 0
+            return value
+        }
     }
 
     private final class CancellingPointerNavigator: WebViewNavigator {
@@ -540,6 +546,492 @@ final class AgentPageRegressionTests: XCTestCase {
 }
 
 extension AgentPageRegressionTests {
+    func testSelectSupportsExactValuesAndRejectsDisabledOrChangedOptions() async throws {
+        let webView = await load("""
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <label for="shipping">Shipping method</label>
+            <select id="shipping" onchange="this.dataset.changed = this.value">
+                <option value="standard">Standard</option>
+                <option value=" express ">Express</option>
+                <optgroup label="Unavailable" disabled><option value="blocked">Blocked</option></optgroup>
+            </select>
+            """, frame: CGRect(x: 0, y: 0, width: 390, height: 650))
+        defer { withExtendedLifetime(webView) {} }
+        let navigator = WebViewNavigator()
+        navigator.attach(to: webView)
+        let page = try await call("page_interact", ["action": "observe"], navigator)
+        let document = try XCTUnwrap(page["documentId"] as? String)
+        let field = try interactionRef(page, label: "Shipping method", capability: "canSelect")
+        let controls = try XCTUnwrap(page["elements"] as? [[String: Any]])
+        let choices = try XCTUnwrap(controls.first?["options"] as? [[String: Any]])
+        XCTAssertEqual(choices[1]["value"] as? String, " express ")
+        XCTAssertEqual(choices[2]["disabled"] as? Bool, true)
+        var arguments: [String: Any] = ["action": "select", "documentId": document, "ref": field, "values": ["blocked"]]
+        do {
+            _ = try await call("page_interact", arguments, navigator) { _ in
+                XCTFail("A disabled option must fail before approval")
+                return true
+            }
+            XCTFail("A disabled optgroup must not be selected")
+        } catch {
+            XCTAssertTrue(error.localizedDescription.contains("disabled"), error.localizedDescription)
+        }
+        arguments["values"] = [" express "]
+        let selected = try await applyInteraction(arguments, navigator)
+        XCTAssertEqual(selected["applied"] as? Bool, true)
+        XCTAssertFalse(String(describing: selected).contains("express"))
+        let changed = try await webView.evaluateJavaScript("shipping.value + '|' + shipping.dataset.changed")
+        XCTAssertEqual(changed as? String, " express | express ")
+
+        let fresh = try await call("page_interact", ["action": "observe"], navigator)
+        arguments["ref"] = try interactionRef(fresh, label: "Shipping method", capability: "canSelect")
+        arguments["values"] = ["standard"]
+        do {
+            _ = try await call("page_interact", arguments, navigator) { _ in
+                _ = try? await webView.evaluateJavaScript("shipping.options[0].textContent = 'Different delivery'; void 0;")
+                return true
+            }
+            XCTFail("An option changed during approval must invalidate the selection")
+        } catch {
+            XCTAssertTrue(error.localizedDescription.contains("changed"), error.localizedDescription)
+        }
+        let value = try await webView.evaluateJavaScript("shipping.value")
+        XCTAssertEqual(value as? String, " express ")
+    }
+
+    func testSelectDisambiguatesDuplicateValuesByObservedIndex() async throws {
+        let webView = await load("""
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <label for="shipping">Shipping method</label>
+            <select id="shipping" onchange="this.dataset.changed = this.selectedIndex">
+                <option value="duplicate">First delivery</option>
+                <option value="duplicate">Second delivery</option>
+            </select>
+            """, frame: CGRect(x: 0, y: 0, width: 390, height: 650))
+        defer { withExtendedLifetime(webView) {} }
+        let navigator = WebViewNavigator()
+        navigator.attach(to: webView)
+        let page = try await call("page_interact", ["action": "observe"], navigator)
+        let document = try XCTUnwrap(page["documentId"] as? String)
+        let field = try interactionRef(page, label: "Shipping method", capability: "canSelect")
+        let controls = try XCTUnwrap(page["elements"] as? [[String: Any]])
+        let choices = try XCTUnwrap(controls.first?["options"] as? [[String: Any]])
+        XCTAssertEqual(choices.compactMap { $0["index"] as? Int }, [0, 1])
+        XCTAssertEqual(choices.compactMap { $0["value"] as? String }, ["duplicate", "duplicate"])
+
+        var arguments: [String: Any] = ["action": "select", "documentId": document, "ref": field, "values": ["duplicate"]]
+        do {
+            _ = try await call("page_interact", arguments, navigator) { _ in
+                XCTFail("An ambiguous value must fail before approval")
+                return true
+            }
+            XCTFail("A duplicate value needs its option index")
+        } catch {
+            XCTAssertTrue(error.localizedDescription.contains("Use optionIndexes"), error.localizedDescription)
+        }
+
+        arguments.removeValue(forKey: "values")
+        arguments["optionIndexes"] = [1]
+        do {
+            _ = try await call("page_interact", arguments, navigator) { prompt in
+                XCTAssertTrue(prompt.contains("[1] \"Second delivery\" (value \"duplicate\")"), prompt)
+                _ = try? await webView.evaluateJavaScript("const option = shipping.options[1]; option.replaceWith(option.cloneNode(true)); void 0;")
+                return true
+            }
+            XCTFail("An identical-looking replacement must not inherit approval")
+        } catch {
+            XCTAssertTrue(error.localizedDescription.contains("selected options changed"), error.localizedDescription)
+        }
+
+        let fresh = try await call("page_interact", ["action": "observe"], navigator)
+        arguments["ref"] = try interactionRef(fresh, label: "Shipping method", capability: "canSelect")
+        let result = try await call("page_interact", arguments, navigator) { prompt in
+            XCTAssertTrue(prompt.contains("[1] \"Second delivery\" (value \"duplicate\")"), prompt)
+            return true
+        }
+        XCTAssertEqual(result["applied"] as? Bool, true)
+        let value = try await webView.evaluateJavaScript("[shipping.selectedIndex, shipping.value, shipping.dataset.changed].join('|')")
+        XCTAssertEqual(value as? String, "1|duplicate|1")
+    }
+
+    func testSelectPaginationAndMultipleSelectionReportPageRejection() async throws {
+        let webView = await load("""
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <label for="items">Shipment items</label><select id="items" multiple size="4"></select>
+            <script>
+            for (let index = 0; index < 205; index++) items.add(new Option('Item ' + index, 'item-' + index));
+            items.addEventListener('change', () => { if (items.options[101].selected) items.options[101].selected = false; });
+            </script>
+            """, frame: CGRect(x: 0, y: 0, width: 390, height: 650))
+        defer { withExtendedLifetime(webView) {} }
+        let navigator = WebViewNavigator()
+        navigator.attach(to: webView)
+        let page = try await call("page_interact", ["action": "observe", "optionOffset": 100], navigator)
+        let document = try XCTUnwrap(page["documentId"] as? String)
+        let field = try interactionRef(page, label: "Shipment items", capability: "canSelect")
+        let controls = try XCTUnwrap(page["elements"] as? [[String: Any]])
+        let choices = try XCTUnwrap(controls.first?["options"] as? [[String: Any]])
+        XCTAssertEqual(choices.first?["value"] as? String, "item-100")
+        XCTAssertEqual(controls.first?["nextOptionOffset"] as? Int, 200)
+        let result = try await applyInteraction([
+            "action": "select", "documentId": document, "ref": field, "values": ["item-100", "item-101"]
+        ], navigator)
+        XCTAssertEqual(result["applied"] as? Bool, false)
+        XCTAssertEqual(result["outcome"] as? String, "pageChangedValue")
+        let value = try await webView.evaluateJavaScript("Array.from(items.selectedOptions, option => option.value).join(',')")
+        XCTAssertEqual(value as? String, "item-100")
+    }
+
+    func testContenteditableFillKeepsOldTextPrivateAndHonorsBeforeInput() async throws {
+        let webView = await load("""
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <div id="editor" contenteditable="true" aria-label="Delivery note" style="min-height:60px">
+                <b>fixture-private-editor-content</b>
+            </div>
+            <script>
+            editor.addEventListener('beforeinput', event => { if (event.data === 'blocked') event.preventDefault(); });
+            editor.addEventListener('input', event => editor.dataset.input = event.inputType);
+            editor.addEventListener('change', () => editor.dataset.changed = 'yes');
+            </script>
+            """, frame: CGRect(x: 0, y: 0, width: 390, height: 650))
+        defer { withExtendedLifetime(webView) {} }
+        let navigator = WebViewNavigator()
+        navigator.attach(to: webView)
+        let page = try await call("page_interact", ["action": "observe"], navigator)
+        let document = try XCTUnwrap(page["documentId"] as? String)
+        XCTAssertFalse(String(describing: page).contains("fixture-private-editor-content"))
+        let field = try interactionRef(page, label: "Delivery note", capability: "canFill")
+        let result = try await applyInteraction([
+            "action": "fill", "documentId": document, "ref": field, "text": "<b>Plain delivery note</b>"
+        ], navigator)
+        XCTAssertEqual(result["applied"] as? Bool, true)
+        let value = try await webView.evaluateJavaScript("[editor.textContent, editor.children.length, editor.dataset.input, editor.dataset.changed].join('|')")
+        XCTAssertEqual(value as? String, "<b>Plain delivery note</b>|0|insertReplacementText|yes")
+        let fresh = try await call("page_interact", ["action": "observe"], navigator)
+        let ref = try interactionRef(fresh, label: "Delivery note", capability: "canFill")
+        let blocked = try await applyInteraction(["action": "fill", "documentId": document, "ref": ref, "text": "blocked"], navigator)
+        XCTAssertEqual(blocked["applied"] as? Bool, false)
+        XCTAssertEqual(blocked["outcome"] as? String, "defaultPrevented")
+        let unchanged = try await webView.evaluateJavaScript("editor.textContent")
+        XCTAssertEqual(unchanged as? String, "<b>Plain delivery note</b>")
+    }
+
+    func testNestedScrollTargetsOnlyTheObservedRegion() async throws {
+        let webView = await load("""
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <div id="region" aria-label="Shipment list" style="height:160px;overflow-y:auto">
+                <div style="height:800px">Shipment list contents</div>
+            </div>
+            """, frame: CGRect(x: 0, y: 0, width: 390, height: 650))
+        defer { withExtendedLifetime(webView) {} }
+        let navigator = WebViewNavigator()
+        navigator.attach(to: webView)
+        let page = try await call("page_interact", ["action": "observe"], navigator)
+        let document = try XCTUnwrap(page["documentId"] as? String)
+        let region = try interactionRef(page, label: "Shipment list", capability: "canScroll")
+        let result = try await call("page_interact", ["action": "scroll", "documentId": document, "ref": region, "direction": "down"], navigator)
+        XCTAssertEqual(result["moved"] as? Bool, true)
+        let positions = try await webView.evaluateJavaScript("[scrollY, region.scrollTop].join('|')")
+        XCTAssertEqual(positions as? String, "0|128")
+    }
+
+    func testScrollOnlySensitiveFieldRejectsCoordinateClickAndKeys() async throws {
+        let webView = await load("""
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <textarea id="secret" autocomplete="current-password" aria-label="Protected credential"
+                style="position:fixed;left:10px;top:10px;width:150px;height:34px;overflow-y:scroll"
+                onclick="document.body.dataset.clicked='yes'" onkeydown="document.body.dataset.key=event.key">Fixture
+            second line
+            third line
+            fourth line
+            fifth line</textarea>
+            """, frame: CGRect(x: 0, y: 0, width: 390, height: 650))
+        defer { withExtendedLifetime(webView) {} }
+        let navigator = WebViewNavigator()
+        navigator.attach(to: webView)
+        let page = try await call("page_interact", ["action": "observe"], navigator)
+        let document = try XCTUnwrap(page["documentId"] as? String)
+        let region = try interactionRef(page, label: "Protected credential", capability: "canScroll")
+        let focused = try await webView.evaluateJavaScript("secret.focus(); secret.scrollTop = 0; document.activeElement.id")
+        XCTAssertEqual(focused as? String, "secret")
+
+        for var arguments in [["action": "click_at", "x": 30, "y": 25], ["action": "press", "key": "Escape"]] as [[String: Any]] {
+            arguments["documentId"] = document
+            do {
+                _ = try await call("page_interact", arguments, navigator) { _ in
+                    XCTFail("An unsupported control must fail before approval")
+                    return true
+                }
+                XCTFail("Scrolling capability must not authorize input events")
+            } catch {
+                XCTAssertEqual(error.localizedDescription, "This control does not support the requested input.")
+            }
+        }
+
+        let events = try await webView.evaluateJavaScript("[document.body.dataset.clicked, document.body.dataset.key].join('|')")
+        XCTAssertEqual(events as? String, "|")
+        let scroll = try await call("page_interact", ["action": "scroll", "documentId": document, "ref": region, "direction": "down"], navigator)
+        XCTAssertEqual(scroll["moved"] as? Bool, true)
+    }
+
+    func testSameOriginFrameRequiresItsObservedDocumentAndRejectsReplacedDocument() async throws {
+        let webView = await load("""
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <iframe id="delivery" style="width:300px;height:220px" srcdoc="
+                <label for='reference'>Frame reference</label><input id='reference'>"></iframe>
+            <iframe id="isolated" sandbox srcdoc="<button>Inaccessible</button>"></iframe>
+            """, frame: CGRect(x: 0, y: 0, width: 390, height: 650))
+        defer { withExtendedLifetime(webView) {} }
+        let navigator = WebViewNavigator()
+        navigator.attach(to: webView)
+        let main = try await call("page_interact", ["action": "observe"], navigator)
+        let document = try XCTUnwrap(main["documentId"] as? String)
+        let page = try await call("page_interact", ["action": "observe", "framePath": ["#delivery"]], navigator)
+        let frameDocument = try XCTUnwrap(page["frameDocumentId"] as? String)
+        let field = try interactionRef(page, label: "Frame reference", capability: "canFill")
+        var arguments: [String: Any] = [
+            "action": "fill", "documentId": document, "framePath": ["#delivery"], "frameDocumentId": frameDocument,
+            "ref": field, "text": "FRAME-417"
+        ]
+        let result = try await applyInteraction(arguments, navigator)
+        XCTAssertEqual(result["applied"] as? Bool, true)
+        let value = try await webView.evaluateJavaScript("delivery.contentDocument.querySelector('input').value")
+        XCTAssertEqual(value as? String, "FRAME-417")
+
+        _ = try await webView.callAsyncJavaScript("""
+            const frame = document.querySelector('#delivery');
+            await new Promise(resolve => {
+                frame.onload = resolve;
+                frame.srcdoc = '<iframe id="nested" style="height:120px" srcdoc="&lt;label for=reference&gt;Nested reference&lt;/label&gt;&lt;input id=reference&gt;"></iframe>';
+            });
+            return true;
+            """, arguments: [:], in: nil, contentWorld: .page)
+        arguments["action"] = "click_at"
+        arguments["x"] = 30
+        arguments["y"] = 20
+        arguments.removeValue(forKey: "ref")
+        arguments.removeValue(forKey: "text")
+        do {
+            _ = try await call("page_interact", arguments, navigator) { _ in
+                XCTFail("A replaced frame must fail before approval")
+                return true
+            }
+            XCTFail("A stale frame document must not be targeted")
+        } catch {
+            XCTAssertTrue(error.localizedDescription.contains("frame document changed"), error.localizedDescription)
+        }
+        let nested = try await call("page_interact", ["action": "observe", "framePath": ["#delivery", "#nested"]], navigator)
+        let nestedDocument = try XCTUnwrap(nested["frameDocumentId"] as? String)
+        let nestedField = try interactionRef(nested, label: "Nested reference", capability: "canFill")
+        let nestedFill = try await applyInteraction([
+            "action": "fill", "documentId": document, "framePath": ["#delivery", "#nested"],
+            "frameDocumentId": nestedDocument, "ref": nestedField, "text": "NESTED-417"
+        ], navigator)
+        XCTAssertEqual(nestedFill["applied"] as? Bool, true)
+        let nestedValue = try await webView.evaluateJavaScript("delivery.contentDocument.querySelector('#nested').contentDocument.querySelector('input').value")
+        XCTAssertEqual(nestedValue as? String, "NESTED-417")
+        do {
+            _ = try await call("page_interact", ["action": "observe", "framePath": ["#isolated"]], navigator)
+            XCTFail("A sandboxed cross-origin frame must not be inspected")
+        } catch {
+            XCTAssertTrue(error.localizedDescription.contains("inaccessible"), error.localizedDescription)
+        }
+    }
+
+    func testFrameInputRejectsRotatedWrapperAndPreservesAxisAlignedScaling() async throws {
+        let webView = await load("""
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <div id="wrapper" style="position:fixed;left:200px;top:50px;transform-origin:0 0;transform:scale(0.8,1.2)">
+                <iframe id="delivery" style="display:block;width:200px;height:120px;border:0" srcdoc="
+                    <button style='position:fixed;left:10px;top:10px;width:60px;height:60px'
+                        onclick='document.body.dataset.clicked=1'>Ship</button>"></iframe>
+            </div>
+            <div id="cover" style="position:fixed;left:175px;top:65px;width:10px;height:10px;background:white;z-index:1"></div>
+            """, frame: CGRect(x: 0, y: 0, width: 390, height: 650))
+        defer { withExtendedLifetime(webView) {} }
+        let navigator = WebViewNavigator()
+        navigator.attach(to: webView)
+        let framePath = ["#delivery"]
+        let observe: [String: Any] = ["action": "observe", "framePath": framePath]
+        let page = try await call("page_interact", observe, navigator)
+        _ = try interactionRef(page, label: "Ship", capability: "canClick")
+        let arguments: [String: Any] = [
+            "action": "click_at", "documentId": try XCTUnwrap(page["documentId"] as? String),
+            "framePath": framePath, "frameDocumentId": try XCTUnwrap(page["frameDocumentId"] as? String),
+            "x": 20, "y": 20
+        ]
+        var prompted = false
+        do {
+            _ = try await call("page_interact", arguments, navigator) { _ in
+                prompted = true
+                _ = try? await webView.evaluateJavaScript("wrapper.style.transform = 'rotate(90deg)'; void 0;")
+                return true
+            }
+            XCTFail("Rotation during approval must stop the click")
+        } catch {
+            XCTAssertTrue(prompted)
+            XCTAssertTrue(error.localizedDescription.contains("cannot be mapped"), error.localizedDescription)
+        }
+        let covered = try await webView.evaluateJavaScript("""
+            [document.elementFromPoint(180, 70)?.id, delivery.contentDocument.body.dataset.clicked ?? ''].join('|')
+            """)
+        XCTAssertEqual(covered as? String, "cover|")
+
+        _ = try await webView.evaluateJavaScript("wrapper.style.transform = 'none'; wrapper.style.rotate = '90deg'; void 0;")
+        do {
+            _ = try await call("page_interact", arguments, navigator) { _ in
+                XCTFail("An individually rotated ancestor must fail before approval")
+                return true
+            }
+            XCTFail("The individual rotate property must also be checked")
+        } catch {
+            XCTAssertTrue(error.localizedDescription.contains("cannot be mapped"), error.localizedDescription)
+        }
+
+        _ = try await webView.evaluateJavaScript("""
+            wrapper.style.rotate = '0deg'; wrapper.style.scale = '0.8 1.2'; wrapper.style.translate = '5px 4px'; void 0;
+            """)
+        let scaled = try await call("page_interact", observe, navigator)
+        _ = try interactionRef(scaled, label: "Ship", capability: "canClick")
+        let result = try await applyInteraction(arguments, navigator)
+        XCTAssertEqual(result["applied"] as? Bool, true)
+        let clicked = try await webView.evaluateJavaScript("delivery.contentDocument.body.dataset.clicked")
+        XCTAssertEqual(clicked as? String, "1")
+    }
+
+    func testFrameInputUsesPaddedContentBoxForCoverageAndScaling() async throws {
+        let webView = await load("""
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <iframe id="delivery" style="position:fixed;left:20px;top:40px;width:180.5px;height:110.25px;
+                padding:20.5px 30.25px;border:2.5px solid black;transform-origin:0 0;object-position:right bottom"
+                srcdoc="<button style='position:fixed;left:10px;top:10px;width:80px;height:80px'
+                    onclick='document.body.dataset.clicked=1'>Ship</button>"></iframe>
+            <div id="cover" style="position:fixed;left:70px;top:80px;width:10px;height:10px;background:white;z-index:1"></div>
+            """, frame: CGRect(x: 0, y: 0, width: 390, height: 650))
+        defer { withExtendedLifetime(webView) {} }
+        let navigator = WebViewNavigator()
+        navigator.attach(to: webView)
+        let framePath = ["#delivery"]
+        let observe: [String: Any] = ["action": "observe", "framePath": framePath]
+        let page = try await call("page_interact", observe, navigator)
+        _ = try interactionRef(page, label: "Ship", capability: "canClick")
+        let arguments: [String: Any] = [
+            "action": "click_at", "documentId": try XCTUnwrap(page["documentId"] as? String),
+            "framePath": framePath, "frameDocumentId": try XCTUnwrap(page["frameDocumentId"] as? String),
+            "x": 20, "y": 20
+        ]
+        let covered = try await webView.evaluateJavaScript("""
+            (() => {
+                const style = getComputedStyle(delivery);
+                return document.elementFromPoint(40 + parseFloat(style.borderLeftWidth) + 30.25,
+                    60 + parseFloat(style.borderTopWidth) + 20.5)?.id;
+            })()
+            """)
+        XCTAssertEqual(covered as? String, "cover")
+        do {
+            _ = try await call("page_interact", arguments, navigator) { _ in
+                XCTFail("A covered point in the padded frame must fail before approval")
+                return true
+            }
+            XCTFail("A point covered at its padded position must not receive a click")
+        } catch {
+            XCTAssertTrue(error.localizedDescription.contains("frame is covered"), error.localizedDescription)
+        }
+        let before = try await webView.evaluateJavaScript("delivery.contentDocument.body.dataset.clicked ?? ''")
+        XCTAssertEqual(before as? String, "")
+
+        let measured = try await webView.evaluateJavaScript("""
+            (() => {
+                cover.hidden = true;
+                delivery.style.boxSizing = 'border-box';
+                delivery.style.transform = 'scale(1.25, 1.5)';
+                const style = getComputedStyle(delivery);
+                return [
+                    (20 + (20 + 30.25 + parseFloat(style.borderLeftWidth)) * 1.25 - visualViewport.offsetLeft) / visualViewport.width,
+                    (40 + (20 + 20.5 + parseFloat(style.borderTopWidth)) * 1.5 - visualViewport.offsetTop) / visualViewport.height
+                ];
+            })()
+            """)
+        let expected = try XCTUnwrap(measured as? [Double])
+        let result = try await applyInteraction(arguments, navigator)
+        XCTAssertEqual(result["applied"] as? Bool, true)
+        let point = try XCTUnwrap(result["pointer"] as? [String: Double])
+        XCTAssertEqual(try XCTUnwrap(point["unitX"]), expected[0], accuracy: 0.0001)
+        XCTAssertEqual(try XCTUnwrap(point["unitY"]), expected[1], accuracy: 0.0001)
+        let clicked = try await webView.evaluateJavaScript("delivery.contentDocument.body.dataset.clicked")
+        XCTAssertEqual(clicked as? String, "1")
+    }
+
+    func testFrameInputRejectsCoveredCoordinatesAndUnfocusedKeys() async throws {
+        let webView = await load("""
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <iframe id="delivery" style="position:fixed;left:0;top:0;width:300px;height:220px;border:0" srcdoc="
+                <button style='position:fixed;left:10px;top:10px;width:140px;height:80px'
+                    onclick='document.body.dataset.clicked=1' onpointermove='document.body.dataset.moved=1'>Shipment</button>
+                <input id='frameField' style='position:fixed;left:10px;top:110px;width:140px;height:24px'
+                    onkeydown='document.body.dataset.key=event.key'>"></iframe>
+            <div id="cover" style="position:fixed;left:0;top:0;width:300px;height:30px;background:white;z-index:1"></div>
+            <input id="rootField" style="position:fixed;left:20px;top:260px">
+            """, frame: CGRect(x: 0, y: 0, width: 390, height: 650))
+        defer { withExtendedLifetime(webView) {} }
+        let navigator = WebViewNavigator()
+        navigator.attach(to: webView)
+        let page = try await call("page_interact", ["action": "observe", "framePath": ["#delivery"]], navigator)
+        _ = try interactionRef(page, label: "Shipment", capability: "canClick")
+        let scope: [String: Any] = [
+            "documentId": try XCTUnwrap(page["documentId"] as? String), "framePath": ["#delivery"],
+            "frameDocumentId": try XCTUnwrap(page["frameDocumentId"] as? String)
+        ]
+        func args(_ action: [String: Any]) -> [String: Any] {
+            scope.merging(action) { _, new in new }
+        }
+        func rejectBeforeApproval(_ arguments: [String: Any], message: String) async {
+            do {
+                _ = try await call("page_interact", arguments, navigator) { _ in
+                    XCTFail("An unavailable target must be rejected before approval")
+                    return true
+                }
+                XCTFail("The target was unavailable")
+            } catch {
+                XCTAssertTrue(error.localizedDescription.contains(message), error.localizedDescription)
+            }
+        }
+        await rejectBeforeApproval(args(["action": "click_at", "x": 20, "y": 15]), message: "frame is covered")
+        let before = try await webView.evaluateJavaScript("delivery.contentDocument.body.dataset.clicked || ''")
+        XCTAssertEqual(before as? String, "")
+        var prompted = false
+        do {
+            _ = try await call("page_interact", args(["action": "move", "x": 20, "y": 40]), navigator) { _ in
+                prompted = true
+                _ = try? await webView.evaluateJavaScript("cover.style.height = '45px'; void 0;")
+                return true
+            }
+            XCTFail("A point covered during approval must not receive the move")
+        } catch {
+            XCTAssertTrue(prompted)
+            XCTAssertTrue(error.localizedDescription.contains("frame is covered"), error.localizedDescription)
+        }
+        let moved = try await webView.evaluateJavaScript("delivery.contentDocument.body.dataset.moved || ''")
+        XCTAssertEqual(moved as? String, "")
+        let clicked = try await applyInteraction(args(["action": "click_at", "x": 20, "y": 55]), navigator)
+        XCTAssertEqual(clicked["applied"] as? Bool, true)
+        let clickMarker = try await webView.evaluateJavaScript("delivery.contentDocument.body.dataset.clicked")
+        XCTAssertEqual(clickMarker as? String, "1")
+
+        _ = try await webView.evaluateJavaScript("rootField.focus(); void 0;")
+        let press = args(["action": "press", "key": "Escape"])
+        await rejectBeforeApproval(press, message: "Focus a visible control")
+        let focused = try await webView.evaluateJavaScript("delivery.contentDocument.querySelector('#frameField').focus(); document.activeElement.id")
+        XCTAssertEqual(focused as? String, "delivery")
+        _ = try await webView.evaluateJavaScript("cover.style.height = '140px'; void 0;")
+        await rejectBeforeApproval(press, message: "Focus a visible control")
+        _ = try await webView.evaluateJavaScript("cover.style.height = '30px'; void 0;")
+        let result = try await applyInteraction(press, navigator)
+        XCTAssertEqual(result["applied"] as? Bool, true)
+        let key = try await webView.evaluateJavaScript("delivery.contentDocument.body.dataset.key")
+        XCTAssertEqual(key as? String, "Escape")
+    }
+
     func testPageInteractionRejectsEditingKeysWithoutSelectionButAllowsFillAndEscape() async throws {
         let webView = await load("""
             <meta name="viewport" content="width=device-width, initial-scale=1">

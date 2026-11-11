@@ -187,8 +187,14 @@ final class StorageManagerTests: XCTestCase {
         let currentView = WKWebView(frame: .zero, configuration: currentConfiguration)
         await currentView.loadHTMLStringAsync("<html></html>", baseURL: url)
         _ = try await currentView.evaluateJavaScript("""
+        localStorage.setItem('actual', 'current-local');
         sessionStorage.setItem('current', 'visible');
-        Object.defineProperty(window, 'localStorage', { get: () => { throw new Error('page-supplied text'); } });
+        Object.defineProperty(window, 'localStorage', { value: {
+            length: 1, key: () => 'previous', getItem: () => 'forged',
+            setItem: () => { throw new Error('page-supplied text'); },
+            removeItem: () => { throw new Error('page-supplied text'); },
+            clear: () => { throw new Error('page-supplied text'); }
+        } });
         true;
         """)
         await currentConfiguration.websiteDataStore.httpCookieStore.setCookie(
@@ -196,33 +202,208 @@ final class StorageManagerTests: XCTestCase {
         )
         navigator.attach(to: currentView)
 
-        for (tool, arguments) in [
-            ("storage_list", ["type": "localStorage", "raw": true] as [String: Any]),
-            ("storage_write", ["type": "localStorage", "action": "remove", "key": "previous"])
+        func call(_ tool: String, _ args: [String: Any], approve: Bool = true) async throws -> [String: Any] {
+            let result = try await AgentDevTools.call(
+                tool, arguments: args, navigator: navigator, storage: storage, console: ConsoleSession(), authorize: { _ in approve }
+            )
+            return try XCTUnwrap(result as? [String: Any])
+        }
+        do {
+            _ = try await call("storage_write", ["type": "localStorage", "action": "remove", "key": "previous"])
+            XCTFail("An agent must not act on a forged or previous-document entry")
+        } catch {
+            XCTAssertEqual(error.localizedDescription, "Storage entry not found or ambiguous. Supply the exact cookie domain and path if needed.")
+        }
+        let session = try await call("storage_list", ["type": "sessionStorage"], approve: false)
+        XCTAssertEqual(session["total"] as? Int, 1)
+        let all = try await call("storage_list", ["raw": true])
+        let entries = try XCTUnwrap(all["entries"] as? [[String: Any]])
+        XCTAssertEqual(entries.compactMap { $0["key"] as? String }, ["actual", "current", "current-cookie"])
+        XCTAssertNil(all["errors"])
+        XCTAssertTrue(storage.items.contains { $0.key == "previous" })
+
+        let added = try await call("storage_write", ["type": "localStorage", "action": "add", "key": "new", "value": "added"])
+        XCTAssertEqual(added["applied"] as? Bool, true)
+        let edited = try await call("storage_write", ["type": "localStorage", "action": "edit", "key": "actual", "value": "edited"])
+        XCTAssertEqual(edited["applied"] as? Bool, true)
+        let removed = try await call("storage_write", ["type": "localStorage", "action": "remove", "key": "new"])
+        XCTAssertEqual(removed["applied"] as? Bool, true)
+        let real = try await currentView.evaluateJavaScript("JSON.stringify(Object.entries(localStorage))", in: nil, contentWorld: .defaultClient)
+        XCTAssertEqual(real as? String, #"[["actual","edited"]]"#)
+        let cleared = try await call("storage_clear", ["type": "localStorage"])
+        XCTAssertEqual(cleared["cleared"] as? Bool, true)
+        let afterClear = try await call("storage_list", ["type": "localStorage"])
+        XCTAssertEqual(afterClear["total"] as? Int, 0)
+    }
+
+    @MainActor
+    func testAgentCookieScopePreservesWebKitAndHttpOnlyBoundaries() async throws {
+        let url = try XCTUnwrap(URL(string: "https://child.example.com/account/settings"))
+        let configuration = WKWebViewConfiguration()
+        configuration.websiteDataStore = .nonPersistent()
+        let webView = WKWebView(frame: .zero, configuration: configuration)
+        await webView.loadHTMLStringAsync("<html></html>", baseURL: url)
+        let navigator = WebViewNavigator()
+        navigator.attach(to: webView)
+        defer { navigator.detach() }
+        let storage = StorageManager()
+        let cookieStore = configuration.websiteDataStore.httpCookieStore
+        let protected = try XCTUnwrap(HTTPCookie(properties: [
+            .name: "protected", .value: "untouched", .domain: ".example.com", .path: "/receipt",
+            HTTPCookiePropertyKey("HttpOnly"): "TRUE"
+        ]))
+        await cookieStore.setCookie(protected)
+        await cookieStore.setCookie(makeCookie(name: "foreign", value: "untouched", domain: "unrelated.test"))
+        _ = try await webView.evaluateJavaScript("""
+            Object.defineProperty(document, 'cookie', { set: () => { throw new Error('page override'); } });
+            true;
+            """)
+
+        let arguments: [String: Any] = [
+            "type": "cookies", "action": "add", "key": "scoped", "value": "approved", "domain": ".example.com", "path": "/receipt"
+        ]
+        func write(_ changes: [String: Any], authorize: @escaping (String) async -> Bool = { _ in true }) async throws -> Any {
+            try await AgentDevTools.call(
+                "storage_write", arguments: arguments.merging(changes) { _, new in new },
+                navigator: navigator, storage: storage, console: ConsoleSession(), authorize: authorize
+            )
+        }
+        for (changes, approval) in [
+            ([:], false),
+            (["key": "protected"], true),
+            (["domain": "unrelated.test"], true),
+            (["cookieScope": "all"], true),
+            (["path": "/receipt; Domain=unrelated.test"], true),
+            (["action": "remove", "key": "foreign", "domain": "unrelated.test", "path": "/", "cookieScope": "current"], true)
         ] {
             do {
-                _ = try await AgentDevTools.call(
-                    tool, arguments: arguments, navigator: navigator, storage: storage, console: ConsoleSession(),
-                    authorize: { _ in true }
-                )
-                XCTFail("Unavailable storage should not fall back to the previous document")
+                _ = try await write(changes, authorize: { _ in approval })
+                XCTFail("Cookie mutation escaped its approved scope")
             } catch {
-                XCTAssertEqual(error.localizedDescription, "Could not read localStorage for the active document.")
+                let cookies = await cookieStore.allCookies()
+                XCTAssertEqual(Set(cookies.map(\.value)), ["untouched"])
+                XCTAssertEqual(cookies.count, 2)
             }
         }
-        let session = try await AgentDevTools.call(
-            "storage_list", arguments: ["type": "sessionStorage"], navigator: navigator, storage: storage,
-            console: ConsoleSession(), authorize: { _ in false }
+        let added = try await write([:], authorize: { prompt in
+            XCTAssertTrue(prompt.contains("example.com and its subdomains"))
+            XCTAssertTrue(prompt.contains("at path /receipt"))
+            return true
+        }) as? [String: Any]
+        XCTAssertEqual(added?["applied"] as? Bool, true)
+        XCTAssertEqual(added?["domain"] as? String, ".example.com")
+        XCTAssertEqual(added?["path"] as? String, "/receipt")
+        let cookies = await cookieStore.allCookies()
+        let scoped = try XCTUnwrap(cookies.first { $0.name == "scoped" })
+        XCTAssertEqual(scoped.domain, ".example.com")
+        XCTAssertEqual(scoped.path, "/receipt")
+        XCTAssertFalse(scoped.isHTTPOnly)
+        let listed = try await AgentDevTools.call(
+            "storage_list", arguments: ["domain": ".example.com", "path": "/receipt", "query": "scoped", "raw": true],
+            navigator: navigator, storage: storage, console: ConsoleSession(), authorize: { _ in true }
         ) as? [String: Any]
-        XCTAssertEqual(session?["total"] as? Int, 1)
-        let all = try await AgentDevTools.call(
-            "storage_list", arguments: ["raw": true], navigator: navigator, storage: storage,
-            console: ConsoleSession(), authorize: { _ in true }
-        ) as? [String: Any]
-        let entries = try XCTUnwrap(all?["entries"] as? [[String: Any]])
-        XCTAssertEqual(entries.compactMap { $0["key"] as? String }, ["current", "current-cookie"])
-        XCTAssertEqual(all?["errors"] as? [String: String], ["localStorage": "Could not read localStorage for the active document."])
-        XCTAssertTrue(storage.items.contains { $0.key == "previous" })
+        XCTAssertEqual((listed?["entries"] as? [[String: Any]])?.compactMap { $0["key"] as? String }, ["scoped"])
+
+        let foreign = ["action": "edit", "key": "foreign", "domain": "unrelated.test", "path": "/", "value": "changed"]
+        do {
+            _ = try await write(foreign, authorize: { prompt in
+                XCTAssertTrue(prompt.contains("the exact domain unrelated.test at path /"))
+                return false
+            })
+            XCTFail("A cross-domain edit must require approval")
+        } catch {
+            XCTAssertEqual(error.localizedDescription, "The iPhone did not approve this action.")
+        }
+        let edited = try await write(foreign) as? [String: Any]
+        XCTAssertEqual(edited?["domain"] as? String, "unrelated.test")
+        let editedCookies = await cookieStore.allCookies()
+        XCTAssertEqual(editedCookies.first { $0.name == "foreign" }?.value, "changed")
+        let removed = try await write(foreign.merging(["action": "remove", "cookieScope": "all"]) { _, new in new }) as? [String: Any]
+        XCTAssertEqual(removed?["applied"] as? Bool, true)
+        let remaining = await cookieStore.allCookies()
+        XCTAssertFalse(remaining.contains { $0.name == "foreign" })
+    }
+
+    @MainActor
+    func testAgentStorageExportBoundsTextAndContinuesWithTheNextEntry() async throws {
+        let url = try XCTUnwrap(URL(string: "https://example.com"))
+        let configuration = WKWebViewConfiguration()
+        configuration.websiteDataStore = .nonPersistent()
+        let webView = WKWebView(frame: .zero, configuration: configuration)
+        await webView.loadHTMLStringAsync("<html></html>", baseURL: url)
+        _ = try await webView.evaluateJavaScript("""
+            sessionStorage.setItem('a', 'x'.repeat(150 * 1024));
+            sessionStorage.setItem('b', 'y'.repeat(150 * 1024));
+            sessionStorage.setItem('c', '💚'.repeat(80 * 1024));
+            sessionStorage.setItem('d', 'end');
+            true;
+            """)
+        let navigator = WebViewNavigator()
+        navigator.attach(to: webView)
+        defer { navigator.detach() }
+        let storage = StorageManager()
+        func export(offset: Int, byteOffset: Int = 0, rowId: String? = nil, limit: Int = 30, approve: Bool = true) async throws -> [String: Any] {
+            var arguments: [String: Any] = [
+                "type": "sessionStorage", "format": "text", "offset": offset, "byteOffset": byteOffset, "limit": limit
+            ]
+            arguments["rowId"] = rowId
+            let result = try await AgentDevTools.call(
+                "storage_list", arguments: arguments,
+                navigator: navigator, storage: storage, console: ConsoleSession(), authorize: { _ in approve }
+            )
+            return try XCTUnwrap(result as? [String: Any])
+        }
+        do {
+            _ = try await export(offset: 0, approve: false)
+            XCTFail("Text export shares storage values and must require approval")
+        } catch {
+            XCTAssertEqual(error.localizedDescription, "The iPhone did not approve this action.")
+        }
+        let first = try await export(offset: 0)
+        XCTAssertEqual(first["nextOffset"] as? Int, 1)
+        XCTAssertEqual(first["exportTruncated"] as? Bool, false)
+        XCTAssertTrue((first["export"] as? String)?.contains("a = " + String(repeating: "x", count: 150 * 1024) + "\n") == true)
+        let second = try await export(offset: 1)
+        XCTAssertEqual(second["nextOffset"] as? Int, 2)
+        XCTAssertTrue((second["export"] as? String)?.contains("b = y") == true)
+        let partial = try await export(offset: 2)
+        let text = try XCTUnwrap(partial["export"] as? String)
+        XCTAssertEqual(partial["nextOffset"] as? Int, 2)
+        XCTAssertEqual(partial["exportTruncated"] as? Bool, true)
+        XCTAssertLessThanOrEqual(text.utf8.count, 256 * 1024)
+        let byteOffset = try XCTUnwrap(partial["nextByteOffset"] as? Int)
+        let rowId = try XCTUnwrap(partial["nextRowId"] as? String)
+        do {
+            _ = try await export(offset: 2, byteOffset: byteOffset)
+            XCTFail("A continuation must be bound to the previously exported row")
+        } catch {
+            XCTAssertEqual(error.localizedDescription, "A text export continuation requires its byte offset and row ID.")
+        }
+        do {
+            _ = try await export(offset: 2, byteOffset: byteOffset + 1, rowId: rowId)
+            XCTFail("An offset inside a UTF-8 scalar must fail")
+        } catch {
+            XCTAssertEqual(error.localizedDescription, "Invalid storage entry byte offset.")
+        }
+        _ = try await webView.evaluateJavaScript("sessionStorage.setItem('c', '💙'.repeat(80 * 1024)); true;")
+        do {
+            _ = try await export(offset: 2, byteOffset: byteOffset, rowId: rowId)
+            XCTFail("A different value of the same length must not provide a suffix")
+        } catch {
+            XCTAssertEqual(error.localizedDescription, "The storage export row changed. Restart this export page.")
+        }
+        _ = try await webView.evaluateJavaScript("sessionStorage.setItem('c', '💚'.repeat(80 * 1024)); true;")
+        let continued = try await export(offset: 2, byteOffset: byteOffset, rowId: rowId, limit: 1)
+        let tail = try XCTUnwrap(continued["export"] as? String)
+        XCTAssertLessThanOrEqual(tail.utf8.count, 256 * 1024)
+        XCTAssertEqual(continued["nextOffset"] as? Int, 3)
+        XCTAssertNil(continued["nextByteOffset"])
+        XCTAssertNil(continued["nextRowId"])
+        let complete = text + tail
+        XCTAssertTrue(complete.hasSuffix("c = " + String(repeating: "💚", count: 80 * 1024) + "\n"))
+        let last = try await export(offset: 3)
+        XCTAssertNil(last["nextOffset"])
+        XCTAssertTrue((last["export"] as? String)?.hasSuffix("d = end\n") == true)
     }
 
     @MainActor
@@ -253,6 +434,42 @@ final class StorageManagerTests: XCTestCase {
             XCTAssertTrue(navigator.cookieStore.cookies.isEmpty)
         }
         XCTAssertNil(storage.lastRefreshTime)
+    }
+
+    @MainActor
+    func testAgentCookieMutationsRecheckDocumentAfterNativePreflight() async throws {
+        let url = try XCTUnwrap(URL(string: "https://example.com/account"))
+        let webView = WKWebView()
+        await webView.loadHTMLStringAsync("<html></html>", baseURL: url)
+        let navigator = CookieStoreTestNavigator()
+        navigator.attach(to: webView)
+        defer { navigator.detach() }
+        let storage = StorageManager()
+        let cases: [(String, [String: Any], Bool)] = [
+            ("storage_write", ["type": "cookies", "action": "add", "key": "new", "value": "two"], false),
+            ("storage_write", ["type": "cookies", "action": "edit", "key": "target", "value": "two"], true),
+            ("storage_write", ["type": "cookies", "action": "remove", "key": "target"], true),
+            ("storage_clear", ["type": "cookies"], false),
+            ("storage_clear", ["type": "cookies", "cookieScope": "all"], false)
+        ]
+        for (tool, arguments, readFirst) in cases {
+            let cookieStore = navigator.cookieStore
+            cookieStore.cookies = [makeCookie(name: "target", value: "one", domain: "example.com")]
+            let navigate = { navigator.documentDidChange(in: webView) }
+            cookieStore.afterReadingCookies = readFirst ? { cookieStore.afterReadingCookies = navigate } : navigate
+            do {
+                _ = try await AgentDevTools.call(
+                    tool, arguments: arguments, navigator: navigator, storage: storage, console: ConsoleSession(),
+                    authorize: { _ in true }
+                )
+                XCTFail("A stale approved document must not mutate cookies")
+            } catch {
+                XCTAssertEqual(error.localizedDescription, "The active WKWebView document changed. Try again.")
+                XCTAssertEqual(cookieStore.cookies.map(\.value), ["one"])
+                XCTAssertTrue(cookieStore.setCookies.isEmpty)
+                XCTAssertTrue(cookieStore.deletedCookies.isEmpty)
+            }
+        }
     }
 
     // MARK: - Navigator Not Set Tests

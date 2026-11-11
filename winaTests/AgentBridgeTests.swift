@@ -18,6 +18,27 @@ final class AgentBridgeTests: XCTestCase {
         XCTAssertThrowsError(try AgentTool.validate([:], using: tool))
     }
 
+    func testSafariCapabilitiesDistinguishUnavailableToolsAndActions() throws {
+        let safari = ContentView.agentCapabilities(safari: true)
+        let wk = ContentView.agentCapabilities(safari: false)
+        XCTAssertTrue(JSONSerialization.isValidJSONObject(safari))
+        XCTAssertEqual(safari["mode"] as? String, "safarivc")
+        let unavailable = try XCTUnwrap(safari["unavailable"] as? [String])
+        XCTAssertTrue(unavailable.contains("walnut_panel"))
+        XCTAssertTrue(unavailable.contains("console_list"))
+        XCTAssertFalse(unavailable.contains("walnut_browser"))
+        XCTAssertFalse(unavailable.contains("walnut_screenshot"))
+        let actions = try XCTUnwrap(safari["unavailableActions"] as? [String: [String]])
+        XCTAssertEqual(actions["walnut_browser"], ["back", "forward", "initial", "stop", "wait"])
+        XCTAssertEqual(actions["preload"], ["clear_logs", "logs"])
+        XCTAssertEqual(wk["mode"] as? String, "wkwebview")
+        XCTAssertEqual(wk["unavailable"] as? [String], [])
+        XCTAssertEqual(wk["unavailableActions"] as? [String: [String]], [:])
+        let safariTools = try XCTUnwrap(safari["tools"] as? [[String: Any]])
+        let wkTools = try XCTUnwrap(wk["tools"] as? [[String: Any]])
+        XCTAssertEqual(safariTools.compactMap { $0["name"] as? String }, wkTools.compactMap { $0["name"] as? String })
+    }
+
     func testNavigationSeparatesHTTPStatusFromLoadCompletion() throws {
         let state = AgentNavigation()
         XCTAssertFalse(state.isTerminal, "A newly replaced navigator has not loaded the requested page yet")

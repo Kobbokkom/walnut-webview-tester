@@ -4,7 +4,7 @@ import WebKit
 @MainActor
 extension ContentView {
     private static let browserTools = [
-        AgentTool.definition("walnut_capabilities", "List available Walnut MCP tools and the current browser mode."),
+        AgentTool.definition("walnut_capabilities", "List Walnut tools, the current browser mode, and unavailable tools or actions for that mode."),
         AgentTool.definition("walnut_browser", "Read browser state, open or change the current URL, navigate history, use the callback test page, or wait for a selector.", [
             "action": [
                 "type": "string",
@@ -22,6 +22,21 @@ extension ContentView {
             "panel": ["type": "string", "enum": DevToolsOverlay.allCases.map(\.rawValue) + ["sources"]]
         ], required: ["action"])
     ]
+    private static let agentTools = browserTools + AgentCapture.tools + AgentDevTools.tools + AgentSettings.tools
+
+    static func agentCapabilities(safari: Bool) -> [String: Any] {
+        let unavailable = AgentDevTools.tools.compactMap { $0["name"] as? String } + ["walnut_panel"]
+        let unavailableActions = [
+            "walnut_browser": ["back", "forward", "initial", "stop", "wait"],
+            "preload": ["clear_logs", "logs"],
+        ]
+        return [
+            "tools": agentTools,
+            "mode": safari ? "safarivc" : "wkwebview",
+            "unavailable": safari ? unavailable.sorted() : [],
+            "unavailableActions": safari ? unavailableActions : [:],
+        ]
+    }
 
     private var agentNavigation: AgentNavigation {
         useSafariWebView ? agentSafariNavigation : webViewNavigator.agentNavigation
@@ -36,6 +51,7 @@ extension ContentView {
     }
 
     private func resetAgentSession() {
+        AgentEngineInspection.revoke(webViewNavigator)
         webViewNavigator.hideAgentPointer()
         agentCaptureRecorder?.stopRecording()
         agentCaptureRecorder?.discardAgentRecording()
@@ -68,14 +84,13 @@ extension ContentView {
                 webViewNavigator.resourceManager.isCapturing
             )
         }
-        let tools = Self.browserTools + AgentCapture.tools + AgentDevTools.tools + AgentSettings.tools
-        guard let tool = tools.first(where: { $0["name"] as? String == name }) else {
+        guard let tool = Self.agentTools.first(where: { $0["name"] as? String == name }) else {
             throw AgentError("Unknown Walnut tool.")
         }
         try AgentTool.validate(arguments, using: tool)
-        let pageAction = name == "page_interact" && ["click", "fill", "move", "click_at", "press"].contains(arguments["action"] as? String ?? "")
+        let pageAction = name == "page_interact" && ["click", "fill", "select", "move", "click_at", "press"].contains(arguments["action"] as? String ?? "")
         let fixedTarget = pageAction || ["walnut_screenshot", "storage_write", "storage_clear"].contains(name) ? agentPageEvidence() : nil
-        let result = try await performAgentCall(name, arguments, tools: tools)
+        let result = try await performAgentCall(name, arguments)
         var envelope = fixedTarget ?? agentPageEvidence()
         envelope["data"] = result
         return envelope
@@ -95,15 +110,10 @@ extension ContentView {
         return envelope
     }
 
-    private func performAgentCall(_ name: String, _ arguments: [String: Any], tools: [[String: Any]]) async throws -> Any {
+    private func performAgentCall(_ name: String, _ arguments: [String: Any]) async throws -> Any {
         switch name {
         case "walnut_capabilities":
-            let names = Set(AgentDevTools.tools.compactMap { $0["name"] as? String })
-            return [
-                "tools": tools,
-                "mode": agentMode,
-                "unavailable": useSafariWebView ? names.sorted() : []
-            ]
+            return Self.agentCapabilities(safari: useSafariWebView)
         case "walnut_browser":
             return try await agentBrowser(arguments)
         case "walnut_panel":
@@ -384,6 +394,9 @@ extension ContentView {
             agentCaptureRecorder = activeRecorder
             guard await activeRecorder.startRecording(retainForAgent: true, saveToPhotos: save) else {
                 if agentCaptureRecorder === activeRecorder { agentCaptureRecorder = nil }
+                if let message = activeRecorder.startFailure {
+                    throw AgentError("Recording could not start: \(message)")
+                }
                 throw AgentError("Recording could not start.")
             }
             return AgentCapture.recordingStatus(activeRecorder)

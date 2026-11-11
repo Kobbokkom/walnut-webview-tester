@@ -12,10 +12,10 @@ brew install --cask kobbokkom/tap/walnut-agent
 walnut-agent --version
 ```
 
-For a manual install, download the macOS universal ZIP and its `.sha256` file from [GitHub Releases](https://github.com/Kobbokkom/walnut-webview-tester/releases). It supports Apple Silicon and Intel Macs running macOS 13 or later. For version 0.1.1, run this from the download folder:
+For a manual install, download the macOS universal ZIP and its `.sha256` file from [GitHub Releases](https://github.com/Kobbokkom/walnut-webview-tester/releases). It supports Apple Silicon and Intel Macs running macOS 13 or later. Run this from the download folder, replacing `VERSION` with the version in the ZIP filename:
 
 ```sh
-archive=walnut-agent-0.1.1-macos-universal.zip
+archive=walnut-agent-VERSION-macos-universal.zip
 walnut_dir="$HOME/.local/share/walnut-agent"
 shasum -a 256 -c "$archive.sha256" &&
   install -d "$HOME/.local/bin" "$walnut_dir" &&
@@ -35,6 +35,10 @@ Run `walnut-agent update` in Terminal. Homebrew installations refresh the tap an
 1. Put both devices on the same Wi-Fi network. In Walnut on the iPhone, tap the network icon to open **Mac Agent**, select **Start connection**, and tap **Copy pairing code**. Allow Local Network access if prompted.
 2. Run `walnut-agent pair` in a Mac terminal and paste the code into the hidden prompt. This saves the pairing in `~/.config/walnut-agent/pairing.json` with owner-only permissions. Keep the code out of agent chats.
 3. Keep Walnut in the foreground and start a CLI session or ask your agent to use it.
+
+On the Mac, allow Local Network access if macOS prompts for Walnut Agent or the app that starts it. If you dismissed the prompt, open **System Settings → Privacy & Security → Local Network**, check that app's access, then retry the connection.
+
+If clipboard sharing is unavailable, tap **Share pairing file** in Walnut and AirDrop it to your Mac while Walnut stays open. In Terminal, type `walnut-agent pair --file` followed by a space, drag in the file you just received, and press Return. Delete the received file after pairing. The file and code grant access to the current session and expire when that connection stops.
 
 ## Use with an agent
 
@@ -64,9 +68,11 @@ The `tools` response lists the connected phone's schemas in `result.data.tools` 
 
 Use `walnut_browser` with action `open` and a `url` the iPhone can reach. For a development server on the Mac, use the Mac's LAN address. `localhost` inside Walnut points to the iPhone.
 
-In WKWebView, `page_interact` action `observe` returns a `documentId`, visible control references, and viewport CSS coordinates. Pass the current document ID and coordinates to `move` or `click_at`. Walnut shows the pointer and sends page events. Use `press` for supported keys such as `A` or `Backspace`, and observe the result. Use the iPhone directly for native touch, focus, keyboard, IME, or browser shortcuts. Review and approve requested interactions and page text sharing on the iPhone.
+In WKWebView, `page_interact` action `observe` returns a `documentId`, visible control references, and viewport CSS coordinates. Pass the current document ID and coordinates to `move` or `click_at`. Use `fill` for text fields and plain-text editing areas, `select` for observed select options, and `press` for supported keys such as `A` or `Backspace`. For a same-origin frame, pass its `framePath` and use the `frameDocumentId` returned by observation in subsequent actions. Observe again after each change. Use the iPhone directly for native touch, keyboard, IME, or browser shortcuts. Review and approve requested interactions and page text sharing on the iPhone.
 
 After approval, `walnut_screenshot` saves a private PNG to the Mac. If Mac storage fails after the iPhone returns the capture, the error response retains `result.data.savedToPhotos` so you can tell whether Walnut already saved it to Photos. For a completed recording, `walnut_recording` with action `read` saves a private `.mov` file to the Mac, up to 512 MiB. Successful captures return the local file in `result.data.path`.
+
+In SafariVC the capture is of the host window. The remote page can be missing from the rendered image, so inspect the on-device preview before sharing it. Screen recording depends on iOS capture availability.
 
 If the phone shows a new pairing code, run `walnut-agent pair` again. If the connection drops mid-call, check the page and run state before retrying. The interrupted action may already have taken effect.
 
@@ -83,6 +89,18 @@ The CLI starts `iproxy` on `127.0.0.1` and forwards to the port in the pairing t
 ## Use an MCP client
 
 Register the same binary as a local stdio server with its absolute path as the command and `mcp` as the argument. Use `mcp --usb` for USB. The tool list comes from the connected iPhone. If the phone was unavailable at startup, reload the client after starting Mac Agent.
+
+## Inspect the WebKit engine
+
+The connected iPhone app must advertise the `agent_engine_inspection` tool in its live catalog.
+
+For engine-level debugging, enable **Settings → Apps → Safari → Advanced → Web Inspector** on the iPhone and connect it to a trusted Mac. Install `uv` with `brew install uv`. Start Mac Agent, pair as above, close other Walnut CLI sessions, then run `walnut-agent inspect --udid DEVICE_UDID`. The first run resolves the pinned `pymobiledevice3` adapter on the Mac. Add `--usb` to also route Walnut commands through the USB forwarder, or `--wifi` to use an Apple-trusted network connection for Web Inspector.
+
+Approve engine access to the current WKWebView document on the iPhone. When the CLI emits `event: ready`, send one JSON command per line with a positive integer `id`, a CDP `method`, and optional `params`. Read the response with the same `id` and any asynchronous events. For example, enable `Debugger`, then set a breakpoint with `Debugger.setBreakpointByUrl`, observe `Debugger.paused`, inspect its call frames, and resume or step. The ready message lists accepted methods. WebKit returns an error when a method is unavailable for the attached target.
+
+The inspector session ends on navigation, on disconnect, or when its input closes. Start a fresh session for a new document. Code execution and other sensitive actions require confirmation on the iPhone.
+
+For HTML, `sources_list` with `section: "html"` returns the current DOM serialized as HTML (`retrieval: "live-dom"`). To read WebKit's retained resource for the authorized HTTP(S) document, call `Page.getResourceTree` in the inspector session, then pass the top frame's `id` as `frameId` and its `url` to `Page.getResourceContent`. That response reports `retrieval: "webkit-resource"` and `base64Encoded`. WebKit may return decoded text from its retained buffer, so this result cannot establish byte-for-byte identity with the original HTTP response. The lookup makes no new HTTP request. Walnut reports an error if WebKit has no content or the authorized document resource changes.
 
 ## Configuration and tests
 
@@ -103,6 +121,8 @@ python3 walnut-agent/Tests/Fixtures/checkout.py
 To reach it from the iPhone, pass the Mac’s LAN address with `--host` and open `/checkout-a` and `/checkout-b` on port `8874`. Both routes reproduce a blank checkout with different causes.
 
 For the WKWebView interaction test, give your agent a goal such as “Open `/checkout-interaction` on the iPhone, submit the test shipment with delivery reference `WK-417`, and report the receipt number.” The agent can use `page_interact` to inspect the viewport, scroll to the form, fill the field, activate the button, and inspect the receipt. Approve page text sharing, filling, and activation on the iPhone when prompted.
+
+For a repeatable device check, use a dedicated QA installation of Walnut and run `python3 walnut-agent/Tests/Fixtures/verify-device.py http://MAC_LAN_IP:8874`. Keep the fixture running and approve each test action on the iPhone. The script exercises both browser modes, saves the capture paths, and reports which advertised tools it called successfully. For a Wi-Fi-off USB test, pass `--usb --udid DEVICE_UDID` and use a fixture URL reachable by the phone over its remaining connection.
 
 ## Package a release
 

@@ -5,7 +5,7 @@ import UIKit
 @MainActor
 enum AgentCapture {
     static let tools = [
-        AgentTool.definition("walnut_screenshot", "Capture the WKWebView or SafariVC app window after approval on the iPhone. SafariVC sharing also requires approval of the captured preview.", [
+        AgentTool.definition("walnut_screenshot", "Capture the WKWebView or the SafariVC host window after approval on the iPhone. The SafariVC preview can omit the remote page. Review it before sharing.", [
             "saveToPhotos": ["type": "boolean"]
         ]),
         AgentTool.definition("walnut_recording", "Start or stop an approved screen recording, query status, or read a completed video in base64 chunks.", [
@@ -35,12 +35,16 @@ enum AgentCapture {
             image = captured ? frame : nil
         }
         try validateTarget()
-        guard let image else { throw AgentError("Screenshot unavailable.") }
+        guard let image else {
+            throw AgentError(navigator == nil ? "Screenshot unavailable." : "WebKit did not capture visible pixels from the page.")
+        }
         if safariWindow != nil {
             guard await approveSafariPreview(image) else { throw AgentError("Screenshot sharing was denied.") }
             try validateTarget()
         }
-        return try await exportScreenshot(image, saveToPhotos: saveToPhotos, validateTarget: validateTarget)
+        var result = try await exportScreenshot(image, saveToPhotos: saveToPhotos, validateTarget: validateTarget)
+        result["captureScope"] = safariWindow == nil ? "wkWebView" : "hostWindow"
+        return result
     }
 
     static func exportScreenshot(

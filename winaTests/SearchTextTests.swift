@@ -422,15 +422,22 @@ final class SearchTextDOMIntegrationTests: XCTestCase {
         let navigator = WebViewNavigator()
         navigator.attach(to: webView)
         let manager = navigator.accessibilityManager
-        _ = await executeScript("window.axe = {run: function(){ return Promise.reject(new Error('audit failed')); }}")
+        _ = try await navigator.evaluateJavaScriptReportingErrors(
+            "window.axe = {run: () => Promise.reject(new Error('audit failed'))}; void 0",
+            contentWorld: AccessibilityManager.auditWorld
+        )
         await manager.runAudit(navigator: navigator)
         XCTAssertNotNil(manager.errorMessage)
         XCTAssertFalse(manager.hasScanned)
         XCTAssertFalse(manager.isScanning)
-        _ = await executeScript("window.axe = {run: function(){ return Promise.resolve({violations: []}); }}")
+        _ = try await navigator.evaluateJavaScriptReportingErrors(
+            "window.axe = {run: () => Promise.resolve({violations: []})}; void 0",
+            contentWorld: AccessibilityManager.auditWorld
+        )
         await manager.runAudit(navigator: navigator)
         XCTAssertNil(manager.errorMessage)
         XCTAssertTrue(manager.hasScanned)
+        XCTAssertFalse(manager.hasUntestedFrames)
         XCTAssertTrue(manager.issues.isEmpty)
         navigator.detach()
     }
@@ -440,16 +447,19 @@ final class SearchTextDOMIntegrationTests: XCTestCase {
         let navigator = WebViewNavigator()
         navigator.attach(to: webView)
         let manager = navigator.accessibilityManager
-        _ = await executeScript("""
-        window.axe = {run: function(){return Promise.resolve({violations: [{
+        _ = try await navigator.evaluateJavaScriptReportingErrors("""
+        window.axe = {run: () => Promise.resolve({violations: [{
           id:'image-alt', impact:'serious', help:'Images need alternative text',
           nodes:[{html:'<img src="missing.png">', target:['img']}]
-        }]});}};
-        """)
+        }]})}; void 0
+        """, contentWorld: AccessibilityManager.auditWorld)
         await manager.runAudit(navigator: navigator)
         XCTAssertTrue(manager.hasScanned)
         XCTAssertEqual(manager.issues.count, 1)
-        _ = await executeScript("window.axe = {run: function(){return Promise.reject(new Error('rescan failed'));}}")
+        _ = try await navigator.evaluateJavaScriptReportingErrors(
+            "window.axe = {run: () => Promise.reject(new Error('rescan failed'))}; void 0",
+            contentWorld: AccessibilityManager.auditWorld
+        )
         await manager.runAudit(navigator: navigator)
         XCTAssertTrue(manager.issues.isEmpty)
         XCTAssertFalse(manager.hasScanned)
@@ -844,6 +854,107 @@ final class SearchTextDOMIntegrationTests: XCTestCase {
 
         XCTAssertEqual(elementsCount, 0)
         XCTAssertEqual(index, 0)
+    }
+}
+
+extension SearchTextDOMIntegrationTests {
+    func testAccessibilityExportContinuesWithoutSplittingUTF8OrRerunning() async throws {
+        try await loadTestHTML("<html><body>Audit fixture</body></html>")
+        let navigator = WebViewNavigator()
+        navigator.attach(to: webView)
+        defer { navigator.detach() }
+        let manager = navigator.accessibilityManager
+        manager.hasScanned = true
+        func issue(_ text: String) -> AccessibilityIssue {
+            AccessibilityIssue(severity: .error, category: .other, help: text,
+                               failureSummary: "", element: "", fullHtml: String(repeating: "가🙂", count: 50_000),
+                               selector: nil, helpUrl: nil, ruleId: "image-alt")
+        }
+        manager.issues = [issue("Audit fixture")]
+        let context = AgentDevContext(navigator: navigator) { _ in true }
+        let first = try await AgentDevTools.callPage(
+            "accessibility_audit", AgentDevInput(values: ["format": "markdown", "run": false]), context
+        ) as? [String: Any]
+        let offset = try XCTUnwrap(first?["nextExportOffset"] as? Int)
+        let id = try XCTUnwrap(first?["exportId"] as? String)
+        let continuation = AgentDevInput(values: ["format": "markdown", "exportId": id, "exportOffset": offset])
+        let second = try await AgentDevTools.callPage(
+            "accessibility_audit", continuation, context
+        ) as? [String: Any]
+        let prefix = try XCTUnwrap(first?["export"] as? String)
+        let suffix = try XCTUnwrap(second?["export"] as? String)
+        XCTAssertEqual(prefix.utf8.count, offset)
+        XCTAssertLessThanOrEqual(offset, 256 * 1024)
+        XCTAssertEqual(prefix + suffix, manager.report(for: manager.issues))
+        XCTAssertNil(second?["nextExportOffset"])
+        XCTAssertEqual(second?["exportTruncated"] as? Bool, false)
+        manager.issues = [issue("Other fixture")]
+        do {
+            _ = try await AgentDevTools.callPage("accessibility_audit", continuation, context)
+            XCTFail("Continuation must not append a different report.")
+        } catch {
+            XCTAssertEqual(error.localizedDescription, "The Markdown report changed. Start exporting it again.")
+        }
+    }
+
+    func testAccessibilityExportUsesBundledAxeInsteadOfPageGlobal() async throws {
+        try await loadTestHTML("""
+        <!doctype html><html lang="en"><head><title>Audit fixture</title></head><body>
+        <main><img src="missing.png"><script>
+        window.axe = {run: () => Promise.resolve({violations: []})};
+        </script></main></body></html>
+        """)
+        let navigator = WebViewNavigator()
+        navigator.attach(to: webView)
+        defer { navigator.detach() }
+        var didAuthorize = false
+        let report = try await AgentDevTools.callPage(
+            "accessibility_audit", AgentDevInput(values: ["format": "markdown"]),
+            AgentDevContext(navigator: navigator) { _ in didAuthorize = true; return true }
+        ) as? [String: Any]
+        let markdown = try XCTUnwrap(report?["export"] as? String)
+        XCTAssertTrue(didAuthorize)
+        XCTAssertTrue(markdown.contains("# Accessibility Audit Report"))
+        XCTAssertTrue(markdown.contains("- Rule: image-alt"))
+        XCTAssertTrue(markdown.contains("<img"))
+        XCTAssertEqual(report?["scope"] as? String, "main-frame")
+        XCTAssertEqual(report?["hasUntestedFrames"] as? Bool, false)
+        XCTAssertEqual(report?["exportTruncated"] as? Bool, false)
+    }
+
+    func testAccessibilityAuditSkipsPageWorldAxeInSameOriginFrame() async throws {
+        try await loadTestHTML("""
+        <!doctype html><html lang="en"><head><title>Audit fixture</title></head><body>
+        <main><h1>Audit fixture</h1><iframe title="Embedded content" srcdoc="<!doctype html><html lang='en'>
+        <head><title>Embedded content</title></head><body><main><h1>Embedded content</h1>
+        <img src='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7' alt='fixture'>
+        </main></body></html>"></iframe></main></body></html>
+        """)
+        let axeURL = try XCTUnwrap(Bundle.main.url(forResource: "axe.min", withExtension: "js"))
+        let axeScript = try String(contentsOf: axeURL, encoding: .utf8)
+        let forged = try await webView.callAsyncJavaScript("""
+        const frame = document.querySelector('iframe').contentWindow;
+        frame.eval(axeScript);
+        frame.axe.configure({checks: [{id: 'has-alt', evaluate: () => false}]});
+        const results = await frame.axe.run(frame.document, {iframes: false});
+        return results.violations.some(issue => issue.id === 'image-alt');
+        """, arguments: ["axeScript": axeScript], in: nil, contentWorld: .page)
+        XCTAssertEqual(forged as? Bool, true)
+
+        let navigator = WebViewNavigator()
+        navigator.attach(to: webView)
+        defer { navigator.detach() }
+        let report = try await AgentDevTools.callPage(
+            "accessibility_audit", AgentDevInput(values: ["format": "markdown"]),
+            AgentDevContext(navigator: navigator) { _ in true }
+        ) as? [String: Any]
+        XCTAssertEqual(report?["scope"] as? String, "main-frame")
+        XCTAssertEqual(report?["hasUntestedFrames"] as? Bool, true)
+        XCTAssertTrue(navigator.accessibilityManager.issues.isEmpty)
+        let markdown = try XCTUnwrap(report?["export"] as? String)
+        XCTAssertTrue(markdown.contains("Embedded frames were skipped."))
+        navigator.accessibilityManager.clear()
+        XCTAssertFalse(navigator.accessibilityManager.hasUntestedFrames)
     }
 }
 

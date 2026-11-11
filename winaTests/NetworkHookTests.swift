@@ -7,10 +7,61 @@
 
 import Foundation
 import JavaScriptCore
+import SwiftUI
+import WebKit
 import XCTest
 @testable import wina
 
 final class NetworkHookTests: XCTestCase {
+
+    @MainActor
+    func testNetworkBridgeRetainsBoundedStackThroughCompletion() async throws {
+        let navigator = WebViewNavigator()
+        let coordinator = WKWebViewCoordinator(isLoading: .constant(false), navigator: navigator)
+        let configuration = WKWebViewConfiguration()
+        let controller = configuration.userContentController
+        controller.add(coordinator, name: "networkRequest")
+        defer { controller.removeScriptMessageHandler(forName: "networkRequest") }
+        let webView = WKWebView(frame: .zero, configuration: configuration)
+        await webView.loadHTMLStringAsync("<p>Network stack fixture</p>", baseURL: nil)
+        navigator.attach(to: webView)
+        let id = UUID()
+
+        _ = try await webView.evaluateJavaScript("""
+            (() => {
+                const bridge = window.webkit.messageHandlers.networkRequest;
+                const frame = {functionName: 'submitOrder', fileName: 'https://example.invalid/app.js', lineNumber: 14, columnNumber: 9};
+                const longFrame = {...frame, functionName: '🧪'.repeat(260), fileName: 'x'.repeat(3000)};
+                const id = '\(id.uuidString)';
+                bridge.postMessage({action: 'start', id, method: 'POST', url: 'https://example.invalid/order', type: 'fetch',
+                    stackFrames: [frame, {...frame, lineNumber: true}, {...frame, columnNumber: 1.5}, ...Array(60).fill(longFrame)],
+                    initiatorFunction: 'submitOrder'});
+                bridge.postMessage({action: 'complete', id, status: 201, statusText: 'Created'});
+                return true;
+            })()
+            """)
+        let completed = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+            navigator.networkManager.requests.contains { $0.id == id && $0.status == 201 }
+        }, object: nil)
+        await fulfillment(of: [completed], timeout: 3)
+        let request = try XCTUnwrap(navigator.networkManager.requests.first { $0.id == id })
+        let frames = try XCTUnwrap(request.stackFrames)
+        XCTAssertEqual(request.initiatorFunction, "submitOrder")
+        XCTAssertEqual(frames.count, 8)
+        XCTAssertEqual(frames.first?.lineNumber, 14)
+        XCTAssertEqual(frames.first?.columnNumber, 9)
+        XCTAssertEqual(frames.last?.functionName.utf16.count, 256)
+        XCTAssertEqual(frames.last?.fileName.utf16.count, 2048)
+
+        let result = try await AgentDevTools.call(
+            "network_detail", arguments: ["id": id.uuidString, "section": "overview", "raw": true], navigator: navigator,
+            storage: StorageManager(), console: ConsoleSession(), authorize: { _ in true }
+        )
+        let details = try XCTUnwrap(result as? [String: Any])
+        XCTAssertNotNil(details["durationMs"] as? Double)
+        XCTAssertEqual((details["stack"] as? [[String: Any]])?.first?["functionName"] as? String, "submitOrder")
+        withExtendedLifetime(webView) {}
+    }
 
     // MARK: - Helper Functions
 

@@ -93,13 +93,9 @@ extension AgentSettings {
         let action = try input.string("action")
         switch action {
         case "list", "history":
-            let raw = try input.flag("raw")
-            if raw { try await input.confirm("Share full saved Walnut \(action == "history" ? "history" : "bookmark") URLs with the paired Mac?") }
-            let query = try input.string("query", default: "", limit: 256)
-            let collection = action == "list" ? storage.bookmarks : storage.history
-            let visibleURLs = raw ? collection : collection.map(safeOrigin)
-            let matching = visibleURLs.filter { query.isEmpty || $0.localizedCaseInsensitiveContains(query) }
-            return ["urls": Array(matching.prefix(50)), "total": matching.count, "redacted": !raw]
+            return try await savedURLPage(input, action: action) {
+                action == "list" ? storage.bookmarks : storage.history
+            }
         case "clear_history":
             try await input.confirm("Clear all Walnut URL history on this iPhone?")
             storage.clearHistory()
@@ -121,6 +117,25 @@ extension AgentSettings {
         default: throw AgentError("Unknown bookmark action.")
         }
         return ["action": action, "bookmarkCount": storage.bookmarks.count, "historyCount": storage.history.count]
+    }
+
+    static func savedURLPage(
+        _ input: AgentSettingsInput, action: String, collection: () -> [String]
+    ) async throws -> [String: Any] {
+        let raw = try input.flag("raw")
+        let query = try input.string("query", default: "", limit: 256)
+        let pagination = AgentDevInput(values: input.arguments)
+        let offset = try pagination.int("offset", default: 0, range: 0...Int.max)
+        let limit = try pagination.int("limit", default: 50, range: 1...100)
+        if raw { try await input.confirm("Share full saved Walnut \(action == "history" ? "history" : "bookmark") URLs with the paired Mac?") }
+        let urls = collection()
+        let visibleURLs = raw ? urls : urls.map(safeOrigin)
+        let matching = visibleURLs.filter { query.isEmpty || $0.localizedCaseInsensitiveContains(query) }
+        let page = Array(matching.dropFirst(offset).prefix(limit))
+        var result: [String: Any] = ["urls": page, "total": matching.count, "redacted": !raw]
+        let nextOffset = offset + page.count
+        if nextOffset < matching.count { result["nextOffset"] = nextOffset }
+        return result
     }
 
     private static func safeOrigin(_ raw: String) -> String {

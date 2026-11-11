@@ -36,6 +36,22 @@ struct Pairing: Codable, Equatable {
         return try decode(data)
     }
 
+    static func fromFile(at file: URL) throws -> Self {
+        let descriptor = open(file.path, O_RDONLY | O_NOFOLLOW | O_NONBLOCK | O_CLOEXEC)
+        guard descriptor >= 0 else { throw AgentError("Could not open the pairing file.") }
+        let handle = FileHandle(fileDescriptor: descriptor, closeOnDealloc: true)
+        var status = stat()
+        guard fstat(descriptor, &status) == 0,
+              status.st_mode & S_IFMT == S_IFREG,
+              status.st_uid == getuid(),
+              status.st_size <= 1024,
+              let data = try handle.read(upToCount: 1025), data.count <= 1024,
+              let token = String(data: data, encoding: .utf8) else {
+            throw AgentError("The pairing file must be a UTF-8 text file owned by your user and no larger than 1 KiB.")
+        }
+        return try fromToken(token)
+    }
+
     static func load(from file: URL) throws -> Self {
         let descriptor = open(file.path, O_RDONLY | O_NOFOLLOW | O_NONBLOCK | O_CLOEXEC)
         guard descriptor >= 0 else {

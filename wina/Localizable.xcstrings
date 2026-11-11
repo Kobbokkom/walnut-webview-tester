@@ -170160,6 +170160,16 @@
                 }
           }
     },
+    "Embedded frames were skipped." : {
+          "localizations" : {
+                "ko" : {
+                      "stringUnit" : {
+                            "state" : "translated",
+                            "value" : "페이지에 삽입된 프레임은 검사하지 않았어요."
+                      }
+                }
+          }
+    },
     "Source" : {
           "localizations" : {
                 "ko" : {
@@ -170446,6 +170456,76 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Mac 연결"
+          }
+        }
+      }
+    },
+    "Could not prepare pairing file" : {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "페어링 파일을 준비하지 못했습니다"
+          }
+        }
+      }
+    },
+    "Share pairing file" : {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "페어링 파일 공유"
+          }
+        }
+      }
+    },
+    "If clipboard sharing is unavailable, AirDrop the pairing file to your Mac while keeping Walnut open." : {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "클립보드 공유를 사용할 수 없으면 Walnut을 연 상태에서 AirDrop으로 페어링 파일을 Mac에 보내세요."
+          }
+        }
+      }
+    },
+    "In Terminal, type this command followed by a space, drag in the file you just received, and press Return." : {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "터미널에서 이 명령을 입력하고 공백을 넣은 뒤, 방금 받은 파일을 끌어다 놓고 Return 키를 누르세요."
+          }
+        }
+      }
+    },
+    "Showing the first 50,000 characters." : {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "처음 50,000자까지 표시합니다."
+          }
+        }
+      }
+    },
+    "Show pairing code" : {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "페어링 코드 보기"
+          }
+        }
+      }
+    },
+    "The code and file allow a Mac to connect to this session. Share only with your Mac. Stopping the connection or leaving Walnut invalidates them. Delete the received file after pairing." : {
+      "localizations": {
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "코드와 파일로 현재 세션에 연결할 수 있습니다. 자신의 Mac에만 공유하세요. 연결을 중지하거나 Walnut을 벗어나면 사용할 수 없게 됩니다. 페어링 후 받은 파일을 삭제하세요."
           }
         }
       }

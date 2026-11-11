@@ -28,11 +28,13 @@ enum AgentSettings {
             "action": choices(["get", "clear", "test_page"]),
             "raw": ["type": "boolean", "default": false],
         ], required: ["action"]),
-        AgentTool.definition("bookmarks", "Read saved bookmarks and history, add or remove a bookmark, or remove and clear history. Existing full URLs and persistent mutations need confirmation.", [
+        AgentTool.definition("bookmarks", "Read saved bookmarks and history, add or remove a bookmark, or remove and clear history. Use nextOffset to continue list or history. Existing full URLs and persistent mutations need confirmation.", [
             "action": choices(["list", "history", "add", "remove", "remove_history", "clear_history"]),
             "url": ["type": "string"],
             "query": ["type": "string"],
             "raw": ["type": "boolean", "default": false],
+            "offset": ["type": "integer", "minimum": 0, "default": 0],
+            "limit": ["type": "integer", "minimum": 1, "maximum": 100, "default": 50],
         ], required: ["action"]),
     ] + preloadTools + menuTools + userAgentTools
 

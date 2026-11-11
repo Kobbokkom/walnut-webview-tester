@@ -55,6 +55,9 @@ cat > "$app/Contents/Info.plist" <<PLIST
     <key>CFBundleVersion</key><string>1</string>
     <key>LSBackgroundOnly</key><true/>
     <key>LSMinimumSystemVersion</key><string>13.0</string>
+    <key>NSLocalNetworkUsageDescription</key>
+    <string>Walnut Agent finds and connects to the Walnut session you started on your iPhone.</string>
+    <key>NSBonjourServices</key><array><string>_walnut-agent._tcp</string></array>
 </dict>
 </plist>
 PLIST

@@ -41,6 +41,8 @@ final class DeviceBridge: @unchecked Sendable {
         let timeout: TimeInterval
         switch tool {
         case "walnut_capabilities": timeout = 7
+        case "agent_engine_inspection" where arguments["method"] == nil && arguments["action"] as? String != "authorize":
+            timeout = 5
         case "walnut_screenshot": timeout = 105 // SafariVC can require two 45-second approvals.
         case "walnut_browser" where arguments["cleanStart"] as? Bool == true: timeout = 120
         default: timeout = 90

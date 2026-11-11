@@ -3,7 +3,7 @@ import Foundation
 
 @MainActor
 enum AgentDevTools {
-    static let tools = logTools + pageTools + storageTools
+    static let tools = logTools + pageTools + storageTools + [AgentEngineInspection.tool]
 
     static func call(
         _ tool: String,
@@ -17,6 +17,9 @@ enum AgentDevTools {
         try context.checkDocument()
         let input = AgentDevInput(values: arguments)
 
+        if tool == "agent_engine_inspection" {
+            return try await AgentEngineInspection.call(input: input, context: context)
+        }
         if logTools.contains(where: { $0["name"] as? String == tool }) {
             return try await callLogs(tool, input, context, console)
         }

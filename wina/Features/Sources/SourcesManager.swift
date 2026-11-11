@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import WebKit
 
 // MARK: - Models
 
@@ -50,6 +51,7 @@ struct StylesheetInfo: Identifiable {
     let isExternal: Bool
     let mediaText: String?
     let cssContent: String? // For search - inline CSS or fetched rules
+    var selection: String?
 }
 
 struct ScriptInfo: Identifiable {
@@ -61,6 +63,7 @@ struct ScriptInfo: Identifiable {
     let isAsync: Bool
     let isDefer: Bool
     let content: String? // For search - inline script content only
+    var selection: String?
 }
 
 // MARK: - Sources Manager
@@ -232,11 +235,12 @@ class SourcesManager {
 
     // MARK: - Stylesheets
 
-    static let stylesheetsScript = stylesheetsScript(result: "JSON.stringify(sheets)", includeContent: true)
+    static let stylesheetsScript = stylesheetsScript(result: "JSON.stringify(sheets)", includeContent: true, includeSelection: true)
 
-    static func stylesheetsScript(result: String, includeContent: Bool) -> String {
+    static func stylesheetsScript(result: String, includeContent: Bool, includeSelection: Bool = false) -> String {
         """
         (function() {
+            \(includeSelection ? SourceResourceScript.selection : "")
             const sheets = [];
             for (const sheet of document.styleSheets) {
                 let rulesCount = 0;
@@ -261,6 +265,7 @@ class SourcesManager {
                     rulesCount: rulesCount,
                     isExternal: !!sheet.href,
                     media: sheet.media ? sheet.media.mediaText : null,
+                    \(includeSelection ? "selection: sourceSelection(sheet, 'stylesheet').identity," : "")
                     cssContent: cssContent
                 });
             }
@@ -278,7 +283,7 @@ class SourcesManager {
         isLoading = true
         errorMessage = nil
 
-        if let result = await navigator.evaluateJavaScript(Self.stylesheetsScript) as? String,
+        if let result = try? await navigator.evaluateJavaScriptReportingErrors(Self.stylesheetsScript, contentWorld: .defaultClient) as? String,
            let data = result.data(using: .utf8),
            let jsonArray = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] {
             stylesheets = jsonArray.enumerated().map { idx, item in
@@ -288,7 +293,8 @@ class SourcesManager {
                     rulesCount: item["rulesCount"] as? Int ?? 0,
                     isExternal: item["isExternal"] as? Bool ?? false,
                     mediaText: item["media"] as? String,
-                    cssContent: item["cssContent"] as? String
+                    cssContent: item["cssContent"] as? String,
+                    selection: item["selection"] as? String
                 )
             }
         } else {
@@ -300,11 +306,12 @@ class SourcesManager {
 
     // MARK: - Scripts
 
-    static let scriptsScript = scriptsScript(result: "JSON.stringify(scripts)", includeContent: true)
+    static let scriptsScript = scriptsScript(result: "JSON.stringify(scripts)", includeContent: true, includeSelection: true)
 
-    static func scriptsScript(result: String, includeContent: Bool) -> String {
+    static func scriptsScript(result: String, includeContent: Bool, includeSelection: Bool = false) -> String {
         """
         (function() {
+            \(includeSelection ? SourceResourceScript.selection : "")
             const scripts = [];
             for (const script of document.scripts) {
                 // Only inline scripts have textContent (external scripts are empty)
@@ -315,6 +322,7 @@ class SourcesManager {
                     isModule: script.type === 'module',
                     isAsync: script.async,
                     isDefer: script.defer,
+                    \(includeSelection ? "selection: sourceSelection(script, 'script').identity," : "")
                     content: content
                 });
             }
@@ -332,7 +340,7 @@ class SourcesManager {
         isLoading = true
         errorMessage = nil
 
-        if let result = await navigator.evaluateJavaScript(Self.scriptsScript) as? String,
+        if let result = try? await navigator.evaluateJavaScriptReportingErrors(Self.scriptsScript, contentWorld: .defaultClient) as? String,
            let data = result.data(using: .utf8),
            let jsonArray = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] {
             scripts = jsonArray.enumerated().map { idx, item in
@@ -343,7 +351,8 @@ class SourcesManager {
                     isModule: item["isModule"] as? Bool ?? false,
                     isAsync: item["isAsync"] as? Bool ?? false,
                     isDefer: item["isDefer"] as? Bool ?? false,
-                    content: item["content"] as? String
+                    content: item["content"] as? String,
+                    selection: item["selection"] as? String
                 )
             }
         } else {

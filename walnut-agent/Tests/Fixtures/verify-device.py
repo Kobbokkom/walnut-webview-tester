@@ -1,0 +1,303 @@
+"""Exercise a paired Walnut QA device against the synthetic checkout server."""
+
+import argparse
+import json
+import subprocess
+import time
+from pathlib import Path
+from urllib.parse import urlsplit
+
+
+def require(condition, description):
+    if not condition:
+        raise RuntimeError(description)
+
+
+def verify_page_png(path):
+    require(Path(path).read_bytes()[:8] == b"\x89PNG\r\n\x1a\n", "Screenshot is not a PNG")
+    recognized = subprocess.run(["swift", "-e", """
+        import Foundation
+        import Vision
+        let request = VNRecognizeTextRequest()
+        let image = URL(fileURLWithPath: CommandLine.arguments[1])
+        try VNImageRequestHandler(url: image).perform([request])
+        print(request.results?.compactMap { $0.topCandidates(1).first?.string }.joined(separator: " ") ?? "")
+    """, path], check=True, capture_output=True, text=True, timeout=30).stdout
+    require("walnut developer tools verification" in " ".join(recognized.lower().split()),
+            "The captured image does not show the fixture page")
+
+
+class Verification:
+    def __init__(self, process, origin):
+        self.process = process
+        self.origin = origin
+        self.tools = set()
+        self.exercised = set()
+
+    def request(self, request):
+        self.process.stdin.write(json.dumps(request, separators=(",", ":")) + "\n")
+        self.process.stdin.flush()
+        line = self.process.stdout.readline()
+        require(line, "Walnut CLI closed before replying")
+        reply = json.loads(line)
+        require(reply["ok"], reply.get("error", "Walnut returned an error"))
+        return reply["result"]
+
+    def call(self, name, **arguments):
+        action = arguments.get("action", arguments.get("section"))
+        print(json.dumps({"call": name, "action": action}), flush=True)
+        result = self.request({"op": "call", "name": name, "arguments": arguments})
+        self.exercised.add(name)
+        require("runId" in result and "navigation" in result, "Missing execution evidence")
+        return result
+
+    def data(self, name, **arguments):
+        return self.call(name, **arguments)["data"]
+
+    def open(self, path, status=200, mode="wkwebview"):
+        result = self.call("walnut_browser", action="open", mode=mode, url=self.origin + path, recordHistory=False)
+        if mode == "wkwebview":
+            require(result["navigation"].get("httpStatus") == status, "Unexpected HTTP status")
+            require(result.get("documentId"), "No document committed")
+        return result
+
+    def verify(self, suites):
+        catalog = self.request({"op": "tools"})["data"]
+        self.tools = {entry["name"] for entry in catalog["tools"]}
+        self.exercised.add("walnut_capabilities")
+        print(json.dumps({"catalogCount": len(self.tools), "mode": catalog["mode"]}), flush=True)
+        self.data("settings_apply", settings={"privateBrowsing": True, "cleanStart": False})
+        failures = []
+        try:
+            for suite in suites:
+                try:
+                    getattr(self, f"verify_{suite}")()
+                except (KeyError, RuntimeError, StopIteration, subprocess.SubprocessError) as error:
+                    failures.append(suite)
+                    print(json.dumps({"failed": suite, "error": str(error)}), flush=True)
+        finally:
+            self.data("settings_reset")
+        require(not failures, f"Device verification failed for: {', '.join(failures)}")
+
+    def verify_diagnostics(self):
+        self.open("/agent-e2e")
+        console = self.data("console_configure", capture=True, preserveOnReload=True, clearStrategy="keep", regex=True)
+        network = self.data("network_configure", capture=True, preserveOnReload=True, clearStrategy="keep")
+        require(console["capture"] and console["regex"] and console["preserveOnReload"], "Console config was not applied")
+        require(network["capture"] and network["preserveOnReload"], "Network config was not applied")
+        self.data("settings_apply", settings={"customUserAgent": "Walnut iPhone E2E"})
+        mobile = self.open("/checkout-a", status=403)
+        self.data("settings_apply", settings={"customUserAgent": "Walnut Desktop E2E"})
+        desktop = self.open("/checkout-a")
+        require(mobile["documentId"] != desktop["documentId"], "UA retry did not commit another document")
+        broken = self.open("/checkout-b")
+        errors = self.data("console_list", type="error", raw=True, query="TypeError|renderer unavailable", regex=True,
+                           documentId=broken["documentId"])
+        require(errors["total"] > 0, "The 200 page's JavaScript error was not captured")
+        self.data("console_detail", id=errors["records"][0]["id"])
+        exported = self.data("console_list", documentId=broken["documentId"], format="json")
+        require(json.loads(exported["records"]), "Console export was empty")
+        print(json.dumps({"passed": "HTTP 403 vs 200 with JavaScript exception"}), flush=True)
+
+    def verify_tools(self):
+        page = self.open("/agent-e2e")
+        document = page["documentId"]
+        self.data("walnut_browser", action="wait", selector="#network-result")
+        for _ in range(20):
+            requests = self.data("network_list", method="POST", host=urlsplit(self.origin).hostname, minStatus=201,
+                                 maxStatus=201, documentId=document)["requests"]
+            if requests:
+                break
+            time.sleep(0.25)
+        require(requests, "Fixture POST 201 was not captured")
+        request_id = requests[0]["id"]
+        headers = self.data("network_detail", id=request_id, section="headers")
+        request_headers = {key.lower(): value for key, value in headers["requestHeaders"].items()}
+        response_headers = {key.lower(): value for key, value in headers["responseHeaders"].items()}
+        require(request_headers.get("x-walnut-e2e") == "fixture", "Missing the fixture request header")
+        require("application/json" in response_headers.get("content-type", ""), "Wrong fixture response Content-Type")
+        body = self.data("network_detail", id=request_id, section="response")
+        require("walnut-fixture-201" in body.get("body", ""), "Wrong captured response body")
+        request = self.data("network_detail", id=request_id, section="request")
+        require("WK-417" in request.get("body", ""), "Wrong captured request body")
+        stack = self.data("network_detail", id=request_id, section="overview", raw=True)
+        require(stack.get("stack") and "durationMs" in stack, "Missing request stack or timing")
+        resources = self.data("network_list", documentId=document)["resources"]
+        require(resources, "No resource timing was captured")
+        self.data("resources_detail", id=resources[0]["id"])
+        exported = self.data("network_list", method="POST", minStatus=201, maxStatus=201, format="json")
+        require(json.loads(exported["export"])["requests"], "Network export was empty")
+
+        scripts = self.data("sources_list", section="scripts", documentId=document)["entries"]
+        external = next((entry for entry in scripts if entry.get("external")), None)
+        require(external is not None, "Fixture external script is missing")
+        script = self.data("sources_detail", kind="script", index=external["index"], documentId=document)
+        require("walnutBreakpointFixture" in json.dumps(script), "External source text was not returned")
+        require(self.data("sources_list", section="tree", documentId=document)["total"] > 0, "No DOM tree")
+        sheets = self.data("sources_list", section="stylesheets", documentId=document)["entries"]
+        require(sheets, "Fixture stylesheet is missing")
+        css = self.data("sources_detail", kind="stylesheet", index=sheets[0]["index"], documentId=document)
+        require(css.get("rules"), "Fixture stylesheet has no rules")
+        require(self.data("performance_read", section="all").get("navigation"), "No navigation timing")
+        audit = self.data("accessibility_audit", run=True)
+        issue = next((row for row in audit["issues"] if row.get("ruleId") == "image-alt"), None)
+        require(issue is not None, "axe did not identify the intentionally missing alt attribute")
+        require(self.data("accessibility_detail", id=issue["id"]).get("failure"), "Missing axe failure evidence")
+        report = self.data("accessibility_audit", run=False, format="markdown")
+        require(report["scope"] == "main-frame" and report["hasUntestedFrames"], "Missing audit scope")
+        require("- Rule: image-alt" in report["export"], "Report does not contain the observed failure")
+
+        for kind in ("localStorage", "sessionStorage", "cookies"):
+            require(self.data("storage_list", type=kind, cookieScope="current")["total"] > 0, f"Fixture {kind} missing")
+            scope = {"path": "/checkout-receipt"} if kind == "cookies" else {}
+            read = {"type": kind, "query": "walnut-e2e-write", "raw": True, **scope}
+            for action, value in (("add", "first"), ("edit", "second"), ("remove", None)):
+                arguments = {"action": action, "type": kind, "key": "walnut-e2e-write", **scope}
+                if value is not None:
+                    arguments["value"] = value
+                require(self.data("storage_write", **arguments)["applied"], f"{kind} {action} failed")
+                entries = self.data("storage_list", **read)["entries"]
+                require([row["value"] for row in entries] == ([] if value is None else [value]),
+                        f"{kind} {action} did not have the expected result")
+                if kind == "cookies" and entries:
+                    require(entries[0]["path"] == scope["path"], "Cookie was written to the wrong path")
+        storage_export = self.data("storage_list", type="localStorage", format="text")
+        require("walnut-e2e-local" in storage_export["export"] and "local fixture value" in storage_export["export"],
+                "Storage export did not contain the fixture value")
+
+        require(self.data("page_search", action="find", query="Walnut search needle")["count"] == 2, "Search count did not match")
+        self.data("page_search", action="next")
+        self.data("page_search", action="previous")
+        self.data("page_search", action="clear")
+        self.data("walnut_panel", action="open", panel="console")
+        self.data("walnut_panel", action="close", panel="console")
+        self.data("snippets_list")
+        require(self.data("snippets_run", id="border_all", enabled=True)["active"], "Snippet did not activate")
+        require(self.data("snippets_reset")["reset"], "Snippet reset failed")
+        self.data("settings_get")
+        self.data("menus", menu="wk_toolbar", action="get")
+        self.data("preload", action="template", preset="empty")
+        self.data("user_agent", action="presets")
+        self.data("permissions", action="status")
+        self.data("diagnostics", section="api")
+        self.data("callbacks", action="test_page")
+        self.data("bookmarks", action="list")
+        self.data("storage_clear", type="sessionStorage")
+        self.data("accessibility_clear")
+        self.data("performance_clear")
+        self.data("console_clear")
+        self.data("network_clear")
+        print(json.dumps({"passed": "fixture network, sources, accessibility, storage and search"}), flush=True)
+
+    def find_control(self, document, label):
+        for _ in range(4):
+            viewport = self.data("page_interact", action="observe", documentId=document)
+            match = next((item for item in viewport["elements"] if item["label"] == label), None)
+            if match:
+                return match
+            if not self.data("page_interact", action="scroll", direction="down", documentId=document)["moved"]:
+                break
+        raise RuntimeError(f"Fixture control is not visible: {label}")
+
+    def verify_controls(self):
+        document = self.open("/agent-e2e")["documentId"]
+        field = self.find_control(document, "Delivery reference")
+        pointer = self.data("page_interact", action="move", documentId=document, **field["point"])
+        require(pointer.get("applied"), "Pointer did not move")
+        require(self.data("page_interact", action="fill", documentId=document, ref=field["ref"], text="WK-417")["applied"],
+                "Text field did not accept the reference")
+        shipping = self.find_control(document, "Shipping method")
+        pickup = next(option for option in shipping["options"] if option["label"] == "Express pickup")
+        require(pickup["value"] == "express" and not pickup["disabled"], "Express pickup was not reported as selectable")
+        require(self.data("page_interact", action="select", documentId=document,
+                          ref=shipping["ref"], optionIndexes=[pickup["index"]])["applied"],
+                "Select did not accept the option")
+        notes = self.find_control(document, "Delivery notes")
+        require(self.data("page_interact", action="fill", documentId=document, ref=notes["ref"], text="Use side door")["applied"],
+                "Contenteditable did not accept plain text")
+        value = self.data("console_evaluate", script="document.querySelector('#shipping').selectedIndex + ':' + document.querySelector('#notes').textContent")
+        require(value["result"] == f"{pickup['index']}:Use side door", "Page did not retain the selected option and edited text")
+        button = self.find_control(document, "Confirm shipment")
+        self.data("page_interact", action="click", documentId=document, ref=button["ref"])
+        for _ in range(20):
+            result = self.call("walnut_browser", action="status")
+            navigation = result["navigation"]
+            if (navigation.get("url", "").endswith("/checkout-receipt")
+                    and navigation.get("phase") in ("finished", "failed")
+                    and result.get("documentId")
+                    and result.get("documentId") != document):
+                break
+            time.sleep(0.25)
+        else:
+            raise RuntimeError("Submitting the form did not commit the receipt page")
+        require(navigation.get("phase") == "finished" and navigation.get("httpStatus") == 200,
+                f"Receipt navigation status: {navigation}")
+        receipt = self.data("page_interact", action="observe", documentId=result["documentId"])
+        require("WALNUT-6205" in receipt["text"], "Visible receipt number did not match")
+        print(json.dumps({"passed": "input, select, contenteditable, submit and receipt"}), flush=True)
+
+    def verify_capture(self):
+        self.open("/agent-e2e")
+        png = self.data("walnut_screenshot", saveToPhotos=False)
+        verify_page_png(png["path"])
+        print(json.dumps({"passed": "WKWebView screenshot with visible page text", "png": png["path"]}), flush=True)
+        self.data("walnut_recording", action="start", saveToPhotos=False)
+        time.sleep(2)
+        self.data("walnut_recording", action="stop", saveToPhotos=False)
+        for _ in range(30):
+            if self.data("walnut_recording", action="status")["available"]:
+                break
+            time.sleep(0.25)
+        movie = self.data("walnut_recording", action="read")
+        with Path(movie["path"]).open("rb") as media:
+            require(media.read(8)[4:] == b"ftyp", "Recording is not a QuickTime movie")
+        print(json.dumps({"passed": "WKWebView screenshot and recording", "png": png["path"], "video": movie["path"]}), flush=True)
+
+    def verify_safari(self):
+        page = self.open("/agent-e2e-redirect", mode="safarivc")
+        navigation = page["navigation"]
+        require(page["mode"] == "safarivc" and navigation["phase"] == "finished", f"SafariVC load failed: {navigation}")
+        require(urlsplit(navigation.get("url", "")).path == "/agent-e2e", f"SafariVC redirect not observed: {navigation}")
+        capabilities = self.data("walnut_capabilities")
+        require(capabilities["mode"] == "safarivc"
+                and {"sources_list", "walnut_panel"}.issubset(capabilities["unavailable"])
+                and "wait" in capabilities["unavailableActions"]["walnut_browser"],
+                "SafariVC did not report its unavailable tools")
+        print(json.dumps({"passed": "SafariVC redirect, load and capability restrictions"}), flush=True)
+        png = self.data("walnut_screenshot", saveToPhotos=False)
+        require(png.get("captureScope") == "hostWindow", "SafariVC did not report the host-window capture scope")
+        verify_page_png(png["path"])
+        print(json.dumps({"passed": "SafariVC host-window screenshot with visible page text", "png": png["path"]}), flush=True)
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("origin", help="LAN origin of the synthetic checkout.py fixture")
+    parser.add_argument("--cli", default="walnut-agent")
+    parser.add_argument("--usb", action="store_true")
+    parser.add_argument("--udid", help="Select a USB device")
+    suites = ("diagnostics", "tools", "capture", "controls", "safari")
+    parser.add_argument("--suite", choices=suites, action="append", help="Run a specific suite. May be repeated.")
+    args = parser.parse_args()
+    if args.udid and not args.usb:
+        parser.error("--udid requires --usb")
+    command = [args.cli, "session"] + (["--usb"] if args.usb else [])
+    if args.udid:
+        command += ["--udid", args.udid]
+    process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True, encoding="utf-8")
+    verification = Verification(process, args.origin.rstrip("/"))
+    try:
+        verification.verify(args.suite or suites)
+    finally:
+        print(json.dumps({"exercised": sorted(verification.exercised),
+                          "notExercised": sorted(verification.tools - verification.exercised)}), flush=True)
+        process.stdin.close()
+        try:
+            process.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            process.terminate()
+            process.wait(timeout=5)
+
+
+if __name__ == "__main__":
+    main()

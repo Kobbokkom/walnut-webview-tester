@@ -44,6 +44,20 @@ final class WebViewRecorderTests: XCTestCase {
         XCTAssertEqual(recorder.currentDuration, 0)
     }
 
+    func testCaptureStartupFailurePreservesSystemReason() async {
+        let recorder = WebViewRecorder(startCapture: { _ in
+            throw NSError(domain: "WalnutRecordingTest", code: 1, userInfo: [
+                NSLocalizedDescriptionKey: "Capture unavailable in this configuration."
+            ])
+        })
+        let started = await recorder.startRecording(retainForAgent: true, saveToPhotos: false)
+        XCTAssertFalse(started)
+        XCTAssertEqual(recorder.state, .idle)
+        XCTAssertNil(recorder.agentOutputURL)
+        XCTAssertNil(recorder.lastResult)
+        XCTAssertEqual(recorder.startFailure, "Capture unavailable in this configuration.")
+    }
+
     // MARK: - Stop Recording When Idle
 
     func testStopRecordingWhenIdleDoesNothing() {

@@ -5,6 +5,7 @@
 //  Coordinator for WKWebViewRepresentable handling navigation and script messages.
 //
 
+import CoreFoundation
 import OSLog
 import SwiftUI
 import WebKit
@@ -213,7 +214,8 @@ class WKWebViewCoordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScri
                 url: url,
                 requestType: requestType,
                 headers: headers,
-                body: requestBody
+                body: requestBody,
+                initiator: networkInitiator(from: body)
             )
 
         case "complete":
@@ -623,6 +625,29 @@ extension WKWebViewCoordinator {
 }
 
 private extension WKWebViewCoordinator {
+    func networkInitiator(from body: [String: Any]) -> (frames: [StackFrame]?, function: String?) {
+        func location(_ value: Any?) -> Int? {
+            guard let number = value as? NSNumber, CFGetTypeID(number) != CFBooleanGetTypeID(),
+                  let integer = number as? Int, (0...Int(Int32.max)).contains(integer) else { return nil }
+            return integer
+        }
+        let frames = (body["stackFrames"] as? [Any] ?? []).prefix(10).compactMap { raw -> StackFrame? in
+            guard let frame = raw as? [String: Any], let name = frame["functionName"] as? String,
+                  let file = frame["fileName"] as? String, !file.isEmpty,
+                  let line = location(frame["lineNumber"]), let column = location(frame["columnNumber"]) else { return nil }
+            return StackFrame(
+                functionName: String(decoding: name.utf16.prefix(256), as: UTF16.self),
+                fileName: String(decoding: file.utf16.prefix(2048), as: UTF16.self),
+                lineNumber: line,
+                columnNumber: column
+            )
+        }
+        let function = (body["initiatorFunction"] as? String).flatMap { name in
+            name.isEmpty ? nil : String(decoding: name.utf16.prefix(256), as: UTF16.self)
+        }
+        return (frames.isEmpty ? nil : frames, function ?? frames.first?.functionName)
+    }
+
     private func trackDocumentRequest(_ request: DocumentRequest, navigation: ObjectIdentifier) {
         documentRequests[navigation] = request
         navigator?.networkManager.addRequest(

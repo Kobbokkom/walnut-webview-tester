@@ -46,6 +46,7 @@ class WebViewNavigator {
     let recorder = WebViewRecorder()
     let agentNavigation = AgentNavigation()
     var agentLogSettings = AgentLogSettings()
+    @ObservationIgnored var agentInspectorGrant: AgentInspectorGrant?
 
     func setAgentDocument(_ documentID: UUID?) {
         consoleManager.agentDocumentID = documentID
@@ -199,6 +200,7 @@ class WebViewNavigator {
     func documentDidChange(in webView: WKWebView) {
         guard self.webView === webView else { return }
         hideAgentPointer()
+        agentInspectorGrant = nil
         documentID = UUID()
         setAgentDocument(agentTrackingEnabled ? documentID : nil)
         performanceManager.clear()
@@ -211,6 +213,7 @@ class WebViewNavigator {
     func detach(from previousWebView: WKWebView? = nil) {
         if let previousWebView, webView !== previousWebView { return }
         hideAgentPointer()
+        AgentEngineInspection.revoke(self)
         setAgentDocument(nil)
         recorder.stopRecording()
         canGoBackObservation?.invalidate()
@@ -327,12 +330,17 @@ class WebViewNavigator {
     /// Evaluate async JavaScript (supports Promises)
     @MainActor
     func callAsyncJavaScript(_ script: String) async -> Any? {
-        guard let webView else { return nil }
-        return try? await webView.callAsyncJavaScript(
+        try? await callAsyncJavaScriptReportingErrors(script)
+    }
+
+    @MainActor
+    func callAsyncJavaScriptReportingErrors(_ script: String, contentWorld: WKContentWorld = .page) async throws -> Any? {
+        guard let webView else { throw AgentError("The WKWebView is disconnected.") }
+        return try await webView.callAsyncJavaScript(
             script,
             arguments: [:],
             in: nil,
-            contentWorld: .page
+            contentWorld: contentWorld
         )
     }
 
@@ -395,11 +403,45 @@ class WebViewNavigator {
 
     @MainActor
     private func captureSnapshot(from webView: WKWebView) async -> UIImage? {
-        await withCheckedContinuation { continuation in
-            webView.takeSnapshot(with: nil) { image, _ in
+        guard !webView.bounds.isEmpty else { return nil }
+        let configuration = WKSnapshotConfiguration()
+        configuration.afterScreenUpdates = true
+        let snapshot: UIImage? = await withCheckedContinuation { continuation in
+            webView.takeSnapshot(with: configuration) { image, _ in
                 continuation.resume(returning: image)
             }
         }
+        if let snapshot, Self.hasVisiblePixels(snapshot) { return snapshot }
+        guard webView.window != nil, !Task.isCancelled else { return nil }
+        var rendered = false
+        let bounds = CGRect(origin: .zero, size: webView.bounds.size)
+        let fallback = UIGraphicsImageRenderer(size: bounds.size).image { _ in
+            rendered = webView.drawHierarchy(in: bounds, afterScreenUpdates: true)
+        }
+        return rendered && Self.hasVisiblePixels(fallback) ? fallback : nil
+    }
+
+    static func hasVisiblePixels(_ image: UIImage) -> Bool {
+        guard let pixels = image.cgImage else { return false }
+        switch pixels.alphaInfo {
+        case .none, .noneSkipFirst, .noneSkipLast: return true
+        default: break
+        }
+        let rgba = CGBitmapInfo.byteOrder32Big.rawValue | CGImageAlphaInfo.premultipliedLast.rawValue
+        guard let mask = CGContext(data: nil, width: pixels.width, height: pixels.height,
+                                   bitsPerComponent: 8, bytesPerRow: 0, space: CGColorSpaceCreateDeviceRGB(),
+                                   bitmapInfo: rgba) else { return false }
+        let bounds = CGRect(x: 0, y: 0, width: pixels.width, height: pixels.height)
+        mask.clear(bounds)
+        mask.draw(pixels, in: bounds)
+        guard let bytes = mask.data?.assumingMemoryBound(to: UInt8.self) else { return false }
+        for row in 0..<mask.height {
+            let start = row * mask.bytesPerRow
+            for offset in stride(from: start + 3, to: start + mask.width * 4, by: 4) where bytes[offset] > 0 {
+                return true
+            }
+        }
+        return false
     }
 
     var attachedCookieStore: (any StorageCookieStore)? {

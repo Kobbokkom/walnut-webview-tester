@@ -56,7 +56,7 @@ final class BridgeExchange: @unchecked Sendable {
                     request = pending
                     queue.asyncAfter(deadline: .now() + timeout) { [weak self, id = pending.id] in
                         guard let self, request?.id == id else { return }
-                        fail(AgentError("Walnut connection timed out. Keep Walnut open and check the connection."))
+                        fail(connectionError(AgentError("Walnut connection timed out. Keep Walnut open and check the connection.")))
                     }
                     if ready { send() }
                     if !started { start() }
@@ -78,13 +78,21 @@ final class BridgeExchange: @unchecked Sendable {
                 send()
             case .failed(let error),
                  .waiting(let error) where !ready:
-                fail(error)
+                fail(connectionError(error))
             case .cancelled:
                 fail(AgentError("The Walnut connection closed."))
             default: break
             }
         }
         connection.start(queue: queue)
+    }
+
+    private func connectionError(_ error: Error) -> Error {
+        // DNS-SD's kDNSServiceErr_PolicyDenied also covers Bonjour resolution blocked before TCP.
+        if (error as? NWError) == .dns(-65570) || connection.currentPath?.unsatisfiedReason == .localNetworkDenied {
+            return AgentError("Allow Walnut Agent or its host app in Mac System Settings → Privacy & Security → Local Network, then retry.")
+        }
+        return error
     }
 
     private func send() {

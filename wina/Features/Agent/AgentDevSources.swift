@@ -56,21 +56,46 @@ extension AgentDevTools {
         try checkSourceDocument(input, context)
         let kind = try input.required("kind")
         let query = try input.string("query") ?? ""
-        let script: String
         switch kind {
         case "element":
-            script = try elementDetailScript(input)
+            let script = try elementDetailScript(input)
+            try await context.confirm("Share the selected element details from this page with the Mac?")
+            return try await evaluateSourcePage(script, input, query: query, context: context)
         case "stylesheet", "script":
             let index = try input.int("index", default: -1, range: 0...100_000)
             guard index >= 0 else { throw AgentError("A stylesheet or script index is required.") }
-            script = kind == "stylesheet"
-                ? StylesheetDetailView.detailScript(index: index, result: "pageSheet(rules, rawCSS)")
-                : ScriptDetailView.inlineContentScript(index: index, result: "pageEntries({content: script.textContent})")
+            let resource: SourceResourceScript.Kind = kind == "stylesheet" ? .stylesheet : .script
+            let expected = try await approveSource(resource, index: index, context: context)
+            let script = switch resource {
+            case .stylesheet:
+                StylesheetDetailView.contentScript(index: index, expected: expected, result: "pageSheet(rules, rawCSS, retrieval)")
+            case .script:
+                ScriptDetailView.contentScript(index: index, expected: expected, result: "pageSource(content, retrieval)")
+            }
+            return try await evaluateSourcePage(script, input, query: query, context: context, asynchronous: true)
         default:
             throw AgentError("Invalid Sources detail kind.")
         }
-        try await context.confirm("Share the selected \(kind) details from this page with the Mac?")
-        return try await evaluateSourcePage(script, input, query: query, context: context)
+    }
+
+    private static func approveSource(_ kind: SourceResourceScript.Kind, index: Int, context: AgentDevContext) async throws -> String {
+        let value = try await context.navigator.evaluateJavaScriptReportingErrors(
+            SourceResourceScript.capture(kind, index: index), contentWorld: .defaultClient
+        )
+        try context.checkDocument()
+        guard let selection = try parseJSON(value) as? [String: String],
+              let expected = selection["identity"], let label = selection["label"] else {
+            throw AgentError("Source not found. Refresh Sources and select it again.")
+        }
+        var prompt = "Share the selected \(kind.rawValue) details from this page with the Mac?"
+        if !label.isEmpty {
+            prompt += "\n\n\(label)\n\nWalnut may request this resource under the page's network policy."
+            if selection["credentials"] == "include" {
+                prompt += " The request may include credentials for the resource's origin."
+            }
+        }
+        try await context.confirm(prompt)
+        return expected
     }
 
     private static func checkSourceDocument(_ input: AgentDevInput, _ context: AgentDevContext) throws {
@@ -108,7 +133,7 @@ extension AgentDevTools {
     }
 
     private static func evaluateSourcePage(
-        _ script: String, _ input: AgentDevInput, query: String, context: AgentDevContext
+        _ script: String, _ input: AgentDevInput, query: String, context: AgentDevContext, asynchronous: Bool = false
     ) async throws -> [String: Any] {
         let offset = try input.int("offset", default: 0, range: 0...100_000)
         let limit = try input.int("limit", default: 30, range: 1...100)
@@ -127,7 +152,11 @@ extension AgentDevTools {
             return \(script)
         })();
         """
-        let data = try await context.navigator.evaluateJavaScriptReportingErrors(wrapped, contentWorld: .defaultClient)
+        let data = if asynchronous {
+            try await context.navigator.callAsyncJavaScriptReportingErrors("return \(wrapped)", contentWorld: .defaultClient)
+        } else {
+            try await context.navigator.evaluateJavaScriptReportingErrors(wrapped, contentWorld: .defaultClient)
+        }
         try context.checkDocument()
         guard var payload = try parseJSON(data) as? [String: Any] else { throw AgentError("No Sources details returned.") }
         if let error = payload["error"] as? String { throw AgentError(error) }
@@ -226,6 +255,9 @@ extension AgentDevTools {
         const entries = keys.slice(offset, end).map(key => sourceSlice(values[key], {key: boundedText(key, 1024)}, 'value', 8192));
         return JSON.stringify({total: keys.length, entries});
     }
+    function pageSource(content, retrieval) {
+        return JSON.stringify({...JSON.parse(pageEntries({content})), retrieval});
+    }
     function pageHTML(html) {
         const entries = [];
         let total = 0;
@@ -235,7 +267,7 @@ extension AgentDevTools {
                 entries.push(sourceSlice(lines[i], {line: i + 1}, 'text', 2048));
             }
         }
-        return JSON.stringify({total, entries});
+        return JSON.stringify({total, entries, retrieval: 'live-dom'});
     }
     function pageMetadata(items, stylesheets, raw) {
         const entries = [];
@@ -258,13 +290,13 @@ extension AgentDevTools {
         });
         return JSON.stringify({total, entries});
     }
-    function pageSheet(rules, raw) {
+    function pageSheet(rules, raw, retrieval) {
         const filtered = rules.filter(row => matches(row.selector) || matches(row.text));
         const page = filtered.slice(offset, end).map(rule => {
             const selector = boundedText(rule.selector, 2048);
             return sourceSlice(rule.text, {selector}, 'text', 2048);
         });
-        return JSON.stringify(sourceSlice(raw, {total: filtered.length, rules: page}, 'raw', 32768));
+        return JSON.stringify(sourceSlice(raw, {total: filtered.length, rules: page, retrieval}, 'raw', 32768));
     }
     function pageMatchedRules(rules) {
         const filtered = rules.filter(row => matches(row.selector));
