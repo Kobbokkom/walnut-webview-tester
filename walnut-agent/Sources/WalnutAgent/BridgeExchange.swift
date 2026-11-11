@@ -56,7 +56,7 @@ final class BridgeExchange: @unchecked Sendable {
                     request = pending
                     queue.asyncAfter(deadline: .now() + timeout) { [weak self, id = pending.id] in
                         guard let self, request?.id == id else { return }
-                        fail(connectionError(AgentError("Walnut connection timed out. Keep Walnut open and check the connection.")))
+                        fail(connectionError(timeoutError()))
                     }
                     if ready { send() }
                     if !started { start() }
@@ -93,6 +93,15 @@ final class BridgeExchange: @unchecked Sendable {
             return AgentError("Allow Walnut Agent or its host app in Mac System Settings → Privacy & Security → Local Network, then retry.")
         }
         return error
+    }
+
+    private func timeoutError() -> AgentError {
+        let message = "Walnut connection timed out. Keep Walnut open and check the connection."
+        if case .service = connection.endpoint {
+            // macOS can wait for Bonjour permission without reporting a denied path.
+            return AgentError(message + " If prompted on the Mac, allow Local Network access and retry.")
+        }
+        return AgentError(message)
     }
 
     private func send() {
