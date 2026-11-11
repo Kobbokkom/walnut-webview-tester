@@ -254,13 +254,17 @@ struct BrowserSheetPresenter: UIViewControllerRepresentable {
     let resolve: (UUID, Bool) -> Void
     let showsCallback: () -> Bool
     let dismissCallback: () -> Void
-    var onBackground: () -> Void = {}
+    var onSceneExit: () -> Void = {}
     var onWindowAttached: (UIWindow) -> Void = { _ in }
 
     func makeUIViewController(context: Context) -> Presenter { Presenter() }
 
     func updateUIViewController(_ controller: Presenter, context: Context) {
         controller.update(self)
+    }
+
+    static func dismantleUIViewController(_ controller: Presenter, coordinator: ()) {
+        controller.detachFromScene()
     }
 
     final class Presenter: UIViewController, UISheetPresentationControllerDelegate {
@@ -279,7 +283,7 @@ struct BrowserSheetPresenter: UIViewControllerRepresentable {
         private var showsCallback = false
         private var callbackProvider: (() -> Bool)?
         private var dismissCallback: (() -> Void)?
-        private var onBackground: (() -> Void)?
+        private var onSceneExit: (() -> Void)?
         private var onWindowAttached: ((UIWindow) -> Void)?
         private var locale = Locale.current
         private weak var sceneWindow: UIWindow?
@@ -306,7 +310,7 @@ struct BrowserSheetPresenter: UIViewControllerRepresentable {
             resolve = input.resolve
             callbackProvider = input.showsCallback
             dismissCallback = input.dismissCallback
-            onBackground = input.onBackground
+            onSceneExit = input.onSceneExit
             onWindowAttached = input.onWindowAttached
             locale = input.locale
             // Safari's full-screen presentation temporarily detaches this view from its window.
@@ -324,7 +328,16 @@ struct BrowserSheetPresenter: UIViewControllerRepresentable {
             observedScene = scene
         }
 
-        @objc private func sceneDidEnterBackground(_: Notification) { onBackground?() }
+        @objc private func sceneDidEnterBackground(_: Notification) { onSceneExit?() }
+
+        func detachFromScene() {
+            NotificationCenter.default.removeObserver(self, name: UIScene.didEnterBackgroundNotification, object: observedScene)
+            requestProvider = nil
+            callbackProvider = nil
+            let exit = onSceneExit
+            onSceneExit = nil
+            Task { @MainActor in exit?() }
+        }
 
         private func observeRequests() {
             // UIKit keeps its presentation even while the SwiftUI host stops updating.

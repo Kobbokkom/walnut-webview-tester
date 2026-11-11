@@ -23,7 +23,7 @@ final class AgentApprovalTests: XCTestCase {
                     resolve: { state.gate.resolve($0, allow: $1) },
                     showsCallback: { state.showsCallback },
                     dismissCallback: { state.showsCallback = false },
-                    onBackground: { state.backgrounds += 1 }
+                    onSceneExit: { state.backgrounds += 1 }
                 )
                 .frame(width: 0, height: 0)
             }
@@ -106,6 +106,7 @@ final class AgentApprovalTests: XCTestCase {
         state.showsCallback = false
         try await waitForSheet { safari.presentedViewController == nil }
         XCTAssertTrue(host.presentedViewController === safari)
+        XCTAssertEqual(state.backgrounds, 0)
         NotificationCenter.default.post(name: UIScene.didEnterBackgroundNotification, object: scene)
         XCTAssertEqual(state.backgrounds, 1)
     }

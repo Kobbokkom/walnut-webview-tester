@@ -195,7 +195,7 @@ struct ContentView: View {
                 resolve: agentSession.resolveApproval,
                 showsCallback: { CallbackTestManager.shared.showResultAlert },
                 dismissCallback: { CallbackTestManager.shared.showResultAlert = false },
-                onBackground: stopBackgroundSession,
+                onSceneExit: stopBackgroundSession,
                 onWindowAttached: { [weak browserState] in browserState?.window = $0 }
             )
                 .frame(width: 0, height: 0)
@@ -203,10 +203,6 @@ struct ContentView: View {
         }
         .onChange(of: agentScenePhase) { _, phase in
             if phase == .background { stopBackgroundSession() }
-        }
-        .onDisappear {
-            // The underlying SwiftUI content disappears while UIKit presents Safari full screen.
-            if agentSafariNavigation.captureController?.presentingViewController == nil { agentSession.stop() }
         }
         .onAppear {
             safariRecordingIndicator.observe(
