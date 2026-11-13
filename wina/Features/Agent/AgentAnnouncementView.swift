@@ -43,6 +43,7 @@ struct AgentAnnouncementView: View {
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @AccessibilityFocusState private var headingFocused: Bool
     @State private var copyFeedback = CopiedFeedbackState()
 
@@ -66,7 +67,7 @@ struct AgentAnnouncementView: View {
         .background(Color(uiColor: .systemBackground))
         .copiedFeedbackOverlay($feedback.message)
         .presentationDetents([dynamicTypeSize.isAccessibilitySize ? .large : .fraction(0.80)])
-        .presentationSizing(.form)
+        .presentationSizing(.form.fitted(horizontal: false, vertical: horizontalSizeClass == .regular))
         .presentationDragIndicator(.visible)
         .accessibilityAction(.escape) { dismiss() }
         .onAppear {
