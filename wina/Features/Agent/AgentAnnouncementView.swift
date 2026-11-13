@@ -56,13 +56,23 @@ struct AgentAnnouncementView: View {
                 introduction
                 installation
                 location
-                actions
+                if horizontalSizeClass != .regular { actions }
             }
             .frame(maxWidth: 472, alignment: .leading)
             .padding(.horizontal, 24)
             .padding(.top, 20)
             .padding(.bottom, 4)
             .frame(maxWidth: .infinity)
+        }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            if horizontalSizeClass == .regular {
+                actions
+                    .frame(maxWidth: 472)
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 8)
+                    .frame(maxWidth: .infinity)
+                    .background(Color(uiColor: .systemBackground))
+            }
         }
         .background(Color(uiColor: .systemBackground))
         .copiedFeedbackOverlay($feedback.message)
