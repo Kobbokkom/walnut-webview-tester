@@ -9,9 +9,9 @@ final class BridgeExchange: @unchecked Sendable {
         let continuation: CheckedContinuation<Data, Error>
     }
 
-    private static let responseLimit = 16 * 1024 * 1024
     private let queue = DispatchQueue(label: "walnut-agent.exchange")
     private let connection: NWConnection
+    private let responseLimit: Int
     private var started = false
     private var ready = false
     private var closed = false
@@ -19,8 +19,9 @@ final class BridgeExchange: @unchecked Sendable {
     private var response = Data()
     private var closing: CheckedContinuation<Void, Never>?
 
-    init(to endpoint: NWEndpoint, using parameters: NWParameters) {
+    init(to endpoint: NWEndpoint, using parameters: NWParameters, responseLimit: Int = 16 * 1024 * 1024) {
         connection = NWConnection(to: endpoint, using: parameters)
+        self.responseLimit = responseLimit
     }
 
     deinit { connection.cancel() }
@@ -112,7 +113,7 @@ final class BridgeExchange: @unchecked Sendable {
     }
 
     private func receive() {
-        connection.receive(minimumIncompleteLength: 1, maximumLength: 64 * 1024) { [weak self] chunk, _, complete, error in
+        connection.receive(minimumIncompleteLength: 1, maximumLength: min(responseLimit + 1, 64 * 1024)) { [weak self] chunk, _, complete, error in
             guard let self, !closed else { return }
             if let chunk, !chunk.isEmpty {
                 guard let request else {
@@ -121,8 +122,8 @@ final class BridgeExchange: @unchecked Sendable {
                 }
                 let newline = chunk.firstIndex(of: 0x0A)
                 let prefix = chunk.prefix(upTo: newline ?? chunk.endIndex)
-                guard response.count + prefix.count <= Self.responseLimit else {
-                    fail(AgentError("The Walnut response exceeds 16 MiB."))
+                guard response.count + prefix.count <= responseLimit else {
+                    fail(AgentError("The Walnut response exceeds the \(responseLimit)-byte limit."))
                     return
                 }
                 response.append(prefix)

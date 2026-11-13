@@ -13,12 +13,18 @@ enum CLI {
                 let pairing = try Pairing.fromFile(at: URL(fileURLWithPath: arguments[2]))
                 try pairing.save(to: Pairing.file)
                 print("Saved Walnut pairing.")
-            case "pair" where arguments.count == 1:
+            case "pair":
+                let usb = try parseUSB(Array(arguments.dropFirst()))
                 var buffer = [CChar](repeating: 0, count: 1025)
-                guard readpassphrase("Walnut pairing token: ", &buffer, buffer.count, RPP_REQUIRE_TTY) != nil else {
-                    throw AgentError("Run `walnut-agent pair` from a terminal and paste the token shown in Walnut.")
+                guard readpassphrase("Walnut pairing code: ", &buffer, buffer.count, RPP_REQUIRE_TTY) != nil else {
+                    throw AgentError("Run `walnut-agent pair` from a terminal and enter the code shown in Walnut.")
                 }
-                let pairing = try Pairing.fromToken(String(cString: buffer))
+                let code = String(cString: buffer).trimmingCharacters(in: .whitespacesAndNewlines)
+                let pairing = if code.hasPrefix("walnut-agent:") {
+                    try Pairing.fromToken(code)
+                } else {
+                    try await PINPairing.pair(code: code, usb: usb)
+                }
                 try pairing.save(to: Pairing.file)
                 print("Saved Walnut pairing.")
             case "session", "mcp":
@@ -58,7 +64,7 @@ enum CLI {
     Usage:
       walnut-agent --version
       walnut-agent update
-      walnut-agent pair
+      walnut-agent pair [--usb [--local-port PORT] [--udid UDID]]
       walnut-agent pair --file PATH
       walnut-agent session [--usb [--local-port PORT] [--udid UDID]]
       walnut-agent mcp [--usb [--local-port PORT] [--udid UDID]]

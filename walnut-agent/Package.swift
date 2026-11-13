@@ -5,8 +5,9 @@ let package = Package(
     name: "walnut-agent",
     platforms: [.macOS(.v13)],
     products: [.executable(name: "walnut-agent", targets: ["WalnutAgent"])],
+    dependencies: [.package(path: "../WalnutPairing")],
     targets: [
-        .executableTarget(name: "WalnutAgent"),
+        .executableTarget(name: "WalnutAgent", dependencies: ["WalnutPairing"]),
         .testTarget(name: "WalnutAgentTests", dependencies: ["WalnutAgent"])
     ]
 )

@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A35C00000000000000000001 /* WalnutPairing in Frameworks */ = {isa = PBXBuildFile; productRef = A35C00000000000000000002 /* WalnutPairing */; };
 		407EB1142EEEDC8D00625A22 /* GoogleMobileAds in Frameworks */ = {isa = PBXBuildFile; productRef = 407EB1132EEEDC8D00625A22 /* GoogleMobileAds */; };
 		4097EBA02EEDC4B500E9A0D9 /* UAParserSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 4097EB262EEDC3C000E9A0D9 /* UAParserSwift */; };
 		4097EBA32EEDC4B600E9A0D9 /* SwiftSoup in Frameworks */ = {isa = PBXBuildFile; productRef = 4097EBA22EEDC4B600E9A0D9 /* SwiftSoup */; };
@@ -81,6 +82,7 @@
 				4097EBA02EEDC4B500E9A0D9 /* UAParserSwift in Frameworks */,
 				4097EBA32EEDC4B600E9A0D9 /* SwiftSoup in Frameworks */,
 				40BACKPORT12F14000000001 /* SwiftUIBackports in Frameworks */,
+				A35C00000000000000000001 /* WalnutPairing in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -155,6 +157,7 @@
 				40A1B0042F0E000000000004 /* TreeSitterHTMLRunestone */,
 				407EB1132EEEDC8D00625A22 /* GoogleMobileAds */,
 				40BACKPORT12F14000000002 /* SwiftUIBackports */,
+				A35C00000000000000000002 /* WalnutPairing */,
 			);
 			productName = wina;
 			productReference = 406E0D4B2EE4093D00D6F9C6 /* wina.app */;
@@ -272,6 +275,7 @@
 			mainGroup = 406E0D422EE4093D00D6F9C6;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
+				A35C00000000000000000003 /* XCLocalSwiftPackageReference "WalnutPairing" */,
 				4097EB252EEDC3C000E9A0D9 /* XCRemoteSwiftPackageReference "UAParserSwift" */,
 				4097EBA12EEDC4B600E9A0D9 /* XCRemoteSwiftPackageReference "SwiftSoup" */,
 				40A1B0012F0E000000000001 /* XCRemoteSwiftPackageReference "Runestone" */,
@@ -671,6 +675,13 @@
 		};
 /* End XCConfigurationList section */
 
+/* Begin XCLocalSwiftPackageReference section */
+		A35C00000000000000000003 /* XCLocalSwiftPackageReference "WalnutPairing" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = WalnutPairing;
+		};
+/* End XCLocalSwiftPackageReference section */
+
 /* Begin XCRemoteSwiftPackageReference section */
 		4097EB252EEDC3C000E9A0D9 /* XCRemoteSwiftPackageReference "UAParserSwift" */ = {
 			isa = XCRemoteSwiftPackageReference;
@@ -723,6 +734,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		A35C00000000000000000002 /* WalnutPairing */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A35C00000000000000000003 /* XCLocalSwiftPackageReference "WalnutPairing" */;
+			productName = WalnutPairing;
+		};
 		407EB1132EEEDC8D00625A22 /* GoogleMobileAds */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 4097F6F42EEEDB3600E9A0D9 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */;

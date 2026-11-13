@@ -91,8 +91,8 @@ struct Pairing: Codable, Equatable {
 
     private static var invalidPairing: AgentError { AgentError("Invalid Walnut pairing token.") }
 
-    private static func decode(_ data: Data) throws -> Self {
-        guard let value = try? JSONDecoder().decode(Self.self, from: data),
+    static func decode(_ data: Data) throws -> Self {
+        guard data.count <= 1024, let value = try? JSONDecoder().decode(Self.self, from: data),
               value.version == 1, value.port != 0, value.key.count == 32,
               (1...63).contains(value.serviceName.utf8.count),
               !value.serviceName.unicodeScalars.contains(where: CharacterSet.controlCharacters.contains) else {

@@ -10,6 +10,276 @@
     " id" : {
 
     },
+    "Use the same Wi-Fi network or connect your iPhone to your Mac by USB." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "같은 Wi-Fi에 연결하거나 iPhone과 Mac을 USB로 연결하세요."
+          }
+        }
+      }
+    },
+    "The token and file grant access to this session. Share only with your Mac. Stopping the connection or leaving Walnut invalidates them. Delete the received file after pairing." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "토큰과 파일로 현재 세션에 연결할 수 있습니다. 내 Mac에만 공유하세요. 연결을 중지하거나 Walnut을 벗어나면 만료됩니다. 페어링 후 받은 파일을 삭제하세요."
+          }
+        }
+      }
+    },
+    "Start a session in Terminal or ask your coding agent to use Walnut." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "터미널에서 세션을 시작하거나 코딩 에이전트에 Walnut 사용을 요청하세요."
+          }
+        }
+      }
+    },
+    "Run this command in Terminal on your Mac, then enter the code." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mac 터미널에서 이 명령을 실행한 다음 코드를 입력하세요."
+          }
+        }
+      }
+    },
+    "Paste the token into walnut-agent pair, or AirDrop the file to your Mac and drag it into Terminal after this command." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "walnut-agent pair에 토큰을 붙여넣거나, 파일을 Mac으로 AirDrop한 뒤 아래 명령 끝에 끌어다 놓으세요."
+          }
+        }
+      }
+    },
+    "Pairing token copied" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "페어링 토큰을 복사했습니다"
+          }
+        }
+      }
+    },
+    "Pairing name: %@" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "페어링 이름: %@"
+          }
+        }
+      }
+    },
+    "Pairing code ready" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "페어링 코드가 준비됐습니다"
+          }
+        }
+      }
+    },
+    "Pair with a file or token" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "파일 또는 토큰으로 페어링"
+          }
+        }
+      }
+    },
+    "Pair this Mac?" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이 Mac과 페어링할까요?"
+          }
+        }
+      }
+    },
+    "One-time code" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "일회용 코드"
+          }
+        }
+      }
+    },
+    "Mac paired" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mac 페어링 완료"
+          }
+        }
+      }
+    },
+    "Keep Walnut open while your Mac uses it." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mac에서 사용하는 동안 Walnut을 열어 두세요."
+          }
+        }
+      }
+    },
+    "Get a new pairing code" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "새 페어링 코드 받기"
+          }
+        }
+      }
+    },
+    "Get a new code to pair a Mac." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mac과 페어링하려면 새 코드를 받으세요."
+          }
+        }
+      }
+    },
+    "Valid for two minutes" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "2분간 유효"
+          }
+        }
+      }
+    },
+    "Could not start a pairing code. Try again or share a pairing file." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "페어링 코드를 만들지 못했습니다. 다시 시도하거나 페어링 파일을 공유하세요."
+          }
+        }
+      }
+    },
+    "Copy pairing token" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "페어링 토큰 복사"
+          }
+        }
+      }
+    },
+    "Copy command" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "명령 복사"
+          }
+        }
+      }
+    },
+    "Connect over USB" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "USB로 연결"
+          }
+        }
+      }
+    },
+    "Connect and unlock your iPhone. Install the USB helper on your Mac, then run the pairing command." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iPhone을 USB로 연결하고 잠금을 해제하세요. Mac에 USB 도구를 설치한 뒤 페어링 명령을 실행하세요."
+          }
+        }
+      }
+    },
+    "Confirmation number" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "확인 번호"
+          }
+        }
+      }
+    },
+    "Command copied" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "명령을 복사했습니다"
+          }
+        }
+      }
+    },
+    "Approve only if the confirmation number matches your Mac." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mac과 확인 번호가 같을 때만 승인하세요."
+          }
+        }
+      }
+    },
+    "Allow" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "허용"
+          }
+        }
+      }
+    },
+    "Deny" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "거절"
+          }
+        }
+      }
+    },
+    "Allow the connection only if this number matches your Mac." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mac 터미널에 표시된 번호와 같을 때만 연결을 허용하세요."
+          }
+        }
+      }
+    },
     "– insecure request on secure page" : {
       "localizations" : {
         "ar" : {

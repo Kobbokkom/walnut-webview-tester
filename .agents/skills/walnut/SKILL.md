@@ -5,7 +5,7 @@ description: Drive the paired Walnut app on an iPhone from a Mac to reproduce a 
 
 # Walnut
 
-Use `walnut-agent session`. If the CLI or pairing is missing, follow the install and pairing steps in the [Walnut Agent guide](https://github.com/Kobbokkom/walnut-webview-tester/tree/main/walnut-agent#install-on-mac). The user enters the pairing code in the Mac terminal's hidden prompt or imports the pairing file received from Walnut using `walnut-agent pair --file PATH`. Keep pairing credentials out of chat. Keep Walnut open in the iPhone foreground. Use `session --usb` when the connection is configured for USB.
+Use `walnut-agent session`. If the CLI or pairing is missing, follow the install and pairing steps in the [Walnut Agent guide](https://github.com/Kobbokkom/walnut-webview-tester/tree/main/walnut-agent#install-on-mac). The user enters the six-digit code in `walnut-agent pair` (`pair --usb` for USB) and checks that the confirmation number matches before approving on the phone. The user can also import a pairing file with `walnut-agent pair --file PATH`. Keep pairing credentials out of chat. Keep Walnut open in the iPhone foreground. Use `session --usb` when the connection is configured for USB.
 
 Keep one process with stdin and stdout open for the full run. Send one JSON line and read one JSON response before choosing the next call. Use a here-document for independent requests or a fixed sequence whose steps do not depend on previous outcomes.
 

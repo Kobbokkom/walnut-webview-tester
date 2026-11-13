@@ -24,9 +24,13 @@ binary="$app/Contents/MacOS/walnut-agent"
 mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources" "$staging/skill"
 binaries=()
 for arch in arm64 x86_64; do
-    build=(--package-path "$package" --scratch-path "$scratch/$arch" -c release --triple "$arch-apple-macosx")
+    build=(--package-path "$package" --scratch-path "$scratch/$arch" -c release --triple "$arch-apple-macosx" --jobs 2)
     swift build "${build[@]}"
     binaries+=("$(swift build "${build[@]}" --show-bin-path)/walnut-agent")
+done
+build_products=$(dirname "${binaries[0]}")
+for resource in BoringSSL-GRPC_openssl_grpc WalnutPairing_WalnutPairing; do
+    ditto "$build_products/$resource.bundle" "$app/Contents/Resources/$resource.bundle"
 done
 xcrun lipo -create "${binaries[@]}" -output "$binary"
 xcrun lipo "$binary" -verify_arch arm64
@@ -58,7 +62,7 @@ cat > "$app/Contents/Info.plist" <<PLIST
     <key>LSMinimumSystemVersion</key><string>13.0</string>
     <key>NSLocalNetworkUsageDescription</key>
     <string>Walnut Agent finds and connects to the Walnut session you started on your iPhone.</string>
-    <key>NSBonjourServices</key><array><string>_walnut-agent._tcp</string></array>
+    <key>NSBonjourServices</key><array><string>_walnut-agent._tcp</string><string>_walnut-pair._tcp</string></array>
 </dict>
 </plist>
 PLIST

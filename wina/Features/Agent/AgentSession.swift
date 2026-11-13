@@ -8,12 +8,20 @@ import UIKit
 @MainActor
 final class AgentSession {
     private(set) var pairingCode: String?
+    private(set) var pairingDeviceName: String?
     private(set) var isConnected = false
+    private var hasConnectedMac = false
     private(set) var isRunning = false
     private(set) var connectionError: String?
     var approval: AgentApprovalGate.Request? { approvals.pending }
 
     private let approvals = AgentApprovalGate()
+    private let pinListener = AgentPINListener()
+    var pairingPIN: String? { pinListener.code }
+    var pairingPINError: String? { pinListener.error ?? pairingStartError }
+    var hasPairingGrant: Bool { pinListener.didGrant || hasConnectedMac }
+    private var pairingStartError: String?
+    @ObservationIgnored private var pairingPayload: Data?
     @ObservationIgnored private var listener: NWListener?
     @ObservationIgnored private var peer: NWConnection?
     @ObservationIgnored private var handshake: NWConnection?
@@ -69,6 +77,12 @@ final class AgentSession {
         isRunning = false
         if Self.activeSession === self { Self.activeSession = nil }
         pairingCode = nil
+        pairingDeviceName = nil
+        pairingPayload = nil
+        pairingStartError = nil
+        hasConnectedMac = false
+        pinListener.stop()
+        if let approval { approvals.resolve(approval.id, allow: false) }
         listener?.cancel()
         listener = nil
         handshake?.cancel()
@@ -87,23 +101,43 @@ final class AgentSession {
     }
 
     func resolveApproval(_ id: UUID, _ allow: Bool) {
-        approvals.resolve(id, allow: allow && isConnected)
+        guard let approval, approval.id == id else { return }
+        let canAllow = approval.pairingConfirmation == nil ? isConnected : pairingPIN != nil && !isConnected
+        approvals.resolve(id, allow: allow && isRunning && canAllow)
+    }
+
+    func startPairingPIN() {
+        guard !isConnected, let pairingDeviceName, let pairingPayload else { return }
+        pairingStartError = nil
+        do {
+            try pinListener.start(serviceName: pairingDeviceName, payload: pairingPayload) { [weak self] verification in
+                guard let self, isRunning, !isConnected else { return false }
+                let message = String(localized: "Allow the connection only if this number matches your Mac.")
+                guard await approvals.authorize(message, pairingConfirmation: verification) else { return false }
+                return isRunning && !isConnected && !Task.isCancelled
+            }
+        } catch {
+            pairingStartError = String(localized: "Could not start a pairing code. Try again or share a pairing file.")
+        }
     }
 
     private func update(_ state: NWListener.State, name: String, key: Data, port: NWEndpoint.Port?) {
         switch state {
         case .ready:
             connectionError = nil
-            guard let port else { return }
+            guard let port, pairingPayload == nil else { return }
             let payload: [String: Any] = [
                 "version": 1, "serviceName": name, "port": Int(port.rawValue), "key": key.base64EncodedString()
             ]
             if let bytes = try? JSONSerialization.data(withJSONObject: payload) {
+                pairingDeviceName = name
+                pairingPayload = bytes
                 let token = bytes.base64EncodedString()
                     .replacingOccurrences(of: "+", with: "-")
                     .replacingOccurrences(of: "/", with: "_")
                     .replacingOccurrences(of: "=", with: "")
                 pairingCode = "walnut-agent:\(token)"
+                self.startPairingPIN()
             }
         case .waiting(let error):
             connectionError = error.localizedDescription
@@ -128,7 +162,9 @@ final class AgentSession {
                 case .ready where self.handshake === connection:
                     self.handshake = nil
                     self.peer = connection
+                    self.hasConnectedMac = true
                     self.isConnected = true
+                    self.pinListener.stop()
                     self.receive(connection, handler: handler)
                 case .failed, .cancelled:
                     self.disconnect(connection)

@@ -32,13 +32,15 @@ Run `walnut-agent update` in Terminal. Homebrew installations refresh the tap an
 
 ## Connect over Wi-Fi
 
-1. Put both devices on the same Wi-Fi network. In Walnut on the iPhone, tap the network icon to open **Mac Agent**, select **Start connection**, and tap **Copy pairing code**. Allow Local Network access if prompted.
-2. Run `walnut-agent pair` in a Mac terminal and paste the code into the hidden prompt. This saves the pairing in `~/.config/walnut-agent/pairing.json` with owner-only permissions. Keep the code out of agent chats.
-3. Keep Walnut in the foreground and start a CLI session or ask your agent to use it.
+1. Put both devices on the same Wi-Fi network. In Walnut on the iPhone, tap the network icon to open **Mac Agent**, then tap **Start connection**. Allow Local Network access if prompted.
+2. Run `walnut-agent pair` in a Mac terminal and enter the six digits shown in Walnut. If the CLI lists multiple iPhones, select the name shown below the code. If you need more time, tap **Get a new pairing code** when the code expires.
+3. Check that the confirmation number in Terminal matches the one on your iPhone, then tap **Allow**. Walnut saves the pairing in `~/.config/walnut-agent/pairing.json` with owner-only permissions. Keep Walnut in the foreground and start a CLI session or ask your agent to use it.
+
+The six digits work once, expire after two minutes, and have a limit of five attempts. The phone and Mac use BoringSSL's SPAKE2 exchange to verify the code without sending it. After you approve, the iPhone sends the connection credential through the encrypted pairing exchange. Keep the code out of agent chats.
 
 On the Mac, allow Local Network access if macOS prompts for Walnut Agent or the app that starts it. If you dismissed the prompt, open **System Settings → Privacy & Security → Local Network**, check that app's access, then retry the connection. If Walnut Agent is missing from the list on macOS 27.2 or later, click **+** and select the installed `Walnut Agent.app`. You can also run the CLI directly in Terminal to check the connection. See [Apple's local network privacy notes](https://developer.apple.com/documentation/technotes/tn3179-understanding-local-network-privacy).
 
-If clipboard sharing is unavailable, tap **Share pairing file** in Walnut and AirDrop it to your Mac while Walnut stays open. In Terminal, type `walnut-agent pair --file` followed by a space, drag in the file you just received, and press Return. Delete the received file after pairing. The file and code grant access to the current session and expire when that connection stops.
+You can also open **Pair with a file or copied token**. Paste the copied token into the `walnut-agent pair` prompt, or AirDrop the file to your Mac and run `walnut-agent pair --file PATH`. The file and token grant access to the current session until you stop it or leave Walnut. Delete the received file after pairing.
 
 ## Use with an agent
 
@@ -90,13 +92,14 @@ If the phone shows a new pairing code, run `walnut-agent pair` again. If the con
 
 ## Connect by USB
 
-Install `iproxy` with `brew install libusbmuxd`, attach the unlocked iPhone by USB and trust the Mac when prompted. Start Mac Agent and pair as above, then run:
+Install `iproxy` with `brew install libusbmuxd`, attach the unlocked iPhone by USB and trust the Mac when prompted. Start Mac Agent, then use the same code and confirmation steps:
 
 ```sh
+walnut-agent pair --usb
 walnut-agent session --usb
 ```
 
-The CLI starts `iproxy` on `127.0.0.1` and forwards to the port in the pairing token. If that Mac port is in use, append `--local-port PORT`. If more than one phone is connected, append `--udid UDID` to select one. USB forwarding uses the same authenticated bridge as Wi-Fi. See the [iproxy documentation](https://github.com/libimobiledevice/libusbmuxd/blob/master/docs/iproxy.1).
+The CLI starts `iproxy` on `127.0.0.1`. If the Mac port is in use, append `--local-port PORT`. If more than one phone is connected, append `--udid UDID` to both commands to select one. USB forwarding uses the same authenticated bridge as Wi-Fi. See the [iproxy documentation](https://github.com/libimobiledevice/libusbmuxd/blob/master/docs/iproxy.1).
 
 ## Use an MCP client
 

@@ -69,15 +69,20 @@ final class DeviceBridge: @unchecked Sendable {
         if let active, active.pairing == pairing { return active.exchange }
         active = nil
         let endpoint: NWEndpoint
-        if let usb {
-            let port = try startUSBProxy(usb, devicePort: pairing.port)
-            endpoint = .hostPort(host: "127.0.0.1", port: port)
+        if let forwarded = try usbEndpoint(devicePort: pairing.port) {
+            endpoint = forwarded
         } else {
             endpoint = .service(name: pairing.serviceName, type: "_walnut-agent._tcp", domain: "local.", interface: nil)
         }
         let exchange = BridgeExchange(to: endpoint, using: Self.parameters(key: pairing.key))
         active = (pairing, exchange)
         return exchange
+    }
+
+    func usbEndpoint(devicePort: UInt16) throws -> NWEndpoint? {
+        guard let usb else { return nil }
+        let port = try startUSBProxy(usb, devicePort: devicePort)
+        return .hostPort(host: "127.0.0.1", port: port)
     }
 
     static func request(id: String, tool: String, arguments: [String: Any]) throws -> Data {

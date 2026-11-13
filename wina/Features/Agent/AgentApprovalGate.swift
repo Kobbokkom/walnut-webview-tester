@@ -9,15 +9,16 @@ final class AgentApprovalGate {
         let id = UUID()
         let message: String
         let preview: UIImage?
+        let pairingConfirmation: String?
     }
 
     private(set) var pending: Request?
     @ObservationIgnored private var continuation: CheckedContinuation<Bool, Never>?
     @ObservationIgnored private var timeout: Task<Void, Never>?
 
-    func authorize(_ message: String, preview: UIImage? = nil) async -> Bool {
+    func authorize(_ message: String, preview: UIImage? = nil, pairingConfirmation: String? = nil) async -> Bool {
         guard pending == nil, !Task.isCancelled else { return false }
-        let request = Request(message: message, preview: preview)
+        let request = Request(message: message, preview: preview, pairingConfirmation: pairingConfirmation)
         let id = request.id
         return await withTaskCancellationHandler {
             await withCheckedContinuation { continuation in
