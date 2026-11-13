@@ -43,29 +43,29 @@ struct AgentAnnouncementView: View {
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @AccessibilityFocusState private var headingFocused: Bool
     @State private var copyFeedback = CopiedFeedbackState()
 
     let openMacAgent: () -> Void
+    private var usesTabletForm: Bool { UIDevice.current.userInterfaceIdiom == .pad }
 
     var body: some View {
         @Bindable var feedback = copyFeedback
         ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
+            VStack(alignment: .leading, spacing: usesTabletForm ? 12 : 18) {
                 introduction
                 installation
                 location
-                if horizontalSizeClass != .regular { actions }
+                if !usesTabletForm { actions }
             }
             .frame(maxWidth: 472, alignment: .leading)
             .padding(.horizontal, 24)
-            .padding(.top, 20)
+            .padding(.top, usesTabletForm ? 16 : 20)
             .padding(.bottom, 4)
             .frame(maxWidth: .infinity)
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            if horizontalSizeClass == .regular {
+            if usesTabletForm {
                 actions
                     .frame(maxWidth: 472)
                     .padding(.horizontal, 24)
@@ -91,7 +91,7 @@ struct AgentAnnouncementView: View {
             Image(.macAgentAnnouncement)
                 .resizable()
                 .scaledToFit()
-                .frame(width: 165, height: 96)
+                .frame(width: 165, height: usesTabletForm ? 72 : 96)
                 .accessibilityHidden(true)
             Text("Test web pages from your Mac")
                 .font(.title.bold())
