@@ -52,6 +52,12 @@ extension ContentView {
         agentCaptureRecorder.flatMap { $0.isAgentCapture ? $0 : nil }
     }
 
+    var canPresentAgentAnnouncement: Bool {
+        agentScenePhase == .active && !showWebView && !showSettings && !showPreloadSettings && !showAbout
+            && !showBookmarks && !showInfo && !showAgentConnection && !browserState.showsCallback
+            && !showCleanStartOptionsChanged && !showSafariUnsupportedAlert && !textFieldFocused
+    }
+
     func startAgentConnection(rememberedOnly: Bool) {
         agentSession.start(rememberedOnly: rememberedOnly, handler: { name, arguments in
             try await agentCall(name, arguments)
@@ -69,6 +75,15 @@ extension ContentView {
     func stopBackgroundSession() {
         agentSession.stop()
         stopSafariRecording()
+    }
+
+    func stopSafariRecording() {
+        safariRecordingIndicator.update(captureView: nil, isRecording: false)
+        screenRecorder.stopRecording()
+    }
+
+    func dismissAgentCallback() async throws -> Bool {
+        try await browserState.sheetPresenter?.dismissCallbackResult() ?? false
     }
 
     private func resetAgentSession() {

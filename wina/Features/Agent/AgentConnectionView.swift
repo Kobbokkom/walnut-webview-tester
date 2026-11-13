@@ -17,7 +17,7 @@ struct AgentConnectionView: View {
     let session: AgentSession
     let start: (_ rememberedOnly: Bool) -> Void
 
-    private static let installCommands = """
+    static let installCommands = """
     brew tap kobbokkom/tap
     brew install --cask kobbokkom/tap/walnut-agent
     """

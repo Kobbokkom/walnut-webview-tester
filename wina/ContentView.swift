@@ -44,26 +44,26 @@ struct ContentView: View {
     @State private var urlInputText: String = ""
     @State var showAbout: Bool = false
     @State var urlValidationState: URLValidationState = .empty
-    @State private var browserState = BrowserState()
+    @State var browserState = BrowserState()
     @State var isPreparingCleanStart = false
-    @State private var showCleanStartOptionsChanged = false
+    @State var showCleanStartOptionsChanged = false
     @State var validationTask: Task<Void, Never>?
     @State var webViewNavigator = WebViewNavigator()
     @State var screenRecorder = WebViewRecorder()
     @State var storageManager = StorageManager()
     @State private var storageEditor: StorageEditorTarget?
     @State var consoleSession = ConsoleSession()
-    @State private var showSafariUnsupportedAlert = false
+    @State var showSafariUnsupportedAlert = false
     @State private var safariUnsupportedURL = ""
     @FocusState var textFieldFocused: Bool
-    @Environment(\.scenePhase) private var agentScenePhase
+    @Environment(\.scenePhase) var agentScenePhase
     @Environment(\.locale) private var locale
     @State var agentSession = AgentSession()
     @State var agentSafariNavigation = AgentNavigation()
     @State var agentCaptureRecorder: WebViewRecorder?
     @State var agentCaptureDefaults: (console: Bool, network: Bool, resources: Bool)?
     @State var showAgentConnection = false
-    @State private var safariRecordingIndicator = SafariRecordingIndicator()
+    @State var safariRecordingIndicator = SafariRecordingIndicator()
 
     // Shared URL storage
     var urlStorage: URLStorageManager { URLStorageManager.shared }
@@ -194,6 +194,7 @@ struct ContentView: View {
                 .padding(.top, 8)
             }
         }
+        .agentAnnouncement(openConnection: $showAgentConnection, canPresent: canPresentAgentAnnouncement, preferredScheme: preferredScheme)
         .sheet(isPresented: $showAgentConnection) {
             AgentConnectionView(session: agentSession) { rememberedOnly in
                 if agentScenePhase == .active { startAgentConnection(rememberedOnly: rememberedOnly) }
@@ -620,11 +621,6 @@ extension ContentView {
         withAnimation(.easeOut(duration: 0.2)) { showWebView = false }
     }
 
-    func stopSafariRecording() {
-        safariRecordingIndicator.update(captureView: nil, isRecording: false)
-        screenRecorder.stopRecording()
-    }
-
     func navigateDisplayedURL(
         _ url: String,
         recordsHistory: Bool = true,
@@ -738,10 +734,6 @@ extension ContentView {
 
     private var webViewIDBinding: Binding<UUID> { Binding(get: { webViewID }, set: { webViewID = $0 }) }
     private var loadedURLBinding: Binding<String> { Binding(get: { loadedURL }, set: { loadedURL = $0 }) }
-
-    func dismissAgentCallback() async throws -> Bool {
-        try await browserState.sheetPresenter?.dismissCallbackResult() ?? false
-    }
 
     func requireSafariPresentationAvailable() throws {
         guard let presented = browserState.window?.rootViewController?.presentedViewController else { return }

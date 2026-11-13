@@ -8,7 +8,8 @@ final class AdaptiveWorkspaceTests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = [
             "-debugAdRemovalOverride", "YES", "-appLanguage", "en", "-cleanStart", "NO", "-erudaModeEnabled", "NO",
-            "-hasInitializedWebViewSize", "YES", "-webViewWidthRatio", "1", "-webViewHeightRatio", "0.75"
+            "-hasInitializedWebViewSize", "YES", "-webViewWidthRatio", "1", "-webViewHeightRatio", "0.75",
+            "-hasSeenMacAgentAnnouncement", "YES",
         ]
         addUIInterruptionMonitor(withDescription: "System permission") { alert in
             for title in ["Ask App Not to Track", "Allow", "OK"] where alert.buttons[title].exists {
