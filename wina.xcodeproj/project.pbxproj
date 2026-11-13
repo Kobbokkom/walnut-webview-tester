@@ -486,7 +486,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 56;
+				CURRENT_PROJECT_VERSION = 71;
 				DEVELOPMENT_TEAM = X6M5USK89L;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -502,7 +502,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.8.18;
+				MARKETING_VERSION = 1.8.20;
 				PRODUCT_BUNDLE_IDENTIFIER = com.kobbokkom.wina;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -521,7 +521,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 56;
+				CURRENT_PROJECT_VERSION = 71;
 				DEVELOPMENT_TEAM = X6M5USK89L;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -537,7 +537,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.8.18;
+				MARKETING_VERSION = 1.8.20;
 				PRODUCT_BUNDLE_IDENTIFIER = com.kobbokkom.wina;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -555,10 +555,10 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 56;
+				CURRENT_PROJECT_VERSION = 71;
 				DEVELOPMENT_TEAM = X6M5USK89L;
 				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.8.18;
+				MARKETING_VERSION = 1.8.20;
 				PRODUCT_BUNDLE_IDENTIFIER = com.kobbokkom.winaTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
@@ -575,10 +575,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 56;
+				CURRENT_PROJECT_VERSION = 71;
 				DEVELOPMENT_TEAM = X6M5USK89L;
 				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.8.18;
+				MARKETING_VERSION = 1.8.20;
 				PRODUCT_BUNDLE_IDENTIFIER = com.kobbokkom.winaUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
@@ -597,10 +597,10 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 56;
+				CURRENT_PROJECT_VERSION = 71;
 				DEVELOPMENT_TEAM = X6M5USK89L;
 				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.8.18;
+				MARKETING_VERSION = 1.8.20;
 				PRODUCT_BUNDLE_IDENTIFIER = com.kobbokkom.winaTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
@@ -617,10 +617,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 56;
+				CURRENT_PROJECT_VERSION = 71;
 				DEVELOPMENT_TEAM = X6M5USK89L;
 				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.8.18;
+				MARKETING_VERSION = 1.8.20;
 				PRODUCT_BUNDLE_IDENTIFIER = com.kobbokkom.winaUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
@@ -696,7 +696,7 @@
 			repositoryURL = "https://github.com/scinfu/SwiftSoup.git";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 2.7.0;
+				minimumVersion = 2.14.4;
 			};
 		};
 		4097F6F42EEEDB3600E9A0D9 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */ = {
@@ -704,7 +704,7 @@
 			repositoryURL = "https://github.com/googleads/swift-package-manager-google-mobile-ads.git";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 12.14.0;
+				minimumVersion = 13.12.0;
 			};
 		};
 		40A1B0012F0E000000000001 /* XCRemoteSwiftPackageReference "Runestone" */ = {
@@ -712,7 +712,7 @@
 			repositoryURL = "https://github.com/simonbs/Runestone.git";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 0.5.0;
+				minimumVersion = 0.5.2;
 			};
 		};
 		40A1B0022F0E000000000002 /* XCRemoteSwiftPackageReference "TreeSitterLanguages" */ = {
