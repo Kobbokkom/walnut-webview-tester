@@ -8,6 +8,8 @@ import WalnutPairing
 @Observable
 @MainActor
 final class AgentSession {
+    static let autoConnectKey = "macAgentAutoConnect"
+
     private(set) var pairingCode: String?
     private(set) var pairingDeviceName: String?
     private(set) var isConnected = false
@@ -42,15 +44,16 @@ final class AgentSession {
     private static let maxRequest = 256 * 1024
     static let maxResponse = 16 * 1024 * 1024
 
-    func start(handler: @escaping Handler, onDisconnect: @escaping () -> Void) {
+    func start(rememberedOnly: Bool = false, handler: @escaping Handler, onDisconnect: @escaping () -> Void) {
         guard !isRunning else { return }
         guard Self.activeSession == nil else {
-            connectionError = "Stop the Mac Agent connection in the other Walnut window first."
+            if !rememberedOnly { connectionError = "Stop the Mac Agent connection in the other Walnut window first." }
             return
         }
         connectionError = nil
         do {
             try loadRememberedMac()
+            guard !rememberedOnly || hasRememberedMac else { return }
             let key = try Self.makeKey()
             let name = Self.makeServiceName()
             let listener = try NWListener(using: Self.parameters(key: key))
@@ -62,10 +65,10 @@ final class AgentSession {
                        port == PairingWire.port || port == PairingWire.rememberedPort {
                         // Keep both fixed bootstrap ports free for PIN entry and reconnect.
                         self.stop()
-                        self.start(handler: handler, onDisconnect: onDisconnect)
+                        self.start(rememberedOnly: rememberedOnly, handler: handler, onDisconnect: onDisconnect)
                         return
                     }
-                    self.update(state, name: name, key: key, port: listener.port)
+                    self.update(state, name: name, key: key, port: listener.port, rememberedOnly: rememberedOnly)
                 }
             }
             listener.newConnectionHandler = { [weak self, weak listener] connection in
@@ -85,6 +88,11 @@ final class AgentSession {
         } catch {
             connectionError = error.localizedDescription
         }
+    }
+
+    func stopManually() {
+        UserDefaults.standard.set(false, forKey: Self.autoConnectKey)
+        stop()
     }
 
     func stop() {
@@ -160,7 +168,7 @@ final class AgentSession {
             active.stop()
             active.rememberedPairing = nil
         }
-        stop()
+        stopManually()
         rememberedPairing = nil
         do {
             try AgentRememberedPairing.forget()
@@ -199,7 +207,7 @@ final class AgentSession {
         )
     }
 
-    private func update(_ state: NWListener.State, name: String, key: Data, port: NWEndpoint.Port?) {
+    private func update(_ state: NWListener.State, name: String, key: Data, port: NWEndpoint.Port?, rememberedOnly: Bool) {
         switch state {
         case .ready:
             connectionError = nil
@@ -207,11 +215,13 @@ final class AgentSession {
             do {
                 let bytes = try Self.encodePairing(version: 1, serviceName: name, port: port.rawValue, key: key)
                 pairingPayload = bytes
-                let token = bytes.base64EncodedString()
-                    .replacingOccurrences(of: "+", with: "-")
-                    .replacingOccurrences(of: "/", with: "_")
-                    .replacingOccurrences(of: "=", with: "")
-                pairingCode = "walnut-agent:\(token)"
+                if !rememberedOnly {
+                    let token = bytes.base64EncodedString()
+                        .replacingOccurrences(of: "+", with: "-")
+                        .replacingOccurrences(of: "/", with: "_")
+                        .replacingOccurrences(of: "=", with: "")
+                    pairingCode = "walnut-agent:\(token)"
+                }
                 if let rememberedPairing {
                     try startRememberedListener(rememberedPairing, commandPayload: bytes)
                 } else {

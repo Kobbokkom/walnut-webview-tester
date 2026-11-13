@@ -30,6 +30,26 @@
         }
       }
     },
+    "Connect automatically" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "자동 연결"
+          }
+        }
+      }
+    },
+    "Start Mac Agent when Walnut opens." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Walnut을 열면 Mac Agent가 자동으로 시작됩니다."
+          }
+        }
+      }
+    },
     "Forget this Mac?" : {
       "localizations" : {
         "ko" : {

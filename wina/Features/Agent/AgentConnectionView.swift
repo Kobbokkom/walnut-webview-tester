@@ -5,6 +5,7 @@ import UniformTypeIdentifiers
 
 struct AgentConnectionView: View {
     @Environment(\.dismiss) private var dismiss
+    @AppStorage(AgentSession.autoConnectKey) private var autoConnect = false
     @State private var copyFeedback = CopiedFeedbackState()
     @State private var showPairingFileOptions = false
     @State private var showInstallOptions = false
@@ -14,7 +15,7 @@ struct AgentConnectionView: View {
     @State private var pairingShareFailed = false
     @State private var confirmForgetMac = false
     let session: AgentSession
-    let start: () -> Void
+    let start: (_ rememberedOnly: Bool) -> Void
 
     private static let installCommands = """
     brew tap kobbokkom/tap
@@ -102,7 +103,7 @@ struct AgentConnectionView: View {
                     .font(.subheadline)
             }
             if session.isRunning {
-                Button(role: .destructive) { session.stop() } label: {
+                Button(role: .destructive) { session.stopManually() } label: {
                     Label("Stop connection", systemImage: "stop.circle")
                         .font(.subheadline.weight(.medium))
                         .foregroundStyle(.primary)
@@ -175,7 +176,7 @@ struct AgentConnectionView: View {
                 Label(error, systemImage: "exclamationmark.circle")
                     .font(.subheadline)
             }
-            Button(action: start) {
+            Button { start(false) } label: {
                 Label("Start connection", systemImage: "link")
                     .frame(maxWidth: .infinity)
             }
@@ -210,6 +211,24 @@ struct AgentConnectionView: View {
                 } label: {
                     optionLabel("Pair with a file or token", icon: "doc.badge.arrow.up")
                 }
+            }
+            if session.hasRememberedMac {
+                Divider()
+                Toggle(isOn: Binding(get: { autoConnect }, set: { enabled in
+                    autoConnect = enabled
+                    if enabled { start(true) }
+                })) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Connect automatically")
+                            .font(.subheadline.weight(.medium))
+                        Text("Start Mac Agent when Walnut opens.")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.vertical, 8)
+                    .frame(minHeight: 48, alignment: .leading)
+                }
+                .tint(.accentColor)
             }
             if session.hasRememberedMac || session.pairingStorageError != nil {
                 Divider()

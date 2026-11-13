@@ -30,8 +30,8 @@ enum PINPairing {
             return command
         } catch {
             try Task.checkCancellation()
-            throw AgentError("Could not reconnect to Walnut. Tap Start Connection in Mac Agent on your iPhone. "
-                + "If you forgot the Mac on the iPhone, pair again. (\(error.localizedDescription))")
+            throw AgentError("Could not reconnect to Walnut. Keep Walnut open on your iPhone. If automatic connection is off, "
+                + "tap Start connection in Mac Agent. If you forgot the Mac, pair again. (\(error.localizedDescription))")
         }
     }
 

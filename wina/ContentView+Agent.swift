@@ -52,10 +52,23 @@ extension ContentView {
         agentCaptureRecorder.flatMap { $0.isAgentCapture ? $0 : nil }
     }
 
-    func startAgentConnection() {
-        agentSession.start(handler: { name, arguments in
+    func startAgentConnection(rememberedOnly: Bool) {
+        agentSession.start(rememberedOnly: rememberedOnly, handler: { name, arguments in
             try await agentCall(name, arguments)
         }, onDisconnect: resetAgentSession)
+    }
+
+    func updateAgentConnection(for phase: ScenePhase) {
+        if phase == .background {
+            stopBackgroundSession()
+        } else if phase == .active, UserDefaults.standard.bool(forKey: AgentSession.autoConnectKey) {
+            startAgentConnection(rememberedOnly: true)
+        }
+    }
+
+    func stopBackgroundSession() {
+        agentSession.stop()
+        stopSafariRecording()
     }
 
     private func resetAgentSession() {

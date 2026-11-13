@@ -195,8 +195,10 @@ struct ContentView: View {
             }
         }
         .sheet(isPresented: $showAgentConnection) {
-            AgentConnectionView(session: agentSession, start: startAgentConnection)
-                .preferredColorScheme(preferredScheme)
+            AgentConnectionView(session: agentSession) { rememberedOnly in
+                if agentScenePhase == .active { startAgentConnection(rememberedOnly: rememberedOnly) }
+            }
+            .preferredColorScheme(preferredScheme)
         }
         .background {
             BrowserSheetPresenter(
@@ -213,8 +215,8 @@ struct ContentView: View {
                 .frame(width: 0, height: 0)
                 .accessibilityHidden(true)
         }
-        .onChange(of: agentScenePhase) { _, phase in
-            if phase == .background { stopBackgroundSession() }
+        .onChange(of: agentScenePhase, initial: true) { _, phase in
+            updateAgentConnection(for: phase)
         }
         .onAppear {
             safariRecordingIndicator.observe(
@@ -618,14 +620,9 @@ extension ContentView {
         withAnimation(.easeOut(duration: 0.2)) { showWebView = false }
     }
 
-    private func stopSafariRecording() {
+    func stopSafariRecording() {
         safariRecordingIndicator.update(captureView: nil, isRecording: false)
         screenRecorder.stopRecording()
-    }
-
-    private func stopBackgroundSession() {
-        agentSession.stop()
-        stopSafariRecording()
     }
 
     func navigateDisplayedURL(
@@ -772,7 +769,7 @@ extension ContentView {
     private func safariActivities(for controller: SFSafariViewController, revision: UUID?) -> [UIActivity] {
         let stopMacAgent: (() -> Void)?
         if agentSession.isRunning {
-            stopMacAgent = { agentSession.stop() }
+            stopMacAgent = agentSession.stopManually
         } else {
             stopMacAgent = nil
         }
