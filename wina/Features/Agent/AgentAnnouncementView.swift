@@ -77,7 +77,7 @@ struct AgentAnnouncementView: View {
         .background(Color(uiColor: .systemBackground))
         .copiedFeedbackOverlay($feedback.message)
         .presentationDetents([dynamicTypeSize.isAccessibilitySize ? .large : .fraction(0.80)])
-        .presentationSizing(.form.fitted(horizontal: false, vertical: horizontalSizeClass == .regular))
+        .presentationSizing(.form)
         .presentationDragIndicator(.visible)
         .accessibilityAction(.escape) { dismiss() }
         .onAppear {
