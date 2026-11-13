@@ -2,11 +2,22 @@ import Foundation
 import Network
 
 final class BridgeExchange: @unchecked Sendable {
+    struct BeforeSendError: LocalizedError {
+        let underlying: Error
+        var errorDescription: String? { underlying.localizedDescription }
+    }
+
     // All mutable state stays on the connection's callback queue.
     private struct Request {
         let id = UUID()
         let payload: Data
         let continuation: CheckedContinuation<Data, Error>
+        let reportsBeforeSend: Bool
+        var startedSending = false
+
+        func fail(_ error: Error) {
+            continuation.resume(throwing: reportsBeforeSend && !startedSending ? BeforeSendError(underlying: error) : error)
+        }
     }
 
     private let queue = DispatchQueue(label: "walnut-agent.exchange")
@@ -44,16 +55,20 @@ final class BridgeExchange: @unchecked Sendable {
         }
     }
 
-    func run(_ payload: Data, timeout: TimeInterval) async throws -> Data {
+    func run(_ payload: Data, timeout: TimeInterval, reportsBeforeSend: Bool = false) async throws -> Data {
         try await withTaskCancellationHandler {
             try Task.checkCancellation()
             return try await withCheckedThrowingContinuation { continuation in
                 queue.async { [self] in
-                    guard !closed, closing == nil, request == nil else {
-                        continuation.resume(throwing: AgentError("The Walnut connection closed. Retry to connect again."))
+                    let pending = Request(payload: payload, continuation: continuation, reportsBeforeSend: reportsBeforeSend)
+                    guard !closed, closing == nil else {
+                        pending.fail(AgentError("The Walnut connection closed. Retry to connect again."))
                         return
                     }
-                    let pending = Request(payload: payload, continuation: continuation)
+                    guard request == nil else {
+                        continuation.resume(throwing: AgentError("Another Walnut command is in progress."))
+                        return
+                    }
                     request = pending
                     queue.asyncAfter(deadline: .now() + timeout) { [weak self, id = pending.id] in
                         guard let self, request?.id == id else { return }
@@ -107,6 +122,7 @@ final class BridgeExchange: @unchecked Sendable {
 
     private func send() {
         guard let request else { return }
+        self.request?.startedSending = true
         connection.send(content: request.payload, completion: .contentProcessed { [weak self] error in
             if let error { self?.fail(error) }
         })
@@ -153,7 +169,7 @@ final class BridgeExchange: @unchecked Sendable {
         closed = true
         connection.stateUpdateHandler = nil
         connection.cancel()
-        request?.continuation.resume(throwing: error)
+        request?.fail(error)
         request = nil
         response = Data()
         closing?.resume()

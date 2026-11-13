@@ -49,6 +49,18 @@ final class PairingHandshakeTests: XCTestCase {
         }
     }
 
+    func testRememberedSecretAuthenticatesFreshExchanges() throws {
+        let secret = Data(repeating: 0xa4, count: PairingWire.rememberedSecretSize)
+        let context = PairingWire.rememberedContext
+        let client = try PairingHandshake(role: .client, secret: secret, context: context)
+        let server = try PairingHandshake(role: .server, secret: secret, context: context)
+        let nextServer = try PairingHandshake(role: .server, secret: secret, context: context)
+        let clientKeys = try client.finish(peer: server.message)
+        XCTAssertTrue(try server.finish(peer: client.message).verifyClientProof(clientKeys.clientProof))
+        XCTAssertFalse(try nextServer.finish(peer: client.message).verifyClientProof(clientKeys.clientProof))
+        XCTAssertThrowsError(try PairingHandshake(role: .client, secret: secret.dropLast(), context: context))
+    }
+
     func testCommitmentBindsClientShareAndNonce() throws {
         let message = Data(repeating: 1, count: PairingWire.messageSize)
         let nonce = Data(repeating: 2, count: PairingWire.nonceSize)

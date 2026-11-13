@@ -12,6 +12,7 @@ struct AgentConnectionView: View {
     @AccessibilityFocusState private var focusNewCode: Bool
     @State private var pairingFile: AgentPairingFile?
     @State private var pairingShareFailed = false
+    @State private var confirmForgetMac = false
     let session: AgentSession
     let start: () -> Void
 
@@ -50,6 +51,13 @@ struct AgentConnectionView: View {
         .alert("Could not prepare pairing file", isPresented: $pairingShareFailed) {
             Button("OK", role: .cancel) {}
         }
+        .alert("Forget this Mac?", isPresented: $confirmForgetMac) {
+            Button("Forget Mac", role: .destructive) { session.forgetRememberedMac() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("The current connection will end. Pair again to use this Mac.")
+        }
+        .onAppear { session.refreshRememberedMac() }
         .onChange(of: session.pairingCode) { _, _ in
             showPairingFileOptions = false
             clearPairingFile()
@@ -89,6 +97,10 @@ struct AgentConnectionView: View {
                     .accessibilityAddTraits(.isHeader)
                 connectionStatus
             }
+            if let error = session.pairingStorageError ?? session.reconnectError {
+                Label(error, systemImage: "exclamationmark.circle")
+                    .font(.subheadline)
+            }
             if session.isRunning {
                 Button(role: .destructive) { session.stop() } label: {
                     Label("Stop connection", systemImage: "stop.circle")
@@ -127,13 +139,13 @@ struct AgentConnectionView: View {
                 Text("Pairing name: \(name)")
                     .font(.caption.monospaced())
             }
-        } else if session.hasPairingGrant {
+        } else if session.isRunning, session.isPairingReady {
             Label("Mac paired", systemImage: "checkmark.circle.fill")
                 .font(.headline)
             Text("Start a session in Terminal or ask your coding agent to use Walnut.")
                 .font(.subheadline)
             commandRow("walnut-agent session")
-        } else if session.pairingCode != nil {
+        } else if session.pairingCode != nil, !session.hasRememberedMac {
             if let error = session.pairingPINError {
                 Label(error, systemImage: "exclamationmark.circle")
                     .font(.subheadline)
@@ -146,11 +158,20 @@ struct AgentConnectionView: View {
                 .controlSize(.large)
                 .accessibilityFocused($focusNewCode)
         } else if session.isRunning {
-            ProgressView("Starting connection")
+            if session.reconnectError == nil {
+                ProgressView("Starting connection")
+            }
         } else {
-            Text("Use the same Wi-Fi network or connect your iPhone to your Mac by USB.")
-                .font(.subheadline)
-            if let error = session.connectionError {
+            if session.hasRememberedMac {
+                Label("Mac paired", systemImage: "checkmark.circle.fill")
+                    .font(.headline)
+                Text("Start the connection to use your saved pairing.")
+                    .font(.subheadline)
+            } else {
+                Text("Use the same Wi-Fi network or connect your iPhone to your Mac by USB.")
+                    .font(.subheadline)
+            }
+            if session.pairingStorageError == nil, let error = session.connectionError {
                 Label(error, systemImage: "exclamationmark.circle")
                     .font(.subheadline)
             }
@@ -189,6 +210,15 @@ struct AgentConnectionView: View {
                 } label: {
                     optionLabel("Pair with a file or token", icon: "doc.badge.arrow.up")
                 }
+            }
+            if session.hasRememberedMac || session.pairingStorageError != nil {
+                Divider()
+                Button(role: .destructive) { confirmForgetMac = true } label: {
+                    optionLabel("Forget Mac", icon: "link.badge.minus")
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
             }
             Divider()
             DisclosureGroup(isExpanded: $showInstallOptions) {

@@ -34,9 +34,11 @@ Run `walnut-agent update` in Terminal. Homebrew installations refresh the tap an
 
 1. Put both devices on the same Wi-Fi network. In Walnut on the iPhone, tap the network icon to open **Mac Agent**, then tap **Start connection**. Allow Local Network access if prompted.
 2. Run `walnut-agent pair` in a Mac terminal and enter the six digits shown in Walnut. If the CLI lists multiple iPhones, select the name shown below the code. If you need more time, tap **Get a new pairing code** when the code expires.
-3. Check that the confirmation number in Terminal matches the one on your iPhone, then tap **Allow**. Walnut saves the pairing in `~/.config/walnut-agent/pairing.json` with owner-only permissions. Keep Walnut in the foreground and start a CLI session or ask your agent to use it.
+3. Check that the confirmation number in Terminal matches the one on your iPhone, then tap **Allow**. The iPhone saves the pairing in its Keychain, and the CLI saves its copy in `~/.config/walnut-agent/pairing.json` with owner-only permissions. Keep Walnut in the foreground and start a CLI session or ask your agent to use it.
 
 The six digits work once, expire after two minutes, and have a limit of five attempts. The phone and Mac use BoringSSL's SPAKE2 exchange to verify the code without sending it. After you approve, the iPhone sends the connection credential through the encrypted pairing exchange. Keep the code out of agent chats.
+
+For later connections, open **Mac Agent** on the iPhone, tap **Start connection**, and run `walnut-agent session` or `walnut-agent session --usb`. Stopping Mac Agent or leaving Walnut ends the active session. The saved pairing works again the next time you start it. Select **Forget Mac** in Walnut to revoke access or pair a different Mac. Pairings saved before this feature require one new six-digit pairing.
 
 On the Mac, allow Local Network access if macOS prompts for Walnut Agent or the app that starts it. If you dismissed the prompt, open **System Settings → Privacy & Security → Local Network**, check that app's access, then retry the connection. If Walnut Agent is missing from the list on macOS 27.2 or later, click **+** and select the installed `Walnut Agent.app`. You can also run the CLI directly in Terminal to check the connection. See [Apple's local network privacy notes](https://developer.apple.com/documentation/technotes/tn3179-understanding-local-network-privacy).
 
@@ -88,7 +90,7 @@ To test URL callbacks, open the test page with `walnut_browser` action `callback
 
 The `menus` tool configures the WKWebView toolbar and App Bar. Use `visibleOrder` to send just visible item identifiers, or `items` to place visible and hidden rows in a specific order. A row has `menuItem` and `isVisible`. `get` returns both views of the active layout. Session reset reveals the saved layout, while `reset` with `persist: true` restores Walnut's default layout after approval.
 
-If the phone shows a new pairing code, run `walnut-agent pair` again. If the connection drops mid-call, check the page and run state before retrying. The interrupted action may already have taken effect.
+If Walnut was stopped, tap **Start connection** on the iPhone and reconnect using the saved pairing. Pair again if the iPhone no longer has the saved pairing. If the connection drops mid-call, check the page and run state before retrying. The interrupted action may already have taken effect.
 
 ## Connect by USB
 
@@ -123,7 +125,7 @@ For HTML, `sources_list` with `section: "html"` returns the current DOM serializ
 
 ## Configuration and tests
 
-Set `WALNUT_AGENT_CONFIG` to use another absolute path for the pairing file. Use the same value for pairing and for the CLI or MCP process. Delete the file to forget the saved pairing, or run `pair` again to replace it.
+Set `WALNUT_AGENT_CONFIG` to use another absolute path for the pairing file. Use the same value for pairing and for the CLI or MCP process. Deleting this file removes the Mac's local copy. Select **Forget Mac** on the iPhone to revoke the pairing there.
 
 ```sh
 swift test --package-path walnut-agent

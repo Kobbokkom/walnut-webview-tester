@@ -1,5 +1,6 @@
 import Darwin
 import Foundation
+import WalnutPairing
 
 struct AgentError: LocalizedError {
     let message: String
@@ -33,7 +34,9 @@ struct Pairing: Codable, Equatable {
             .replacingOccurrences(of: "_", with: "/")
         encoded += String(repeating: "=", count: (4 - encoded.count % 4) % 4)
         guard let data = Data(base64Encoded: encoded) else { throw invalidPairing }
-        return try decode(data)
+        let pairing = try decode(data)
+        guard pairing.version == 1 else { throw invalidPairing }
+        return pairing
     }
 
     static func fromFile(at file: URL) throws -> Self {
@@ -93,7 +96,8 @@ struct Pairing: Codable, Equatable {
 
     static func decode(_ data: Data) throws -> Self {
         guard data.count <= 1024, let value = try? JSONDecoder().decode(Self.self, from: data),
-              value.version == 1, value.port != 0, value.key.count == 32,
+              value.version == 1 || (value.version == 2 && value.port == PairingWire.rememberedPort),
+              value.port != 0, value.key.count == 32,
               (1...63).contains(value.serviceName.utf8.count),
               !value.serviceName.unicodeScalars.contains(where: CharacterSet.controlCharacters.contains) else {
             throw invalidPairing

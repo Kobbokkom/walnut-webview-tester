@@ -5,6 +5,10 @@ public enum PairingWire {
     public static let context = "walnut-pair-v1"
     public static let serviceType = "_walnut-pair._tcp"
     public static let port: UInt16 = 58691
+    public static let rememberedContext = "walnut-resume-v1"
+    public static let rememberedServiceType = "_walnut-resume._tcp"
+    public static let rememberedPort: UInt16 = 58692
+    public static let rememberedSecretSize = 32
     public static let maximumFrame = 4096
     public static let messageSize = 32
     public static let nonceSize = 32

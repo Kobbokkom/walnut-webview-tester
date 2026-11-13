@@ -13,14 +13,15 @@ final class AgentPINListenerTests: XCTestCase {
     @MainActor private final class ApprovalState {
         var allowed = false
         var verifications: [String] = []
+        var committed = 0
     }
 
     func testPINRequiresApprovalAndGrantsOnlyOnce() async throws {
         let approval = ApprovalState()
-        let code = try await start { verification in
+        let code = try await start(commit: { approval.committed += 1 }, authorize: { verification in
             approval.verifications.append(verification)
             return approval.allowed
-        }
+        })
         defer { listener.stop() }
 
         let wrongCode = code == "000000" ? "000001" : "000000"
@@ -37,11 +38,13 @@ final class AgentPINListenerTests: XCTestCase {
         XCTAssertNil(denied.grant)
         XCTAssertEqual(approval.verifications, [denied.verification])
         XCTAssertEqual(listener.code, code)
+        XCTAssertEqual(approval.committed, 0)
 
         approval.allowed = true
         let approved = try await exchange(code: code)
         XCTAssertEqual(approved.grant, payload)
         XCTAssertEqual(approval.verifications, [denied.verification, approved.verification])
+        XCTAssertEqual(approval.committed, 1)
         XCTAssertNil(listener.code)
         XCTAssertTrue(listener.didGrant)
     }
@@ -62,11 +65,11 @@ final class AgentPINListenerTests: XCTestCase {
 
     func testStoppingPINClosesAwaitingClient() async throws {
         let asked = expectation(description: "Verification requested")
-        let code = try await start { _ in
+        let code = try await start(commit: { XCTFail("A stopped request must not be saved") }, authorize: { _ in
             asked.fulfill()
             do { try await Task.sleep(for: .seconds(30)) } catch { return false }
             return true
-        }
+        })
         defer { listener.stop() }
         let connecting = Task { try await exchange(code: code) }
         await fulfillment(of: [asked], timeout: 5)
@@ -76,19 +79,72 @@ final class AgentPINListenerTests: XCTestCase {
         XCTAssertNil(listener.code)
     }
 
-    private func start(_ authorize: @escaping @MainActor @Sendable (String) async -> Bool) async throws -> String {
-        try listener.start(serviceName: "Walnut-test-\(UUID().uuidString)", payload: payload, authorize: authorize)
-        let deadline = ContinuousClock.now + .seconds(3)
-        while listener.code == nil, listener.error == nil, ContinuousClock.now < deadline {
-            try await Task.sleep(for: .milliseconds(20))
+    func testFailingToSavePairingInvalidatesCodeWithoutGrant() async throws {
+        let code = try await start(commit: { throw URLError(.cannotWriteToFile) }, authorize: { _ in true })
+        defer { listener.stop() }
+        let result = try await exchange(code: code)
+        XCTAssertNil(result.grant)
+        XCTAssertNil(listener.code)
+        XCTAssertFalse(listener.didGrant)
+        XCTAssertNotNil(listener.error)
+    }
+
+    func testSavedKeyCanReconnectRepeatedlyWithoutPIN() async throws {
+        let secret = SymmetricKey(size: .bits256).withUnsafeBytes { Data($0) }
+        let wrongSecret = SymmetricKey(size: .bits256).withUnsafeBytes { Data($0) }
+        let name = "Walnut-test-\(UUID().uuidString)"
+        try listener.startRemembered(serviceName: name, secret: secret, payload: payload)
+        defer { listener.stop() }
+        try await waitUntilReady()
+        XCTAssertNil(listener.code)
+
+        let rejected = try await exchange(secret: wrongSecret)
+        XCTAssertNil(rejected.grant)
+        for _ in 0..<2 {
+            let approved = try await exchange(secret: secret)
+            XCTAssertEqual(approved.grant, payload)
+            XCTAssertTrue(listener.isReady)
+            XCTAssertFalse(listener.didGrant)
         }
-        let code = try XCTUnwrap(listener.code, listener.error ?? "PIN listener did not start")
+        listener.stop()
+        XCTAssertFalse(listener.isReady)
+    }
+
+    private func start(
+        commit: @escaping @MainActor @Sendable () throws -> Void = {},
+        authorize: @escaping @MainActor @Sendable (String) async -> Bool
+    ) async throws -> String {
+        try listener.start(serviceName: "Walnut-test-\(UUID().uuidString)", payload: payload, commit: commit, authorize: authorize)
+        try await waitUntilReady()
+        let code = try XCTUnwrap(listener.code)
         XCTAssertTrue(PairingWire.isCode(code))
         return code
     }
 
+    private func waitUntilReady() async throws {
+        let deadline = ContinuousClock.now + .seconds(3)
+        while !listener.isReady, listener.error == nil, ContinuousClock.now < deadline {
+            try await Task.sleep(for: .milliseconds(20))
+        }
+        guard listener.isReady else { throw AgentError(listener.error ?? "Pairing listener did not start") }
+    }
+
     private func exchange(code: String, tamperWithReveal: Bool = false) async throws -> (verification: String, grant: Data?) {
-        let port = try XCTUnwrap(NWEndpoint.Port(rawValue: PairingWire.port))
+        let handshake = try PairingHandshake(role: .client, code: code, context: PairingWire.context)
+        return try await exchange(handshake, port: PairingWire.port, tamperWithReveal: tamperWithReveal)
+    }
+
+    private func exchange(secret: Data) async throws -> (verification: String, grant: Data?) {
+        let handshake = try PairingHandshake(role: .client, secret: secret, context: PairingWire.rememberedContext)
+        return try await exchange(handshake, port: PairingWire.rememberedPort)
+    }
+
+    private func exchange(
+        _ handshake: PairingHandshake,
+        port portNumber: UInt16,
+        tamperWithReveal: Bool = false
+    ) async throws -> (verification: String, grant: Data?) {
+        let port = try XCTUnwrap(NWEndpoint.Port(rawValue: portNumber))
         let connection = NWConnection(host: "127.0.0.1", port: port, using: .tcp)
         let timeout = Task {
             do { try await Task.sleep(for: .seconds(5)) } catch { return }
@@ -98,7 +154,6 @@ final class AgentPINListenerTests: XCTestCase {
             timeout.cancel()
             connection.cancel()
         }
-        let handshake = try PairingHandshake(role: .client, code: code, context: PairingWire.context)
         var nonce = SymmetricKey(size: .bits256).withUnsafeBytes { Data($0) }
         let commitment = try PairingWire.commitment(message: handshake.message, nonce: nonce)
         connection.start(queue: .main)

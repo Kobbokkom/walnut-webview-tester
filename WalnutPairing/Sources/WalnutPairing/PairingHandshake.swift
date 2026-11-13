@@ -26,8 +26,17 @@ public final class PairingHandshake {
     private let context: Data
     private var exchange: OpaquePointer?
 
-    public init(role: Role, code: String, context: String) throws {
+    public convenience init(role: Role, code: String, context: String) throws {
         guard PairingWire.isCode(code) else { throw PairingHandshakeError.invalidCode }
+        try self.init(role: role, password: Array(code.utf8), context: context)
+    }
+
+    public convenience init(role: Role, secret: Data, context: String) throws {
+        guard secret.count == PairingWire.rememberedSecretSize else { throw PairingHandshakeError.exchangeFailed }
+        try self.init(role: role, password: Array(secret), context: context)
+    }
+
+    private init(role: Role, password: [UInt8], context: String) throws {
         let contextBytes = Data(context.utf8)
         guard (1...128).contains(contextBytes.count) else { throw PairingHandshakeError.exchangeFailed }
         let clientID = Array("walnut-pair-v1/client/".utf8) + contextBytes
@@ -37,7 +46,6 @@ public final class PairingHandshake {
             role == .client, ownID, ownID.count, peerID, peerID.count
         ) else { throw PairingHandshakeError.exchangeFailed }
 
-        let password = Array(code.utf8)
         var message = [UInt8](repeating: 0, count: PairingWire.messageSize)
         let capacity = message.count
         guard walnut_spake2_generate(exchange, password, password.count, &message, capacity) else {

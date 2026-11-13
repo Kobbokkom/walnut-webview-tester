@@ -49,6 +49,7 @@
 	<array>
 		<string>_walnut-agent._tcp</string>
 		<string>_walnut-pair._tcp</string>
+		<string>_walnut-resume._tcp</string>
 	</array>
 	<key>NSCameraUsageDescription</key>
 	<string>This app uses the camera to test WKWebView media device capabilities.</string>

@@ -13,7 +13,7 @@ struct USBOptions {
 final class DeviceBridge: @unchecked Sendable {
     static let requestLimit = 256 * 1024
     private let usb: USBOptions?
-    private var active: (pairing: Pairing, exchange: BridgeExchange)?
+    private var active: (pairing: Pairing, command: Pairing, exchange: BridgeExchange)?
     private var proxy: Process?
     private var proxyPort: UInt16?
 
@@ -47,35 +47,54 @@ final class DeviceBridge: @unchecked Sendable {
         case "walnut_browser" where arguments["cleanStart"] as? Bool == true: timeout = 120
         default: timeout = 90
         }
-        let exchange = try connect(pairing)
         let reply: Data
+        let wasCached = active?.pairing == pairing
         do {
             do {
-                reply = try await exchange.run(payload, timeout: timeout)
-            } catch NWError.posix(.ECONNREFUSED) where usb != nil {
+                reply = try await send(payload, pairing: pairing, timeout: timeout, retryUSBStartup: !wasCached)
+            } catch is BridgeExchange.BeforeSendError where pairing.version == 2 && wasCached {
                 active = nil
-                // The loopback listener may not be ready yet. The failed connect sent no request.
-                try await Task.sleep(for: .milliseconds(250))
-                reply = try await connect(pairing).run(payload, timeout: timeout)
+                try Task.checkCancellation()
+                // Only a request which never started sending can be retried after reconnecting.
+                reply = try await send(payload, pairing: pairing, timeout: timeout, retryUSBStartup: true)
             }
         } catch {
             active = nil
-            throw error
+            throw (error as? BridgeExchange.BeforeSendError)?.underlying ?? error
         }
         return try Self.result(reply, for: id)
     }
 
-    private func connect(_ pairing: Pairing) throws -> BridgeExchange {
+    private func send(_ payload: Data, pairing: Pairing, timeout: TimeInterval, retryUSBStartup: Bool) async throws -> Data {
+        let exchange = try await connect(pairing)
+        do {
+            return try await exchange.run(payload, timeout: timeout, reportsBeforeSend: true)
+        } catch let error as BridgeExchange.BeforeSendError {
+            guard retryUSBStartup, usb != nil, (error.underlying as? NWError) == .posix(.ECONNREFUSED),
+                  let command = active?.command else { throw error }
+            // Preserve the new iproxy process and the session parameters it forwards to.
+            active = nil
+            try await Task.sleep(for: .milliseconds(250))
+            return try await connectCommand(command, saved: pairing).run(payload, timeout: timeout)
+        }
+    }
+
+    private func connect(_ pairing: Pairing) async throws -> BridgeExchange {
         if let active, active.pairing == pairing { return active.exchange }
         active = nil
+        let command = pairing.version == 2 ? try await PINPairing.resume(pairing, using: self) : pairing
+        return try connectCommand(command, saved: pairing)
+    }
+
+    private func connectCommand(_ command: Pairing, saved: Pairing) throws -> BridgeExchange {
         let endpoint: NWEndpoint
-        if let forwarded = try usbEndpoint(devicePort: pairing.port) {
+        if let forwarded = try usbEndpoint(devicePort: command.port) {
             endpoint = forwarded
         } else {
-            endpoint = .service(name: pairing.serviceName, type: "_walnut-agent._tcp", domain: "local.", interface: nil)
+            endpoint = .service(name: command.serviceName, type: "_walnut-agent._tcp", domain: "local.", interface: nil)
         }
-        let exchange = BridgeExchange(to: endpoint, using: Self.parameters(key: pairing.key))
-        active = (pairing, exchange)
+        let exchange = BridgeExchange(to: endpoint, using: Self.parameters(key: command.key))
+        active = (saved, command, exchange)
         return exchange
     }
 

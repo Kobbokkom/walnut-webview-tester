@@ -1,9 +1,28 @@
 import Darwin
 import Foundation
+import WalnutPairing
 import XCTest
 @testable import WalnutAgent
 
 final class PairingFileTests: XCTestCase {
+    func testRememberedPairingLoadsFromPrivateConfigButCannotBeImported() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let config = directory.appendingPathComponent("pairing.json")
+        let pairing = Pairing(version: 2, serviceName: "Walnut-Test", port: PairingWire.rememberedPort, key: Data(repeating: 19, count: 32))
+        try pairing.save(to: config)
+        XCTAssertEqual(try Pairing.load(from: config), pairing)
+
+        let exported = directory.appendingPathComponent("pairing.txt")
+        let token = try "walnut-agent:" + JSONEncoder().encode(pairing).base64EncodedString()
+        try Data(token.utf8).write(to: exported)
+        XCTAssertThrowsError(try Pairing.fromToken(token))
+        XCTAssertThrowsError(try Pairing.fromFile(at: exported))
+
+        let invalid = Pairing(version: 2, serviceName: pairing.serviceName, port: PairingWire.port, key: pairing.key)
+        XCTAssertThrowsError(try Pairing.decode(JSONEncoder().encode(invalid)))
+    }
+
     func testImportsAirDroppedTokenWithoutChangingOriginalFile() throws {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false)

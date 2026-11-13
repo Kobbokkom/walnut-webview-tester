@@ -3,6 +3,7 @@ import Network
 import Observation
 import Security
 import UIKit
+import WalnutPairing
 
 @Observable
 @MainActor
@@ -13,13 +14,19 @@ final class AgentSession {
     private var hasConnectedMac = false
     private(set) var isRunning = false
     private(set) var connectionError: String?
+    private(set) var pairingStorageError: String?
     var approval: AgentApprovalGate.Request? { approvals.pending }
 
     private let approvals = AgentApprovalGate()
     private let pinListener = AgentPINListener()
+    private let rememberedListener = AgentPINListener()
+    private var rememberedPairing: AgentRememberedPairing?
+    var hasRememberedMac: Bool { rememberedPairing != nil }
+    var reconnectError: String? { isRunning && hasRememberedMac ? rememberedListener.error : nil }
+    var isPairingReady: Bool { hasRememberedMac ? rememberedListener.isReady : hasConnectedMac }
     var pairingPIN: String? { pinListener.code }
     var pairingPINError: String? { pinListener.error ?? pairingStartError }
-    var hasPairingGrant: Bool { pinListener.didGrant || hasConnectedMac }
+    var hasPairingGrant: Bool { hasRememberedMac || hasConnectedMac }
     private var pairingStartError: String?
     @ObservationIgnored private var pairingPayload: Data?
     @ObservationIgnored private var listener: NWListener?
@@ -43,13 +50,21 @@ final class AgentSession {
         }
         connectionError = nil
         do {
+            try loadRememberedMac()
             let key = try Self.makeKey()
-            let name = "Walnut-\(UUID().uuidString.prefix(12))"
+            let name = Self.makeServiceName()
             let listener = try NWListener(using: Self.parameters(key: key))
             listener.service = NWListener.Service(name: name, type: "_walnut-agent._tcp")
             listener.stateUpdateHandler = { [weak self, weak listener] state in
                 Task { @MainActor [weak self, weak listener] in
                     guard let self, let listener, self.listener === listener else { return }
+                    if case .ready = state, let port = listener.port?.rawValue,
+                       port == PairingWire.port || port == PairingWire.rememberedPort {
+                        // Keep both fixed bootstrap ports free for PIN entry and reconnect.
+                        self.stop()
+                        self.start(handler: handler, onDisconnect: onDisconnect)
+                        return
+                    }
                     self.update(state, name: name, key: key, port: listener.port)
                 }
             }
@@ -82,6 +97,7 @@ final class AgentSession {
         pairingStartError = nil
         hasConnectedMac = false
         pinListener.stop()
+        rememberedListener.stop()
         if let approval { approvals.resolve(approval.id, allow: false) }
         listener?.cancel()
         listener = nil
@@ -107,18 +123,80 @@ final class AgentSession {
     }
 
     func startPairingPIN() {
-        guard !isConnected, let pairingDeviceName, let pairingPayload else { return }
+        guard !isConnected, !hasRememberedMac, let pairingPayload else { return }
         pairingStartError = nil
         do {
-            try pinListener.start(serviceName: pairingDeviceName, payload: pairingPayload) { [weak self] verification in
-                guard let self, isRunning, !isConnected else { return false }
-                let message = String(localized: "Allow the connection only if this number matches your Mac.")
-                guard await approvals.authorize(message, pairingConfirmation: verification) else { return false }
-                return isRunning && !isConnected && !Task.isCancelled
-            }
+            let candidate = AgentRememberedPairing(key: try Self.makeKey(), serviceName: Self.makeServiceName())
+            let grant = try Self.encodePairing(
+                version: 2, serviceName: candidate.serviceName, port: PairingWire.rememberedPort, key: candidate.key
+            )
+            try pinListener.start(
+                serviceName: candidate.serviceName,
+                payload: grant,
+                commit: { [weak self] in
+                    guard let self, isRunning, !isConnected else { throw CancellationError() }
+                    try remember(candidate, commandPayload: pairingPayload)
+                },
+                authorize: { [weak self] verification in
+                    guard let self, isRunning, !isConnected else { return false }
+                    let message = String(localized: "Allow the connection only if this number matches your Mac.")
+                    guard await approvals.authorize(message, pairingConfirmation: verification) else { return false }
+                    return isRunning && !isConnected && !Task.isCancelled
+                }
+            )
+            pairingDeviceName = candidate.serviceName
         } catch {
             pairingStartError = String(localized: "Could not start a pairing code. Try again or share a pairing file.")
         }
+    }
+
+    func refreshRememberedMac() {
+        guard !isRunning else { return }
+        try? loadRememberedMac()
+    }
+
+    func forgetRememberedMac() {
+        if let active = Self.activeSession, active !== self {
+            active.stop()
+            active.rememberedPairing = nil
+        }
+        stop()
+        rememberedPairing = nil
+        do {
+            try AgentRememberedPairing.forget()
+            pairingStorageError = nil
+            connectionError = nil
+        } catch {
+            pairingStorageError = String(localized: "Could not forget the saved Mac. Unlock the iPhone and try again.")
+        }
+    }
+
+    private func loadRememberedMac() throws {
+        do {
+            rememberedPairing = try AgentRememberedPairing.load()
+            pairingStorageError = nil
+        } catch {
+            rememberedPairing = nil
+            pairingStorageError = String(localized: "Could not read the saved Mac. Unlock the iPhone or forget the pairing.")
+            throw error
+        }
+    }
+
+    private func remember(_ candidate: AgentRememberedPairing, commandPayload: Data) throws {
+        try startRememberedListener(candidate, commandPayload: commandPayload)
+        do {
+            try candidate.save()
+        } catch {
+            rememberedListener.stop()
+            throw error
+        }
+        rememberedPairing = candidate
+    }
+
+    private func startRememberedListener(_ pairing: AgentRememberedPairing, commandPayload: Data) throws {
+        try rememberedListener.startRemembered(
+            serviceName: pairing.serviceName, secret: pairing.key, payload: commandPayload
+        )
     }
 
     private func update(_ state: NWListener.State, name: String, key: Data, port: NWEndpoint.Port?) {
@@ -126,18 +204,22 @@ final class AgentSession {
         case .ready:
             connectionError = nil
             guard let port, pairingPayload == nil else { return }
-            let payload: [String: Any] = [
-                "version": 1, "serviceName": name, "port": Int(port.rawValue), "key": key.base64EncodedString()
-            ]
-            if let bytes = try? JSONSerialization.data(withJSONObject: payload) {
-                pairingDeviceName = name
+            do {
+                let bytes = try Self.encodePairing(version: 1, serviceName: name, port: port.rawValue, key: key)
                 pairingPayload = bytes
                 let token = bytes.base64EncodedString()
                     .replacingOccurrences(of: "+", with: "-")
                     .replacingOccurrences(of: "/", with: "_")
                     .replacingOccurrences(of: "=", with: "")
                 pairingCode = "walnut-agent:\(token)"
-                self.startPairingPIN()
+                if let rememberedPairing {
+                    try startRememberedListener(rememberedPairing, commandPayload: bytes)
+                } else {
+                    startPairingPIN()
+                }
+            } catch {
+                stop()
+                connectionError = error.localizedDescription
             }
         case .waiting(let error):
             connectionError = error.localizedDescription
@@ -268,6 +350,16 @@ final class AgentSession {
         }
         guard status == errSecSuccess else { throw AgentError("Could not generate a pairing key.") }
         return key
+    }
+
+    private static func makeServiceName() -> String {
+        "Walnut-\(UUID().uuidString.prefix(12))"
+    }
+
+    private static func encodePairing(version: Int, serviceName: String, port: UInt16, key: Data) throws -> Data {
+        try JSONSerialization.data(withJSONObject: [
+            "version": version, "serviceName": serviceName, "port": Int(port), "key": key.base64EncodedString()
+        ])
     }
 
     private static func parameters(key: Data) -> NWParameters {

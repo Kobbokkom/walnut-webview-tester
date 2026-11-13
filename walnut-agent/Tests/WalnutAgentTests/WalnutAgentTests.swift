@@ -139,6 +139,40 @@ final class WalnutAgentTests: XCTestCase {
         XCTAssertEqual(try DeviceBridge.result(second, for: "test") as? Int, 2)
         await exchange.close()
         await fulfillment(of: [peerClosed], timeout: 3)
+
+        do {
+            _ = try await exchange.run(payload, timeout: 3, reportsBeforeSend: true)
+            XCTFail("A closed cached connection should be safe to replace")
+        } catch {
+            XCTAssertTrue(error is BridgeExchange.BeforeSendError)
+        }
+    }
+
+    func testDisconnectAfterCommandStartsCannotBeRetriedAutomatically() async throws {
+        let queue = DispatchQueue(label: "walnut-agent.test.disconnect-after-command")
+        let listener = try NWListener(using: .tcp)
+        defer { listener.cancel() }
+        let ready = expectation(description: "TCP listener ready")
+        listener.stateUpdateHandler = { state in
+            if case .ready = state { ready.fulfill() }
+        }
+        listener.newConnectionHandler = { connection in
+            connection.start(queue: queue)
+            connection.receive(minimumIncompleteLength: 1, maximumLength: 1024) { data, _, _, _ in
+                XCTAssertNotNil(data)
+                connection.cancel()
+            }
+        }
+        listener.start(queue: queue)
+        await fulfillment(of: [ready], timeout: 5)
+        let endpoint = NWEndpoint.hostPort(host: "127.0.0.1", port: try XCTUnwrap(listener.port))
+        let exchange = BridgeExchange(to: endpoint, using: .tcp)
+        do {
+            _ = try await exchange.run(Data("request\n".utf8), timeout: 3, reportsBeforeSend: true)
+            XCTFail("The peer did not send a reply")
+        } catch {
+            XCTAssertFalse(error is BridgeExchange.BeforeSendError)
+        }
     }
 
     private static func respond(on connection: NWConnection, count: Int, buffered: Data, peerClosed: XCTestExpectation) {

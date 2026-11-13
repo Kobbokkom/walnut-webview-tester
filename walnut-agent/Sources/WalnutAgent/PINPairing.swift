@@ -7,45 +7,70 @@ enum PINPairing {
         guard PairingWire.isCode(code) else { throw PairingHandshakeError.invalidCode }
         let bridge = DeviceBridge(usb: usb)
         defer { withExtendedLifetime(bridge) {} }
+        let handshake = try PairingHandshake(role: .client, code: code, context: PairingWire.context)
         if let forwarded = try bridge.usbEndpoint(devicePort: PairingWire.port) {
-            do {
-                return try await exchange(code: code, endpoint: forwarded, expectedService: nil)
-            } catch NWError.posix(.ECONNREFUSED) {
-                // iproxy may still be starting. A refused connection did not send a pairing message.
-                try await Task.sleep(for: .milliseconds(250))
-                return try await exchange(code: code, endpoint: forwarded, expectedService: nil)
-            }
+            return try await exchange(handshake, endpoint: forwarded, usesUSB: true, needsApproval: true)
         }
         let service = try await chooseService()
         let endpoint = NWEndpoint.service(name: service, type: PairingWire.serviceType, domain: "local.", interface: nil)
-        return try await exchange(code: code, endpoint: endpoint, expectedService: service)
+        let pairing = try await exchange(handshake, endpoint: endpoint, usesUSB: false, needsApproval: true)
+        guard pairing.serviceName == service else { throw PairingHandshakeError.invalidGrant }
+        return pairing
     }
 
-    private static func exchange(code: String, endpoint: NWEndpoint, expectedService: String?) async throws -> Pairing {
-        let connection = BridgeExchange(to: endpoint, using: .tcp, responseLimit: PairingWire.maximumFrame)
-        let handshake = try PairingHandshake(role: .client, code: code, context: PairingWire.context)
+    static func resume(_ pairing: Pairing, using bridge: DeviceBridge) async throws -> Pairing {
+        let handshake = try PairingHandshake(role: .client, secret: pairing.key, context: PairingWire.rememberedContext)
+        let forwarded = try bridge.usbEndpoint(devicePort: pairing.port)
+        let endpoint = forwarded ?? .service(
+            name: pairing.serviceName, type: PairingWire.rememberedServiceType, domain: "local.", interface: nil
+        )
+        do {
+            let command = try await exchange(handshake, endpoint: endpoint, usesUSB: forwarded != nil, needsApproval: false)
+            guard command.version == 1 else { throw PairingHandshakeError.invalidGrant }
+            return command
+        } catch {
+            try Task.checkCancellation()
+            throw AgentError("Could not reconnect to Walnut. Tap Start Connection in Mac Agent on your iPhone. "
+                + "If you forgot the Mac on the iPhone, pair again. (\(error.localizedDescription))")
+        }
+    }
+
+    private static func exchange(
+        _ handshake: PairingHandshake, endpoint: NWEndpoint, usesUSB: Bool, needsApproval: Bool
+    ) async throws -> Pairing {
         var generator = SystemRandomNumberGenerator()
         let nonce = Data((0..<PairingWire.nonceSize).map { _ in UInt8.random(in: .min ... .max, using: &generator) })
         let commitment = try PairingWire.commitment(message: handshake.message, nonce: nonce)
-        let challenge = try await connection.run(frame(PairingWire.Hello(commitment: commitment)), timeout: 8)
+        let hello = try frame(PairingWire.Hello(commitment: commitment))
+        let firstConnection = BridgeExchange(to: endpoint, using: .tcp, responseLimit: PairingWire.maximumFrame)
+        let connection: BridgeExchange
+        let challenge: Data
+        do {
+            challenge = try await firstConnection.run(hello, timeout: 8, reportsBeforeSend: true)
+            connection = firstConnection
+        } catch let error as BridgeExchange.BeforeSendError {
+            guard usesUSB, (error.underlying as? NWError) == .posix(.ECONNREFUSED) else { throw error.underlying }
+            // iproxy may still be starting. The first connection never sent the commitment.
+            try await Task.sleep(for: .milliseconds(250))
+            connection = BridgeExchange(to: endpoint, using: .tcp, responseLimit: PairingWire.maximumFrame)
+            challenge = try await connection.run(hello, timeout: 8)
+        }
         let peer = try JSONDecoder().decode(PairingWire.Challenge.self, from: challenge)
         let keys = try handshake.finish(peer: peer.message)
-        let instruction = "Confirmation number: \(keys.verificationCode)\nApprove pairing on your iPhone only if the confirmation number matches.\n"
-        FileHandle.standardError.write(Data(instruction.utf8))
+        if needsApproval {
+            let instruction = "Confirmation number: \(keys.verificationCode)\nApprove pairing on your iPhone only if the confirmation number matches.\n"
+            FileHandle.standardError.write(Data(instruction.utf8))
+        }
         let proof = PairingWire.Proof(message: handshake.message, nonce: nonce, proof: keys.clientProof)
         let reply: Data
         do {
-            reply = try await connection.run(frame(proof), timeout: 55)
-        } catch {
+            reply = try await connection.run(frame(proof), timeout: needsApproval ? 55 : 8)
+        } catch where needsApproval {
             try Task.checkCancellation()
             throw AgentError("Pairing was not approved. Check the code and start a new pairing attempt on your iPhone.")
         }
         let grant = try JSONDecoder().decode(PairingWire.Grant.self, from: reply)
-        let pairing = try Pairing.decode(keys.open(grant.payload))
-        guard expectedService == nil || pairing.serviceName == expectedService else {
-            throw PairingHandshakeError.invalidGrant
-        }
-        return pairing
+        return try Pairing.decode(keys.open(grant.payload))
     }
 
     private static func frame<Message: Encodable>(_ message: Message) throws -> Data {
