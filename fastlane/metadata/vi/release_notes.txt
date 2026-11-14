@@ -1,1 +1,3 @@
-Trên iPad, DevTools giờ mở trong bảng nổi để chế độ xem web giữ nguyên chiều rộng đã đặt. Chiều cao đã lưu được giữ lại sau khi cập nhật, và các chỉnh sửa đang thực hiện trong Console và Storage được giữ lại khi bố cục thay đổi.
+Kiểm thử trang web từ máy Mac
+
+Dùng Terminal hoặc tác nhân lập trình trên máy Mac để tương tác với các trang trong WKWebView của Walnut và xem nhật ký bảng điều khiển và mạng.

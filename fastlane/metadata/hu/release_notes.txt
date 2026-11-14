@@ -1,1 +1,3 @@
-Az iPaden a DevTools most felugró panelen nyílik meg, így a webnézet megtartja a beállított szélességet. A mentett magasság frissítés után is megmarad, ahogy a Console és Storage folyamatban lévő szerkesztései is elrendezésváltáskor.
+Tesztelj weboldalakat a Macedről
+
+A Mac Termináljából vagy egy kódolóügynökkel kezelheted a Walnut WKWebView-jában megnyitott oldalakat, és megnézheted a konzol- és hálózati naplókat.

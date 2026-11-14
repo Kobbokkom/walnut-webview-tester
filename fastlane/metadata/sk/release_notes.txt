@@ -1,1 +1,3 @@
-DevTools sa na iPade teraz otvárajú v prekryvnom paneli, takže webové zobrazenie si zachová nastavenú šírku. Uložená výška zostane po aktualizácii a rozpracované úpravy v Console a Storage sa pri zmene rozloženia zachovajú.
+Testujte webové stránky z Macu
+
+Pomocou Terminálu alebo programovacieho agenta na Macu môžete pracovať so stránkami vo WKWebView v aplikácii Walnut a kontrolovať záznamy konzoly a siete.

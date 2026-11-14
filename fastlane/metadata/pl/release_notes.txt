@@ -1,1 +1,3 @@
-Na iPadzie DevTools otwiera się teraz w nakładanym panelu, dzięki czemu widok WWW zachowuje ustawioną szerokość. Zapisana wysokość pozostaje po aktualizacji, a niezakończone zmiany w Console i Storage są zachowywane przy zmianie układu.
+Testuj strony internetowe z Maca
+
+Użyj Terminala lub agenta programistycznego na Macu, aby obsługiwać strony w WKWebView aplikacji Walnut oraz przeglądać logi konsoli i sieci.

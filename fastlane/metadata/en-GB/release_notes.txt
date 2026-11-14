@@ -1,1 +1,3 @@
-DevTools now opens in a sheet on iPad, keeping the web view at its configured width. Saved web view heights survive updates, and unfinished Console and Storage edits are preserved when the layout changes.
+Test web pages from your Mac
+
+Use your Mac’s terminal or coding agent to interact with pages in Walnut’s WKWebView and inspect console and network logs.

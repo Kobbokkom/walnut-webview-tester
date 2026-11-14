@@ -1,1 +1,3 @@
-DevTools artık iPad’de bir açılır panelde açılıyor ve web görünümü ayarlanan genişliği koruyor. Kaydedilen yükseklik güncellemeden sonra, Console ve Storage’daki tamamlanmamış düzenlemeler ise yerleşim değiştiğinde korunuyor.
+Web sayfalarını Mac’inizden test edin
+
+Walnut’taki WKWebView sayfalarıyla etkileşim kurmak, konsol ve ağ günlüklerini incelemek için Mac’inizde Terminal’i veya kodlama ajanınızı kullanın.

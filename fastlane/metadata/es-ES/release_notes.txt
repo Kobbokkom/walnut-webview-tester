@@ -1,1 +1,3 @@
-Ahora DevTools se abre en un panel superpuesto en el iPad y la vista web conserva el ancho configurado. Se mantiene la altura guardada tras actualizar y las ediciones pendientes de Console y Storage al cambiar la disposición.
+Prueba páginas web desde tu Mac
+
+Usa Terminal o un agente de programación en tu Mac para interactuar con las páginas en WKWebView de Walnut y revisar los registros de la consola y de la red.

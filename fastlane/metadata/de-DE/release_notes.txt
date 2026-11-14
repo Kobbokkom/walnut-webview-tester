@@ -1,1 +1,3 @@
-Auf dem iPad werden die DevTools jetzt in einem überlagerten Fenster geöffnet, sodass die Webansicht ihre eingestellte Breite behält. Gespeicherte Höhen bleiben nach Updates erhalten, und laufende Änderungen in Console und Storage bleiben bei Layoutwechseln bestehen.
+Webseiten vom Mac aus testen
+
+Nutze das Terminal oder einen Coding-Agenten auf deinem Mac, um Webseiten in Walnuts WKWebView zu bedienen und Konsolen- und Netzwerkprotokolle zu prüfen.

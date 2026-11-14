@@ -1,1 +1,3 @@
-DevTools kini dibuka dalam panel timbul pada iPad supaya paparan web mengekalkan lebar yang ditetapkan. Ketinggian yang disimpan kekal selepas kemas kini, dan suntingan yang belum selesai dalam Console dan Storage dikekalkan apabila susun atur berubah.
+Uji halaman web dari Mac anda
+
+Gunakan Terminal atau ejen pengekodan pada Mac anda untuk berinteraksi dengan halaman dalam WKWebView Walnut dan menyemak log konsol serta rangkaian.

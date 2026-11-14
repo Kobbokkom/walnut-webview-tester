@@ -1,1 +1,3 @@
-Ara les DevTools s’obren en un full a l’iPad i la vista web manté l’amplada configurada. Les actualitzacions conserven l’alçada desada i els canvis pendents de Console i Storage es mantenen quan canvia la disposició.
+Prova pàgines web des del Mac
+
+Fes servir el Terminal o l’agent de programació del Mac per interactuar amb les pàgines a WKWebView dins de Walnut i revisar els registres de la consola i de la xarxa.

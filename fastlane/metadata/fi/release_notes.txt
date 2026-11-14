@@ -1,1 +1,3 @@
-DevTools avautuu iPadissa nyt erillisessä paneelissa, jolloin verkkonäkymän asetettu leveys säilyy. Tallennettu korkeus säilyy päivityksissä, ja keskeneräiset Console- ja Storage-muutokset säilyvät asettelun vaihtuessa.
+Testaa verkkosivuja Macilla
+
+Käytä Macin Päätettä tai koodausagenttia, kun haluat käyttää Walnutin WKWebView-näkymässä avattuja sivuja ja tarkastella konsoli- ja verkkolokeja.

@@ -1,1 +1,3 @@
-DevTools se na iPadu sada otvara u preklopnom panelu pa web-prikaz zadržava postavljenu širinu. Spremljena visina ostaje nakon ažuriranja, a nedovršene izmjene u Console i Storage zadržavaju se pri promjeni rasporeda.
+Testirajte web-stranice s Maca
+
+U Terminalu na Macu ili uz pomoć agenta za kodiranje možete koristiti stranice u Walnutovu WKWebViewu i pregledavati zapise konzole i mreže.

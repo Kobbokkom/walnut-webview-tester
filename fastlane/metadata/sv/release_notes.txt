@@ -1,1 +1,3 @@
-DevTools öppnas nu i ett överliggande fönster på iPad så att webbvisningen behåller sin inställda bredd. Den sparade höjden bevaras efter uppdateringar och pågående ändringar i Console och Storage bevaras när layouten ändras.
+Testa webbsidor från din Mac
+
+Använd Terminal eller en kodningsagent på din Mac för att interagera med sidor i Walnuts WKWebView och granska konsol- och nätverksloggar.

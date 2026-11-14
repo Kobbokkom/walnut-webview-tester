@@ -1,1 +1,3 @@
-DevTools åpnes nå i et ark på iPad, slik at nettvisningen beholder den innstilte bredden. Lagret høyde beholdes etter oppdatering, og pågående endringer i Console og Storage beholdes når oppsettet endres.
+Test nettsider fra Macen
+
+Bruk Terminal eller en kodeagent på Macen til å samhandle med sider i Walnuts WKWebView og se konsoll- og nettverkslogger.

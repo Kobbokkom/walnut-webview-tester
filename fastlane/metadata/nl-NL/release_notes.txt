@@ -1,1 +1,3 @@
-Op iPad wordt DevTools nu in een bovenliggend venster geopend, zodat de webweergave de ingestelde breedte behoudt. De opgeslagen hoogte blijft behouden na een update en lopende bewerkingen in Console en Storage blijven bewaard bij een wijziging van de indeling.
+Test webpagina’s vanaf je Mac
+
+Gebruik Terminal of een programmeeragent op je Mac om pagina’s in de WKWebView van Walnut te bedienen en console- en netwerklogboeken te bekijken.
