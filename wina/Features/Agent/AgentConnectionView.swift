@@ -21,7 +21,7 @@ struct AgentConnectionView: View {
     brew tap kobbokkom/tap
     brew install --cask kobbokkom/tap/walnut-agent
     """
-    private static let setupGuide = URL(string: "https://github.com/Kobbokkom/walnut-webview-tester/tree/main/walnut-agent#install-on-mac")!
+    private static let setupGuide = URL(string: "https://github.com/Kobbokkom/walnut-webview-tester/tree/walnut-agent-v0.1.4/walnut-agent#install-on-mac")!
 
     var body: some View {
         @Bindable var feedback = copyFeedback
@@ -70,11 +70,11 @@ struct AgentConnectionView: View {
                 announce("Mac connected")
             }
         }
-        .onChange(of: session.pairingPIN) { oldCode, code in
-            if code != nil {
-                announce("Pairing code ready")
-            } else if oldCode != nil, session.isRunning, !session.isConnected, !session.hasPairingGrant {
-                announce("Get a new code to pair a Mac.")
+        .onChange(of: session.isPairingAvailable) { wasAvailable, isAvailable in
+            if isAvailable {
+                announce("Ready to pair")
+            } else if wasAvailable, session.isRunning, !session.isConnected, !session.hasPairingGrant {
+                announce("Start pairing again to connect a Mac.")
                 focusNewCode = true
             }
         }
@@ -120,20 +120,10 @@ struct AgentConnectionView: View {
 
     @ViewBuilder
     private var connectionStatus: some View {
-        if let pin = session.pairingPIN {
-            Text("Run this command in Terminal on your Mac, then enter the code.")
+        if session.isPairingAvailable {
+            Text("Run this command in Terminal on your Mac.")
                 .font(.subheadline)
             commandRow("walnut-agent pair")
-            VStack(alignment: .leading, spacing: 4) {
-                Text("One-time code")
-                    .font(.subheadline.weight(.semibold))
-                AgentPairingDigits(code: pin)
-                Label("Valid for two minutes", systemImage: "clock")
-                    .font(.footnote)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(12)
-            .background(Color(uiColor: .tertiarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
             Text("Approve only if the confirmation number matches your Mac.")
                 .font(.footnote)
             if let name = session.pairingDeviceName {
@@ -147,14 +137,14 @@ struct AgentConnectionView: View {
                 .font(.subheadline)
             commandRow("walnut-agent session")
         } else if session.pairingCode != nil, !session.hasRememberedMac {
-            if let error = session.pairingPINError {
+            if let error = session.pairingError {
                 Label(error, systemImage: "exclamationmark.circle")
                     .font(.subheadline)
             } else {
-                Text("Get a new code to pair a Mac.")
+                Text("Start pairing again to connect a Mac.")
                     .font(.subheadline)
             }
-            Button("Get a new pairing code") { session.startPairingPIN() }
+            Button("Start pairing again") { session.startPairing() }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
                 .accessibilityFocused($focusNewCode)
@@ -320,7 +310,7 @@ struct AgentConnectionView: View {
                     .frame(minHeight: 44)
             }
             .buttonStyle(.bordered)
-            Text("Paste the token into walnut-agent pair, or AirDrop the file to your Mac and drag it into Terminal after this command.")
+            Text("Paste the token after running walnut-agent pair --token, or AirDrop the file to your Mac.")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
             commandRow("walnut-agent pair --file ")
@@ -394,7 +384,7 @@ private struct AgentApprovalView: View {
                     Button("Deny") { resolve(false) }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Allow") { resolve(true) }
+                    Button(request.pairingConfirmation == nil ? "Allow" : "Numbers Match") { resolve(true) }
                 }
             }
         }

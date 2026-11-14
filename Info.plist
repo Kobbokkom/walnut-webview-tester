@@ -48,8 +48,8 @@
 	<key>NSBonjourServices</key>
 	<array>
 		<string>_walnut-agent._tcp</string>
-		<string>_walnut-pair._tcp</string>
-		<string>_walnut-resume._tcp</string>
+		<string>_walnut-pair-v2._tcp</string>
+		<string>_walnut-back-v2._tcp</string>
 	</array>
 	<key>NSCameraUsageDescription</key>
 	<string>This app uses the camera to test WKWebView media device capabilities.</string>
@@ -68,6 +68,8 @@
 			<string>cstr6suwn9.skadnetwork</string>
 		</dict>
 	</array>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>

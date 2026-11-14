@@ -2,11 +2,11 @@ import CryptoKit
 import Foundation
 
 public enum PairingWire {
-    public static let context = "walnut-pair-v1"
-    public static let serviceType = "_walnut-pair._tcp"
+    public static let context = "walnut-pair-v2"
+    public static let serviceType = "_walnut-pair-v2._tcp"
     public static let port: UInt16 = 58691
-    public static let rememberedContext = "walnut-resume-v1"
-    public static let rememberedServiceType = "_walnut-resume._tcp"
+    public static let rememberedContext = "walnut-resume-v2"
+    public static let rememberedServiceType = "_walnut-back-v2._tcp"
     public static let rememberedPort: UInt16 = 58692
     public static let rememberedSecretSize = 32
     public static let maximumFrame = 4096
@@ -14,16 +14,12 @@ public enum PairingWire {
     public static let nonceSize = 32
     public static let commitmentSize = 32
 
-    public static func isCode(_ value: String) -> Bool {
-        value.utf8.count == 6 && value.utf8.allSatisfy { (48...57).contains($0) }
-    }
-
     public static func commitment(message: Data, nonce: Data) throws -> Data {
         guard message.count == messageSize, nonce.count == nonceSize else {
             throw PairingHandshakeError.exchangeFailed
         }
-        // Commit to the client share before the server discloses its share.
-        var transcript = Data("walnut-pair-v1/client-commitment/".utf8)
+        // Commit before the fresh server share to prevent grinding the comparison number (RFC 6189 §4.4.1.1).
+        var transcript = Data("walnut-pair-v2/client-commitment/".utf8)
         transcript.append(nonce)
         transcript.append(message)
         return Data(SHA256.hash(data: transcript))
@@ -32,11 +28,19 @@ public enum PairingWire {
     public struct Hello: Codable, Sendable {
         public let commitment: Data
         public init(commitment: Data) { self.commitment = commitment }
+
+        private enum CodingKeys: String, CodingKey {
+            case commitment = "commitmentV2"
+        }
     }
 
     public struct Challenge: Codable, Sendable {
         public let message: Data
         public init(message: Data) { self.message = message }
+
+        private enum CodingKeys: String, CodingKey {
+            case message = "messageV2"
+        }
     }
 
     public struct Proof: Codable, Sendable {

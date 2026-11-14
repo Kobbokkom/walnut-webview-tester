@@ -3,7 +3,7 @@ import Foundation
 
 @main
 enum CLI {
-    static let version = "0.1.3"
+    static let version = "0.1.4"
 
     static func main() async {
         do {
@@ -13,18 +13,18 @@ enum CLI {
                 let pairing = try Pairing.fromFile(at: URL(fileURLWithPath: arguments[2]))
                 try pairing.save(to: Pairing.file)
                 print("Saved Walnut pairing.")
+            case "pair" where arguments == ["pair", "--token"]:
+                var buffer = [CChar](repeating: 0, count: 1025)
+                guard readpassphrase("Walnut pairing token: ", &buffer, buffer.count, RPP_REQUIRE_TTY) != nil else {
+                    throw AgentError("Run `walnut-agent pair --token` from a terminal and paste the token from Walnut.")
+                }
+                let token = String(cString: buffer).trimmingCharacters(in: .whitespacesAndNewlines)
+                let pairing = try Pairing.fromToken(token)
+                try pairing.save(to: Pairing.file)
+                print("Saved Walnut pairing.")
             case "pair":
                 let usb = try parseUSB(Array(arguments.dropFirst()))
-                var buffer = [CChar](repeating: 0, count: 1025)
-                guard readpassphrase("Walnut pairing code: ", &buffer, buffer.count, RPP_REQUIRE_TTY) != nil else {
-                    throw AgentError("Run `walnut-agent pair` from a terminal and enter the code shown in Walnut.")
-                }
-                let code = String(cString: buffer).trimmingCharacters(in: .whitespacesAndNewlines)
-                let pairing = if code.hasPrefix("walnut-agent:") {
-                    try Pairing.fromToken(code)
-                } else {
-                    try await PINPairing.pair(code: code, usb: usb)
-                }
+                let pairing = try await PINPairing.pair(usb: usb)
                 try pairing.save(to: Pairing.file)
                 print("Saved Walnut pairing.")
             case "session", "mcp":
@@ -65,6 +65,7 @@ enum CLI {
       walnut-agent --version
       walnut-agent update
       walnut-agent pair [--usb [--local-port PORT] [--udid UDID]]
+      walnut-agent pair --token
       walnut-agent pair --file PATH
       walnut-agent session [--usb [--local-port PORT] [--udid UDID]]
       walnut-agent mcp [--usb [--local-port PORT] [--udid UDID]]

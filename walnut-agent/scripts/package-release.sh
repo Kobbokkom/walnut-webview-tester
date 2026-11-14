@@ -28,10 +28,6 @@ for arch in arm64 x86_64; do
     swift build "${build[@]}"
     binaries+=("$(swift build "${build[@]}" --show-bin-path)/walnut-agent")
 done
-build_products=$(dirname "${binaries[0]}")
-for resource in BoringSSL-GRPC_openssl_grpc WalnutPairing_WalnutPairing; do
-    ditto "$build_products/$resource.bundle" "$app/Contents/Resources/$resource.bundle"
-done
 xcrun lipo -create "${binaries[@]}" -output "$binary"
 xcrun lipo "$binary" -verify_arch arm64
 xcrun lipo "$binary" -verify_arch x86_64
@@ -62,7 +58,7 @@ cat > "$app/Contents/Info.plist" <<PLIST
     <key>LSMinimumSystemVersion</key><string>13.0</string>
     <key>NSLocalNetworkUsageDescription</key>
     <string>Walnut Agent finds and connects to the Walnut session you started on your iPhone.</string>
-    <key>NSBonjourServices</key><array><string>_walnut-agent._tcp</string><string>_walnut-pair._tcp</string><string>_walnut-resume._tcp</string></array>
+    <key>NSBonjourServices</key><array><string>_walnut-agent._tcp</string><string>_walnut-pair-v2._tcp</string><string>_walnut-back-v2._tcp</string></array>
 </dict>
 </plist>
 PLIST

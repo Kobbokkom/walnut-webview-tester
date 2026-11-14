@@ -1,13 +1,16 @@
+import Darwin
 import Foundation
 import Network
 import WalnutPairing
 
 enum PINPairing {
-    static func pair(code: String, usb: USBOptions?) async throws -> Pairing {
-        guard PairingWire.isCode(code) else { throw PairingHandshakeError.invalidCode }
+    static func pair(usb: USBOptions?) async throws -> Pairing {
+        guard isatty(STDIN_FILENO) == 1 else {
+            throw AgentError("Run `walnut-agent pair` from a terminal so you can confirm the numbers match.")
+        }
         let bridge = DeviceBridge(usb: usb)
         defer { withExtendedLifetime(bridge) {} }
-        let handshake = try PairingHandshake(role: .client, code: code, context: PairingWire.context)
+        let handshake = try PairingHandshake(role: .client, context: PairingWire.context)
         if let forwarded = try bridge.usbEndpoint(devicePort: PairingWire.port) {
             return try await exchange(handshake, endpoint: forwarded, usesUSB: true, needsApproval: true)
         }
@@ -26,7 +29,6 @@ enum PINPairing {
         )
         do {
             let command = try await exchange(handshake, endpoint: endpoint, usesUSB: forwarded != nil, needsApproval: false)
-            guard command.version == 1 else { throw PairingHandshakeError.invalidGrant }
             return command
         } catch {
             try Task.checkCancellation()
@@ -56,7 +58,7 @@ enum PINPairing {
             challenge = try await connection.run(hello, timeout: 8)
         }
         let peer = try JSONDecoder().decode(PairingWire.Challenge.self, from: challenge)
-        let keys = try handshake.finish(peer: peer.message)
+        let keys = try handshake.finish(peer: peer.message, nonce: nonce)
         if needsApproval {
             let instruction = "Confirmation number: \(keys.verificationCode)\nApprove pairing on your iPhone only if the confirmation number matches.\n"
             FileHandle.standardError.write(Data(instruction.utf8))
@@ -67,10 +69,18 @@ enum PINPairing {
             reply = try await connection.run(frame(proof), timeout: needsApproval ? 55 : 8)
         } catch where needsApproval {
             try Task.checkCancellation()
-            throw AgentError("Pairing was not approved. Check the code and start a new pairing attempt on your iPhone.")
+            throw AgentError("Pairing ended before approval. Run `walnut-agent pair` again while pairing is open on your iPhone.")
         }
         let grant = try JSONDecoder().decode(PairingWire.Grant.self, from: reply)
-        return try Pairing.decode(keys.open(grant.payload))
+        let pairing = try Pairing.decode(keys.open(grant.payload))
+        guard pairing.version == (needsApproval ? 2 : 1) else { throw PairingHandshakeError.invalidGrant }
+        if needsApproval {
+            FileHandle.standardError.write(Data("Did the numbers match? [y/N] ".utf8))
+            guard readLine()?.lowercased() == "y" else {
+                throw AgentError("Pairing was not saved. If Walnut shows this Mac as paired, tap Forget Mac before retrying.")
+            }
+        }
+        return pairing
     }
 
     private static func frame<Message: Encodable>(_ message: Message) throws -> Data {
@@ -84,7 +94,7 @@ enum PINPairing {
         let names = try await discoverServices()
         if names.count == 1, let name = names.first { return name }
         guard !names.isEmpty else {
-            throw AgentError("No Walnut pairing session found. Open Mac Agent on the iPhone and check Local Network access on both devices.")
+            throw AgentError("No Walnut pairing session found. Open Mac Agent on the iPhone, start pairing, and check Local Network access on both devices.")
         }
         let choices = names.enumerated().map { "\($0.offset + 1). \($0.element)" }.joined(separator: "\n")
         FileHandle.standardError.write(Data("Select the pairing name shown on your iPhone:\n\(choices)\nSelection: ".utf8))

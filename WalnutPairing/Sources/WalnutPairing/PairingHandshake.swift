@@ -1,21 +1,17 @@
 import CryptoKit
 import Foundation
-import WalnutSPAKE2
 
 public enum PairingHandshakeError: LocalizedError {
-    case invalidCode, exchangeFailed, invalidGrant
+    case exchangeFailed, invalidGrant
 
     public var errorDescription: String? {
         switch self {
-        case .invalidCode: "Enter the six-digit Walnut pairing code."
         case .exchangeFailed: "Walnut could not authenticate this pairing exchange."
         case .invalidGrant: "Walnut returned an invalid pairing grant."
         }
     }
 }
 
-/// BoringSSL's SPAKE2 over Ed25519 follows draft-irtf-cfrg-spake2-02.
-/// Both peers must use Walnut's transcript and role labels.
 public final class PairingHandshake {
     public enum Role {
         case client, server
@@ -24,64 +20,52 @@ public final class PairingHandshake {
     public let message: Data
     private let role: Role
     private let context: Data
-    private var exchange: OpaquePointer?
+    private let rememberedKey: SymmetricKey?
+    private var privateKey: Curve25519.KeyAgreement.PrivateKey?
 
-    public convenience init(role: Role, code: String, context: String) throws {
-        guard PairingWire.isCode(code) else { throw PairingHandshakeError.invalidCode }
-        try self.init(role: role, password: Array(code.utf8), context: context)
+    public convenience init(role: Role, context: String) throws {
+        try self.init(role: role, rememberedKey: nil, context: context)
     }
 
     public convenience init(role: Role, secret: Data, context: String) throws {
         guard secret.count == PairingWire.rememberedSecretSize else { throw PairingHandshakeError.exchangeFailed }
-        try self.init(role: role, password: Array(secret), context: context)
+        try self.init(role: role, rememberedKey: SymmetricKey(data: secret), context: context)
     }
 
-    private init(role: Role, password: [UInt8], context: String) throws {
+    private init(role: Role, rememberedKey: SymmetricKey?, context: String) throws {
         let contextBytes = Data(context.utf8)
         guard (1...128).contains(contextBytes.count) else { throw PairingHandshakeError.exchangeFailed }
-        let clientID = Array("walnut-pair-v1/client/".utf8) + contextBytes
-        let serverID = Array("walnut-pair-v1/server/".utf8) + contextBytes
-        let (ownID, peerID) = role == .client ? (clientID, serverID) : (serverID, clientID)
-        guard let exchange = walnut_spake2_new(
-            role == .client, ownID, ownID.count, peerID, peerID.count
-        ) else { throw PairingHandshakeError.exchangeFailed }
-
-        var message = [UInt8](repeating: 0, count: PairingWire.messageSize)
-        let capacity = message.count
-        guard walnut_spake2_generate(exchange, password, password.count, &message, capacity) else {
-            walnut_spake2_free(exchange)
-            throw PairingHandshakeError.exchangeFailed
-        }
+        let privateKey = Curve25519.KeyAgreement.PrivateKey()
         self.role = role
         self.context = contextBytes
-        self.exchange = exchange
-        self.message = Data(message)
+        self.rememberedKey = rememberedKey
+        self.privateKey = privateKey
+        message = privateKey.publicKey.rawRepresentation
     }
 
-    deinit {
-        if let exchange { walnut_spake2_free(exchange) }
-    }
-
-    public func finish(peer: Data) throws -> PairingKeys {
-        guard let exchange else { throw PairingHandshakeError.exchangeFailed }
-        self.exchange = nil
-        defer { walnut_spake2_free(exchange) }
-        guard peer.count == PairingWire.messageSize else { throw PairingHandshakeError.exchangeFailed }
-        let peerMessage = Array(peer)
-        var material = [UInt8](repeating: 0, count: 64)
-        let capacity = material.count
-        guard walnut_spake2_finish(exchange, peerMessage, peerMessage.count, &material, capacity) else {
+    public func finish(peer: Data, nonce: Data) throws -> PairingKeys {
+        guard let privateKey else { throw PairingHandshakeError.exchangeFailed }
+        self.privateKey = nil
+        guard peer.count == PairingWire.messageSize, nonce.count == PairingWire.nonceSize, peer != message,
+              let publicKey = try? Curve25519.KeyAgreement.PublicKey(rawRepresentation: peer),
+              let sharedSecret = try? privateKey.sharedSecretFromKeyAgreement(with: publicKey) else {
             throw PairingHandshakeError.exchangeFailed
         }
 
         // The two shares are fixed-size and ordered by role in both transcripts.
-        var transcript = Data("walnut-pair-v1/spake2/".utf8)
+        var transcript = Data("walnut-pair-v2/x25519/".utf8)
+        transcript.append(rememberedKey == nil ? 0 : 1)
         transcript.append(UInt8(context.count))
         transcript.append(context)
+        transcript.append(nonce)
         transcript.append(role == .client ? message : peer)
         transcript.append(role == .client ? peer : message)
         let digest = Data(SHA256.hash(data: transcript))
-        let secret = SymmetricKey(data: material)
+        // Resume requires both a new shared secret and the remembered key.
+        let salt = rememberedKey.map { Data(HMAC<SHA256>.authenticationCode(for: digest, using: $0)) } ?? digest
+        let secret = sharedSecret.hkdfDerivedSymmetricKey(
+            using: SHA256.self, salt: salt, sharedInfo: Data("walnut-pair-v2/handshake-key".utf8), outputByteCount: 32
+        )
         return PairingKeys(role: role, secret: secret, transcript: digest)
     }
 }
@@ -99,9 +83,9 @@ public struct PairingKeys {
     fileprivate init(role: PairingHandshake.Role, secret: SymmetricKey, transcript: Data) {
         self.role = role
         self.transcript = transcript
-        proofKey = Self.deriveKey(secret, transcript, label: "walnut-pair-v1/client-proof")
-        grantKey = Self.deriveKey(secret, transcript, label: "walnut-pair-v1/server-grant")
-        let verification = Self.deriveKey(secret, transcript, label: "walnut-pair-v1/verification-code")
+        proofKey = Self.deriveKey(secret, transcript, label: "walnut-pair-v2/client-proof")
+        grantKey = Self.deriveKey(secret, transcript, label: "walnut-pair-v2/server-grant")
+        let verification = Self.deriveKey(secret, transcript, label: "walnut-pair-v2/verification-code")
         let number = verification.withUnsafeBytes { bytes in
             UInt64(bigEndian: bytes.loadUnaligned(as: UInt64.self)) % 1_000_000
         }

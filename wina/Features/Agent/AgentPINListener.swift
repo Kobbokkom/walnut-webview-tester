@@ -6,7 +6,6 @@ import WalnutPairing
 @Observable
 @MainActor
 final class AgentPINListener {
-    private(set) var code: String?
     private(set) var error: String?
     private(set) var didGrant = false
     private(set) var isReady = false
@@ -21,18 +20,18 @@ final class AgentPINListener {
     private static let attemptLimit = 5
 
     private enum Credential: Sendable {
-        case pin(String, commit: @MainActor @Sendable () throws -> Void, authorize: @MainActor @Sendable (String) async -> Bool)
+        case newPairing(commit: @MainActor @Sendable () throws -> Void, authorize: @MainActor @Sendable (String) async -> Bool)
         case remembered(Data)
 
-        var pin: String? {
-            if case .pin(let code, _, _) = self { return code }
-            return nil
+        var requiresApproval: Bool {
+            if case .newPairing = self { return true }
+            return false
         }
 
         func handshake() throws -> PairingHandshake {
             switch self {
-            case .pin(let code, _, _):
-                try PairingHandshake(role: .server, code: code, context: PairingWire.context)
+            case .newPairing:
+                try PairingHandshake(role: .server, context: PairingWire.context)
             case .remembered(let secret):
                 try PairingHandshake(role: .server, secret: secret, context: PairingWire.rememberedContext)
             }
@@ -65,8 +64,7 @@ final class AgentPINListener {
         commit: @escaping @MainActor @Sendable () throws -> Void = {},
         authorize: @escaping @MainActor @Sendable (String) async -> Bool
     ) throws {
-        let pin = String(format: "%06d", Int.random(in: 0...999_999))
-        try listen(serviceName: serviceName, payload: payload, credential: .pin(pin, commit: commit, authorize: authorize))
+        try listen(serviceName: serviceName, payload: payload, credential: .newPairing(commit: commit, authorize: authorize))
     }
 
     func startRemembered(serviceName: String, secret: Data, payload: Data) throws {
@@ -78,12 +76,12 @@ final class AgentPINListener {
         stop()
         error = nil
         guard !payload.isEmpty else { throw AgentError("Missing pairing grant.") }
-        let isPIN = credential.pin != nil
-        let portNumber = isPIN ? PairingWire.port : PairingWire.rememberedPort
+        let portNumber = credential.requiresApproval ? PairingWire.port : PairingWire.rememberedPort
         guard let port = NWEndpoint.Port(rawValue: portNumber) else { throw AgentError("Invalid pairing port.") }
         let listener = try NWListener(using: .tcp, on: port)
-        var service = NWListener.Service(name: serviceName, type: isPIN ? PairingWire.serviceType : PairingWire.rememberedServiceType)
-        service.noAutoRename = !isPIN
+        let serviceType = credential.requiresApproval ? PairingWire.serviceType : PairingWire.rememberedServiceType
+        var service = NWListener.Service(name: serviceName, type: serviceType)
+        service.noAutoRename = !credential.requiresApproval
         listener.service = service
         listener.stateUpdateHandler = { [weak self, weak listener] state in
             Task { @MainActor [weak self, weak listener] in
@@ -91,11 +89,9 @@ final class AgentPINListener {
                 switch state {
                 case .ready:
                     self.isReady = true
-                    self.code = credential.pin
                     self.error = nil
                 case .waiting(let error):
                     self.isReady = false
-                    self.code = nil
                     self.error = error.localizedDescription
                     if let peer = self.peer { self.close(peer) }
                 case .failed(let error):
@@ -113,7 +109,7 @@ final class AgentPINListener {
         }
         self.listener = listener
         attempts = 0
-        if isPIN {
+        if credential.requiresApproval {
             deadline = .now + Self.lifetime
             expiry = Task { [weak self] in
                 do { try await Task.sleep(for: Self.lifetime) } catch { return }
@@ -136,17 +132,16 @@ final class AgentPINListener {
         listener = nil
         isReady = false
         deadline = nil
-        code = nil
     }
 
-    private var liveCode: String? {
-        guard isReady, let deadline, ContinuousClock.now < deadline else { return nil }
-        return code
+    var isPairingAvailable: Bool {
+        guard isReady, let deadline else { return false }
+        return ContinuousClock.now < deadline
     }
 
     private func accept(_ connection: NWConnection, payload: Data, credential: Credential) {
         guard isReady, peer == nil else { connection.cancel(); return }
-        if credential.pin != nil, liveCode == nil || attempts >= Self.attemptLimit {
+        if credential.requiresApproval, !isPairingAvailable || attempts >= Self.attemptLimit {
             connection.cancel()
             return
         }
@@ -199,12 +194,12 @@ final class AgentPINListener {
     }
 
     private func handle(_ frame: Data, from peer: Peer) throws {
-        guard isReady, peer.credential.pin == nil || liveCode != nil else { close(peer); return }
+        guard isReady, !peer.credential.requiresApproval || isPairingAvailable else { close(peer); return }
         switch peer.stage {
         case .hello:
             let hello = try JSONDecoder().decode(PairingWire.Hello.self, from: frame)
             guard hello.commitment.count == PairingWire.commitmentSize else { close(peer); return }
-            if peer.credential.pin != nil { attempts += 1 }
+            if peer.credential.requiresApproval { attempts += 1 }
             let handshake = try peer.credential.handshake()
             peer.stage = .proof(handshake, commitment: hello.commitment)
             send(try Self.encode(PairingWire.Challenge(message: handshake.message)), to: peer)
@@ -215,11 +210,11 @@ final class AgentPINListener {
                 close(peer)
                 return
             }
-            let keys = try handshake.finish(peer: proof.message)
+            let keys = try handshake.finish(peer: proof.message, nonce: proof.nonce)
             guard keys.verifyClientProof(proof.proof) else { close(peer); return }
             switch peer.credential {
-            case .pin(_, let commit, let authorize):
-                authorizePIN(peer, keys: keys, commit: commit, authorize: authorize)
+            case .newPairing(let commit, let authorize):
+                authorizePairing(peer, keys: keys, commit: commit, authorize: authorize)
             case .remembered:
                 try grant(peer, keys: keys)
             }
@@ -228,7 +223,7 @@ final class AgentPINListener {
         }
     }
 
-    private func authorizePIN(
+    private func authorizePairing(
         _ peer: Peer,
         keys: PairingKeys,
         commit: @escaping @MainActor @Sendable () throws -> Void,
@@ -241,7 +236,7 @@ final class AgentPINListener {
             guard let self, let peer else { return }
             let allowed = await authorize(keys.verificationCode)
             guard self.peer === peer else { return }
-            guard allowed, !Task.isCancelled, self.liveCode != nil else { self.close(peer); return }
+            guard allowed, !Task.isCancelled, self.isPairingAvailable else { self.close(peer); return }
             do { try self.grant(peer, keys: keys, commit: commit) } catch { self.close(peer) }
         }
     }
@@ -253,11 +248,11 @@ final class AgentPINListener {
             try commit?()
         } catch {
             stop()
-            self.error = String(localized: "Could not save this pairing. Get a new code and try again.")
+            self.error = String(localized: "Could not save this pairing. Start pairing again.")
             return
         }
         peer.stage = .grant
-        if peer.credential.pin != nil {
+        if peer.credential.requiresApproval {
             didGrant = true
             stopAdvertising()
         }
@@ -287,7 +282,7 @@ final class AgentPINListener {
 
     private func close(_ peer: Peer, deliveredGrant: Bool = false) {
         guard self.peer === peer else { return }
-        if case .grant = peer.stage, peer.credential.pin != nil, !deliveredGrant { didGrant = false }
+        if case .grant = peer.stage, peer.credential.requiresApproval, !deliveredGrant { didGrant = false }
         self.peer = nil
         peer.timeout?.cancel()
         peer.approval?.cancel()

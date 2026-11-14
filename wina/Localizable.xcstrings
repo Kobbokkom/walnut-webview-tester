@@ -70,12 +70,12 @@
         }
       }
     },
-    "Could not save this pairing. Get a new code and try again." : {
+    "Could not save this pairing. Start pairing again." : {
       "localizations" : {
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "페어링을 저장하지 못했습니다. 새 코드를 받아 다시 시도하세요."
+            "value" : "페어링 정보를 저장하지 못했습니다. 페어링을 다시 시작하세요."
           }
         }
       }
@@ -130,22 +130,22 @@
         }
       }
     },
-    "Run this command in Terminal on your Mac, then enter the code." : {
+    "Run this command in Terminal on your Mac." : {
       "localizations" : {
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mac 터미널에서 이 명령을 실행한 다음 코드를 입력하세요."
+            "value" : "Mac 터미널에서 이 명령을 실행하세요."
           }
         }
       }
     },
-    "Paste the token into walnut-agent pair, or AirDrop the file to your Mac and drag it into Terminal after this command." : {
+    "Paste the token after running walnut-agent pair --token, or AirDrop the file to your Mac." : {
       "localizations" : {
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "walnut-agent pair에 토큰을 붙여넣거나, 파일을 Mac으로 AirDrop한 뒤 아래 명령 끝에 끌어다 놓으세요."
+            "value" : "walnut-agent pair --token을 실행해 토큰을 붙여넣거나, 파일을 Mac으로 AirDrop하세요."
           }
         }
       }
@@ -170,12 +170,12 @@
         }
       }
     },
-    "Pairing code ready" : {
+    "Ready to pair" : {
       "localizations" : {
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "페어링 코드가 준비됐습니다"
+            "value" : "페어링할 준비가 됐습니다"
           }
         }
       }
@@ -190,22 +190,22 @@
         }
       }
     },
+    "Numbers Match" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "번호가 일치해요"
+          }
+        }
+      }
+    },
     "Pair this Mac?" : {
       "localizations" : {
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "이 Mac과 페어링할까요?"
-          }
-        }
-      }
-    },
-    "One-time code" : {
-      "localizations" : {
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "일회용 코드"
           }
         }
       }
@@ -230,42 +230,32 @@
         }
       }
     },
-    "Get a new pairing code" : {
+    "Start pairing again" : {
       "localizations" : {
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "새 페어링 코드 받기"
+            "value" : "페어링 다시 시작"
           }
         }
       }
     },
-    "Get a new code to pair a Mac." : {
+    "Start pairing again to connect a Mac." : {
       "localizations" : {
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mac과 페어링하려면 새 코드를 받으세요."
+            "value" : "Mac에 연결하려면 페어링을 다시 시작하세요."
           }
         }
       }
     },
-    "Valid for two minutes" : {
+    "Could not start pairing. Try again or share a pairing file." : {
       "localizations" : {
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "2분간 유효"
-          }
-        }
-      }
-    },
-    "Could not start a pairing code. Try again or share a pairing file." : {
-      "localizations" : {
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "페어링 코드를 만들지 못했습니다. 다시 시도하거나 페어링 파일을 공유하세요."
+            "value" : "페어링을 시작하지 못했습니다. 다시 시도하거나 페어링 파일을 공유하세요."
           }
         }
       }

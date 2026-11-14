@@ -2,15 +2,6 @@
   "originHash" : "d8d2351bbb2284187b294f54702e6efb824c29b1bde2fe4b3d3b7bd9a54d40ec",
   "pins" : [
     {
-      "identity" : "boringssl-swiftpm",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/firebase/boringSSL-SwiftPM.git",
-      "state" : {
-        "revision" : "f6aa17e03360e76c58eb16c43a97f4c9113177b2",
-        "version" : "0.41.0"
-      }
-    },
-    {
       "identity" : "ios-backports",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/superwall/iOS-Backports.git",

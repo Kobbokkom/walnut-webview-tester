@@ -16,87 +16,87 @@ final class AgentPINListenerTests: XCTestCase {
         var committed = 0
     }
 
-    func testPINRequiresApprovalAndGrantsOnlyOnce() async throws {
+    func testComparisonRequiresApprovalAndGrantsOnlyOnce() async throws {
         let approval = ApprovalState()
-        let code = try await start(commit: { approval.committed += 1 }, authorize: { verification in
+        try await start(commit: { approval.committed += 1 }, authorize: { verification in
             approval.verifications.append(verification)
             return approval.allowed
         })
         defer { listener.stop() }
 
-        let wrongCode = code == "000000" ? "000001" : "000000"
-        let invalid = try await exchange(code: wrongCode)
+        let invalid = try await exchange(tamperWithProof: true)
         XCTAssertNil(invalid.grant)
         XCTAssertTrue(approval.verifications.isEmpty)
-        XCTAssertEqual(listener.code, code)
+        XCTAssertTrue(listener.isPairingAvailable)
 
-        let changedShare = try await exchange(code: code, tamperWithReveal: true)
+        let changedShare = try await exchange(tamperWithReveal: true)
         XCTAssertNil(changedShare.grant)
         XCTAssertTrue(approval.verifications.isEmpty)
 
-        let denied = try await exchange(code: code)
+        let denied = try await exchange()
         XCTAssertNil(denied.grant)
         XCTAssertEqual(approval.verifications, [denied.verification])
-        XCTAssertEqual(listener.code, code)
+        XCTAssertTrue(listener.isPairingAvailable)
         XCTAssertEqual(approval.committed, 0)
 
         approval.allowed = true
-        let approved = try await exchange(code: code)
+        let approved = try await exchange()
         XCTAssertEqual(approved.grant, payload)
+        XCTAssertEqual(approved.verification.utf8.count, 6)
+        XCTAssertTrue(approved.verification.utf8.allSatisfy { (48...57).contains($0) })
         XCTAssertEqual(approval.verifications, [denied.verification, approved.verification])
         XCTAssertEqual(approval.committed, 1)
-        XCTAssertNil(listener.code)
+        XCTAssertFalse(listener.isPairingAvailable)
         XCTAssertTrue(listener.didGrant)
     }
 
-    func testAttemptLimitDisablesPIN() async throws {
-        let code = try await start { _ in
+    func testAttemptLimitDisablesNewPairing() async throws {
+        try await start { _ in
             XCTFail("An invalid proof must not prompt for approval")
             return false
         }
         defer { listener.stop() }
-        let wrongCode = code == "000000" ? "000001" : "000000"
         for _ in 0..<5 {
-            let invalid = try await exchange(code: wrongCode)
+            let invalid = try await exchange(tamperWithProof: true)
             XCTAssertNil(invalid.grant)
         }
-        XCTAssertNil(listener.code)
+        XCTAssertFalse(listener.isPairingAvailable)
     }
 
-    func testStoppingPINClosesAwaitingClient() async throws {
+    func testStoppingPairingClosesAwaitingClient() async throws {
         let asked = expectation(description: "Verification requested")
-        let code = try await start(commit: { XCTFail("A stopped request must not be saved") }, authorize: { _ in
+        try await start(commit: { XCTFail("A stopped request must not be saved") }, authorize: { _ in
             asked.fulfill()
             do { try await Task.sleep(for: .seconds(30)) } catch { return false }
             return true
         })
         defer { listener.stop() }
-        let connecting = Task { try await exchange(code: code) }
+        let connecting = Task { try await exchange() }
         await fulfillment(of: [asked], timeout: 5)
         listener.stop()
         let result = try await connecting.value
         XCTAssertNil(result.grant)
-        XCTAssertNil(listener.code)
+        XCTAssertFalse(listener.isPairingAvailable)
     }
 
-    func testFailingToSavePairingInvalidatesCodeWithoutGrant() async throws {
-        let code = try await start(commit: { throw URLError(.cannotWriteToFile) }, authorize: { _ in true })
+    func testFailingToSaveClosesPairingWithoutGrant() async throws {
+        try await start(commit: { throw URLError(.cannotWriteToFile) }, authorize: { _ in true })
         defer { listener.stop() }
-        let result = try await exchange(code: code)
+        let result = try await exchange()
         XCTAssertNil(result.grant)
-        XCTAssertNil(listener.code)
+        XCTAssertFalse(listener.isPairingAvailable)
         XCTAssertFalse(listener.didGrant)
         XCTAssertNotNil(listener.error)
     }
 
-    func testSavedKeyCanReconnectRepeatedlyWithoutPIN() async throws {
+    func testSavedKeyCanReconnectRepeatedlyWithoutApproval() async throws {
         let secret = SymmetricKey(size: .bits256).withUnsafeBytes { Data($0) }
         let wrongSecret = SymmetricKey(size: .bits256).withUnsafeBytes { Data($0) }
         let name = "Walnut-test-\(UUID().uuidString)"
         try listener.startRemembered(serviceName: name, secret: secret, payload: payload)
         defer { listener.stop() }
         try await waitUntilReady()
-        XCTAssertNil(listener.code)
+        XCTAssertFalse(listener.isPairingAvailable)
 
         let rejected = try await exchange(secret: wrongSecret)
         XCTAssertNil(rejected.grant)
@@ -113,12 +113,10 @@ final class AgentPINListenerTests: XCTestCase {
     private func start(
         commit: @escaping @MainActor @Sendable () throws -> Void = {},
         authorize: @escaping @MainActor @Sendable (String) async -> Bool
-    ) async throws -> String {
+    ) async throws {
         try listener.start(serviceName: "Walnut-test-\(UUID().uuidString)", payload: payload, commit: commit, authorize: authorize)
         try await waitUntilReady()
-        let code = try XCTUnwrap(listener.code)
-        XCTAssertTrue(PairingWire.isCode(code))
-        return code
+        XCTAssertTrue(listener.isPairingAvailable)
     }
 
     private func waitUntilReady() async throws {
@@ -129,9 +127,13 @@ final class AgentPINListenerTests: XCTestCase {
         guard listener.isReady else { throw AgentError(listener.error ?? "Pairing listener did not start") }
     }
 
-    private func exchange(code: String, tamperWithReveal: Bool = false) async throws -> (verification: String, grant: Data?) {
-        let handshake = try PairingHandshake(role: .client, code: code, context: PairingWire.context)
-        return try await exchange(handshake, port: PairingWire.port, tamperWithReveal: tamperWithReveal)
+    private func exchange(
+        tamperWithReveal: Bool = false,
+        tamperWithProof: Bool = false
+    ) async throws -> (verification: String, grant: Data?) {
+        let handshake = try PairingHandshake(role: .client, context: PairingWire.context)
+        return try await exchange(handshake, port: PairingWire.port, tamperWithReveal: tamperWithReveal,
+                                  tamperWithProof: tamperWithProof)
     }
 
     private func exchange(secret: Data) async throws -> (verification: String, grant: Data?) {
@@ -142,7 +144,8 @@ final class AgentPINListenerTests: XCTestCase {
     private func exchange(
         _ handshake: PairingHandshake,
         port portNumber: UInt16,
-        tamperWithReveal: Bool = false
+        tamperWithReveal: Bool = false,
+        tamperWithProof: Bool = false
     ) async throws -> (verification: String, grant: Data?) {
         let port = try XCTUnwrap(NWEndpoint.Port(rawValue: portNumber))
         let connection = NWConnection(host: "127.0.0.1", port: port, using: .tcp)
@@ -161,9 +164,11 @@ final class AgentPINListenerTests: XCTestCase {
         let response = await receive(using: connection)
         let challengeData = try XCTUnwrap(response)
         let challenge = try JSONDecoder().decode(PairingWire.Challenge.self, from: challengeData)
-        let keys = try handshake.finish(peer: challenge.message)
+        let keys = try handshake.finish(peer: challenge.message, nonce: nonce)
         if tamperWithReveal { nonce[0] ^= 1 }
-        try await send(PairingWire.Proof(message: handshake.message, nonce: nonce, proof: keys.clientProof), using: connection)
+        var proof = keys.clientProof
+        if tamperWithProof { proof[0] ^= 1 }
+        try await send(PairingWire.Proof(message: handshake.message, nonce: nonce, proof: proof), using: connection)
         guard let grantData = await receive(using: connection) else { return (keys.verificationCode, nil) }
         let grant = try JSONDecoder().decode(PairingWire.Grant.self, from: grantData)
         return (keys.verificationCode, try keys.open(grant.payload))

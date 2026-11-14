@@ -3,10 +3,11 @@ import WalnutPairing
 import XCTest
 
 final class PairingHandshakeTests: XCTestCase {
-    func testMatchingCodeConfirmsClientAndDecryptsGrant() throws {
+    func testMatchingComparisonConfirmsClientAndDecryptsGrant() throws {
         let (client, server) = try exchange()
         XCTAssertTrue(server.verifyClientProof(client.clientProof))
-        XCTAssertTrue(PairingWire.isCode(client.verificationCode))
+        XCTAssertEqual(client.verificationCode.utf8.count, 6)
+        XCTAssertTrue(client.verificationCode.utf8.allSatisfy { (48...57).contains($0) })
         XCTAssertEqual(client.verificationCode, server.verificationCode)
         let payload = Data("test pairing grant".utf8)
         XCTAssertEqual(try client.open(server.seal(payload)), payload)
@@ -14,19 +15,25 @@ final class PairingHandshakeTests: XCTestCase {
         XCTAssertThrowsError(try server.open(server.seal(payload)))
     }
 
-    func testWrongCodeOrContextCannotConfirmEitherPeer() throws {
-        for (code, context) in [("042171", "test"), ("042170", "other")] {
-            let (client, server) = try exchange(serverCode: code, serverContext: context)
+    func testWrongNonceOrContextCannotConfirmEitherPeer() throws {
+        for (nonce, context) in [(Data(repeating: 3, count: PairingWire.nonceSize), "test"), (nonce, "other")] {
+            let (client, server) = try exchange(serverContext: context, serverNonce: nonce)
             XCTAssertFalse(server.verifyClientProof(client.clientProof))
             XCTAssertThrowsError(try client.open(server.seal(Data([1]))))
         }
     }
 
     func testOneShotMalformedAndTamperedFrames() throws {
-        let client = try PairingHandshake(role: .client, code: "042170", context: "test")
-        let server = try PairingHandshake(role: .server, code: "042170", context: "test")
-        XCTAssertThrowsError(try client.finish(peer: Data([1])))
-        XCTAssertThrowsError(try client.finish(peer: server.message))
+        let server = try PairingHandshake(role: .server, context: "test")
+        for invalidShare in [Data([1]), Data(count: PairingWire.messageSize)] {
+            let client = try PairingHandshake(role: .client, context: "test")
+            XCTAssertThrowsError(try client.finish(peer: invalidShare, nonce: nonce))
+            XCTAssertThrowsError(try client.finish(peer: server.message, nonce: nonce))
+        }
+        let client = try PairingHandshake(role: .client, context: "test")
+        XCTAssertThrowsError(try client.finish(peer: client.message, nonce: nonce))
+        let wrongNonce = try PairingHandshake(role: .client, context: "test")
+        XCTAssertThrowsError(try wrongNonce.finish(peer: server.message, nonce: Data()))
 
         let (clientKeys, serverKeys) = try exchange()
         var proof = clientKeys.clientProof
@@ -42,23 +49,30 @@ final class PairingHandshakeTests: XCTestCase {
         XCTAssertThrowsError(try nextClient.open(serverKeys.seal(Data([1]))))
     }
 
-    func testPairingCodesAreSixASCIIDigits() {
-        XCTAssertTrue(PairingWire.isCode("000001"))
-        for invalid in ["12345", "1234567", "１２３４５６", "12345\n", " 12345"] {
-            XCTAssertFalse(PairingWire.isCode(invalid))
-        }
-    }
-
     func testRememberedSecretAuthenticatesFreshExchanges() throws {
         let secret = Data(repeating: 0xa4, count: PairingWire.rememberedSecretSize)
         let context = PairingWire.rememberedContext
         let client = try PairingHandshake(role: .client, secret: secret, context: context)
         let server = try PairingHandshake(role: .server, secret: secret, context: context)
         let nextServer = try PairingHandshake(role: .server, secret: secret, context: context)
-        let clientKeys = try client.finish(peer: server.message)
-        XCTAssertTrue(try server.finish(peer: client.message).verifyClientProof(clientKeys.clientProof))
-        XCTAssertFalse(try nextServer.finish(peer: client.message).verifyClientProof(clientKeys.clientProof))
+        let clientKeys = try client.finish(peer: server.message, nonce: nonce)
+        let serverKeys = try server.finish(peer: client.message, nonce: nonce)
+        XCTAssertTrue(serverKeys.verifyClientProof(clientKeys.clientProof))
+        XCTAssertEqual(try clientKeys.open(serverKeys.seal(Data([1]))), Data([1]))
+        XCTAssertFalse(try nextServer.finish(peer: client.message, nonce: nonce).verifyClientProof(clientKeys.clientProof))
         XCTAssertThrowsError(try PairingHandshake(role: .client, secret: secret.dropLast(), context: context))
+    }
+
+    func testWrongRememberedSecretCannotConfirmEitherPeer() throws {
+        let secret = Data(repeating: 0xa4, count: PairingWire.rememberedSecretSize)
+        let wrongSecret = Data(repeating: 0xa5, count: PairingWire.rememberedSecretSize)
+        let context = PairingWire.rememberedContext
+        let client = try PairingHandshake(role: .client, secret: secret, context: context)
+        let server = try PairingHandshake(role: .server, secret: wrongSecret, context: context)
+        let clientKeys = try client.finish(peer: server.message, nonce: nonce)
+        let serverKeys = try server.finish(peer: client.message, nonce: nonce)
+        XCTAssertFalse(serverKeys.verifyClientProof(clientKeys.clientProof))
+        XCTAssertThrowsError(try clientKeys.open(serverKeys.seal(Data([1]))))
     }
 
     func testCommitmentBindsClientShareAndNonce() throws {
@@ -74,16 +88,29 @@ final class PairingHandshakeTests: XCTestCase {
 
         let hello = try JSONEncoder().encode(PairingWire.Hello(commitment: commitment))
         XCTAssertEqual(try JSONDecoder().decode(PairingWire.Hello.self, from: hello).commitment, commitment)
+        let challenge = try JSONEncoder().encode(PairingWire.Challenge(message: message))
+        XCTAssertEqual(try JSONDecoder().decode(PairingWire.Challenge.self, from: challenge).message, message)
         let proof = try JSONEncoder().encode(PairingWire.Proof(message: message, nonce: nonce, proof: Data([4])))
         let reveal = try JSONDecoder().decode(PairingWire.Proof.self, from: proof)
         XCTAssertEqual(try PairingWire.commitment(message: reveal.message, nonce: reveal.nonce), commitment)
     }
 
+    func testRejectsVersionOneHandshakeFrames() throws {
+        let share = Data(count: PairingWire.messageSize).base64EncodedString()
+        let hello = Data("{\"commitment\":\"\(share)\"}".utf8)
+        let challenge = Data("{\"message\":\"\(share)\"}".utf8)
+        XCTAssertThrowsError(try JSONDecoder().decode(PairingWire.Hello.self, from: hello))
+        XCTAssertThrowsError(try JSONDecoder().decode(PairingWire.Challenge.self, from: challenge))
+    }
+
+    private var nonce: Data { Data(repeating: 2, count: PairingWire.nonceSize) }
+
     private func exchange(
-        serverCode: String = "042170", serverContext: String = "test"
+        serverContext: String = "test", serverNonce: Data? = nil
     ) throws -> (PairingKeys, PairingKeys) {
-        let client = try PairingHandshake(role: .client, code: "042170", context: "test")
-        let server = try PairingHandshake(role: .server, code: serverCode, context: serverContext)
-        return (try client.finish(peer: server.message), try server.finish(peer: client.message))
+        let client = try PairingHandshake(role: .client, context: "test")
+        let server = try PairingHandshake(role: .server, context: serverContext)
+        return (try client.finish(peer: server.message, nonce: nonce),
+                try server.finish(peer: client.message, nonce: serverNonce ?? nonce))
     }
 }

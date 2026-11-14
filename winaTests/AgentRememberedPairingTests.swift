@@ -6,7 +6,7 @@ import XCTest
 final class AgentRememberedPairingTests: XCTestCase {
     func testSaveReplaceForgetAndInstallationLoss() throws {
         let id = UUID().uuidString
-        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(id, isDirectory: true)
+        let directory = URL.applicationSupportDirectory.appendingPathComponent(id, isDirectory: true)
         let store = AgentRememberedPairing.Store(directory: directory, account: id)
         defer {
             try? store.forget()
@@ -23,7 +23,7 @@ final class AgentRememberedPairingTests: XCTestCase {
         try store.save(replacement)
         XCTAssertEqual(try store.load(), replacement)
 
-        try FileManager.default.removeItem(at: directory)
+        try FileManager.default.removeItem(at: directory.appendingPathComponent("installation-key"))
         XCTAssertNil(try store.load())
         try store.save(first)
         XCTAssertEqual(try store.load(), first)

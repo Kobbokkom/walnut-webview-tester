@@ -26,8 +26,8 @@ final class AgentSession {
     var hasRememberedMac: Bool { rememberedPairing != nil }
     var reconnectError: String? { isRunning && hasRememberedMac ? rememberedListener.error : nil }
     var isPairingReady: Bool { hasRememberedMac ? rememberedListener.isReady : hasConnectedMac }
-    var pairingPIN: String? { pinListener.code }
-    var pairingPINError: String? { pinListener.error ?? pairingStartError }
+    var isPairingAvailable: Bool { pinListener.isPairingAvailable }
+    var pairingError: String? { pinListener.error ?? pairingStartError }
     var hasPairingGrant: Bool { hasRememberedMac || hasConnectedMac }
     private var pairingStartError: String?
     @ObservationIgnored private var pairingPayload: Data?
@@ -63,7 +63,7 @@ final class AgentSession {
                     guard let self, let listener, self.listener === listener else { return }
                     if case .ready = state, let port = listener.port?.rawValue,
                        port == PairingWire.port || port == PairingWire.rememberedPort {
-                        // Keep both fixed bootstrap ports free for PIN entry and reconnect.
+                        // Keep both fixed bootstrap ports free for pairing and reconnect.
                         self.stop()
                         self.start(rememberedOnly: rememberedOnly, handler: handler, onDisconnect: onDisconnect)
                         return
@@ -126,12 +126,12 @@ final class AgentSession {
 
     func resolveApproval(_ id: UUID, _ allow: Bool) {
         guard let approval, approval.id == id else { return }
-        let canAllow = approval.pairingConfirmation == nil ? isConnected : pairingPIN != nil && !isConnected
+        let canAllow = approval.pairingConfirmation == nil ? isConnected : isPairingAvailable && !isConnected
         approvals.resolve(id, allow: allow && isRunning && canAllow)
     }
 
-    func startPairingPIN() {
-        guard !isConnected, !hasRememberedMac, let pairingPayload else { return }
+    func startPairing() {
+        guard !isConnected, !hasRememberedMac, !isPairingAvailable, let pairingPayload else { return }
         pairingStartError = nil
         do {
             let candidate = AgentRememberedPairing(key: try Self.makeKey(), serviceName: Self.makeServiceName())
@@ -154,7 +154,7 @@ final class AgentSession {
             )
             pairingDeviceName = candidate.serviceName
         } catch {
-            pairingStartError = String(localized: "Could not start a pairing code. Try again or share a pairing file.")
+            pairingStartError = String(localized: "Could not start pairing. Try again or share a pairing file.")
         }
     }
 
@@ -225,7 +225,7 @@ final class AgentSession {
                 if let rememberedPairing {
                     try startRememberedListener(rememberedPairing, commandPayload: bytes)
                 } else {
-                    startPairingPIN()
+                    startPairing()
                 }
             } catch {
                 stop()
