@@ -3,7 +3,7 @@ import Foundation
 
 @main
 enum CLI {
-    static let version = "0.1.2"
+    static let version = "0.1.3"
 
     static func main() async {
         do {
