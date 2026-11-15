@@ -1,0 +1,26 @@
+<template>
+  <style>
+    #root { position: absolute; inset: 0; }
+    .fcap { position: absolute; left: 60px; right: 60px; top: 150px; color: var(--ink); font: 800 56px/1.12 var(--font-display); letter-spacing: -0.02em; text-align: center; word-break: keep-all; }
+    #fphone { position: absolute; left: 140px; top: 380px; width: 606px; height: 1288px; border-radius: 86px; background: #05070a; border: 3px solid #3a414b; box-shadow: 0 30px 90px rgba(0,0,0,0.6); }
+    .fshot { position: absolute; left: 156px; top: 396px; width: 574px; height: 1256px; border-radius: 72px; object-fit: cover; }
+  </style>
+  <div id="root" data-composition-id="features" data-width="886" data-height="1920">
+    <p id="fcap1" class="clip fcap" data-start="0" data-duration="3.5">Test any URL in a real WebView</p>
+    <p id="fcap2" class="clip fcap" data-start="3.5" data-duration="6">Console, Network and more, built in</p>
+    <p id="fcap3" class="clip fcap" data-start="9.5" data-duration="3.3">Tune every WebView setting</p>
+    <div id="fphone" class="clip" data-start="0" data-duration="12.8"></div>
+    <video id="fa" class="clip fshot" src="assets/tour.mp4" muted playsinline data-start="0" data-duration="3.5" data-media-start="5.8"></video>
+    <video id="fb1" class="clip fshot" src="assets/tour.mp4" muted playsinline data-start="3.5" data-duration="3.2" data-media-start="10.2"></video>
+    <video id="fb2" class="clip fshot" src="assets/tour.mp4" muted playsinline data-start="6.7" data-duration="2.8" data-media-start="16.4"></video>
+    <video id="fc" class="clip fshot" src="assets/tour.mp4" muted playsinline data-start="9.5" data-duration="3.3" data-media-start="26"></video>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.fromTo(["#fphone", "#fa"], { opacity: 0, y: 70 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 0);
+    [["#fcap1", 0.1], ["#fcap2", 3.5], ["#fcap3", 9.5]].forEach(([s, t]) =>
+      tl.fromTo(s, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, t));
+    tl.to(["#fphone", "#fc", "#fcap3"], { opacity: 0, duration: 0.3, ease: "power2.in" }, 12.45);
+    window.__timelines["features"] = tl;
+  </script>
+</template>

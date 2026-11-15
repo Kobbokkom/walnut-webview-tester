@@ -4,21 +4,17 @@
     #outro-icon { width: 200px; height: 200px; border-radius: 45px; box-shadow: 0 30px 80px rgba(0,0,0,0.5); }
     #outro-title { color: var(--ink); font: 800 76px/1.05 var(--font-display); letter-spacing: -0.03em; }
     #outro-sub { color: var(--muted); font: 500 38px/1.3 var(--font-display); text-align: center; max-width: 720px; }
-    #outro-cmd { color: #c9d1d9; background: #161b22; border: 1px solid #30363d; border-radius: 18px; padding: 22px 28px; font: 500 24px/1.4 var(--font-mono); }
-    #outro-cmd b { color: var(--accent); font-weight: 500; }
   </style>
   <div id="root" data-composition-id="outro" data-width="886" data-height="1920">
-    <img id="outro-icon" class="clip" src="assets/icon.png" data-start="0" data-duration="3.4" alt="" />
-    <h1 id="outro-title" class="clip" data-start="0" data-duration="3.4">Walnut</h1>
-    <p id="outro-sub" class="clip" data-start="0" data-duration="3.4">Drive the WebView from your Mac</p>
-    <div id="outro-cmd" class="clip" data-start="0" data-duration="3.4"><b>$</b> brew install --cask kobbokkom/tap/walnut-agent</div>
+    <img id="outro-icon" class="clip" src="assets/icon.png" data-start="0" data-duration="3" alt="" />
+    <h1 id="outro-title" class="clip" data-start="0" data-duration="3">Walnut</h1>
+    <p id="outro-sub" class="clip" data-start="0" data-duration="3">WebView testing for developers</p>
   </div>
   <script>
     const tl = gsap.timeline({ paused: true });
     tl.fromTo("#outro-icon", { opacity: 0, scale: 0.86 }, { opacity: 1, scale: 1, duration: 0.55, ease: "back.out(1.6)" }, 0.1);
     tl.fromTo("#outro-title", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 0.3);
     tl.fromTo("#outro-sub", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 0.45);
-    tl.fromTo("#outro-cmd", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 0.7);
     window.__timelines["outro"] = tl;
   </script>
 </template>
