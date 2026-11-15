@@ -35,8 +35,14 @@ LOCALES = [
 METADATA = {
     "en-US": {
         "name": "Walnut: Webview Tester & Debug",
-        "subtitle": "Test WKWebView & SafariVC",
+        "subtitle": "Agentic WebView Debugging",
         "description": """The ultimate developer tool for testing WKWebView and SFSafariViewController configurations in real-time.
+
+MAC AGENT (NEW)
+• Let a coding agent or your Mac terminal drive Walnut's WKWebView on your iPhone
+• Open pages, tap and type, run scripts, and read Console and Network logs
+• Choose approvals: ask every time, allow page actions, or allow everything
+• Pair once over Wi-Fi or USB with a 6-digit confirmation
 
 KEY FEATURES
 
@@ -71,12 +77,18 @@ Perfect for iOS developers who need to test web content rendering, debug JavaScr
 """,
         "keywords": "webview,developer,debug,console,network,safari,wkwebview,devtools,test,inspect,ios,javascript,html",
         "whatsNew": "- Added screenshot and screen recording support for SafariVC mode.\n- Improved recording state management.",
-        "promotionalText": "Test WebView easily with Walnut. Quick URL management with bookmarks and history, plus debugging with Console, Network, and SourceView."
+        "promotionalText": "New: Mac Agent lets your coding agent test pages in Walnut from your Mac. Plus Console, Network and Sources built in for WebView debugging."
     },
     "en-AU": {
         "name": "Walnut: Webview Tester & Debug",
-        "subtitle": "Test WKWebView & SafariVC",
+        "subtitle": "Agentic WebView Debugging",
         "description": """The ultimate developer tool for testing WKWebView and SFSafariViewController configurations in real-time.
+
+MAC AGENT (NEW)
+• Let a coding agent or your Mac terminal drive Walnut's WKWebView on your iPhone
+• Open pages, tap and type, run scripts, and read Console and Network logs
+• Choose approvals: ask every time, allow page actions, or allow everything
+• Pair once over Wi-Fi or USB with a 6-digit confirmation
 
 KEY FEATURES
 
@@ -111,12 +123,18 @@ Perfect for iOS developers who need to test web content rendering, debug JavaScr
 """,
         "keywords": "webview,developer,debug,console,network,safari,wkwebview,devtools,test,inspect,ios,javascript,html",
         "whatsNew": "- Added screenshot and screen recording support for SafariVC mode.\n- Improved recording state management.",
-        "promotionalText": "Test WebView easily with Walnut. Quick URL management with bookmarks and history, plus debugging with Console, Network, and SourceView."
+        "promotionalText": "New: Mac Agent lets your coding agent test pages in Walnut from your Mac. Plus Console, Network and Sources built in for WebView debugging."
     },
     "en-CA": {
         "name": "Walnut: Webview Tester & Debug",
-        "subtitle": "Test WKWebView & SafariVC",
+        "subtitle": "Agentic WebView Debugging",
         "description": """The ultimate developer tool for testing WKWebView and SFSafariViewController configurations in real-time.
+
+MAC AGENT (NEW)
+• Let a coding agent or your Mac terminal drive Walnut's WKWebView on your iPhone
+• Open pages, tap and type, run scripts, and read Console and Network logs
+• Choose approvals: ask every time, allow page actions, or allow everything
+• Pair once over Wi-Fi or USB with a 6-digit confirmation
 
 KEY FEATURES
 
@@ -151,12 +169,18 @@ Perfect for iOS developers who need to test web content rendering, debug JavaScr
 """,
         "keywords": "webview,developer,debug,console,network,safari,wkwebview,devtools,test,inspect,ios,javascript,html",
         "whatsNew": "- Added screenshot and screen recording support for SafariVC mode.\n- Improved recording state management.",
-        "promotionalText": "Test WebView easily with Walnut. Quick URL management with bookmarks and history, plus debugging with Console, Network, and SourceView."
+        "promotionalText": "New: Mac Agent lets your coding agent test pages in Walnut from your Mac. Plus Console, Network and Sources built in for WebView debugging."
     },
     "en-GB": {
         "name": "Walnut: Webview Tester & Debug",
-        "subtitle": "Test WKWebView & SafariVC",
+        "subtitle": "Agentic WebView Debugging",
         "description": """The ultimate developer tool for testing WKWebView and SFSafariViewController configurations in real-time.
+
+MAC AGENT (NEW)
+• Let a coding agent or your Mac terminal drive Walnut's WKWebView on your iPhone
+• Open pages, tap and type, run scripts, and read Console and Network logs
+• Choose approvals: ask every time, allow page actions, or allow everything
+• Pair once over Wi-Fi or USB with a 6-digit confirmation
 
 KEY FEATURES
 
@@ -191,12 +215,18 @@ Perfect for iOS developers who need to test web content rendering, debug JavaScr
 """,
         "keywords": "webview,developer,debug,console,network,safari,wkwebview,devtools,test,inspect,ios,javascript,html",
         "whatsNew": "- Added screenshot and screen recording support for SafariVC mode.\n- Improved recording state management.",
-        "promotionalText": "Test WebView easily with Walnut. Quick URL management with bookmarks and history, plus debugging with Console, Network, and SourceView."
+        "promotionalText": "New: Mac Agent lets your coding agent test pages in Walnut from your Mac. Plus Console, Network and Sources built in for WebView debugging."
     },
     "ko": {
         "name": "Walnut: Webview 테스터 & 디버그",
-        "subtitle": "WKWebView & SafariVC 테스트",
+        "subtitle": "에이전트로 WebView 디버깅",
         "description": """WKWebView와 SFSafariViewController 설정을 실시간으로 테스트하는 개발자 도구입니다.
+
+MAC AGENT (신규)
+• 코딩 에이전트나 Mac 터미널로 iPhone의 Walnut WKWebView를 제어하세요
+• 페이지 열기, 탭과 입력, 스크립트 실행, Console 및 Network 로그 읽기
+• 승인 방식을 선택하세요: 매번 묻기, 페이지 작업 허용, 모두 허용
+• Wi-Fi 또는 USB로 한 번 페어링하고 6자리 코드로 확인
 
 주요 기능
 
@@ -231,12 +261,18 @@ SFSafariViewController 테스트
 """,
         "keywords": "웹뷰,개발자,디버그,콘솔,네트워크,사파리,devtools,테스트,검사,ios,자바스크립트,html,css,쿠키,성능,접근성,개발도구,브라우저,앱,모바일,웹킷,사파리뷰",
         "whatsNew": "- SafariVC 모드에서 스크린샷 및 화면 녹화를 지원합니다.\n- 녹화 상태 관리가 개선되었습니다.",
-        "promotionalText": "Walnut으로 WebView 테스트를 쉽게 해보세요. 북마크·히스토리 기반 URL 관리와 Console, Network, SourceView 내장 도구로 디버깅이 쉽습니다."
+        "promotionalText": "새로운 Mac Agent로 Mac의 코딩 에이전트가 Walnut에서 페이지를 테스트합니다. WebView 디버깅용 Console, Network, Sources도 내장."
     },
     "ja": {
         "name": "Walnut: Webview テスター＆デバッグ",
-        "subtitle": "WKWebView & SafariVCテスト",
+        "subtitle": "エージェントでWebViewデバッグ",
         "description": """WKWebViewとSFSafariViewControllerの設定をリアルタイムでテストする開発者ツールです。
+
+MAC AGENT (新機能)
+• コーディングエージェントやMacのターミナルから、iPhone上のWalnutのWKWebViewを操作
+• ページを開く、タップや入力、スクリプト実行、ConsoleとNetworkログの確認
+• 承認を選択: 毎回確認、ページ操作を許可、すべて許可
+• Wi-FiまたはUSBで一度ペアリングし、6桁コードで確認
 
 主な機能
 
@@ -271,12 +307,18 @@ Webコンテンツのレンダリングテスト、JavaScriptデバッグ、ネ�
 """,
         "keywords": "webview,開発者,デバッグ,コンソール,ネットワーク,safari,devtools,テスト,検査,ios,javascript,html,css,開発ツール,ブラウザ,アプリ",
         "whatsNew": "- SafariVCモードでスクリーンショットと画面録画をサポートしました。\n- 録画状態の管理を改善しました。",
-        "promotionalText": "WalnutでWebViewテストを簡単に。ブックマーク/履歴でURL管理が速く、Console・Network・SourceViewなど内蔵ツールでデバッグも簡単です。"
+        "promotionalText": "新機能: Mac Agentで、MacからコーディングエージェントがWalnut内のページをテスト。WebViewデバッグ用のConsole、Network、Sourcesも内蔵。"
     },
     "zh-Hans": {
         "name": "Walnut: Webview 测试与调试",
-        "subtitle": "测试WKWebView和SafariVC",
+        "subtitle": "智能体 WebView 调试",
         "description": """实时测试WKWebView和SFSafariViewController配置的开发者工具。
+
+MAC AGENT (新)
+• 让编码代理或你的 Mac 终端在 iPhone 上操控 Walnut 的 WKWebView
+• 打开页面、点击和输入、运行脚本，并读取 Console 和 Network 日志
+• 选择授权方式：每次询问、允许页面操作，或允许所有操作
+• 通过 Wi-Fi 或 USB 完成一次配对，并使用 6 位数字确认码
 
 主要功能
 
@@ -311,12 +353,18 @@ SFSafariViewController测试
 """,
         "keywords": "webview,开发者,调试,控制台,网络,safari,devtools,测试,检查,ios,javascript,html,css,cookie,性能,开发工具,浏览器,应用,工具",
         "whatsNew": "- 增加了SafariVC模式下的截屏和屏幕录制功能。\n- 改进了录制状态管理。",
-        "promotionalText": "用Walnut轻松测试WebView。通过书签/历史管理URL快速访问，并用Console、Network、SourceView等内置工具轻松调试。"
+        "promotionalText": "全新 Mac Agent 可让你的编码代理从 Mac 在 Walnut 中测试页面。内置 Console、Network 和 Sources，方便调试 WebView。"
     },
     "zh-Hant": {
         "name": "Walnut: Webview 測試與除錯",
-        "subtitle": "測試WKWebView和SafariVC",
+        "subtitle": "智慧代理 WebView 除錯",
         "description": """即時測試WKWebView和SFSafariViewController配置的開發者工具。
+
+MAC AGENT (新)
+• 讓編碼代理或你的 Mac 終端機操控 iPhone 上 Walnut 的 WKWebView
+• 開啟頁面、點一下並輸入、執行腳本，以及讀取 Console 和 Network 記錄
+• 選擇核准方式：每次詢問、允許頁面操作，或允許所有操作
+• 透過 Wi-Fi 或 USB 配對一次，並以 6 位數確認
 
 主要功能
 
@@ -351,12 +399,18 @@ SFSafariViewController測試
 """,
         "keywords": "webview,開發者,除錯,控制台,網路,safari,devtools,測試,檢查,ios,javascript,html,css,cookie,效能,開發工具,瀏覽器,應用,工具",
         "whatsNew": "- 增加了SafariVC模式下的截圖和螢幕錄製功能。\n- 改進了錄製狀態管理。",
-        "promotionalText": "用Walnut輕鬆測試WebView。透過書籤/歷史管理URL快速存取，並用Console、Network、SourceView等內建工具輕鬆除錯。"
+        "promotionalText": "全新：Mac Agent 可讓你的編碼代理從 Mac 測試 Walnut 中的頁面。內建 Console、Network 和 Sources，方便 WebView 除錯。"
     },
     "de-DE": {
         "name": "Walnut: Webview Tester & Debug",
-        "subtitle": "WKWebView & SafariVC testen",
+        "subtitle": "Agentisches WebView-Debugging",
         "description": """Das ultimative Entwicklertool zum Testen von WKWebView- und SFSafariViewController-Konfigurationen in Echtzeit.
+
+MAC AGENT (NEU)
+• Lass einen Coding-Agenten oder dein Mac-Terminal die WKWebView von Walnut auf deinem iPhone steuern
+• Öffne Seiten, tippe und gib Text ein, führe Skripte aus und lies Console- und Network-Logs
+• Wähle Freigaben: jedes Mal nachfragen, Seitenaktionen erlauben oder alles erlauben
+• Kopple einmal über Wi-Fi oder USB mit 6-stelliger Bestätigung
 
 HAUPTFUNKTIONEN
 
@@ -391,12 +445,18 @@ Perfekt für iOS-Entwickler, die Web-Content-Rendering testen, JavaScript debugg
 """,
         "keywords": "webview,entwickler,debug,konsole,netzwerk,safari,devtools,test,inspektor,ios,javascript,html,browser",
         "whatsNew": "- Screenshot- und Bildschirmaufnahme-Unterstützung für den SafariVC-Modus hinzugefügt.\n- Aufnahmestatusverwaltung verbessert.",
-        "promotionalText": "WebView-Tests ganz einfach mit Walnut. Schneller URL-Zugriff über Lesezeichen und Verlauf, Debugging mit Console, Network und SourceView."
+        "promotionalText": "Neu: Mit Mac Agent testet dein Coding-Agent Seiten in Walnut von deinem Mac aus. Plus Console, Network und Sources für WebView-Debugging."
     },
     "fr-FR": {
         "name": "Walnut: Webview Test & Débogage",
-        "subtitle": "Tester WKWebView & SafariVC",
+        "subtitle": "Débogage WebView par agent",
         "description": """L'outil ultime pour les développeurs pour tester les configurations WKWebView et SFSafariViewController en temps réel.
+
+MAC AGENT (NOUVEAU)
+• Permettez à un agent de codage ou au terminal de votre Mac de piloter le WKWebView de Walnut sur votre iPhone
+• Ouvrez des pages, touchez et saisissez du texte, exécutez des scripts, et consultez les logs Console et Network
+• Choisissez les approbations : demander à chaque fois, autoriser les actions de page, ou tout autoriser
+• Jumelez une fois via Wi-Fi ou USB avec une confirmation à 6 chiffres
 
 FONCTIONNALITÉS PRINCIPALES
 
@@ -431,12 +491,18 @@ Parfait pour les développeurs iOS qui doivent tester le rendu de contenu web, d
 """,
         "keywords": "webview,développeur,debug,console,réseau,safari,devtools,test,inspecteur,ios,javascript,html,cookie",
         "whatsNew": "- Ajout de la prise en charge des captures d'écran et de l'enregistrement vidéo pour le mode SafariVC.\n- Amélioration de la gestion de l'état d'enregistrement.",
-        "promotionalText": "Testez WebView facilement avec Walnut. Gestion rapide des URL via favoris et historique, et débogage avec Console, Network et SourceView."
+        "promotionalText": "Nouveau : Mac Agent permet à votre agent de codage de tester des pages dans Walnut depuis votre Mac. Avec Console, Network et Sources pour déboguer WebView."
     },
     "fr-CA": {
         "name": "Walnut: Webview Test & Débogage",
-        "subtitle": "Tester WKWebView & SafariVC",
+        "subtitle": "Débogage WebView par agent",
         "description": """L'outil ultime pour les développeurs pour tester les configurations WKWebView et SFSafariViewController en temps réel.
+
+MAC AGENT (NOUVEAU)
+• Permettez à un agent de codage ou au terminal de votre Mac de piloter le WKWebView de Walnut sur votre iPhone
+• Ouvrez des pages, touchez et saisissez du texte, exécutez des scripts, et consultez les journaux Console et Network
+• Choisissez les approbations : demander chaque fois, autoriser les actions sur la page ou tout autoriser
+• Jumelez une fois via Wi-Fi ou USB avec une confirmation à 6 chiffres
 
 FONCTIONNALITÉS PRINCIPALES
 
@@ -471,12 +537,18 @@ Parfait pour les développeurs iOS qui doivent tester le rendu de contenu web, d
 """,
         "keywords": "webview,développeur,debug,console,réseau,safari,devtools,test,inspecteur,ios,javascript,html,cookie",
         "whatsNew": "- Ajout de la prise en charge des captures d'écran et de l'enregistrement vidéo pour le mode SafariVC.\n- Amélioration de la gestion de l'état d'enregistrement.",
-        "promotionalText": "Testez WebView facilement avec Walnut. Gestion rapide des URL via favoris et historique, et débogage avec Console, Network et SourceView."
+        "promotionalText": "Nouveau : Mac Agent permet à votre agent de codage de tester des pages dans Walnut depuis votre Mac. Console, Network et Sources intégrés pour déboguer WebView."
     },
     "es-ES": {
         "name": "Walnut: Webview Test & Depuración",
-        "subtitle": "Probar WKWebView y SafariVC",
+        "subtitle": "Depuración WebView con agentes",
         "description": """La herramienta definitiva para desarrolladores para probar configuraciones de WKWebView y SFSafariViewController en tiempo real.
+
+MAC AGENT (NUEVO)
+• Permite que un agente de programación o el terminal de tu Mac controle WKWebView de Walnut en tu iPhone
+• Abre páginas, toca y escribe, ejecuta scripts y lee registros de Console y Network
+• Elige aprobaciones: preguntar siempre, permitir acciones en la página o permitir todo
+• Enlaza una vez por Wi-Fi o USB con una confirmación de 6 dígitos
 
 CARACTERÍSTICAS PRINCIPALES
 
@@ -511,12 +583,18 @@ Perfecto para desarrolladores iOS que necesitan probar el renderizado de conteni
 """,
         "keywords": "webview,desarrollador,debug,consola,red,safari,devtools,prueba,inspector,ios,javascript,html,cookie",
         "whatsNew": "- Añadida la captura de pantalla y grabación de video en modo SafariVC.\n- Mejora en la gestión del estado de grabación.",
-        "promotionalText": "Pruebe WebView fácilmente con Walnut. Gestión rápida de URL con marcadores e historial, y depuración con Console, Network y SourceView."
+        "promotionalText": "Nuevo: Mac Agent permite a tu agente probar páginas en Walnut desde tu Mac. Además, Console, Network y Sources integrados para depurar WebView."
     },
     "es-MX": {
         "name": "Walnut: Webview Test & Depuración",
-        "subtitle": "Probar WKWebView y SafariVC",
+        "subtitle": "Depuración WebView con agentes",
         "description": """La herramienta definitiva para desarrolladores para probar configuraciones de WKWebView y SFSafariViewController en tiempo real.
+
+MAC AGENT (NUEVO)
+• Permite que un agente de programación o la terminal de tu Mac controle el WKWebView de Walnut en tu iPhone
+• Abre páginas, toca y escribe, ejecuta scripts y lee registros de Console y Network
+• Elige aprobaciones: preguntar siempre, permitir acciones en la página o permitir todo
+• Enlaza una vez por Wi-Fi o USB con una confirmación de 6 dígitos
 
 CARACTERÍSTICAS PRINCIPALES
 
@@ -551,12 +629,18 @@ Perfecto para desarrolladores iOS que necesitan probar el renderizado de conteni
 """,
         "keywords": "webview,desarrollador,debug,consola,red,safari,devtools,prueba,inspector,ios,javascript,html,cookie",
         "whatsNew": "- Añadida la captura de pantalla y grabación de video en modo SafariVC.\n- Mejora en la gestión del estado de grabación.",
-        "promotionalText": "Pruebe WebView fácilmente con Walnut. Gestión rápida de URL con marcadores e historial, y depuración con Console, Network y SourceView."
+        "promotionalText": "Nuevo: Mac Agent permite que tu agente de programación pruebe páginas en Walnut desde tu Mac. Con Console, Network y Sources para depurar WebView."
     },
     "it": {
         "name": "Walnut: Webview Test & Debug",
-        "subtitle": "Testa WKWebView e SafariVC",
+        "subtitle": "Debug WebView con agenti",
         "description": """Lo strumento definitivo per sviluppatori per testare le configurazioni di WKWebView e SFSafariViewController in tempo reale.
+
+MAC AGENT (NUOVO)
+• Consenti a un agente di coding o al terminale del tuo Mac di controllare WKWebView di Walnut sul tuo iPhone
+• Apri pagine, tocca e digita, esegui script e leggi i log di Console e Network
+• Scegli le approvazioni: chiedi ogni volta, consenti azioni sulla pagina o consenti tutto
+• Abbina una volta tramite Wi-Fi o USB con conferma a 6 cifre
 
 CARATTERISTICHE PRINCIPALI
 
@@ -592,12 +676,18 @@ Perfetto per sviluppatori iOS che devono testare il rendering di contenuti web, 
 """,
         "keywords": "webview,sviluppatore,debug,console,rete,safari,devtools,test,ispettore,ios,javascript,html,css",
         "whatsNew": "- Aggiunto supporto per screenshot e registrazione dello schermo in modalità SafariVC.\n- Migliorata la gestione dello stato di registrazione.",
-        "promotionalText": "Testa WebView facilmente con Walnut. Gestione rapida degli URL con segnalibri e cronologia, debug con Console, Network e SourceView."
+        "promotionalText": "Novità: Mac Agent permette al tuo agente di coding di testare pagine in Walnut dal tuo Mac. Console, Network e Sources integrati per il debug WebView."
     },
     "pt-BR": {
         "name": "Walnut: Webview Teste & Debug",
-        "subtitle": "Testar WKWebView e SafariVC",
+        "subtitle": "Depuração WebView com agentes",
         "description": """A ferramenta definitiva para desenvolvedores testarem configurações de WKWebView e SFSafariViewController em tempo real.
+
+MAC AGENT (NOVO)
+• Permita que um agente de código ou o terminal do Mac controle o WKWebView do Walnut no seu iPhone
+• Abra páginas, toque e digite, execute scripts e leia logs do Console e Network
+• Escolha aprovações: perguntar sempre, permitir ações na página ou permitir tudo
+• Emparelhe uma vez por Wi-Fi ou USB com uma confirmação de 6 dígitos
 
 RECURSOS PRINCIPAIS
 
@@ -633,12 +723,18 @@ Perfeito para desenvolvedores iOS que precisam testar renderização de conteúd
 """,
         "keywords": "webview,desenvolvedor,debug,console,rede,safari,devtools,teste,inspetor,ios,javascript,html,cookie",
         "whatsNew": "- Adicionado suporte a captura de tela e gravação de vídeo no modo SafariVC.\n- Melhoria no gerenciamento do estado de gravação.",
-        "promotionalText": "Teste WebView facilmente com o Walnut. Gestão rápida de URLs com favoritos e histórico, e debug com Console, Network e SourceView."
+        "promotionalText": "Novo: Mac Agent permite que seu agente de código teste páginas no Walnut pelo Mac. Console, Network e Sources integrados para depurar WebView."
     },
     "pt-PT": {
         "name": "Walnut: Webview Teste & Debug",
-        "subtitle": "Testar WKWebView e SafariVC",
+        "subtitle": "Depuração WebView com agentes",
         "description": """A ferramenta definitiva para desenvolvedores testarem configurações de WKWebView e SFSafariViewController em tempo real.
+
+MAC AGENT (NOVO)
+• Permita que um agente de programação ou o terminal do Mac controle o WKWebView do Walnut no iPhone
+• Abra páginas, toque e escreva, execute scripts e leia registos de Console e Network
+• Escolha aprovações: perguntar sempre, permitir ações na página ou permitir tudo
+• Emparelhe uma vez por Wi-Fi ou USB com uma confirmação de 6 dígitos
 
 RECURSOS PRINCIPAIS
 
@@ -674,12 +770,18 @@ Perfeito para desenvolvedores iOS que precisam testar renderização de conteúd
 """,
         "keywords": "webview,desenvolvedor,debug,console,rede,safari,devtools,teste,inspetor,ios,javascript,html,cookie",
         "whatsNew": "- Adicionado suporte a captura de tela e gravação de vídeo no modo SafariVC.\n- Melhoria no gerenciamento do estado de gravação.",
-        "promotionalText": "Teste WebView facilmente com o Walnut. Gestão rápida de URLs com marcadores e histórico, e debug com Console, Network e SourceView."
+        "promotionalText": "Novo: Mac Agent permite ao seu agente de programação testar páginas no Walnut a partir do Mac. Com Console, Network e Sources integrados para depuração de WebView."
     },
     "ru": {
         "name": "Walnut: Webview Тест и Отладка",
-        "subtitle": "Тест WKWebView и SafariVC",
+        "subtitle": "WebView-отладка с ИИ-агентом",
         "description": """Идеальный инструмент разработчика для тестирования конфигураций WKWebView и SFSafariViewController в реальном времени.
+
+MAC AGENT (НОВОЕ)
+• Позвольте ИИ-агенту для кода или терминалу Mac управлять WKWebView в Walnut на вашем iPhone
+• Открывайте страницы, нажимайте и вводите текст, запускайте скрипты и читайте логи Console и Network
+• Выбирайте подтверждения: спрашивать каждый раз, разрешать действия на странице или разрешить всё
+• Выполните сопряжение один раз по Wi-Fi или USB с 6-значным подтверждением
 
 ОСНОВНЫЕ ФУНКЦИИ
 
@@ -714,12 +816,18 @@ Perfeito para desenvolvedores iOS que precisam testar renderização de conteúd
 """,
         "keywords": "webview,разработчик,отладка,консоль,сеть,safari,devtools,тест,инспектор,ios,javascript,html,css",
         "whatsNew": "- Добавлена поддержка снимков экрана и записи экрана в режиме SafariVC.\n- Улучшено управление состоянием записи.",
-        "promotionalText": "Тестируйте WebView легко с Walnut. Быстрое управление URL через закладки и историю, отладка с Console, Network и SourceView."
+        "promotionalText": "Новое: Mac Agent позволяет ИИ-агенту для кода тестировать страницы в Walnut с Mac. А Console, Network и Sources помогают отлаживать WebView."
     },
     "ar-SA": {
         "name": "Walnut: Webview اختبار وتصحيح",
-        "subtitle": "اختبار WKWebView و SafariVC",
+        "subtitle": "تصحيح WebView بالوكلاء",
         "description": """الأداة المثالية للمطورين لاختبار إعدادات WKWebView و SFSafariViewController في الوقت الفعلي.
+
+MAC AGENT (جديد)
+• اسمح لوكيل برمجة أو طرفية Mac لديك بالتحكم في WKWebView الخاص بـ Walnut على iPhone
+• افتح الصفحات، انقر واكتب، شغّل السكربتات، واقرأ سجلات Console وNetwork
+• اختر الموافقات: السؤال كل مرة، السماح بإجراءات الصفحة، أو السماح بكل شيء
+• اقرن مرة واحدة عبر Wi-Fi أو USB بتأكيد من 6 أرقام
 
 الميزات الرئيسية
 
@@ -754,12 +862,18 @@ Perfeito para desenvolvedores iOS que precisam testar renderização de conteúd
 """,
         "keywords": "webview,مطور,تصحيح,وحدة التحكم,شبكة,safari,devtools,اختبار,فحص,ios,javascript,html,css,متصفح,أداة",
         "whatsNew": "- تمت إضافة دعم لقطة الشاشة وتسجيل الشاشة لوضع SafariVC.\n- تحسين إدارة حالة التسجيل.",
-        "promotionalText": "اختبر WebView بسهولة مع Walnut. إدارة سريعة للروابط عبر الإشارات المرجعية والسجل، وتصحيح مع Console وNetwork وSourceView."
+        "promotionalText": "جديد: Mac Agent يتيح لوكيل البرمجة اختبار الصفحات في Walnut من Mac. مع Console وNetwork وSources مدمجة لتصحيح WebView."
     },
     "hi": {
         "name": "Walnut: Webview टेस्ट और डीबग",
-        "subtitle": "WKWebView और SafariVC टेस्ट",
+        "subtitle": "एजेंट से WebView डिबगिंग",
         "description": """WKWebView और SFSafariViewController कॉन्फ़िगरेशन को रीयल-टाइम में टेस्ट करने के लिए परम डेवलपर टूल।
+
+MAC AGENT (नया)
+• अपने कोडिंग एजेंट या Mac टर्मिनल को आपके iPhone पर Walnut के WKWebView को नियंत्रित करने दें
+• पेज खोलें, टैप और टाइप करें, स्क्रिप्ट चलाएँ, और Console व Network लॉग पढ़ें
+• अनुमतियाँ चुनें: हर बार पूछें, पेज क्रियाओं की अनुमति दें, या सब कुछ करने दें
+• 6-अंकीय पुष्टि के साथ Wi-Fi या USB पर एक बार पेयर करें
 
 मुख्य विशेषताएं
 
@@ -794,12 +908,18 @@ iOS डेवलपर्स के लिए परफेक्ट जिन्
 """,
         "keywords": "webview,डेवलपर,डीबग,कंसोल,नेटवर्क,safari,devtools,टेस्ट,इंस्पेक्ट,ios,javascript,html,css,ब्राउज़र",
         "whatsNew": "- SafariVC मोड के लिए स्क्रीनशॉट और स्क्रीन रिकॉर्डिंग सपोर्ट जोड़ा गया।\n- रिकॉर्डिंग स्टेट मैनेजमेंट में सुधार।",
-        "promotionalText": "Walnut के साथ WebView को आसानी से टेस्ट करें। बुकमार्क/हिस्ट्री से URL प्रबंधन तेज़, और Console, Network, SourceView से डिबगिंग आसान।"
+        "promotionalText": "नया: Mac Agent आपके कोडिंग एजेंट को Mac से Walnut में पेज टेस्ट करने देता है। WebView डीबगिंग के लिए Console, Network, Sources भी।"
     },
     "th": {
         "name": "Walnut: Webview ทดสอบและดีบัก",
-        "subtitle": "ทดสอบ WKWebView & SafariVC",
+        "subtitle": "ดีบัก WebView ด้วยเอเจนต์",
         "description": """เครื่องมือสำหรับนักพัฒนาเพื่อทดสอบการกำหนดค่า WKWebView และ SFSafariViewController แบบเรียลไทม์
+
+MAC AGENT (ใหม่)
+• ให้เอเจนต์เขียนโค้ดหรือ terminal บน Mac ของคุณสั่งงาน WKWebView ของ Walnut บน iPhone
+• เปิดหน้า แตะและพิมพ์ รันสคริปต์ และอ่านบันทึก Console และ Network
+• เลือกการอนุมัติ: ถามทุกครั้ง อนุญาตการทำงานบนหน้า หรืออนุญาตทั้งหมด
+• จับคู่ครั้งเดียวผ่าน Wi-Fi หรือ USB พร้อมการยืนยัน 6 หลัก
 
 คุณสมบัติหลัก
 
@@ -834,12 +954,18 @@ iOS डेवलपर्स के लिए परफेक्ट जिन्
 """,
         "keywords": "webview,นักพัฒนา,ดีบัก,คอนโซล,เครือข่าย,safari,devtools,ทดสอบ,ตรวจสอบ,ios,javascript,html,css",
         "whatsNew": "- เพิ่มการสนับสนุนการจับภาพหน้าจอและการบันทึกหน้าจอสำหรับโหมด SafariVC\n- ปรับปรุงการจัดการสถานะการบันทึก",
-        "promotionalText": "ทดสอบ WebView ได้ง่ายด้วย Walnut. จัดการ URL ได้เร็วด้วยบุ๊กมาร์กและประวัติ และดีบักด้วย Console, Network, SourceView."
+        "promotionalText": "ใหม่: Mac Agent ให้เอเจนต์เขียนโค้ดทดสอบหน้าใน Walnut จาก Mac ของคุณ พร้อม Console, Network และ Sources ในตัวสำหรับดีบัก WebView"
     },
     "vi": {
         "name": "Walnut: Webview Test & Debug",
-        "subtitle": "Test WKWebView & SafariVC",
+        "subtitle": "Gỡ lỗi WebView bằng agent",
         "description": """Công cụ dành cho nhà phát triển để kiểm thử cấu hình WKWebView và SFSafariViewController theo thời gian thực.
+
+MAC AGENT (MỚI)
+• Cho phép coding agent hoặc terminal trên Mac điều khiển WKWebView của Walnut trên iPhone
+• Mở trang, chạm và nhập, chạy script, và đọc nhật ký Console và Network
+• Chọn phê duyệt: hỏi mỗi lần, cho phép thao tác trên trang, hoặc cho phép mọi thứ
+• Ghép đôi một lần qua Wi-Fi hoặc USB với xác nhận 6 chữ số
 
 TÍNH NĂNG CHÍNH
 
@@ -874,12 +1000,18 @@ Hoàn hảo cho các nhà phát triển iOS cần kiểm thử hiển thị nộ
 """,
         "keywords": "webview,lập trình,debug,console,mạng,safari,devtools,kiểm thử,kiểm tra,ios,javascript,html,css",
         "whatsNew": "- Thêm hỗ trợ chụp màn hình và quay màn hình cho chế độ SafariVC.\n- Cải thiện quản lý trạng thái ghi.",
-        "promotionalText": "Kiểm thử WebView dễ dàng với Walnut. Quản lý URL nhanh bằng dấu trang và lịch sử, và debug với Console, Network, SourceView."
+        "promotionalText": "Mới: Mac Agent cho phép coding agent kiểm thử trang trong Walnut từ Mac. Có sẵn Console, Network và Sources để gỡ lỗi WebView."
     },
     "id": {
         "name": "Walnut: Webview Tes & Debug",
-        "subtitle": "Tes WKWebView & SafariVC",
+        "subtitle": "Debugging WebView dengan Agen",
         "description": """Alat pengembang terbaik untuk menguji konfigurasi WKWebView dan SFSafariViewController secara real-time.
+
+MAC AGENT (BARU)
+• Biarkan agen coding atau terminal Mac Anda mengendalikan WKWebView Walnut di iPhone Anda
+• Buka halaman, ketuk dan ketik, jalankan skrip, serta baca log Console dan Network
+• Pilih persetujuan: tanya setiap kali, izinkan tindakan halaman, atau izinkan semuanya
+• Pasangkan sekali melalui Wi-Fi atau USB dengan konfirmasi 6 digit
 
 FITUR UTAMA
 
@@ -914,12 +1046,18 @@ Sempurna untuk pengembang iOS yang perlu menguji rendering konten web, debug Jav
 """,
         "keywords": "webview,developer,debug,console,jaringan,safari,devtools,tes,inspeksi,ios,javascript,html,css",
         "whatsNew": "- Menambahkan dukungan tangkapan layar dan perekaman layar untuk mode SafariVC.\n- Peningkatan manajemen status perekaman.",
-        "promotionalText": "Uji WebView dengan mudah lewat Walnut. Kelola URL cepat lewat bookmark dan riwayat, dan debug dengan Console, Network, SourceView."
+        "promotionalText": "Baru: Mac Agent memungkinkan agen coding menguji halaman di Walnut dari Mac. Serta Console, Network, dan Sources bawaan untuk debugging WebView."
     },
     "ms": {
         "name": "Walnut: Webview Uji & Nyahpepijat",
-        "subtitle": "Uji WKWebView & SafariVC",
+        "subtitle": "Nyahpepijat WebView dgn Ejen",
         "description": """Alat pembangun terbaik untuk menguji konfigurasi WKWebView dan SFSafariViewController secara masa nyata.
+
+MAC AGENT (BARU)
+• Benarkan ejen pengekodan atau terminal Mac anda mengawal WKWebView Walnut pada iPhone anda
+• Buka halaman, ketik dan taip, jalankan skrip, serta baca log Console dan Network
+• Pilih kelulusan: tanya setiap kali, benarkan tindakan halaman, atau benarkan semuanya
+• Pasangkan sekali melalui Wi-Fi atau USB dengan pengesahan 6 digit
 
 CIRI-CIRI UTAMA
 
@@ -954,12 +1092,18 @@ Sempurna untuk pembangun iOS yang perlu menguji pemaparan kandungan web, nyahpep
 """,
         "keywords": "webview,pembangun,debug,konsol,rangkaian,safari,devtools,uji,periksa,ios,javascript,html,css,pelayar",
         "whatsNew": "- Menambah sokongan tangkapan skrin dan rakaman skrin untuk mod SafariVC.\n- Pengurusan status rakaman yang dipertingkatkan.",
-        "promotionalText": "Uji WebView dengan mudah bersama Walnut. Urus URL dengan pantas melalui penanda buku dan sejarah, dan nyahpepijat dengan Console, Network, SourceView."
+        "promotionalText": "Baru: Mac Agent membolehkan ejen pengekodan anda menguji halaman dalam Walnut dari Mac. Console, Network dan Sources terbina untuk nyahpepijat WebView."
     },
     "nl-NL": {
         "name": "Walnut: Webview Test & Debug",
-        "subtitle": "Test WKWebView & SafariVC",
+        "subtitle": "Agentisch WebView-debuggen",
         "description": """De ultieme ontwikkelaarstool voor het testen van WKWebView- en SFSafariViewController-configuraties in realtime.
+
+MAC AGENT (NIEUW)
+• Laat een codeeragent of je Mac-terminal Walnut's WKWebView op je iPhone aansturen
+• Open pagina's, tik en typ, voer scripts uit en lees Console- en Network-logboeken
+• Kies goedkeuringen: vraag elke keer, sta pagina-acties toe of sta alles toe
+• Koppel één keer via Wi-Fi of USB met een 6-cijferige bevestiging
 
 BELANGRIJKSTE FUNCTIES
 
@@ -994,12 +1138,18 @@ Perfect voor iOS-ontwikkelaars die webcontent-rendering moeten testen, JavaScrip
 """,
         "keywords": "webview,ontwikkelaar,debug,console,netwerk,safari,devtools,test,inspecteer,ios,javascript,html,css",
         "whatsNew": "- Ondersteuning voor schermafbeeldingen en schermopname toegevoegd voor SafariVC-modus.\n- Verbeterd beheer van opnamestatus.",
-        "promotionalText": "Test WebView eenvoudig met Walnut. Snel URL-beheer via bladwijzers en geschiedenis, en debug met Console, Network en SourceView."
+        "promotionalText": "Nieuw: Mac Agent laat je codeeragent pagina's testen in Walnut vanaf je Mac. Met Console, Network en Sources voor WebView-debugging."
     },
     "pl": {
         "name": "Walnut: Webview Test i Debug",
-        "subtitle": "Testuj WKWebView i SafariVC",
+        "subtitle": "Debugowanie WebView z agentem",
         "description": """Najlepsze narzędzie deweloperskie do testowania konfiguracji WKWebView i SFSafariViewController w czasie rzeczywistym.
+
+MAC AGENT (NOWOŚĆ)
+• Pozwól agentowi kodu lub terminalowi na Mac sterować WKWebView Walnut na iPhone
+• Otwieraj strony, stukaj i wpisuj tekst, uruchamiaj skrypty oraz czytaj logi Console i Network
+• Wybierz zatwierdzenia: pytaj za każdym razem, zezwalaj na działania na stronie albo zezwalaj na wszystko
+• Sparuj raz przez Wi-Fi lub USB z 6-cyfrowym potwierdzeniem
 
 GŁÓWNE FUNKCJE
 
@@ -1034,12 +1184,18 @@ Idealne dla programistów iOS, którzy muszą testować renderowanie treści web
 """,
         "keywords": "webview,programista,debug,konsola,sieć,safari,devtools,test,inspektor,ios,javascript,html,css",
         "whatsNew": "- Dodano obsługę zrzutów ekranu i nagrywania ekranu w trybie SafariVC.\n- Poprawiono zarządzanie stanem nagrywania.",
-        "promotionalText": "Testuj WebView łatwo z Walnut. Szybkie zarządzanie URL dzięki zakładkom i historii, debug z Console, Network i SourceView."
+        "promotionalText": "Nowość: Mac Agent pozwala testować strony w Walnut z poziomu Mac. Wbudowane Console, Network i Sources do debugowania WebView."
     },
     "tr": {
         "name": "Walnut: Webview Test & Hata Ayıklama",
-        "subtitle": "WKWebView & SafariVC Test",
+        "subtitle": "Ajanla WebView Hata Ayıklama",
         "description": """WKWebView ve SFSafariViewController yapılandırmalarını gerçek zamanlı test etmek için nihai geliştirici aracı.
+
+MAC AGENT (YENİ)
+• Bir kodlama aracısının veya Mac terminalinizin iPhone’unuzda Walnut WKWebView’ını kontrol etmesini sağlayın
+• Sayfaları açın, dokunun ve yazın, betikler çalıştırın, Console ve Network günlüklerini okuyun
+• Onayları seçin: her seferinde sor, sayfa eylemlerine izin ver veya her şeye izin ver
+• Wi-Fi veya USB üzerinden 6 haneli onayla bir kez eşleyin
 
 ANA ÖZELLİKLER
 
@@ -1074,12 +1230,18 @@ Web içerik görüntülemeyi test etmesi, JavaScript hata ayıklaması, ağ iste
 """,
         "keywords": "webview,geliştirici,debug,konsol,ağ,safari,devtools,test,denetim,ios,javascript,html,css,tarayıcı",
         "whatsNew": "- SafariVC modunda ekran görüntüsü ve ekran kaydı desteği eklendi.\n- Kayıt durumu yönetimi iyileştirildi.",
-        "promotionalText": "Walnut ile WebView testini kolayca yapın. Yer imi ve geçmişle URL yönetimi hızlı, Console, Network, SourceView ile hata ayıklama kolay."
+        "promotionalText": "Yeni: Mac Agent ile kodlama aracınız Mac’inizden Walnut’ta sayfaları test eder. WebView hata ayıklama için Console, Network ve Sources yerleşik."
     },
     "uk": {
         "name": "Walnut: Webview Тест і Налагодження",
-        "subtitle": "Тест WKWebView і SafariVC",
+        "subtitle": "WebView-налагодження з агентом",
         "description": """Найкращий інструмент розробника для тестування конфігурацій WKWebView та SFSafariViewController в реальному часі.
+
+MAC AGENT (НОВЕ)
+• Дозвольте агенту кодування або терміналу Mac керувати WKWebView у Walnut на вашому iPhone
+• Відкривайте сторінки, натискайте й вводьте текст, запускайте скрипти та читайте журнали Console і Network
+• Обирайте схвалення: запит щоразу, дозвіл на дії на сторінці або дозвіл на все
+• Створіть пару один раз через Wi-Fi або USB із 6-значним підтвердженням
 
 ОСНОВНІ ФУНКЦІЇ
 
@@ -1114,12 +1276,18 @@ Web içerik görüntülemeyi test etmesi, JavaScript hata ayıklaması, ağ iste
 """,
         "keywords": "webview,розробник,налагодження,консоль,мережа,safari,devtools,тест,інспектор,ios,javascript,html",
         "whatsNew": "- Додано підтримку знімків екрану та запису екрану для режиму SafariVC.\n- Покращено керування станом запису.",
-        "promotionalText": "Легко тестуйте WebView з Walnut. Швидке керування URL через закладки й історію та дебаг із Console, Network і SourceView."
+        "promotionalText": "Нове: Mac Agent дає агенту кодування тестувати сторінки в Walnut із Mac. А Console, Network і Sources вже вбудовані для налагодження WebView."
     },
     "sv": {
         "name": "Walnut: Webview Test & Debug",
-        "subtitle": "Testa WKWebView & SafariVC",
+        "subtitle": "Agentisk WebView-felsökning",
         "description": """Det ultimata utvecklarverktyget för att testa WKWebView- och SFSafariViewController-konfigurationer i realtid.
+
+MAC AGENT (NY)
+• Låt en kodagent eller din Mac-terminal styra WKWebView i Walnut på din iPhone
+• Öppna sidor, tryck och skriv, kör skript och läs loggar i Console och Network
+• Välj godkännanden: fråga varje gång, tillåt sidåtgärder eller tillåt allt
+• Parkoppla en gång via Wi-Fi eller USB med en 6-siffrig bekräftelse
 
 HUVUDFUNKTIONER
 
@@ -1154,12 +1322,18 @@ Perfekt för iOS-utvecklare som behöver testa webbinnehållsrendering, felsöka
 """,
         "keywords": "webview,utvecklare,debug,konsol,nätverk,safari,devtools,test,inspektera,ios,javascript,html,css",
         "whatsNew": "- Lagt till stöd för skärmdumpar och skärminspelning för SafariVC-läge.\n- Förbättrad hantering av inspelningsstatus.",
-        "promotionalText": "Testa WebView enkelt med Walnut. Snabb URL-hantering via bokmärken och historik, och debug med Console, Network och SourceView."
+        "promotionalText": "Nytt: Mac Agent låter din kodagent testa sidor i Walnut från din Mac. Console, Network och Sources ingår för WebView-felsökning."
     },
     "no": {
         "name": "Walnut: Webview Test & Debug",
-        "subtitle": "Test WKWebView & SafariVC",
+        "subtitle": "Agentisk WebView-feilsøking",
         "description": """Det ultimate utviklerverktøyet for testing av WKWebView- og SFSafariViewController-konfigurasjoner i sanntid.
+
+MAC AGENT (NY)
+• La en kodeagent eller terminalen på Mac styre WKWebView i Walnut på iPhone
+• Åpne sider, trykk og skriv, kjør skript, og les Console- og Network-logger
+• Velg godkjenninger: spør hver gang, tillat sidehandlinger eller tillat alt
+• Par én gang via Wi-Fi eller USB med en sekssifret bekreftelse
 
 HOVEDFUNKSJONER
 
@@ -1194,12 +1368,18 @@ Perfekt for iOS-utviklere som trenger å teste webinnholdsrendering, feilsøke J
 """,
         "keywords": "webview,utvikler,debug,konsoll,nettverk,safari,devtools,test,inspiser,ios,javascript,html,css",
         "whatsNew": "- Lagt til støtte for skjermbilder og skjermopptak for SafariVC-modus.\n- Forbedret håndtering av innspillingsstatus.",
-        "promotionalText": "Test WebView enkelt med Walnut. Rask URL-håndtering med bokmerker og historikk, og debugging med Console, Network og SourceView."
+        "promotionalText": "Nytt: Mac Agent lar kodeagenten teste sider i Walnut fra Mac. Med Console, Network og Sources innebygd for WebView-feilsøking."
     },
     "da": {
         "name": "Walnut: Webview Test & Debug",
-        "subtitle": "Test WKWebView & SafariVC",
+        "subtitle": "Agentisk WebView-fejlfinding",
         "description": """Det ultimative udviklerværktøj til test af WKWebView- og SFSafariViewController-konfigurationer i realtid.
+
+MAC AGENT (NY)
+• Lad en kodeagent eller din Mac-terminal styre Walnut's WKWebView på din iPhone
+• Åbn sider, tryk og skriv, kør scripts, og læs Console- og Network-logfiler
+• Vælg godkendelser: spørg hver gang, tillad sidehandlinger, eller tillad alt
+• Par én gang via Wi-Fi eller USB med en 6-cifret bekræftelse
 
 HOVEDFUNKTIONER
 
@@ -1234,12 +1414,18 @@ Perfekt til iOS-udviklere, der skal teste webindholdsgengivelse, debugge JavaScr
 """,
         "keywords": "webview,udvikler,debug,konsol,netværk,safari,devtools,test,inspicér,ios,javascript,html,css,browser",
         "whatsNew": "- Tilføjet understøttelse af skærmbilleder og skærmoptagelse for SafariVC-tilstand.\n- Forbedret styring af optagelsesstatus.",
-        "promotionalText": "Test WebView nemt med Walnut. Hurtig URL-styring via bogmærker og historik, og debug med Console, Network og SourceView."
+        "promotionalText": "Nyt: Mac Agent lader din kodeagent teste sider i Walnut fra din Mac. Plus Console, Network og Sources indbygget til WebView-fejlfinding."
     },
     "fi": {
         "name": "Walnut: Webview Testi & Debug",
-        "subtitle": "Testaa WKWebView & SafariVC",
+        "subtitle": "WebView-vianetsintä agentilla",
         "description": """Kehittäjätyökalu WKWebView- ja SFSafariViewController-konfiguraatioiden reaaliaikaiseen testaamiseen.
+
+MAC AGENT (UUSI)
+• Anna koodausagentin tai Mac-päätteesi ohjata Walnutin WKWebView'ta iPhone-laitteellasi
+• Avaa sivuja, napauta ja kirjoita, suorita skriptejä sekä lue Console- ja Network-lokeja
+• Valitse hyväksynnät: kysy joka kerta, salli sivutoiminnot tai salli kaikki
+• Muodosta pari kerran Wi-Fi- tai USB-yhteydellä 6-numeroisella vahvistuksella
 
 PÄÄOMINAISUUDET
 
@@ -1274,12 +1460,18 @@ Täydellinen iOS-kehittäjille, jotka tarvitsevat web-sisällön renderöinnin t
 """,
         "keywords": "webview,kehittäjä,debug,konsoli,verkko,safari,devtools,testi,tarkasta,ios,javascript,html,css,selain",
         "whatsNew": "- Lisätty kuvakaappaus- ja näytön tallennustuki SafariVC-tilaan.\n- Parannettu tallennustilan hallintaa.",
-        "promotionalText": "Testaa WebView helposti Walnutilla. Nopea URL-hallinta kirjanmerkeillä ja historialla, debuggaus Console-, Network- ja SourceView-työkaluilla."
+        "promotionalText": "Uusi: Mac Agent antaa koodausagenttisi testata sivuja Walnutissa Maciltasi. Console, Network ja Sources sisäänrakennettuina WebView-vianetsintään."
     },
     "cs": {
         "name": "Walnut: Webview Test & Debug",
-        "subtitle": "Test WKWebView & SafariVC",
+        "subtitle": "Ladění WebView s agentem",
         "description": """Ultimátní vývojářský nástroj pro testování konfigurací WKWebView a SFSafariViewController v reálném čase.
+
+MAC AGENT (NOVÉ)
+• Nechte programovacího agenta nebo terminál na Mac ovládat WKWebView ve Walnut na vašem iPhone
+• Otevírejte stránky, klepejte a pište, spouštějte skripty a čtěte logy Console a Network
+• Zvolte schvalování: ptát se pokaždé, povolit akce na stránce nebo povolit vše
+• Spárujte jednou přes Wi-Fi nebo USB s 6místným potvrzením
 
 HLAVNÍ FUNKCE
 
@@ -1314,12 +1506,18 @@ Ideální pro iOS vývojáře, kteří potřebují testovat vykreslování webov
 """,
         "keywords": "webview,vývojář,debug,konzole,síť,safari,devtools,test,inspektor,ios,javascript,html,css,prohlížeč",
         "whatsNew": "- Přidána podpora snímků obrazovky a nahrávání obrazovky pro režim SafariVC.\n- Vylepšená správa stavu nahrávání.",
-        "promotionalText": "Testujte WebView snadno s Walnut. Rychlá správa URL přes záložky a historii, ladění s Console, Network a SourceView."
+        "promotionalText": "Novinka: Mac Agent umožní programovacímu agentovi testovat stránky ve Walnut z Mac. Console, Network a Sources jsou vestavěné pro ladění WebView."
     },
     "sk": {
         "name": "Walnut: Webview Test & Debug",
-        "subtitle": "Test WKWebView & SafariVC",
+        "subtitle": "Ladenie WebView s agentom",
         "description": """Ultimátny vývojársky nástroj pre testovanie konfigurácií WKWebView a SFSafariViewController v reálnom čase.
+
+MAC AGENT (NOVÉ)
+• Nechajte agenta na kódovanie alebo terminál na Mac ovládať WKWebView vo Walnut na vašom iPhone
+• Otvárajte stránky, ťukajte a píšte, spúšťajte skripty a čítajte záznamy Console a Network
+• Vyberte schvaľovanie: pýtať sa vždy, povoliť akcie na stránke alebo povoliť všetko
+• Spárujte raz cez Wi-Fi alebo USB pomocou 6-miestneho potvrdenia
 
 HLAVNÉ FUNKCIE
 
@@ -1354,12 +1552,18 @@ Ideálne pre iOS vývojárov, ktorí potrebujú testovať vykresľovanie webové
 """,
         "keywords": "webview,vývojár,debug,konzola,sieť,safari,devtools,test,inšpektor,ios,javascript,html,css,prehliadač",
         "whatsNew": "- Pridaná podpora snímok obrazovky a nahrávania obrazovky pre režim SafariVC.\n- Vylepšená správa stavu nahrávania.",
-        "promotionalText": "Testujte WebView jednoducho s Walnut. Rýchla správa URL cez záložky a históriu, ladenie s Console, Network a SourceView."
+        "promotionalText": "Novinka: Mac Agent umožní agentovi na kódovanie testovať stránky vo Walnut z Mac. Plus Console, Network a Sources na ladenie WebView."
     },
     "hu": {
         "name": "Walnut: Webview Teszt & Debug",
-        "subtitle": "WKWebView & SafariVC teszt",
+        "subtitle": "WebView-hibakeresés ügynökkel",
         "description": """A tökéletes fejlesztői eszköz a WKWebView és SFSafariViewController konfigurációk valós idejű teszteléséhez.
+
+MAC AGENT (ÚJ)
+• Hagyd, hogy egy kódoló agent vagy a Mac terminálod vezérelje a Walnut WKWebView-ját az iPhone-odon
+• Nyiss meg oldalakat, koppints és gépelj, futtass scripteket, és olvasd a Console és Network naplókat
+• Válassz jóváhagyást: kérdezzen rá mindig, engedélyezze az oldalműveleteket, vagy engedélyezzen mindent
+• Párosítsd egyszer Wi-Fi vagy USB kapcsolaton, 6 jegyű megerősítéssel
 
 FŐ JELLEMZŐK
 
@@ -1394,12 +1598,18 @@ Tökéletes iOS fejlesztőknek, akiknek webtartalom renderelést kell tesztelni�
 """,
         "keywords": "webview,fejlesztő,debug,konzol,hálózat,safari,devtools,teszt,vizsgálat,ios,javascript,html,css",
         "whatsNew": "- Képernyőkép és képernyőfelvétel támogatás hozzáadva a SafariVC módhoz.\n- Javított felvételi állapotkezelés.",
-        "promotionalText": "WebView‑tesztek könnyen a Walnuttal. Gyors URL‑kezelés könyvjelzőkkel és előzményekkel, hibakeresés Console, Network és SourceView eszközökkel."
+        "promotionalText": "Új: a Mac Agenttel a kódoló asszisztensed oldalakat tesztelhet a Walnutban a Macről. Console, Network és Sources a WebView hibakereséshez."
     },
     "ro": {
         "name": "Walnut: Webview Test & Depanare",
-        "subtitle": "Test WKWebView & SafariVC",
+        "subtitle": "Depanare WebView cu agenți",
         "description": """Instrumentul suprem pentru dezvoltatori pentru testarea configurațiilor WKWebView și SFSafariViewController în timp real.
+
+MAC AGENT (NOU)
+• Permite unui agent de codare sau terminalului tău Mac să controleze WKWebView din Walnut pe iPhone
+• Deschide pagini, atinge și tastează, rulează scripturi și citește jurnalele Console și Network
+• Alege aprobările: cere de fiecare dată, permite acțiuni în pagină sau permite totul
+• Asociază o singură dată prin Wi-Fi sau USB cu o confirmare din 6 cifre
 
 CARACTERISTICI PRINCIPALE
 
@@ -1434,12 +1644,18 @@ Perfect pentru dezvoltatorii iOS care trebuie să testeze redarea conținutului 
 """,
         "keywords": "webview,dezvoltator,debug,consolă,rețea,safari,devtools,test,inspector,ios,javascript,html,css",
         "whatsNew": "- Adăugat suport pentru capturi de ecran și înregistrare ecran în modul SafariVC.\n- Îmbunătățită gestionarea stării de înregistrare.",
-        "promotionalText": "Testează WebView ușor cu Walnut. Gestionare rapidă a URL‑urilor prin marcaje și istoric, și debug cu Console, Network și SourceView."
+        "promotionalText": "Nou: Mac Agent permite agentului tău de codare să testeze pagini în Walnut de pe Mac. Plus Console, Network și Sources integrate pentru depanarea WebView."
     },
     "hr": {
         "name": "Walnut: Webview Test & Debug",
-        "subtitle": "Test WKWebView i SafariVC",
+        "subtitle": "Otklanjanje WebView s agentom",
         "description": """Ultimativni alat za programere za testiranje WKWebView i SFSafariViewController konfiguracija u stvarnom vremenu.
+
+MAC AGENT (NOVO)
+• Dopustite agentu za kodiranje ili Mac terminalu da upravlja WKWebView u Walnut na vašem iPhone
+• Otvarajte stranice, dodirujte i tipkajte, pokrećite skripte i čitajte zapisnike Console i Network
+• Odaberite odobrenja: pitaj svaki put, dopusti radnje na stranici ili dopusti sve
+• Uparite jednom preko Wi-Fi ili USB uz 6-znamenkastu potvrdu
 
 GLAVNE ZNAČAJKE
 
@@ -1474,12 +1690,18 @@ Savršeno za iOS programere koji trebaju testirati prikazivanje web sadržaja, d
 """,
         "keywords": "webview,programer,debug,konzola,mreža,safari,devtools,test,inspektor,ios,javascript,html,css",
         "whatsNew": "- Dodana podrška za snimanje zaslona i snimanje zaslona za SafariVC način rada.\n- Poboljšano upravljanje stanjem snimanja.",
-        "promotionalText": "Testirajte WebView lako uz Walnut. Brzo upravljanje URL‑ovima putem oznaka i povijesti, te debug s Console, Network i SourceView."
+        "promotionalText": "Novo: Mac Agent omogućuje agentu za kodiranje testiranje stranica u Walnut s Mac računala. Ugrađeni Console, Network i Sources za WebView."
     },
     "el": {
         "name": "Walnut: Webview Δοκιμή & Debug",
-        "subtitle": "Δοκιμή WKWebView & SafariVC",
+        "subtitle": "Αποσφαλμάτωση WebView με agent",
         "description": """Το απόλυτο εργαλείο προγραμματιστή για δοκιμή διαμορφώσεων WKWebView και SFSafariViewController σε πραγματικό χρόνο.
+
+MAC AGENT (ΝΕΟ)
+• Επιτρέψτε σε έναν agent κώδικα ή στο τερματικό του Mac σας να χειρίζεται το WKWebView του Walnut στο iPhone σας
+• Ανοίξτε σελίδες, πατήστε και πληκτρολογήστε, εκτελέστε scripts και διαβάστε καταγραφές Console και Network
+• Επιλέξτε εγκρίσεις: ερώτηση κάθε φορά, άδεια για ενέργειες σελίδας ή άδεια για όλα
+• Κάντε σύζευξη μία φορά μέσω Wi-Fi ή USB με επιβεβαίωση 6 ψηφίων
 
 ΚΥΡΙΑ ΧΑΡΑΚΤΗΡΙΣΤΙΚΑ
 
@@ -1514,12 +1736,18 @@ Savršeno za iOS programere koji trebaju testirati prikazivanje web sadržaja, d
 """,
         "keywords": "webview,προγραμματιστής,debug,κονσόλα,δίκτυο,safari,devtools,δοκιμή,ios,javascript,html,css",
         "whatsNew": "- Προστέθηκε υποστήριξη λήψης στιγμιότυπων και εγγραφής οθόνης για τη λειτουργία SafariVC.\n- Βελτιωμένη διαχείριση κατάστασης εγγραφής.",
-        "promotionalText": "Δοκιμάστε εύκολα WebView με το Walnut. Γρήγορη διαχείριση URL με σελιδοδείκτες/ιστορικό και debug με Console, Network, SourceView."
+        "promotionalText": "Νέο: Το Mac Agent δοκιμάζει σελίδες στο Walnut από το Mac μέσω agent κώδικα. Με Console, Network και Sources για WebView debugging."
     },
     "he": {
         "name": "Walnut: Webview בדיקה ודיבוג",
-        "subtitle": "בדיקת WKWebView ו-SafariVC",
+        "subtitle": "דיבוג WebView עם סוכן",
         "description": """הכלי האולטימטיבי למפתחים לבדיקת הגדרות WKWebView ו-SFSafariViewController בזמן אמת.
+
+MAC AGENT (חדש)
+• תנו לסוכן קידוד או למסוף ה-Mac שלכם לשלוט ב-WKWebView של Walnut ב-iPhone
+• פתחו דפים, הקישו והקלידו, הריצו סקריפטים וקראו יומני Console ו-Network
+• בחרו אישורים: לשאול בכל פעם, לאפשר פעולות בדף, או לאפשר הכול
+• בצעו צימוד פעם אחת דרך Wi-Fi או USB עם אישור בן 6 ספרות
 
 תכונות עיקריות
 
@@ -1554,12 +1782,18 @@ Savršeno za iOS programere koji trebaju testirati prikazivanje web sadržaja, d
 """,
         "keywords": "webview,מפתח,דיבאג,קונסול,רשת,safari,devtools,בדיקה,בדיקת,ios,javascript,html,css,דפדפן,כלי,פיתוח",
         "whatsNew": "- נוספה תמיכה בצילום מסך והקלטת מסך למצב SafariVC.\n- שיפור ניהול מצב ההקלטה.",
-        "promotionalText": "בדקו WebView בקלות עם Walnut. ניהול URL מהיר בעזרת סימניות והיסטוריה, ודיבוג עם Console, Network ו‑SourceView."
+        "promotionalText": "חדש: Mac Agent מאפשר לסוכן הקידוד לבדוק דפים ב-Walnut מה-Mac. כולל Console, Network ו-Sources לניפוי WebView."
     },
     "ca": {
         "name": "Walnut: Webview Test & Depuració",
-        "subtitle": "Provar WKWebView i SafariVC",
+        "subtitle": "Depuració WebView amb agents",
         "description": """L'eina definitiva per a desenvolupadors per provar configuracions de WKWebView i SFSafariViewController en temps real.
+
+MAC AGENT (NOU)
+• Permet que un agent de codi o el terminal del teu Mac controli el WKWebView de Walnut al teu iPhone
+• Obre pàgines, toca i escriu, executa scripts i llegeix els registres de Console i Network
+• Tria les aprovacions: pregunta sempre, permet accions a la pàgina o permet-ho tot
+• Enllaça un cop per Wi-Fi o USB amb una confirmació de 6 dígits
 
 CARACTERÍSTIQUES PRINCIPALS
 
@@ -1594,7 +1828,7 @@ Perfecte per a desenvolupadors iOS que necessiten provar el renderitzat de conti
 """,
         "keywords": "webview,desenvolupador,debug,consola,xarxa,safari,devtools,prova,inspector,ios,javascript,html,css",
         "whatsNew": "- Afegit suport per a captures de pantalla i gravació de pantalla per al mode SafariVC.\n- Millora en la gestió de l'estat de gravació.",
-        "promotionalText": "Prova WebView fàcilment amb Walnut. Gestió d'URL ràpida amb marcadors i historial, i depuració amb Console, Network i SourceView."
+        "promotionalText": "Nou: Mac Agent permet al teu agent de codi provar pàgines a Walnut des del Mac. Amb Console, Network i Sources integrats per depurar WebView."
     }
 }
 
