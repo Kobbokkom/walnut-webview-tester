@@ -1,3 +1,5 @@
-Testujte webové stránky z Macu
+Jednoduchší Mac Agent
 
-Pomocou Terminálu alebo programovacieho agenta na Macu môžete pracovať so stránkami vo WKWebView v aplikácii Walnut a kontrolovať záznamy konzoly a siete.
+• Zapnite Mac Agent jedným prepínačom a pripojte Mac v troch očíslovaných krokoch.
+• Zvoľte, kedy Walnut žiada o schválenie: zakaždým, len mimo otvorenej stránky alebo nikdy.
+• Prehľadnejšie potvrdenie párovania a stav pripojenia.

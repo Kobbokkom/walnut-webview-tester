@@ -1,3 +1,5 @@
-Testaa verkkosivuja Macilla
+Helpompi Mac Agent
 
-Käytä Macin Päätettä tai koodausagenttia, kun haluat käyttää Walnutin WKWebView-näkymässä avattuja sivuja ja tarkastella konsoli- ja verkkolokeja.
+• Ota Mac Agent käyttöön yhdellä kytkimellä ja yhdistä Mac kolmessa numeroidussa vaiheessa.
+• Valitse, milloin Walnut pyytää hyväksyntää: joka kerta, vain avoimen sivun ulkopuolella tai ei koskaan.
+• Selkeämpi parinmuodostuksen vahvistus ja yhteyden tila.

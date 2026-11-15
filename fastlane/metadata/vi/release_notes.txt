@@ -1,3 +1,5 @@
-Kiểm thử trang web từ máy Mac
+Mac Agent dễ dùng hơn
 
-Dùng Terminal hoặc tác nhân lập trình trên máy Mac để tương tác với các trang trong WKWebView của Walnut và xem nhật ký bảng điều khiển và mạng.
+• Bật Mac Agent bằng một công tắc, rồi kết nối máy Mac qua ba bước được đánh số.
+• Chọn khi nào Walnut hỏi phê duyệt: mỗi lần, chỉ ngoài trang đang mở, hoặc không bao giờ.
+• Xác nhận ghép nối và trạng thái kết nối rõ ràng hơn.

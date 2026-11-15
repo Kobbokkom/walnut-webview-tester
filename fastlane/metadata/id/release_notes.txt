@@ -1,3 +1,5 @@
-Uji halaman web dari Mac
+Mac Agent lebih mudah
 
-Gunakan Terminal atau agen pemrograman di Mac untuk berinteraksi dengan halaman di WKWebView Walnut dan memeriksa log konsol serta jaringan.
+• Aktifkan Mac Agent dengan satu tombol, lalu hubungkan Mac Anda dalam tiga langkah bernomor.
+• Pilih kapan Walnut meminta persetujuan: setiap kali, hanya di luar halaman yang terbuka, atau tidak pernah.
+• Konfirmasi pemasangan dan status koneksi yang lebih jelas.

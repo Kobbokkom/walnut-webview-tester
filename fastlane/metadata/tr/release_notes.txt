@@ -1,3 +1,5 @@
-Web sayfalarını Mac’inizden test edin
+Mac Agent artık daha kolay
 
-Walnut’taki WKWebView sayfalarıyla etkileşim kurmak, konsol ve ağ günlüklerini incelemek için Mac’inizde Terminal’i veya kodlama ajanınızı kullanın.
+• Mac Agent'ı tek bir anahtarla açın ve Mac'inizi numaralı üç adımda bağlayın.
+• Walnut'un ne zaman onay isteyeceğini seçin: her seferinde, yalnızca açık sayfanın dışında veya hiçbir zaman.
+• Daha anlaşılır eşleştirme onayı ve bağlantı durumu.

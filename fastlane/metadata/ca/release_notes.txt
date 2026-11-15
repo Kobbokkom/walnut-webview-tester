@@ -1,3 +1,5 @@
-Prova pàgines web des del Mac
+Mac Agent més fàcil d'utilitzar
 
-Fes servir el Terminal o l’agent de programació del Mac per interactuar amb les pàgines a WKWebView dins de Walnut i revisar els registres de la consola i de la xarxa.
+• Activeu Mac Agent amb un sol interruptor i connecteu el Mac en tres passos numerats.
+• Trieu quan demana aprovació Walnut: cada vegada, només fora de la pàgina oberta o mai.
+• Confirmació d'emparellament i estat de connexió més clars.

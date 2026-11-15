@@ -1,3 +1,5 @@
-Testez des pages web depuis votre Mac
+Mac Agent plus simple
 
-Utilisez Terminal ou un agent de programmation sur votre Mac pour interagir avec les pages dans la WKWebView de Walnut et consulter les journaux de la console et du réseau.
+• Activez Mac Agent avec un seul interrupteur, puis suivez trois étapes numérotées pour connecter votre Mac.
+• Choisissez quand Walnut demande une autorisation : chaque fois, seulement hors de la page ouverte, ou jamais.
+• Confirmation de jumelage et état de connexion plus clairs.

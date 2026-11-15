@@ -1,3 +1,5 @@
-Tesztelj weboldalakat a Macedről
+Egyszerűbb Mac Agent
 
-A Mac Termináljából vagy egy kódolóügynökkel kezelheted a Walnut WKWebView-jában megnyitott oldalakat, és megnézheted a konzol- és hálózati naplókat.
+• Kapcsolja be a Mac Agentet egyetlen kapcsolóval, majd csatlakoztassa a Macet három számozott lépésben.
+• Válassza ki, mikor kérjen jóváhagyást a Walnut: minden alkalommal, csak a megnyitott oldalon kívül, vagy soha.
+• Egyértelműbb párosítási megerősítés és kapcsolati állapot.

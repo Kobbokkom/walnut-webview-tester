@@ -1,3 +1,5 @@
-Testirajte web-stranice s Maca
+Jednostavniji Mac Agent
 
-U Terminalu na Macu ili uz pomoć agenta za kodiranje možete koristiti stranice u Walnutovu WKWebViewu i pregledavati zapise konzole i mreže.
+• Uključite Mac Agent jednim prekidačem i povežite Mac u tri numerirana koraka.
+• Odaberite kada Walnut traži odobrenje: svaki put, samo izvan otvorene stranice ili nikad.
+• Jasnija potvrda uparivanja i status veze.

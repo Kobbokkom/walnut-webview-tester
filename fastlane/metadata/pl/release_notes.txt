@@ -1,3 +1,5 @@
-Testuj strony internetowe z Maca
+Mac Agent jest prostszy
 
-Użyj Terminala lub agenta programistycznego na Macu, aby obsługiwać strony w WKWebView aplikacji Walnut oraz przeglądać logi konsoli i sieci.
+• Włącz Mac Agent jednym przełącznikiem i połącz Maca w trzech ponumerowanych krokach.
+• Wybierz, kiedy Walnut prosi o zgodę: za każdym razem, tylko poza otwartą stroną lub nigdy.
+• Czytelniejsze potwierdzenie parowania i stan połączenia.

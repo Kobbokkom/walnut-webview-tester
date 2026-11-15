@@ -1,3 +1,5 @@
-Test websider fra din Mac
+Nemmere Mac Agent
 
-Brug Terminal eller en kodeagent på din Mac til at interagere med sider i Walnuts WKWebView og gennemgå konsol- og netværkslogfiler.
+• Slå Mac Agent til med én kontakt, og forbind din Mac i tre nummererede trin.
+• Vælg, hvornår Walnut beder om godkendelse: hver gang, kun uden for den åbne side eller aldrig.
+• Tydeligere bekræftelse af parring og forbindelsesstatus.
