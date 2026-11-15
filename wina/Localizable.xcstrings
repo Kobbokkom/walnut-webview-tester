@@ -130,6 +130,76 @@
         }
       }
     },
+    "Approvals" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "승인"
+          }
+        }
+      }
+    },
+    "Ask every time" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "매번 묻기"
+          }
+        }
+      }
+    },
+    "Allow page actions" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "페이지 작업 허용"
+          }
+        }
+      }
+    },
+    "Allow everything" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "모두 허용"
+          }
+        }
+      }
+    },
+    "Walnut asks on iPhone before each action." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "작업마다 iPhone에서 승인을 요청합니다."
+          }
+        }
+      }
+    },
+    "Reading, interacting with and running scripts on the open page run without asking. Screenshots, recordings, data deletion and settings changes still ask." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "열린 페이지를 읽고 조작하거나 스크립트를 실행하는 작업은 묻지 않고 진행합니다. 스크린샷, 녹화, 데이터 삭제, 설정 변경은 계속 승인을 요청합니다."
+          }
+        }
+      }
+    },
+    "Every action runs without asking, including screenshots and settings changes. Use only with a Mac and agent you trust." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "스크린샷과 설정 변경을 포함한 모든 작업을 묻지 않고 진행합니다. 신뢰하는 Mac과 에이전트에서만 사용하세요."
+          }
+        }
+      }
+    },
     "Could not save this pairing. Start pairing again." : {
       "localizations" : {
         "ko" : {

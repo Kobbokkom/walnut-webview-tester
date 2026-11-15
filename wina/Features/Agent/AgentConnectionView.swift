@@ -19,6 +19,7 @@ struct AgentConnectionView: View {
     @Environment(\.dismiss) private var dismiss
     @AppStorage(AgentSession.autoConnectKey) private var autoConnect = false
     @AppStorage("macAgentConnectionMethod") private var connectionMethod = ConnectionMethod.wifi
+    @AppStorage(AgentApprovalMode.defaultsKey) private var approvalMode = AgentApprovalMode.ask
     @State private var copyFeedback = CopiedFeedbackState()
     @State private var showPairingFileOptions = false
     @State private var showInstallOptions = false
@@ -57,6 +58,7 @@ struct AgentConnectionView: View {
             Form {
                 if !session.hasRememberedMac { installSection }
                 statusSection
+                approvalSection
                 if status != .connected { connectionMethodSection }
                 if session.pairingCode != nil, !session.hasPairingGrant { pairingFileSection }
                 if session.hasRememberedMac { thisMacSection }
@@ -230,6 +232,30 @@ struct AgentConnectionView: View {
     }
 
     // MARK: - Sections
+
+    private var approvalSection: some View {
+        Section {
+            Picker(selection: $approvalMode) {
+                Text("Ask every time").tag(AgentApprovalMode.ask)
+                Text("Allow page actions").tag(AgentApprovalMode.pageActions)
+                Text("Allow everything").tag(AgentApprovalMode.all)
+            } label: {
+                Label("Approvals", systemImage: approvalMode == .all ? "exclamationmark.shield" : "checkmark.shield")
+                    .foregroundStyle(approvalMode == .all ? Color.orange : Color.primary)
+            }
+            .pickerStyle(.menu)
+        } footer: {
+            switch approvalMode {
+            case .ask:
+                Text("Walnut asks on iPhone before each action.")
+            case .pageActions:
+                Text("Reading, interacting with and running scripts on the open page run without asking. Screenshots, recordings, data deletion and settings changes still ask.")
+            case .all:
+                Text("Every action runs without asking, including screenshots and settings changes. Use only with a Mac and agent you trust.")
+                    .foregroundStyle(.orange)
+            }
+        }
+    }
 
     private var connectionMethodSection: some View {
         Section {

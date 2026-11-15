@@ -38,6 +38,7 @@ final class AgentSession {
     @ObservationIgnored private var isReceiving = false
     @ObservationIgnored private var operation: Task<Void, Never>?
     @ObservationIgnored private var onDisconnect: (() -> Void)?
+    @ObservationIgnored private var currentCall: (tool: String, arguments: [String: Any])?
 
     typealias Handler = @MainActor (String, [String: Any]) async throws -> Any
     private static weak var activeSession: AgentSession?
@@ -120,6 +121,10 @@ final class AgentSession {
     }
 
     func authorize(_ message: String, preview: UIImage?) async -> Bool {
+        if let call = currentCall,
+           AgentApprovalMode.current.approvesWithoutAsking(tool: call.tool, arguments: call.arguments) {
+            return isConnected && !Task.isCancelled
+        }
         guard isConnected, await approvals.authorize(message, preview: preview) else { return false }
         return isConnected && !Task.isCancelled
     }
@@ -307,6 +312,8 @@ final class AgentSession {
             }
             let payload: [String: Any]
             do {
+                self.currentCall = (request.tool, arguments)
+                defer { self.currentCall = nil }
                 let result = try await handler(request.tool, arguments)
                 payload = ["id": request.id, "result": result]
             } catch {
