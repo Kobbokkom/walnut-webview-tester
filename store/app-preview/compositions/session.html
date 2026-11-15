@@ -1,0 +1,66 @@
+<template>
+  <style>
+    #root { position: absolute; inset: 0; }
+    .cap { position: absolute; left: 60px; right: 60px; top: 105px; color: var(--ink); font: 800 50px/1.12 var(--font-display); letter-spacing: -0.02em; text-align: center; word-break: keep-all; }
+    #term { position: absolute; left: 56px; top: 245px; width: 774px; height: 445px; background: #161b22; border: 1px solid #30363d; border-radius: 26px; overflow: hidden; box-shadow: 0 24px 60px rgba(0,0,0,0.45); }
+    #term-bar { height: 52px; display: flex; align-items: center; gap: 10px; padding: 0 20px; border-bottom: 1px solid #262c34; }
+    #term-bar i { width: 14px; height: 14px; border-radius: 50%; display: block; }
+    #term-bar span { margin-left: 14px; color: #8b949e; font: 500 23px var(--font-mono); }
+    #term-body { padding: 16px 24px; }
+    .ln { color: #c9d1d9; font: 500 23px/33px var(--font-mono); white-space: nowrap; }
+    .ln b { color: var(--accent); font-weight: 500; }
+    .ok { color: #3fb950; }
+    .err { color: #ff7b72; white-space: normal; }
+    #phone { position: absolute; left: 179px; top: 712px; width: 528px; height: 1114px; border-radius: 74px; background: #05070a; border: 3px solid #3a414b; box-shadow: 0 30px 90px rgba(0,0,0,0.6); }
+    .shot { position: absolute; left: 193px; top: 726px; width: 500px; height: 1086px; border-radius: 60px; object-fit: cover; }
+  </style>
+  <div id="root" data-composition-id="session" data-width="886" data-height="1920">
+    <p id="cap1" class="clip cap" data-start="0" data-duration="3.6">Your agent opens the page</p>
+    <p id="cap2" class="clip cap" data-start="3.6" data-duration="7.8">Approve each step on iPhone</p>
+    <p id="cap3" class="clip cap" data-start="11.4" data-duration="7.7">It finds the bug in the logs</p>
+
+    <div id="term" class="clip" data-start="0" data-duration="19.1">
+      <div id="term-bar"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i><span>Terminal — walnut-agent</span></div>
+      <div id="term-body">
+        <div id="l1" class="ln"><b>$</b> walnut-agent session</div>
+        <div id="l2" class="ln"><b>›</b> walnut_browser open localhost:8765</div>
+        <div id="l3" class="ln ok">✓ 200  Brewline · Checkout</div>
+        <div id="l4" class="ln"><b>›</b> page_interact fill "Email"</div>
+        <div id="l5" class="ln ok">✓ approved  dana@example.com</div>
+        <div id="l6" class="ln"><b>›</b> page_interact click "Pay $22.00"</div>
+        <div id="l7" class="ln ok">✓ approved  clicked</div>
+        <div id="l8" class="ln"><b>›</b> console_list errors</div>
+        <div id="l9" class="ln err">✗ payment failed: 422 missing field: shipping_address</div>
+      </div>
+    </div>
+
+    <div id="phone" class="clip" data-start="0" data-duration="19.1"></div>
+    <video id="v1" class="clip shot" src="assets/flow.mp4" muted playsinline data-start="0" data-duration="3.6" data-media-start="3.4"></video>
+    <video id="v2" class="clip shot" src="assets/flow.mp4" muted playsinline data-start="3.6" data-duration="4" data-media-start="11.4"></video>
+    <video id="v3" class="clip shot" src="assets/flow.mp4" muted playsinline data-start="7.6" data-duration="3.8" data-media-start="16.6"></video>
+    <video id="v4" class="clip shot" src="assets/flow.mp4" muted playsinline data-start="11.4" data-duration="2.2" data-media-start="20.8"></video>
+    <video id="v5" class="clip shot" src="assets/flow.mp4" muted playsinline data-start="13.6" data-duration="5.5" data-media-start="30.4"></video>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    const type = (sel, at, dur) => tl.fromTo(sel, { clipPath: "inset(0 100% 0 0)" }, { clipPath: "inset(0 0% 0 0)", duration: dur, ease: "none" }, at);
+    const pop = (sel, at) => tl.fromTo(sel, { opacity: 0, x: -10 }, { opacity: 1, x: 0, duration: 0.25, ease: "power2.out" }, at);
+    tl.fromTo("#term", { opacity: 0, y: -30 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 0);
+    tl.fromTo("#phone", { opacity: 0, y: 60 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 0);
+    tl.fromTo("#v1", { opacity: 0, y: 60 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 0);
+    ["#l1","#l2","#l3","#l4","#l5","#l6","#l7","#l8","#l9"].forEach((s) => tl.set(s, { clipPath: "inset(0 100% 0 0)" }, 0));
+    type("#l1", 0.2, 0.5);
+    type("#l2", 0.9, 0.7);
+    pop("#l3", 2.6); tl.set("#l3", { clipPath: "inset(0 0% 0 0)" }, 2.6);
+    type("#l4", 3.8, 0.6);
+    pop("#l5", 7.0); tl.set("#l5", { clipPath: "inset(0 0% 0 0)" }, 7.0);
+    type("#l6", 7.8, 0.7);
+    pop("#l7", 10.4); tl.set("#l7", { clipPath: "inset(0 0% 0 0)" }, 10.4);
+    type("#l8", 11.6, 0.5);
+    pop("#l9", 13.8); tl.set("#l9", { clipPath: "inset(0 0% 0 0)" }, 13.8);
+    tl.fromTo("#l9", { backgroundColor: "rgba(255,123,114,0.0)" }, { backgroundColor: "rgba(255,123,114,0.14)", duration: 0.4, yoyo: true, repeat: 3 }, 14.0);
+    ["#cap1", "#cap2", "#cap3"].forEach((s, i) => tl.fromTo(s, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, [0.1, 3.6, 11.4][i]));
+    tl.to(["#term", "#phone", "#v5", "#cap3"], { opacity: 0, duration: 0.4, ease: "power2.in" }, 18.6);
+    window.__timelines["session"] = tl;
+  </script>
+</template>
