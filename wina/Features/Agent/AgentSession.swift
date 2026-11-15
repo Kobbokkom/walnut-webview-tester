@@ -152,7 +152,7 @@ final class AgentSession {
                 },
                 authorize: { [weak self] verification in
                     guard let self, isRunning, !isConnected else { return false }
-                    let message = String(localized: "Allow the connection only if this number matches your Mac.")
+                    let message = String(localized: "Pair only if this number matches the one in Terminal on your Mac.")
                     guard await approvals.authorize(message, pairingConfirmation: verification) else { return false }
                     return isRunning && !isConnected && !Task.isCancelled
                 }

@@ -200,6 +200,366 @@
         }
       }
     },
+    "Starting…" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "시작 중…"
+          }
+        }
+      }
+    },
+    "Waiting for pairing" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "페어링 대기 중"
+          }
+        }
+      }
+    },
+    "Pairing timed out" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "페어링 시간 초과"
+          }
+        }
+      }
+    },
+    "Waiting for your Mac" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mac 연결 대기 중"
+          }
+        }
+      }
+    },
+    "Connected to Mac" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mac에 연결됨"
+          }
+        }
+      }
+    },
+    "How to connect" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "연결 방법"
+          }
+        }
+      }
+    },
+    "Install Walnut Agent on your Mac" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mac에 Walnut Agent 설치"
+          }
+        }
+      }
+    },
+    "Pair with your Mac" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mac과 페어링"
+          }
+        }
+      }
+    },
+    "First time only. Run this in Terminal on your Mac." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "처음 한 번만 필요합니다. Mac 터미널에서 실행하세요."
+          }
+        }
+      }
+    },
+    "Pair again" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "다시 페어링"
+          }
+        }
+      }
+    },
+    "Start a session" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "세션 시작"
+          }
+        }
+      }
+    },
+    "Run this in Terminal, or ask your coding agent to use Walnut." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "터미널에서 실행하거나 코딩 에이전트에게 Walnut을 사용하라고 요청하세요."
+          }
+        }
+      }
+    },
+    "Other ways to pair" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "다른 페어링 방법"
+          }
+        }
+      }
+    },
+    "Paired Mac" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "페어링된 Mac"
+          }
+        }
+      }
+    },
+    "To use a different Mac, forget this one and pair again." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "다른 Mac을 사용하려면 이 Mac의 페어링을 해제하고 다시 페어링하세요."
+          }
+        }
+      }
+    },
+    "Current step" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "현재 단계"
+          }
+        }
+      }
+    },
+    "Not started" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "시작 전"
+          }
+        }
+      }
+    },
+    "Step %lld: " : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld단계: "
+          }
+        }
+      }
+    },
+    "Not running" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "꺼져 있음"
+          }
+        }
+      }
+    },
+    "While on, Mac Agent also starts when you open Walnut. Walnut sends diagnostics and data you approve to your Mac, and your coding agent may pass them to its AI service." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "켜 두면 Walnut을 열 때 Mac Agent도 함께 시작됩니다. Walnut은 진단 정보와 승인한 데이터를 Mac으로 보내며, 코딩 에이전트가 이를 AI 서비스에 전달할 수 있습니다."
+          }
+        }
+      }
+    },
+    "Mac paired. Waiting for your Mac." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mac과 페어링했습니다. Mac 연결을 기다리는 중입니다."
+          }
+        }
+      }
+    },
+    "Run these once in Terminal on your Mac. Requires Homebrew." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mac 터미널에서 한 번만 실행하세요. Homebrew가 필요합니다."
+          }
+        }
+      }
+    },
+    "Copy tap command" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "tap 명령 복사"
+          }
+        }
+      }
+    },
+    "Copy install command" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "설치 명령 복사"
+          }
+        }
+      }
+    },
+    "Copy session command" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "session 명령 복사"
+          }
+        }
+      }
+    },
+    "Copy pair command" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "pair 명령 복사"
+          }
+        }
+      }
+    },
+    "Turn on Mac Agent above first." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "먼저 위에서 Mac Agent를 켜세요."
+          }
+        }
+      }
+    },
+    "Session running" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "세션 실행 중"
+          }
+        }
+      }
+    },
+    "Keep your iPhone and Mac on the same Wi-Fi network. To connect by USB instead, add --usb to the pair and session commands and run brew install libusbmuxd once on your Mac." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iPhone과 Mac을 같은 Wi-Fi에 연결하세요. USB로 연결하려면 pair와 session 명령에 --usb를 붙이고, Mac에서 brew install libusbmuxd를 한 번 실행하세요."
+          }
+        }
+      }
+    },
+    "Tap Pair again, then run this on your Mac within 2 minutes." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "‘다시 페어링’을 누른 뒤 2분 안에 Mac에서 이 명령을 실행하세요."
+          }
+        }
+      }
+    },
+    "Terminal shows a 6-digit number. If it matches the one on iPhone, tap Pair on iPhone, then type y in Terminal." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "터미널에 6자리 번호가 표시됩니다. iPhone의 번호와 같으면 iPhone에서 ‘페어링’을 누르고 터미널에 y를 입력하세요."
+          }
+        }
+      }
+    },
+    "If your Mac lists more than one iPhone, choose %@." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mac에 iPhone이 여러 대 표시되면 %@을(를) 선택하세요."
+          }
+        }
+      }
+    },
+    "Hide" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "숨기기"
+          }
+        }
+      }
+    },
+    "Show" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "보기"
+          }
+        }
+      }
+    },
+    "Pair" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "페어링"
+          }
+        }
+      }
+    },
+    "Pair only if this number matches the one in Terminal on your Mac." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mac 터미널에 표시된 번호와 같을 때만 페어링하세요."
+          }
+        }
+      }
+    },
     "Could not save this pairing. Start pairing again." : {
       "localizations" : {
         "ko" : {
@@ -306,16 +666,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "파일 또는 토큰으로 페어링"
-          }
-        }
-      }
-    },
-    "Numbers Match" : {
-      "localizations" : {
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "번호가 일치해요"
           }
         }
       }
@@ -436,16 +786,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "거절"
-          }
-        }
-      }
-    },
-    "Allow the connection only if this number matches your Mac." : {
-      "localizations" : {
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mac 터미널에 표시된 번호와 같을 때만 연결을 허용하세요."
           }
         }
       }

@@ -34,13 +34,13 @@ Run `walnut-agent update` in Terminal. Homebrew installations refresh the tap an
 
 Install Walnut Agent once, then choose Wi-Fi or USB. Wi-Fi needs no cable. [USB](#connect-by-usb) needs no shared Wi-Fi network.
 
-1. Put both devices on the same Wi-Fi network. In Walnut on the iPhone, tap the network icon to open **Mac Agent**, then tap **Start connection**. Allow Local Network access if prompted.
+1. Put both devices on the same Wi-Fi network. In Walnut on the iPhone, tap the network icon to open **Mac Agent**, then turn on the **Mac Agent** switch. Allow Local Network access if prompted.
 2. Run `walnut-agent pair` in a Mac terminal. If the CLI lists multiple iPhones, select the pairing name shown in Walnut. If the pairing window expires, tap **Start pairing again**.
-3. Check that the confirmation number in Terminal matches the one on your iPhone, then tap **Numbers Match** on the iPhone and enter `y` in Terminal. The iPhone saves the pairing in its Keychain, and the CLI saves its copy in `~/.config/walnut-agent/pairing.json` with owner-only permissions. Keep Walnut in the foreground and start a CLI session or ask your agent to use it.
+3. Check that the confirmation number in Terminal matches the one on your iPhone, then tap **Pair** on the iPhone and enter `y` in Terminal. The iPhone saves the pairing in its Keychain, and the CLI saves its copy in `~/.config/walnut-agent/pairing.json` with owner-only permissions. Keep Walnut in the foreground and start a CLI session or ask your agent to use it.
 
 The pairing window lasts two minutes and accepts up to five attempts. Both devices independently display the six digits from their key exchange. The iPhone shares the connection credential only after you approve. Update both Walnut and the CLI to use this pairing flow. Previously saved Mac pairings work after both updates.
 
-After pairing, turn on **Connect automatically** in **Mac Agent**. The next time you open Walnut, run `walnut-agent session` or `walnut-agent session --usb` on your Mac. If automatic connection is off, tap **Start connection** on the iPhone first. Leaving Walnut ends the active session. **Stop connection** also turns off automatic connection. Select **Forget Mac** to revoke access or pair a different Mac. Pairings saved before this feature require one new six-digit pairing.
+While the **Mac Agent** switch is on, Mac Agent also starts each time you open Walnut, so run `walnut-agent session` or `walnut-agent session --usb` on your Mac. Leaving Walnut ends the active session. Turning the switch off stops the connection and keeps Mac Agent off at the next launch. Select **Forget Mac** to revoke access or pair a different Mac. Pairings saved before this feature require one new six-digit pairing.
 
 On the Mac, allow Local Network access if macOS prompts for Walnut Agent or the app that starts it. If you dismissed the prompt, open **System Settings → Privacy & Security → Local Network**, check that app's access, then retry the connection. If Walnut Agent is missing from the list on macOS 27.2 or later, click **+** and select the installed `Walnut Agent.app`. You can also run the CLI directly in Terminal to check the connection. See [Apple's local network privacy notes](https://developer.apple.com/documentation/technotes/tn3179-understanding-local-network-privacy).
 
@@ -92,11 +92,11 @@ To test URL callbacks, open the test page with `walnut_browser` action `callback
 
 The `menus` tool configures the WKWebView toolbar and App Bar. Use `visibleOrder` to send just visible item identifiers, or `items` to place visible and hidden rows in a specific order. A row has `menuItem` and `isVisible`. `get` returns both views of the active layout. Session reset reveals the saved layout, while `reset` with `persist: true` restores Walnut's default layout after approval.
 
-If Walnut was stopped, tap **Start connection** on the iPhone and reconnect using the saved pairing. Pair again if the iPhone no longer has the saved pairing. If the connection drops mid-call, check the page and run state before retrying. The interrupted action may already have taken effect.
+If Walnut was stopped, turn on the **Mac Agent** switch on the iPhone and reconnect using the saved pairing. Pair again if the iPhone no longer has the saved pairing. If the connection drops mid-call, check the page and run state before retrying. The interrupted action may already have taken effect.
 
 ## Connect by USB
 
-After [installing Walnut Agent](#install-on-mac), install the USB helper with `brew install libusbmuxd`. Connect the iPhone by USB, unlock it, and tap **Trust** if asked. In Walnut, open **Mac Agent** and tap **Start connection**. Run the pairing command on your Mac, then compare the six digits, confirm on your iPhone, and enter `y` in Terminal. Use the session command after pairing:
+After [installing Walnut Agent](#install-on-mac), install the USB helper with `brew install libusbmuxd`. Connect the iPhone by USB, unlock it, and tap **Trust** if asked. In Walnut, open **Mac Agent** and turn on the **Mac Agent** switch. Run the pairing command on your Mac, then compare the six digits, confirm on your iPhone, and enter `y` in Terminal. Use the session command after pairing:
 
 ```sh
 walnut-agent pair --usb

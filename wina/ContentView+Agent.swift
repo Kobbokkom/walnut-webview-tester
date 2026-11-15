@@ -53,7 +53,7 @@ extension ContentView {
     }
 
     var macAgentStatusValue: Text {
-        agentSession.isConnected ? Text("Connected") : agentSession.isRunning ? Text("Waiting for Mac") : Text("Off")
+        agentSession.isConnected ? Text("Connected") : agentSession.isRunning ? Text("Waiting for Mac") : Text("Not running")
     }
 
     @ViewBuilder

@@ -4,26 +4,22 @@ import UIKit
 import UniformTypeIdentifiers
 
 struct AgentConnectionView: View {
-    private enum ConnectionMethod: String {
-        case wifi, usb
-
-        func command(_ action: String) -> String {
-            "walnut-agent \(action)\(self == .usb ? " --usb" : "")"
-        }
+    /// One state drives the whole screen, so every label, icon and step agrees.
+    private enum Phase: Equatable {
+        case off, starting, waitingToPair, pairingTimedOut, waitingForMac, connected
+        case failed(String)
     }
 
-    private enum Status {
-        case off, saved, starting, pairing, pairingEnded, waiting, connected
-    }
+    private enum StepState { case done, current, upcoming }
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @AppStorage(AgentSession.autoConnectKey) private var autoConnect = false
-    @AppStorage("macAgentConnectionMethod") private var connectionMethod = ConnectionMethod.wifi
     @AppStorage(AgentApprovalMode.defaultsKey) private var approvalMode = AgentApprovalMode.ask
     @State private var copyFeedback = CopiedFeedbackState()
-    @State private var showPairingFileOptions = false
-    @State private var showInstallOptions = false
-    @AccessibilityFocusState private var focusStatus: Bool
+    @State private var showOtherPairing = false
+    @State private var reopenedSteps: Set<Int> = []
+    @AccessibilityFocusState private var focusPairAgain: Bool
     @State private var pairingFile: AgentPairingFile?
     @State private var pairingShareFailed = false
     @State private var confirmForgetMac = false
@@ -36,39 +32,32 @@ struct AgentConnectionView: View {
     """
     private static let setupGuide = URL(string: "https://github.com/Kobbokkom/walnut-webview-tester/tree/walnut-agent-v0.1.4/walnut-agent#install-on-mac")!
 
-    private var status: Status {
-        if session.isConnected { return .connected }
-        if session.isPairingAvailable { return .pairing }
-        if session.isRunning, session.isPairingReady { return .waiting }
-        if session.isRunning, session.pairingCode != nil, !session.hasRememberedMac { return .pairingEnded }
-        if session.isRunning { return .starting }
-        return session.hasRememberedMac ? .saved : .off
-    }
+    private var isPaired: Bool { session.hasRememberedMac || session.hasPairingGrant }
 
-    private var visibleError: String? {
-        if let error = session.pairingStorageError ?? session.reconnectError { return error }
-        if status == .pairingEnded { return session.pairingError }
-        if !session.isRunning { return session.connectionError }
-        return nil
+    private var phase: Phase {
+        if let error = session.pairingStorageError ?? session.reconnectError { return .failed(error) }
+        if session.isConnected { return .connected }
+        if session.isPairingAvailable { return .waitingToPair }
+        if session.isRunning, session.isPairingReady { return .waitingForMac }
+        if session.isRunning, session.pairingCode != nil, !session.hasRememberedMac { return .pairingTimedOut }
+        if session.isRunning { return .starting }
+        if let error = session.connectionError { return .failed(error) }
+        return .off
     }
 
     var body: some View {
         @Bindable var feedback = copyFeedback
         NavigationStack {
             Form {
-                if !session.hasRememberedMac { installSection }
-                statusSection
+                switchSection
+                stepsSection
                 approvalSection
-                if status != .connected { connectionMethodSection }
-                if session.pairingCode != nil, !session.hasPairingGrant { pairingFileSection }
-                if session.hasRememberedMac { thisMacSection }
-                if session.hasRememberedMac || session.pairingStorageError != nil { forgetSection }
-                if session.hasRememberedMac { installSection }
+                if session.hasRememberedMac || session.pairingStorageError != nil { pairedMacSection }
             }
             .frame(maxWidth: 560)
             .frame(maxWidth: .infinity)
             .background(Color(uiColor: .systemGroupedBackground))
-            .animation(.smooth(duration: 0.3), value: status)
+            .animation(reduceMotion ? nil : .smooth(duration: 0.3), value: phase)
             .navigationTitle("Mac Agent")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -95,143 +84,228 @@ struct AgentConnectionView: View {
         }
         .onAppear { session.refreshRememberedMac() }
         .onChange(of: session.pairingCode) { _, _ in
-            showPairingFileOptions = false
+            showOtherPairing = false
             clearPairingFile()
         }
-        .onChange(of: session.isConnected) { _, connected in
-            if connected {
-                showPairingFileOptions = false
+        .onChange(of: phase) { _, phase in
+            if phase == .connected {
+                showOtherPairing = false
                 clearPairingFile()
-                announce("Mac connected")
             }
+            if phase == .pairingTimedOut { focusPairAgain = true }
+            announce(phase)
         }
-        .onChange(of: session.isPairingAvailable) { wasAvailable, isAvailable in
-            if isAvailable {
-                announce("Ready to pair")
-            } else if wasAvailable, session.isRunning, !session.isConnected, !session.hasPairingGrant {
-                announce("Start pairing again to connect a Mac.")
-                focusStatus = true
-            }
-        }
-        .onChange(of: session.hasPairingGrant) { _, granted in
-            if granted { announce("Mac paired") }
-        }
-        .onChange(of: visibleError) { _, error in
-            if let error { UIAccessibility.post(notification: .announcement, argument: error) }
-        }
-        .onChange(of: session.isRunning) { _, _ in focusStatus = true }
     }
 
-    // MARK: - Status
+    // MARK: - Switch
 
-    private var statusSection: some View {
+    private var switchSection: some View {
         Section {
-            Group {
-                statusHeader
-                statusContent
-                if let error = visibleError {
-                    Label {
-                        Text(verbatim: error)
-                    } icon: {
-                        Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
-                    }
-                    .font(.subheadline)
+            Toggle(isOn: Binding(get: { session.isRunning }, set: { on in
+                if on {
+                    autoConnect = true
+                    start(false)
+                } else {
+                    session.stopManually()
                 }
-                if session.isRunning {
-                    Button { session.stopManually() } label: {
-                        Label("Stop connection", systemImage: "stop.circle")
-                            .frame(maxWidth: .infinity, minHeight: 32)
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.large)
+            })) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Mac Agent").font(.headline)
+                    statusLine
                 }
+                .padding(.vertical, 4)
             }
-            .listRowSeparator(.hidden)
+            .tint(.accentColor)
         } footer: {
-            if !session.isRunning {
-                Text("Diagnostics and approved data are sent to your Mac and may also be shared with the AI service you use.")
-            }
+            Text("While on, Mac Agent also starts when you open Walnut. Walnut sends diagnostics and data you approve to your Mac, and your coding agent may pass them to its AI service.")
         }
     }
 
-    private var statusHeader: some View {
-        HStack(spacing: 12) {
-            Group {
-                switch status {
-                case .connected, .waiting, .saved:
-                    Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
-                case .starting:
-                    ProgressView()
-                case .pairing:
-                    Image(systemName: "number.circle.fill").foregroundStyle(Color.accentColor)
-                case .off, .pairingEnded:
-                    Image(systemName: "laptopcomputer.and.iphone").foregroundStyle(.secondary)
+    private var statusLine: some View {
+        HStack(spacing: 6) {
+            switch phase {
+            case .starting:
+                ProgressView().controlSize(.mini)
+            default:
+                Circle().fill(statusColor).frame(width: 8, height: 8)
+            }
+            Text(statusText)
+                .font(.subheadline)
+                .foregroundStyle(statusTextColor)
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    private var statusText: LocalizedStringKey {
+        switch phase {
+        case .off: "Not running"
+        case .starting: "Starting…"
+        case .waitingToPair: "Waiting for pairing"
+        case .pairingTimedOut: "Pairing timed out"
+        case .waitingForMac: "Waiting for your Mac"
+        case .connected: "Connected to Mac"
+        case .failed(let error): "\(error)"
+        }
+    }
+
+    private var statusColor: Color {
+        switch phase {
+        case .connected: .green
+        case .waitingToPair, .waitingForMac, .starting: .accentColor
+        case .pairingTimedOut, .failed: .orange
+        case .off: .secondary
+        }
+    }
+
+    private var statusTextColor: Color {
+        if case .failed = phase { return .primary }
+        return .secondary
+    }
+
+    private func announce(_ phase: Phase) {
+        let message: String.LocalizationValue? = switch phase {
+        case .waitingToPair: "Ready to pair"
+        case .pairingTimedOut: "Pairing timed out"
+        case .waitingForMac: "Mac paired. Waiting for your Mac."
+        case .connected: "Mac connected"
+        case .off, .starting, .failed: nil
+        }
+        if case .failed(let error) = phase {
+            UIAccessibility.post(notification: .announcement, argument: error)
+        } else if let message {
+            announce(message)
+        }
+    }
+
+    // MARK: - Steps
+
+    private var installState: StepState { isPaired || session.isRunning ? .done : .current }
+    private var pairState: StepState { isPaired ? .done : (session.isRunning ? .current : .upcoming) }
+    private var sessionState: StepState {
+        if phase == .connected { return .done }
+        return isPaired && session.isRunning ? .current : .upcoming
+    }
+
+    private var stepsSection: some View {
+        Section {
+            step(1, "Install Walnut Agent on your Mac", state: installState) {
+                Text("Run these once in Terminal on your Mac. Requires Homebrew.")
+                commandRow("brew tap kobbokkom/tap", name: "Copy tap command")
+                commandRow("brew install --cask kobbokkom/tap/walnut-agent", name: "Copy install command")
+                ShareLink(item: Self.setupGuide) {
+                    Label("Share Mac setup guide", systemImage: "square.and.arrow.up")
+                }
+                .padding(.top, 2)
+            }
+            step(2, "Pair with your Mac", state: pairState,
+                 hint: session.isRunning ? nil : "Turn on Mac Agent above first.") {
+                pairContent
+            }
+            step(3, phase == .connected ? "Session running" : "Start a session", state: sessionState,
+                 hint: isPaired && !session.isRunning ? "Turn on Mac Agent above first." : nil) {
+                if phase == .connected {
+                    Text("Keep Walnut open while your Mac uses it.")
+                } else {
+                    Text("Run this in Terminal, or ask your coding agent to use Walnut.")
+                    commandRow("walnut-agent session", name: "Copy session command")
                 }
             }
-            .font(.title2)
-            .frame(width: 32)
-            .accessibilityHidden(true)
-            Text(statusTitle)
-                .font(.title3.bold())
-                .accessibilityAddTraits(.isHeader)
-                .accessibilityFocused($focusStatus)
-        }
-        .padding(.vertical, 4)
-    }
-
-    private var statusTitle: LocalizedStringKey {
-        switch status {
-        case .connected: "Mac connected"
-        case .waiting, .saved: "Mac paired"
-        case .starting: "Starting connection"
-        case .pairing: "Ready to pair"
-        case .off, .pairingEnded: "Connect your Mac"
+        } header: {
+            Text("How to connect")
+        } footer: {
+            Text("Keep your iPhone and Mac on the same Wi-Fi network. To connect by USB instead, add --usb to the pair and session commands and run brew install libusbmuxd once on your Mac.")
         }
     }
 
     @ViewBuilder
-    private var statusContent: some View {
-        switch status {
-        case .connected:
-            Text("Keep Walnut open while your Mac uses it.")
-                .foregroundStyle(.secondary)
-        case .pairing:
-            Text("Run this command in Terminal on your Mac.")
-            commandRow(connectionMethod.command("pair"))
-            Text("If the six digits match on both devices, confirm on iPhone, then enter y in Terminal.")
-            if connectionMethod == .wifi, let name = session.pairingDeviceName {
-                Text("Pairing name: \(Text(verbatim: name).font(.footnote.monospaced()))")
-                    .font(.footnote)
+    private var pairContent: some View {
+        if phase == .pairingTimedOut {
+            Text("Tap Pair again, then run this on your Mac within 2 minutes.")
+            Button("Pair again") { session.startPairing() }
+                .buttonStyle(.borderedProminent)
+                .accessibilityFocused($focusPairAgain)
+            commandRow("walnut-agent pair", name: "Copy pair command")
+            if let error = session.pairingError {
+                Label { Text(verbatim: error) } icon: {
+                    Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+                }
+            }
+        } else {
+            Text("First time only. Run this in Terminal on your Mac.")
+            commandRow("walnut-agent pair", name: "Copy pair command")
+            Text("Terminal shows a 6-digit number. If it matches the one on iPhone, tap Pair on iPhone, then type y in Terminal.")
+            if let name = session.pairingDeviceName {
+                Text("If your Mac lists more than one iPhone, choose \(Text(verbatim: name).font(.subheadline.monospaced()).foregroundStyle(.primary)).")
                     .foregroundStyle(.secondary)
             }
-        case .waiting:
-            Text("Start a session in Terminal or ask your coding agent to use Walnut.")
-            commandRow(connectionMethod.command("session"))
-        case .pairingEnded:
-            if session.pairingError == nil {
-                Text("Start pairing again to connect a Mac.")
+            if let code = session.pairingCode {
+                DisclosureGroup("Other ways to pair", isExpanded: $showOtherPairing) {
+                    pairingFileOptions(code)
+                }
             }
-            Button { session.startPairing() } label: {
-                Text("Start pairing again").frame(maxWidth: .infinity, minHeight: 32)
-            }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
-        case .starting:
-            EmptyView()
-        case .saved, .off:
-            if status == .saved {
-                Text("Start the connection to use your saved pairing.")
-            }
-            Button { start(false) } label: {
-                Label("Start connection", systemImage: "link")
-                    .frame(maxWidth: .infinity, minHeight: 32)
-            }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
         }
     }
 
-    // MARK: - Sections
+    private func step<Content: View>(
+        _ number: Int,
+        _ title: LocalizedStringKey,
+        state: StepState,
+        hint: LocalizedStringKey? = nil,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        let reopened = state == .done && reopenedSteps.contains(number)
+        let showsContent = state == .current || reopened || (number == 3 && phase == .connected)
+        return HStack(alignment: .firstTextBaseline, spacing: 12) {
+            Group {
+                switch state {
+                case .done: Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
+                case .current: Image(systemName: "\(number).circle.fill").foregroundStyle(Color.accentColor)
+                case .upcoming: Image(systemName: "\(number).circle").foregroundStyle(.secondary)
+                }
+            }
+            .font(.title3)
+            .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text(title)
+                        .font(state == .current ? .headline : .body)
+                        .foregroundStyle(state == .upcoming ? .secondary : .primary)
+                        .accessibilityLabel(stepAccessibilityLabel(number, title, state))
+                        .accessibilityAddTraits(.isHeader)
+                    Spacer(minLength: 0)
+                    if state == .done, number != 3 {
+                        Button(reopened ? "Hide" : "Show") {
+                            if reopened { reopenedSteps.remove(number) } else { reopenedSteps.insert(number) }
+                        }
+                        .font(.subheadline)
+                        .buttonStyle(.borderless)
+                    }
+                }
+                if showsContent {
+                    content()
+                        .font(.subheadline)
+                        .buttonStyle(.borderless)
+                } else if state == .upcoming, let hint {
+                    Text(hint)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .alignmentGuide(.listRowSeparatorLeading) { $0[.leading] }
+        }
+        .padding(.vertical, 4)
+    }
+
+    private func stepAccessibilityLabel(_ number: Int, _ title: LocalizedStringKey, _ state: StepState) -> Text {
+        let status: Text = switch state {
+        case .done: Text("Done")
+        case .current: Text("Current step")
+        case .upcoming: Text("Not started")
+        }
+        return Text("Step \(number): ") + Text(title) + Text(verbatim: ", ") + status
+    }
+
+    // MARK: - Approvals and paired Mac
 
     private var approvalSection: some View {
         Section {
@@ -244,107 +318,44 @@ struct AgentConnectionView: View {
                     .foregroundStyle(approvalMode == .all ? Color.orange : Color.primary)
             }
             .pickerStyle(.menu)
+            .accessibilityHint(approvalDescription)
         } footer: {
-            switch approvalMode {
-            case .ask:
-                Text("Walnut asks on iPhone before each action.")
-            case .pageActions:
-                Text("Reading, interacting with and running scripts on the open page run without asking. Screenshots, recordings, data deletion and settings changes still ask.")
-            case .all:
-                Text("Every action runs without asking, including screenshots and settings changes. Use only with a Mac and agent you trust.")
-                    .foregroundStyle(.orange)
-            }
+            approvalDescription
         }
     }
 
-    private var connectionMethodSection: some View {
-        Section {
-            Picker("Connection method", selection: $connectionMethod) {
-                Text(verbatim: "Wi-Fi").tag(ConnectionMethod.wifi)
-                Text(verbatim: "USB").tag(ConnectionMethod.usb)
-            }
-            .pickerStyle(.segmented)
-            .listRowBackground(Color.clear)
-            .listRowInsets(EdgeInsets())
-            if connectionMethod == .usb {
-                Text("For USB, install this helper once on your Mac.")
-                commandRow("brew install libusbmuxd")
-            }
-        } header: {
-            Text("Connection method")
-        } footer: {
-            if connectionMethod == .usb {
-                Text("Connect your iPhone by USB, unlock it, and tap Trust if asked. A shared Wi-Fi network is not required.")
-            } else {
-                Text("Connect both devices to the same Wi-Fi network. No cable is needed. Allow Local Network access if asked.")
-            }
+    private var approvalDescription: Text {
+        switch approvalMode {
+        case .ask:
+            Text("Walnut asks on iPhone before each action.")
+        case .pageActions:
+            Text("Reading, interacting with and running scripts on the open page run without asking. Screenshots, recordings, data deletion and settings changes still ask.")
+        case .all:
+            Text("Every action runs without asking, including screenshots and settings changes. Use only with a Mac and agent you trust.")
         }
     }
 
-    private var pairingFileSection: some View {
-        Section {
-            DisclosureGroup(isExpanded: $showPairingFileOptions) {
-                if let code = session.pairingCode { pairingFileOptions(code) }
-            } label: {
-                rowLabel("Pair with a file or token", icon: "doc.badge.arrow.up")
-            }
-        }
-    }
-
-    private var thisMacSection: some View {
-        Section {
-            Toggle(isOn: Binding(get: { autoConnect }, set: { enabled in
-                autoConnect = enabled
-                if enabled { start(true) }
-            })) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Connect automatically")
-                    Text("Start Mac Agent when Walnut opens.")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
-            }
-        }
-    }
-
-    private var forgetSection: some View {
+    private var pairedMacSection: some View {
         Section {
             Button(role: .destructive) { confirmForgetMac = true } label: {
                 Label("Forget Mac", systemImage: "trash")
-                    .foregroundStyle(.red)
             }
-        }
-    }
-
-    private var installSection: some View {
-        Section {
-            DisclosureGroup(isExpanded: $showInstallOptions) {
-                Text("Install Walnut Agent once on your Mac for either connection method.")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                commandRow(Self.installCommands)
-                ShareLink(item: Self.setupGuide) {
-                    Label("Share Mac setup guide", systemImage: "square.and.arrow.up")
-                }
-            } label: {
-                rowLabel("Install on Mac", icon: "terminal")
-            }
+        } header: {
+            Text("Paired Mac")
+        } footer: {
+            Text("To use a different Mac, forget this one and pair again.")
         }
     }
 
     // MARK: - Rows
 
-    private func rowLabel(_ title: LocalizedStringKey, icon: String) -> some View {
-        Label(title, systemImage: icon)
-            .foregroundStyle(.primary)
-    }
-
-    private func commandRow(_ command: String) -> some View {
+    private func commandRow(_ command: String, name: LocalizedStringKey = "Copy command") -> some View {
         HStack(spacing: 8) {
             Text(verbatim: command)
                 .font(.footnote.monospaced())
                 .textSelection(.enabled)
                 .fixedSize(horizontal: false, vertical: true)
+                .padding(.vertical, 10)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .environment(\.layoutDirection, .leftToRight)
             Button {
@@ -357,9 +368,7 @@ struct AgentConnectionView: View {
                     .contentShape(Rectangle())
             }
             .buttonStyle(.borderless)
-            .accessibilityLabel("Copy command")
-            .accessibilityHint(Text(verbatim: command))
-            .accessibilityInputLabels([Text("Copy command"), Text(verbatim: command)])
+            .accessibilityLabel(name)
         }
         .padding(.leading, 12)
         .background(Color(uiColor: .tertiarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
@@ -417,9 +426,9 @@ private struct AgentPairingDigits: View {
     let code: String
 
     var body: some View {
-        let grouped = "\(code.prefix(3)) \(code.suffix(3))"
+        let grouped = "\(code.prefix(3))\u{00A0}\(code.suffix(3))"
         Text(verbatim: grouped)
-            .font(.largeTitle.monospacedDigit().bold())
+            .font(.system(size: 56, weight: .bold, design: .rounded).monospacedDigit())
             .lineLimit(1)
             .minimumScaleFactor(0.65)
             .accessibilityLabel(code.map(String.init).joined(separator: " "))
@@ -442,10 +451,12 @@ private struct AgentApprovalView: View {
                 VStack(alignment: .leading, spacing: 16) {
                     Text(verbatim: request.message).textSelection(.enabled)
                     if let confirmation = request.pairingConfirmation {
-                        VStack(alignment: .leading, spacing: 4) {
+                        VStack(spacing: 4) {
                             Text("Confirmation number").font(.subheadline.weight(.semibold))
                             AgentPairingDigits(code: confirmation)
                         }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
                         .accessibilityElement(children: .combine)
                         .accessibilityFocused($focusConfirmation)
                     }
@@ -463,12 +474,13 @@ private struct AgentApprovalView: View {
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 VStack(spacing: 10) {
                     Button { resolve(true) } label: {
-                        Text(request.pairingConfirmation == nil ? LocalizedStringKey("Allow") : LocalizedStringKey("Numbers Match"))
+                        Text(request.pairingConfirmation == nil ? LocalizedStringKey("Allow") : LocalizedStringKey("Pair"))
                             .frame(maxWidth: .infinity, minHeight: 32)
                     }
                     .buttonStyle(.borderedProminent)
                     Button { resolve(false) } label: {
-                        Text("Deny").frame(maxWidth: .infinity, minHeight: 32)
+                        Text(request.pairingConfirmation == nil ? LocalizedStringKey("Deny") : LocalizedStringKey("Cancel"))
+                            .frame(maxWidth: .infinity, minHeight: 32)
                     }
                     .buttonStyle(.bordered)
                 }
@@ -630,6 +642,9 @@ struct BrowserSheetPresenter: UIViewControllerRepresentable {
             }.environment(\.locale, locale))
             controller.isModalInPresentation = true
             controller.modalPresentationStyle = .formSheet
+            if request.pairingConfirmation != nil {
+                controller.sheetPresentationController?.detents = [.medium()]
+            }
             approval = (id, controller)
             host.present(controller, animated: true) { [weak self] in self?.finishTransition() }
             if controller.presentingViewController == nil {
