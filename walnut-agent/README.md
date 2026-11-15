@@ -32,6 +32,8 @@ Run `walnut-agent update` in Terminal. Homebrew installations refresh the tap an
 
 ## Connect over Wi-Fi
 
+Install Walnut Agent once, then choose Wi-Fi or USB. Wi-Fi needs no cable. [USB](#connect-by-usb) needs no shared Wi-Fi network.
+
 1. Put both devices on the same Wi-Fi network. In Walnut on the iPhone, tap the network icon to open **Mac Agent**, then tap **Start connection**. Allow Local Network access if prompted.
 2. Run `walnut-agent pair` in a Mac terminal. If the CLI lists multiple iPhones, select the pairing name shown in Walnut. If the pairing window expires, tap **Start pairing again**.
 3. Check that the confirmation number in Terminal matches the one on your iPhone, then tap **Numbers Match** on the iPhone and enter `y` in Terminal. The iPhone saves the pairing in its Keychain, and the CLI saves its copy in `~/.config/walnut-agent/pairing.json` with owner-only permissions. Keep Walnut in the foreground and start a CLI session or ask your agent to use it.
@@ -94,7 +96,7 @@ If Walnut was stopped, tap **Start connection** on the iPhone and reconnect usin
 
 ## Connect by USB
 
-Install `iproxy` with `brew install libusbmuxd`, attach the unlocked iPhone by USB and trust the Mac when prompted. Start Mac Agent, then use the same code and confirmation steps:
+After [installing Walnut Agent](#install-on-mac), install the USB helper with `brew install libusbmuxd`. Connect the iPhone by USB, unlock it, and tap **Trust** if asked. In Walnut, open **Mac Agent** and tap **Start connection**. Run the pairing command on your Mac, then compare the six digits, confirm on your iPhone, and enter `y` in Terminal. Use the session command after pairing:
 
 ```sh
 walnut-agent pair --usb

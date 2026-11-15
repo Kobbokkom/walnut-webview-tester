@@ -4,12 +4,20 @@ import UIKit
 import UniformTypeIdentifiers
 
 struct AgentConnectionView: View {
+    private enum ConnectionMethod: String {
+        case wifi, usb
+
+        func command(_ action: String) -> String {
+            "walnut-agent \(action)\(self == .usb ? " --usb" : "")"
+        }
+    }
+
     @Environment(\.dismiss) private var dismiss
     @AppStorage(AgentSession.autoConnectKey) private var autoConnect = false
+    @AppStorage("macAgentConnectionMethod") private var connectionMethod = ConnectionMethod.wifi
     @State private var copyFeedback = CopiedFeedbackState()
     @State private var showPairingFileOptions = false
     @State private var showInstallOptions = false
-    @State private var showUSBOptions = false
     @AccessibilityFocusState private var focusNewCode: Bool
     @State private var pairingFile: AgentPairingFile?
     @State private var pairingShareFailed = false
@@ -28,8 +36,12 @@ struct AgentConnectionView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
+                    installSection
                     connectionSection
-                    connectionOptions
+                    if (session.pairingCode != nil && !session.isConnected)
+                        || session.hasRememberedMac || session.pairingStorageError != nil {
+                        connectionOptions
+                    }
                 }
                 .frame(maxWidth: 520, alignment: .leading)
                 .padding(20)
@@ -96,6 +108,7 @@ struct AgentConnectionView: View {
                 Text("Connect your Mac")
                     .font(.title2.bold())
                     .accessibilityAddTraits(.isHeader)
+                connectionMethodPicker
                 connectionStatus
             }
             if let error = session.pairingStorageError ?? session.reconnectError {
@@ -118,15 +131,40 @@ struct AgentConnectionView: View {
         .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 30))
     }
 
+    private var connectionMethodPicker: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Choose one connection method.")
+                .font(.subheadline)
+            Picker("Connection method", selection: $connectionMethod) {
+                Text(verbatim: "Wi-Fi").tag(ConnectionMethod.wifi)
+                Text(verbatim: "USB").tag(ConnectionMethod.usb)
+            }
+            .pickerStyle(.segmented)
+            if connectionMethod == .usb {
+                Text("Connect your iPhone by USB, unlock it, and tap Trust if asked. A shared Wi-Fi network is not required.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                Text("For USB, install this helper once on your Mac.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                commandRow("brew install libusbmuxd")
+            } else {
+                Text("Connect both devices to the same Wi-Fi network. No cable is needed. Allow Local Network access if asked.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
     @ViewBuilder
     private var connectionStatus: some View {
         if session.isPairingAvailable {
             Text("Run this command in Terminal on your Mac.")
                 .font(.subheadline)
-            commandRow("walnut-agent pair")
-            Text("Approve only if the confirmation number matches your Mac.")
+            commandRow(connectionMethod.command("pair"))
+            Text("If the six digits match on both devices, confirm on iPhone, then enter y in Terminal.")
                 .font(.footnote)
-            if let name = session.pairingDeviceName {
+            if connectionMethod == .wifi, let name = session.pairingDeviceName {
                 Text("Pairing name: \(name)")
                     .font(.caption.monospaced())
             }
@@ -135,7 +173,7 @@ struct AgentConnectionView: View {
                 .font(.headline)
             Text("Start a session in Terminal or ask your coding agent to use Walnut.")
                 .font(.subheadline)
-            commandRow("walnut-agent session")
+            commandRow(connectionMethod.command("session"))
         } else if session.pairingCode != nil, !session.hasRememberedMac {
             if let error = session.pairingError {
                 Label(error, systemImage: "exclamationmark.circle")
@@ -158,9 +196,6 @@ struct AgentConnectionView: View {
                     .font(.headline)
                 Text("Start the connection to use your saved pairing.")
                     .font(.subheadline)
-            } else {
-                Text("Use the same Wi-Fi network or connect your iPhone to your Mac by USB.")
-                    .font(.subheadline)
             }
             if session.pairingStorageError == nil, let error = session.connectionError {
                 Label(error, systemImage: "exclamationmark.circle")
@@ -180,21 +215,7 @@ struct AgentConnectionView: View {
 
     private var connectionOptions: some View {
         VStack(alignment: .leading, spacing: 0) {
-            DisclosureGroup(isExpanded: $showUSBOptions) {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Connect and unlock your iPhone. Install the USB helper on your Mac, then run the pairing command.")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                    commandRow("brew install libusbmuxd")
-                    commandRow("walnut-agent pair --usb")
-                    commandRow("walnut-agent session --usb")
-                }
-                .padding(.bottom, 10)
-            } label: {
-                optionLabel("Connect over USB", icon: "cable.connector")
-            }
             if let code = session.pairingCode, !session.isConnected {
-                Divider()
                 DisclosureGroup(isExpanded: $showPairingFileOptions) {
                     pairingFileOptions(code)
                         .padding(.bottom, 10)
@@ -203,7 +224,7 @@ struct AgentConnectionView: View {
                 }
             }
             if session.hasRememberedMac {
-                Divider()
+                if session.pairingCode != nil, !session.isConnected { Divider() }
                 Toggle(isOn: Binding(get: { autoConnect }, set: { enabled in
                     autoConnect = enabled
                     if enabled { start(true) }
@@ -221,7 +242,7 @@ struct AgentConnectionView: View {
                 .tint(.accentColor)
             }
             if session.hasRememberedMac || session.pairingStorageError != nil {
-                Divider()
+                if session.hasRememberedMac { Divider() }
                 Button(role: .destructive) { confirmForgetMac = true } label: {
                     optionLabel("Forget Mac", icon: "link.badge.minus")
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -229,23 +250,28 @@ struct AgentConnectionView: View {
                 }
                 .buttonStyle(.plain)
             }
-            Divider()
-            DisclosureGroup(isExpanded: $showInstallOptions) {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Run these commands in Terminal on your Mac.")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                    commandRow(Self.installCommands)
-                    ShareLink(item: Self.setupGuide) {
-                        Label("Share Mac setup guide", systemImage: "square.and.arrow.up")
-                            .font(.subheadline)
-                            .frame(minHeight: 44)
-                    }
+        }
+        .padding(.horizontal, 16)
+        .tint(Color.primary)
+        .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
+    }
+
+    private var installSection: some View {
+        DisclosureGroup(isExpanded: $showInstallOptions) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Install Walnut Agent once on your Mac for either connection method.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                commandRow(Self.installCommands)
+                ShareLink(item: Self.setupGuide) {
+                    Label("Share Mac setup guide", systemImage: "square.and.arrow.up")
+                        .font(.subheadline)
+                        .frame(minHeight: 44)
                 }
-                .padding(.bottom, 10)
-            } label: {
-                optionLabel("Install on Mac", icon: "terminal")
             }
+            .padding(.bottom, 10)
+        } label: {
+            optionLabel("Install on Mac", icon: "terminal")
         }
         .padding(.horizontal, 16)
         .tint(Color.primary)

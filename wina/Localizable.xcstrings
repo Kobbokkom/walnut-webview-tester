@@ -100,16 +100,6 @@
         }
       }
     },
-    "Use the same Wi-Fi network or connect your iPhone to your Mac by USB." : {
-      "localizations" : {
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "같은 Wi-Fi에 연결하거나 iPhone과 Mac을 USB로 연결하세요."
-          }
-        }
-      }
-    },
     "The token and file grant access to this session. Share only with your Mac. Stopping the connection or leaving Walnut invalidates them. Delete the received file after pairing." : {
       "localizations" : {
         "ko" : {
@@ -280,26 +270,6 @@
         }
       }
     },
-    "Connect over USB" : {
-      "localizations" : {
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "USB로 연결"
-          }
-        }
-      }
-    },
-    "Connect and unlock your iPhone. Install the USB helper on your Mac, then run the pairing command." : {
-      "localizations" : {
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "iPhone을 USB로 연결하고 잠금을 해제하세요. Mac에 USB 도구를 설치한 뒤 페어링 명령을 실행하세요."
-          }
-        }
-      }
-    },
     "Confirmation number" : {
       "localizations" : {
         "ko" : {
@@ -316,16 +286,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "명령을 복사했습니다"
-          }
-        }
-      }
-    },
-    "Approve only if the confirmation number matches your Mac." : {
-      "localizations" : {
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mac과 확인 번호가 같을 때만 승인하세요."
           }
         }
       }
@@ -170820,6 +170780,76 @@
         }
       }
     },
+    "Choose one connection method." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "연결 방식은 하나만 선택하세요."
+          }
+        }
+      }
+    },
+    "Connection method" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "연결 방식"
+          }
+        }
+      }
+    },
+    "Connect your iPhone by USB, unlock it, and tap Trust if asked. A shared Wi-Fi network is not required." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iPhone을 USB로 연결하고 잠금을 해제하세요. 메시지가 뜨면 ‘신뢰’를 누르세요. 같은 Wi-Fi에 연결할 필요는 없습니다."
+          }
+        }
+      }
+    },
+    "For USB, install this helper once on your Mac." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "USB를 쓰려면 Mac에 아래 도구를 한 번 설치하세요."
+          }
+        }
+      }
+    },
+    "Connect both devices to the same Wi-Fi network. No cable is needed. Allow Local Network access if asked." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "두 기기를 같은 Wi-Fi에 연결하세요. USB 케이블은 필요 없습니다. 요청이 뜨면 로컬 네트워크 접근을 허용하세요."
+          }
+        }
+      }
+    },
+    "If the six digits match on both devices, confirm on iPhone, then enter y in Terminal." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "두 기기의 6자리 번호가 같으면 iPhone에서 확인한 다음 Mac 터미널에 y를 입력하세요."
+          }
+        }
+      }
+    },
+    "Install Walnut Agent once on your Mac for either connection method." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wi-Fi와 USB 모두 Mac에 Walnut Agent를 한 번만 설치하면 됩니다."
+          }
+        }
+      }
+    },
     "Connect your Mac" : {
       "localizations" : {
         "ko" : {
@@ -171194,16 +171224,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "페어링 코드를 복사했습니다"
-          }
-        }
-      }
-    },
-    "Run these commands in Terminal on your Mac." : {
-      "localizations" : {
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mac의 터미널에서 아래 명령을 실행하세요."
           }
         }
       }
