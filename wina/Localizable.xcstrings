@@ -170960,12 +170960,12 @@
         }
       }
     },
-    "Diagnostics and approved data go to your Mac and may reach its AI service." : {
+    "Diagnostics and approved data are sent to your Mac and may also be shared with the AI service you use." : {
       "localizations" : {
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "진단 정보와 승인한 데이터는 Mac으로 전송되며, AI 서비스와 공유될 수 있습니다."
+            "value" : "진단 정보와 승인한 데이터는 Mac으로 전송되며, 사용하시는 AI 서비스에도 공유될 수 있습니다."
           }
         }
       }

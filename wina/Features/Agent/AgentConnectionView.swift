@@ -207,7 +207,7 @@ struct AgentConnectionView: View {
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
-            Text("Diagnostics and approved data go to your Mac and may reach its AI service.")
+            Text("Diagnostics and approved data are sent to your Mac and may also be shared with the AI service you use.")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
         }
