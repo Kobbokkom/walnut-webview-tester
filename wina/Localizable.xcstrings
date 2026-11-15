@@ -390,16 +390,6 @@
         }
       }
     },
-    "While on, Mac Agent also starts when you open Walnut. Walnut sends diagnostics and data you approve to your Mac, and your coding agent may pass them to its AI service." : {
-      "localizations" : {
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "켜 두면 Walnut을 열 때 Mac Agent도 함께 시작됩니다. Walnut은 진단 정보와 승인한 데이터를 Mac으로 보내며, 코딩 에이전트가 이를 AI 서비스에 전달할 수 있습니다."
-          }
-        }
-      }
-    },
     "Mac paired. Waiting for your Mac." : {
       "localizations" : {
         "ko" : {
@@ -460,32 +450,12 @@
         }
       }
     },
-    "Turn on Mac Agent above first." : {
-      "localizations" : {
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "먼저 위에서 Mac Agent를 켜세요."
-          }
-        }
-      }
-    },
     "Session running" : {
       "localizations" : {
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "세션 실행 중"
-          }
-        }
-      }
-    },
-    "Keep your iPhone and Mac on the same Wi-Fi network. To connect by USB instead, add --usb to the pair and session commands and run brew install libusbmuxd once on your Mac." : {
-      "localizations" : {
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "iPhone과 Mac을 같은 Wi-Fi에 연결하세요. USB로 연결하려면 pair와 session 명령에 --usb를 붙이고, Mac에서 brew install libusbmuxd를 한 번 실행하세요."
           }
         }
       }
@@ -556,6 +526,56 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Mac 터미널에 표시된 번호와 같을 때만 페어링하세요."
+          }
+        }
+      }
+    },
+    "I've installed it" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "설치했어요"
+          }
+        }
+      }
+    },
+    "Turn on Mac Agent" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mac Agent 켜기"
+          }
+        }
+      }
+    },
+    "Turn on Mac Agent first." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "먼저 Mac Agent를 켜세요."
+          }
+        }
+      }
+    },
+    "While on, Mac Agent also starts when you open Walnut." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "켜 두면 Walnut을 열 때 Mac Agent도 함께 시작됩니다."
+          }
+        }
+      }
+    },
+    "Keep your iPhone and Mac on the same Wi-Fi network. To connect by USB instead, add --usb to the pair and session commands and run brew install libusbmuxd once on your Mac. Walnut sends diagnostics and data you approve to your Mac, and your coding agent may pass them to its AI service." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iPhone과 Mac을 같은 Wi-Fi에 연결하세요. USB로 연결하려면 pair와 session 명령에 --usb를 붙이고, Mac에서 brew install libusbmuxd를 한 번 실행하세요. Walnut은 진단 정보와 승인한 데이터를 Mac으로 보내며, 코딩 에이전트가 이를 AI 서비스에 전달할 수 있습니다."
           }
         }
       }

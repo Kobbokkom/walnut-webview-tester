@@ -16,6 +16,7 @@ struct AgentConnectionView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @AppStorage(AgentSession.autoConnectKey) private var autoConnect = false
     @AppStorage(AgentApprovalMode.defaultsKey) private var approvalMode = AgentApprovalMode.ask
+    @AppStorage("macAgentInstallConfirmed") private var installConfirmed = false
     @State private var copyFeedback = CopiedFeedbackState()
     @State private var showOtherPairing = false
     @State private var reopenedSteps: Set<Int> = []
@@ -49,7 +50,6 @@ struct AgentConnectionView: View {
         @Bindable var feedback = copyFeedback
         NavigationStack {
             Form {
-                switchSection
                 stepsSection
                 approvalSection
                 if session.hasRememberedMac || session.pairingStorageError != nil { pairedMacSection }
@@ -97,29 +97,7 @@ struct AgentConnectionView: View {
         }
     }
 
-    // MARK: - Switch
-
-    private var switchSection: some View {
-        Section {
-            Toggle(isOn: Binding(get: { session.isRunning }, set: { on in
-                if on {
-                    autoConnect = true
-                    start(false)
-                } else {
-                    session.stopManually()
-                }
-            })) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Mac Agent").font(.headline)
-                    statusLine
-                }
-                .padding(.vertical, 4)
-            }
-            .tint(.accentColor)
-        } footer: {
-            Text("While on, Mac Agent also starts when you open Walnut. Walnut sends diagnostics and data you approve to your Mac, and your coding agent may pass them to its AI service.")
-        }
-    }
+    // MARK: - Status
 
     private var statusLine: some View {
         HStack(spacing: 6) {
@@ -179,11 +157,27 @@ struct AgentConnectionView: View {
 
     // MARK: - Steps
 
-    private var installState: StepState { isPaired || session.isRunning ? .done : .current }
+    private var installDone: Bool { installConfirmed || isPaired }
+    private var installState: StepState { installDone ? .done : .current }
+    private var switchState: StepState { session.isRunning ? .done : (installDone ? .current : .upcoming) }
     private var pairState: StepState { isPaired ? .done : (session.isRunning ? .current : .upcoming) }
     private var sessionState: StepState {
         if phase == .connected { return .done }
         return isPaired && session.isRunning ? .current : .upcoming
+    }
+    private var turnOnHint: LocalizedStringKey? { installDone && !session.isRunning ? "Turn on Mac Agent first." : nil }
+
+    private var agentSwitch: some View {
+        Toggle("Mac Agent", isOn: Binding(get: { session.isRunning }, set: { on in
+            if on {
+                autoConnect = true
+                start(false)
+            } else {
+                session.stopManually()
+            }
+        }))
+        .labelsHidden()
+        .tint(.accentColor)
     }
 
     private var stepsSection: some View {
@@ -195,14 +189,26 @@ struct AgentConnectionView: View {
                 ShareLink(item: Self.setupGuide) {
                     Label("Share Mac setup guide", systemImage: "square.and.arrow.up")
                 }
-                .padding(.top, 2)
+                if !installDone {
+                    Button("I've installed it") { installConfirmed = true }
+                        .buttonStyle(.borderedProminent)
+                        .padding(.top, 2)
+                }
             }
-            step(2, "Pair with your Mac", state: pairState,
-                 hint: session.isRunning ? nil : "Turn on Mac Agent above first.") {
+            step(2, "Turn on Mac Agent", state: switchState, alwaysShowsContent: true, trailing: AnyView(agentSwitch)) {
+                if session.isRunning || phase != .off {
+                    statusLine
+                }
+                if switchState != .upcoming {
+                    Text("While on, Mac Agent also starts when you open Walnut.")
+                        .foregroundStyle(.secondary)
+                }
+            }
+            step(3, "Pair with your Mac", state: pairState, hint: turnOnHint) {
                 pairContent
             }
-            step(3, phase == .connected ? "Session running" : "Start a session", state: sessionState,
-                 hint: isPaired && !session.isRunning ? "Turn on Mac Agent above first." : nil) {
+            step(4, phase == .connected ? "Session running" : "Start a session", state: sessionState,
+                 hint: isPaired ? turnOnHint : nil) {
                 if phase == .connected {
                     Text("Keep Walnut open while your Mac uses it.")
                 } else {
@@ -213,7 +219,7 @@ struct AgentConnectionView: View {
         } header: {
             Text("How to connect")
         } footer: {
-            Text("Keep your iPhone and Mac on the same Wi-Fi network. To connect by USB instead, add --usb to the pair and session commands and run brew install libusbmuxd once on your Mac.")
+            Text("Keep your iPhone and Mac on the same Wi-Fi network. To connect by USB instead, add --usb to the pair and session commands and run brew install libusbmuxd once on your Mac. Walnut sends diagnostics and data you approve to your Mac, and your coding agent may pass them to its AI service.")
         }
     }
 
@@ -251,11 +257,13 @@ struct AgentConnectionView: View {
         _ title: LocalizedStringKey,
         state: StepState,
         hint: LocalizedStringKey? = nil,
+        alwaysShowsContent: Bool = false,
+        trailing: AnyView? = nil,
         @ViewBuilder content: () -> Content
     ) -> some View {
         let reopened = state == .done && reopenedSteps.contains(number)
-        let showsContent = state == .current || reopened || (number == 3 && phase == .connected)
-        return HStack(alignment: .firstTextBaseline, spacing: 12) {
+        let showsContent = alwaysShowsContent || state == .current || reopened || (number == 4 && phase == .connected)
+        return HStack(alignment: .top, spacing: 12) {
             Group {
                 switch state {
                 case .done: Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
@@ -264,16 +272,20 @@ struct AgentConnectionView: View {
                 }
             }
             .font(.title3)
+            .frame(minHeight: 31)
             .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     Text(title)
+                        .frame(minHeight: 31)
                         .font(state == .current ? .headline : .body)
                         .foregroundStyle(state == .upcoming ? .secondary : .primary)
                         .accessibilityLabel(stepAccessibilityLabel(number, title, state))
                         .accessibilityAddTraits(.isHeader)
                     Spacer(minLength: 0)
-                    if state == .done, number != 3 {
+                    if let trailing {
+                        trailing
+                    } else if state == .done, number != 4 {
                         Button(reopened ? "Hide" : "Show") {
                             if reopened { reopenedSteps.remove(number) } else { reopenedSteps.insert(number) }
                         }
