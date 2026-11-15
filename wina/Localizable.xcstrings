@@ -413,7 +413,7 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "هل تريد إلغاء إقران هذا Mac؟"
+            "value" : "هل تريد إلغاء إقران جهاز Mac هذا؟"
           }
         },
         "ca" : {
@@ -425,7 +425,7 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Zapomenout tento Mac?"
+            "value" : "Odebrat tento Mac?"
           }
         },
         "da" : {
@@ -437,13 +437,13 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Diesen Mac vergessen?"
+            "value" : "Diesen Mac entfernen?"
           }
         },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Να αγνοηθεί αυτό το Mac;"
+            "value" : "Να καταργηθεί αυτό το Mac;"
           }
         },
         "en-GB" : {
@@ -455,7 +455,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "¿Omitir este Mac?"
+            "value" : "¿Eliminar este Mac?"
           }
         },
         "fi" : {
@@ -479,7 +479,7 @@
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "इस Mac को भूलना है?"
+            "value" : "इस Mac को हटाएँ?"
           }
         },
         "hr" : {
@@ -539,7 +539,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Zapomnieć ten Mac?"
+            "value" : "Zapomnieć tego Maca?"
           }
         },
         "pt-BR" : {
@@ -569,7 +569,7 @@
         "sk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Zabudnúť tento Mac?"
+            "value" : "Odstrániť tento Mac?"
           }
         },
         "sv" : {
@@ -633,7 +633,7 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Zapomenout Mac"
+            "value" : "Odebrat Mac"
           }
         },
         "da" : {
@@ -645,13 +645,13 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mac vergessen"
+            "value" : "Mac entfernen"
           }
         },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Αγνόηση Mac"
+            "value" : "Κατάργηση Mac"
           }
         },
         "en-GB" : {
@@ -663,7 +663,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Omitir Mac"
+            "value" : "Eliminar Mac"
           }
         },
         "fi" : {
@@ -681,13 +681,13 @@
         "he" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "שכח Mac"
+            "value" : "שכח את ה‑Mac"
           }
         },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mac भूलें"
+            "value" : "Mac को हटाएँ"
           }
         },
         "hr" : {
@@ -735,13 +735,13 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Glem Mac"
+            "value" : "Glem Macen"
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vergeet Mac"
+            "value" : "Mac vergeten"
           }
         },
         "pl" : {
@@ -759,13 +759,13 @@
         "pt-PT" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Esquecer Mac"
+            "value" : "Esquecer este Mac"
           }
         },
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Eliminați Mac"
+            "value" : "Eliminați Macul"
           }
         },
         "ru" : {
@@ -777,7 +777,7 @@
         "sk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Zabudnúť Mac"
+            "value" : "Odstrániť Mac"
           }
         },
         "sv" : {
@@ -813,7 +813,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "忽略 Mac"
+            "value" : "忽略这台 Mac"
           }
         },
         "zh-Hant" : {
@@ -853,13 +853,13 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Kopiere stattdessen das Kopplungstoken oder versuche es erneut."
+            "value" : "Kopieren Sie stattdessen den Kopplungstoken oder versuchen Sie es erneut."
           }
         },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Αντιγράψτε το διακριτικό ζεύξης ή δοκιμάστε ξανά."
+            "value" : "Αντιγράψτε αντ’ αυτού το διακριτικό ζεύξης ή δοκιμάστε ξανά."
           }
         },
         "en-GB" : {
@@ -871,7 +871,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Copia el token de emparejamiento o inténtalo de nuevo."
+            "value" : "Copia el token de emparejamiento en su lugar o inténtalo de nuevo."
           }
         },
         "fi" : {
@@ -973,13 +973,13 @@
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Copiați tokenul de asociere în schimb sau încercați din nou."
+            "value" : "Copiați în schimb tokenul de asociere sau încercați din nou."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Скопируйте токен для создания пары или повторите попытку."
+            "value" : "Скопируйте вместо этого токен для создания пары или повторите попытку."
           }
         },
         "sk" : {
@@ -1037,7 +1037,7 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "سيزيل Walnut الاقتران المحفوظ. أعد الإقران لاستخدام هذا Mac."
+            "value" : "سيزيل Walnut الاقتران المحفوظ. أعد الإقران لاستخدام جهاز Mac هذا."
           }
         },
         "ca" : {
@@ -1061,7 +1061,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Walnut entfernt die gespeicherte Kopplung. Kopple erneut, um diesen Mac zu verwenden."
+            "value" : "Walnut entfernt die gespeicherte Kopplung. Koppeln Sie erneut, um diesen Mac zu verwenden."
           }
         },
         "el" : {
@@ -1103,7 +1103,7 @@
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Walnut सेव की गई पेयरिंग हटा देगा। इस Mac का उपयोग करने के लिए फिर से पेयर करें।"
+            "value" : "Walnut सहेजी गई पेयरिंग हटा देगा। इस Mac का उपयोग करने के लिए फिर से पेयर करें।"
           }
         },
         "hr" : {
@@ -1145,7 +1145,7 @@
         "ms" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Walnut mengalih keluar pasangan yang disimpan. Pasangkan semula untuk menggunakan Mac ini."
+            "value" : "Walnut mengalih keluar pemasangan yang disimpan. Pasangkan semula untuk menggunakan Mac ini."
           }
         },
         "nb" : {
@@ -1223,7 +1223,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Walnut sẽ xóa ghép đôi đã lưu. Hãy ghép đôi lại để sử dụng Mac này."
+            "value" : "Walnut sẽ xóa thông tin ghép đôi đã lưu. Hãy ghép đôi lại để sử dụng Mac này."
           }
         },
         "zh-Hans" : {
@@ -1419,7 +1419,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bağlandı"
+            "value" : "Bağlı"
           }
         },
         "uk" : {
@@ -1477,7 +1477,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Warten auf Mac"
+            "value" : "Warten auf den Mac"
           }
         },
         "el" : {
@@ -1597,7 +1597,7 @@
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Se așteaptă Mac"
+            "value" : "În așteptarea Macului"
           }
         },
         "ru" : {
@@ -1703,7 +1703,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "¿Permitir acción de Mac Agent?"
+            "value" : "¿Permitir la acción de Mac Agent?"
           }
         },
         "fi" : {
@@ -1733,7 +1733,7 @@
         "hr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dopustiti radnju Mac Agent?"
+            "value" : "Dopustiti radnju koju pokreće Mac Agent?"
           }
         },
         "hu" : {
@@ -1757,7 +1757,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mac Agentのアクションを許可しますか？"
+            "value" : "Mac Agentの操作を許可しますか？"
           }
         },
         "ko" : {
@@ -1787,7 +1787,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Zezwolić na czynność Mac Agent?"
+            "value" : "Zezwolić na czynność wykonywaną przez Mac Agent?"
           }
         },
         "pt-BR" : {
@@ -1847,7 +1847,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cho phép tác vụ Mac Agent?"
+            "value" : "Cho phép tác vụ của Mac Agent?"
           }
         },
         "zh-Hans" : {
@@ -1911,7 +1911,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mac Agent grabando"
+            "value" : "Grabación de Mac Agent"
           }
         },
         "fi" : {
@@ -1923,7 +1923,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Enregistrement de Mac Agent"
+            "value" : "Enregistrement par Mac Agent"
           }
         },
         "he" : {
@@ -1995,7 +1995,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nagrywanie Mac Agent"
+            "value" : "Nagrywanie przez Mac Agent"
           }
         },
         "pt-BR" : {
@@ -2405,7 +2405,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vraag elke keer"
+            "value" : "Elke keer vragen"
           }
         },
         "pl" : {
@@ -2429,7 +2429,7 @@
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Întreabă de fiecare dată"
+            "value" : "Solicită de fiecare dată"
           }
         },
         "ru" : {
@@ -2535,7 +2535,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Permitir acciones de página"
+            "value" : "Permitir acciones en la página"
           }
         },
         "fi" : {
@@ -2547,7 +2547,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Autoriser les actions de page"
+            "value" : "Autoriser les actions sur la page"
           }
         },
         "he" : {
@@ -2613,7 +2613,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sta pagina-acties toe"
+            "value" : "Pagina-acties toestaan"
           }
         },
         "pl" : {
@@ -2679,7 +2679,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cho phép tác vụ trang"
+            "value" : "Cho phép tác vụ trên trang"
           }
         },
         "zh-Hans" : {
@@ -2767,7 +2767,7 @@
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "सब कुछ अनुमति दें"
+            "value" : "हर चीज़ की अनुमति दें"
           }
         },
         "hr" : {
@@ -2821,7 +2821,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sta alles toe"
+            "value" : "Alles toestaan"
           }
         },
         "pl" : {
@@ -2845,7 +2845,7 @@
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Permite tot"
+            "value" : "Permite totul"
           }
         },
         "ru" : {
@@ -3005,7 +3005,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "各アクションの前に、WalnutがiPhoneで確認します。"
+            "value" : "各操作の前に、WalnutがiPhoneで確認します。"
           }
         },
         "ko" : {
@@ -3141,13 +3141,13 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Lesen, Interagieren und Ausführen von Skripts auf der geöffneten Seite erfolgen ohne Nachfrage. Für Bildschirmfotos, Aufnahmen, Datenlöschung und Einstellungsänderungen wird weiterhin gefragt."
+            "value" : "Lesen, Interaktionen und das Ausführen von Skripten auf der geöffneten Seite erfolgen ohne Nachfrage. Bei Bildschirmfotos, Aufnahmen, Datenlöschung und Einstellungsänderungen wird weiterhin gefragt."
           }
         },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Η ανάγνωση, η αλληλεπίδραση και η εκτέλεση script στην ανοιχτή σελίδα γίνονται χωρίς ερώτηση. Για στιγμιότυπα οθόνης, εγγραφές, διαγραφή δεδομένων και αλλαγές ρυθμίσεων εξακολουθεί να ζητείται έγκριση."
+            "value" : "Η ανάγνωση της ανοιχτής σελίδας, η αλληλεπίδραση με αυτήν και η εκτέλεση σκριπτ σε αυτήν γίνονται χωρίς ερώτηση. Για στιγμιότυπα οθόνης, εγγραφές, διαγραφή δεδομένων και αλλαγές ρυθμίσεων εξακολουθεί να ζητείται έγκριση."
           }
         },
         "en-GB" : {
@@ -3165,7 +3165,7 @@
         "fi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Avoimen sivun lukeminen, käyttäminen ja komentosarjojen suorittaminen tapahtuu kysymättä. Näyttökuviin, tallennuksiin, tietojen poistamiseen ja asetusten muutoksiin pyydetään edelleen vahvistus."
+            "value" : "Avoimen sivun lukeminen, käyttäminen ja skriptien suorittaminen tapahtuu kysymättä. Näyttökuviin, tallennuksiin, tietojen poistamiseen ja asetusten muutoksiin pyydetään edelleen vahvistus."
           }
         },
         "fr" : {
@@ -3183,7 +3183,7 @@
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "खुले पेज को पढ़ना, उससे इंटरैक्ट करना और उस पर स्क्रिप्ट चलाना बिना पूछे होगा। स्क्रीनशॉट, रिकॉर्डिंग, डेटा मिटाना और सेटिंग्स बदलना अब भी पूछेगा।"
+            "value" : "खुले पेज को पढ़ना, उससे इंटरैक्ट करना और उस पर स्क्रिप्ट चलाना बिना पूछे होगा। स्क्रीनशॉट, रिकॉर्डिंग, डेटा मिटाने और सेटिंग्स बदलने के लिए अब भी पूछा जाएगा।"
           }
         },
         "hr" : {
@@ -3225,7 +3225,7 @@
         "ms" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Membaca, berinteraksi dengan dan menjalankan skrip pada halaman yang dibuka akan dilaksanakan tanpa meminta kelulusan. Tangkapan skrin, rakaman, pemadaman data dan perubahan seting masih meminta kelulusan."
+            "value" : "Membaca, berinteraksi dengan dan menjalankan skrip pada halaman yang dibuka akan dilaksanakan tanpa meminta kelulusan. Tangkapan skrin, rakaman, pemadaman data dan perubahan tetapan masih memerlukan kelulusan."
           }
         },
         "nb" : {
@@ -3237,7 +3237,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Lezen, interactie en scripts uitvoeren op de geopende pagina gebeuren zonder te vragen. Voor schermafbeeldingen, opnamen, gegevens verwijderen en instellingen wijzigen wordt nog steeds toestemming gevraagd."
+            "value" : "De geopende pagina lezen, ermee interacteren en er scripts op uitvoeren gebeurt zonder te vragen. Voor schermafbeeldingen, opnamen, het verwijderen van gegevens en het wijzigen van instellingen wordt nog steeds om toestemming gevraagd."
           }
         },
         "pl" : {
@@ -3291,7 +3291,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Açık sayfayı okuma, sayfayla etkileşim kurma ve sayfada betik çalıştırma işlemleri sorulmadan yürütülür. Ekran resimleri, kayıtlar, veri silme ve ayar değişiklikleri için yine sorulur."
+            "value" : "Açık sayfayı okuma, sayfayla etkileşim kurma ve sayfada script çalıştırma işlemleri sorulmadan yürütülür. Ekran görüntüleri, kayıtlar, veri silme ve ayar değişiklikleri için yine sorulur."
           }
         },
         "uk" : {
@@ -3303,13 +3303,13 @@
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Việc đọc, tương tác và chạy tập lệnh trên trang đang mở sẽ diễn ra mà không hỏi. Ảnh chụp màn hình, bản ghi, xóa dữ liệu và thay đổi cài đặt vẫn sẽ hỏi."
+            "value" : "Việc đọc, tương tác và chạy script trên trang đang mở sẽ diễn ra mà không cần hỏi. Ảnh chụp màn hình, bản ghi, việc xóa dữ liệu và thay đổi cài đặt vẫn cần hỏi."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "读取、交互和在打开的页面上运行脚本无需询问即可执行。截屏、录制、数据删除和设置更改仍会询问。"
+            "value" : "读取打开的页面、与其交互以及在其上运行脚本时无需询问。截屏、录制、数据删除和设置更改仍会询问。"
           }
         },
         "zh-Hant" : {
@@ -3349,7 +3349,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Jede Aktion wird ohne Nachfrage ausgeführt, einschließlich Bildschirmfotos und Einstellungsänderungen. Nur mit einem Mac und Agent verwenden, dem du vertraust."
+            "value" : "Jede Aktion wird ohne Nachfrage ausgeführt, einschließlich Bildschirmfotos und Einstellungsänderungen. Verwenden Sie dies nur mit einem Mac und einem Agenten, denen Sie vertrauen."
           }
         },
         "el" : {
@@ -3415,13 +3415,13 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ogni azione viene eseguita senza chiedere conferma, inclusi screenshot e modifiche alle impostazioni. Usalo solo con un Mac e un agent di cui ti fidi."
+            "value" : "Ogni azione viene eseguita senza chiedere conferma, inclusi screenshot e modifiche alle impostazioni. Usa questa opzione solo con un Mac e un agente di cui ti fidi."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "スクリーンショットや設定変更を含むすべてのアクションが確認なしで実行されます。信頼できるMacとエージェントでのみ使用してください。"
+            "value" : "スクリーンショットや設定変更を含むすべての操作が確認なしで実行されます。信頼できるMacとエージェントでのみ使用してください。"
           }
         },
         "ko" : {
@@ -3433,7 +3433,7 @@
         "ms" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Setiap tindakan dilaksanakan tanpa meminta kelulusan, termasuk tangkapan skrin dan perubahan seting. Gunakan hanya dengan Mac dan agen yang anda percayai."
+            "value" : "Setiap tindakan dilaksanakan tanpa meminta kelulusan, termasuk tangkapan skrin dan perubahan tetapan. Gunakan hanya dengan Mac dan agen yang anda percayai."
           }
         },
         "nb" : {
@@ -3445,7 +3445,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Elke actie wordt zonder te vragen uitgevoerd, inclusief schermafbeeldingen en instellingen wijzigen. Gebruik dit alleen met een Mac en agent die je vertrouwt."
+            "value" : "Elke actie wordt zonder te vragen uitgevoerd, inclusief schermafbeeldingen en het wijzigen van instellingen. Gebruik dit alleen met een Mac en agent die je vertrouwt."
           }
         },
         "pl" : {
@@ -3499,7 +3499,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ekran resimleri ve ayar değişiklikleri dâhil her eylem sorulmadan yürütülür. Yalnızca güvendiğiniz bir Mac ve aracıyla kullanın."
+            "value" : "Ekran görüntüleri ve ayar değişiklikleri dâhil her eylem sorulmadan yürütülür. Yalnızca güvendiğiniz bir Mac ve kodlama aracıyla kullanın."
           }
         },
         "uk" : {
@@ -3511,13 +3511,13 @@
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mọi tác vụ sẽ chạy mà không hỏi, bao gồm ảnh chụp màn hình và thay đổi cài đặt. Chỉ sử dụng với Mac và tác nhân mà bạn tin cậy."
+            "value" : "Mọi tác vụ sẽ được thực hiện mà không cần hỏi, bao gồm ảnh chụp màn hình và thay đổi cài đặt. Chỉ sử dụng với Mac và tác nhân mà bạn tin cậy."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "所有操作都无需询问即可执行，包括截屏和设置更改。请仅与信任的 Mac 和代理配合使用。"
+            "value" : "所有操作都无需询问即可执行，包括截屏和设置更改。请仅与信任的 Mac 和编程智能体配合使用。"
           }
         },
         "zh-Hant" : {
@@ -3557,7 +3557,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Starten…"
+            "value" : "Wird gestartet …"
           }
         },
         "el" : {
@@ -3677,7 +3677,7 @@
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Se pornește…"
+            "value" : "Pornire…"
           }
         },
         "ru" : {
@@ -3783,7 +3783,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Esperando emparejamiento"
+            "value" : "Esperando el emparejamiento"
           }
         },
         "fi" : {
@@ -3885,7 +3885,7 @@
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Se așteaptă asocierea"
+            "value" : "În așteptarea asocierii"
           }
         },
         "ru" : {
@@ -3973,7 +3973,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Zeitüberschreitung beim Koppeln"
+            "value" : "Zeitüberschreitung bei der Kopplung"
           }
         },
         "el" : {
@@ -3991,7 +3991,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tiempo de emparejamiento agotado"
+            "value" : "Se ha agotado el tiempo de emparejamiento"
           }
         },
         "fi" : {
@@ -4039,7 +4039,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tempo per l’abbinamento scaduto"
+            "value" : "Abbinamento scaduto"
           }
         },
         "ja" : {
@@ -4069,7 +4069,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Koppeling verlopen"
+            "value" : "Time-out bij koppelen"
           }
         },
         "pl" : {
@@ -4135,7 +4135,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Đã hết thời gian ghép đôi"
+            "value" : "Ghép đôi đã hết thời gian chờ"
           }
         },
         "zh-Hans" : {
@@ -4181,7 +4181,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Warten auf deinen Mac"
+            "value" : "Warten auf Ihren Mac"
           }
         },
         "el" : {
@@ -4301,7 +4301,7 @@
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Se așteaptă Macul dvs."
+            "value" : "În așteptarea Macului dvs."
           }
         },
         "ru" : {
@@ -4389,7 +4389,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mit Mac verbunden"
+            "value" : "Mit dem Mac verbunden"
           }
         },
         "el" : {
@@ -4539,7 +4539,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mac’e bağlandı"
+            "value" : "Mac’e bağlı"
           }
         },
         "uk" : {
@@ -4563,7 +4563,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "已連接 Mac"
+            "value" : "已連線至 Mac"
           }
         }
       }
@@ -4597,7 +4597,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "So verbindest du dich"
+            "value" : "Verbindung herstellen"
           }
         },
         "el" : {
@@ -4699,7 +4699,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Jak połączyć"
+            "value" : "Jak się połączyć"
           }
         },
         "pt-BR" : {
@@ -4717,7 +4717,7 @@
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cum vă conectați"
+            "value" : "Cum să vă conectați"
           }
         },
         "ru" : {
@@ -4805,7 +4805,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Walnut Agent auf deinem Mac installieren"
+            "value" : "Walnut Agent auf Ihrem Mac installieren"
           }
         },
         "el" : {
@@ -4925,7 +4925,7 @@
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Instalați Walnut Agent pe Mac"
+            "value" : "Instalați Walnut Agent pe Macul dvs."
           }
         },
         "ru" : {
@@ -5013,7 +5013,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mit deinem Mac koppeln"
+            "value" : "Mit Ihrem Mac koppeln"
           }
         },
         "el" : {
@@ -5221,7 +5221,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nur beim ersten Mal. Führe dies in Terminal auf deinem Mac aus."
+            "value" : "Nur beim ersten Mal. Führen Sie dies im Terminal auf Ihrem Mac aus."
           }
         },
         "el" : {
@@ -5341,7 +5341,7 @@
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Doar prima dată. Rulați aceasta în Terminal pe Mac."
+            "value" : "Doar prima dată. Rulați această comandă în Terminal pe Macul dvs."
           }
         },
         "ru" : {
@@ -5845,7 +5845,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Führe dies in Terminal aus oder bitte deinen Coding Agent, Walnut zu verwenden."
+            "value" : "Führen Sie dies im Terminal aus oder bitten Sie Ihren Coding-Agenten, Walnut zu verwenden."
           }
         },
         "el" : {
@@ -5899,7 +5899,7 @@
         "hu" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Futtassa ezt a Terminalban, vagy kérje meg a kódolási ügynökét, hogy használja a Walnutot."
+            "value" : "Futtassa ezt a Terminalban, vagy kérje meg a kódoló ügynökét, hogy használja a Walnutot."
           }
         },
         "id" : {
@@ -5911,7 +5911,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Eseguilo in Terminale oppure chiedi al tuo agent di codifica di usare Walnut."
+            "value" : "Eseguilo in Terminale oppure chiedi al tuo agente di programmazione di usare Walnut."
           }
         },
         "ja" : {
@@ -5947,7 +5947,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Uruchom to w Terminalu albo poproś agenta kodowania, aby użył Walnut."
+            "value" : "Uruchom to w Terminalu albo poproś agenta programistycznego, aby użył Walnut."
           }
         },
         "pt-BR" : {
@@ -5959,19 +5959,19 @@
         "pt-PT" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Execute isto no Terminal ou peça ao agente de código para usar o Walnut."
+            "value" : "Execute isto no Terminal ou peça ao seu agente de programação para usar o Walnut."
           }
         },
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Rulați aceasta în Terminal sau cereți agentului de codare să utilizeze Walnut."
+            "value" : "Rulați această comandă în Terminal sau cereți agentului de codare să utilizeze Walnut."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Выполните это в Терминале или попросите своего агента для кода использовать Walnut."
+            "value" : "Выполните это в Терминале или попросите своего агента для программирования использовать Walnut."
           }
         },
         "sk" : {
@@ -6001,7 +6001,7 @@
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Виконайте це в Terminal або попросіть свого агента кодування використати Walnut."
+            "value" : "Виконайте це в Terminal або попросіть свого агента з програмування використати Walnut."
           }
         },
         "vi" : {
@@ -6013,7 +6013,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "在“终端”中运行此命令，或让你的编码代理使用 Walnut。"
+            "value" : "在“终端”中运行此命令，或让你的编程智能体使用 Walnut。"
           }
         },
         "zh-Hant" : {
@@ -6119,7 +6119,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Altri modi per abbinare"
+            "value" : "Altri modi per effettuare l’abbinamento"
           }
         },
         "ja" : {
@@ -6387,7 +6387,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mac в паре"
+            "value" : "Сопряжённый Mac"
           }
         },
         "sk" : {
@@ -6417,7 +6417,7 @@
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mac у парі"
+            "value" : "Mac, з яким створено пару"
           }
         },
         "vi" : {
@@ -6445,7 +6445,7 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "لاستخدام Mac آخر، ألغِ إقران هذا الجهاز ثم أعد الإقران."
+            "value" : "لاستخدام Mac آخر، ألغِ إقران جهاز Mac هذا ثم أعد الإقران."
           }
         },
         "ca" : {
@@ -6457,7 +6457,7 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Chcete-li používat jiný Mac, zapomeňte tento a znovu ho spárujte."
+            "value" : "Chcete-li používat jiný Mac, odeberte tento Mac a znovu proveďte párování."
           }
         },
         "da" : {
@@ -6469,13 +6469,13 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Um einen anderen Mac zu verwenden, vergiss diesen und kopple erneut."
+            "value" : "Um einen anderen Mac zu verwenden, entfernen Sie diesen und koppeln Sie erneut."
           }
         },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Για να χρησιμοποιήσετε διαφορετικό Mac, αγνοήστε αυτό και κάντε ξανά ζεύξη."
+            "value" : "Για να χρησιμοποιήσετε διαφορετικό Mac, καταργήστε αυτό το Mac και κάντε ξανά ζεύξη."
           }
         },
         "en-GB" : {
@@ -6487,7 +6487,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Para usar otro Mac, omite este y vuelve a emparejar."
+            "value" : "Para usar otro Mac, elimina este y vuelve a emparejar."
           }
         },
         "fi" : {
@@ -6505,13 +6505,13 @@
         "he" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "כדי להשתמש ב‑Mac אחר, יש לשכוח את זה ולהתאים שוב."
+            "value" : "כדי להשתמש ב‑Mac אחר, יש לשכוח את ה‑Mac הזה ולהתאים שוב."
           }
         },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "किसी दूसरे Mac का उपयोग करने के लिए, इस Mac को भूलें और फिर से पेयर करें।"
+            "value" : "किसी दूसरे Mac का उपयोग करने के लिए, इस Mac को हटाएँ और फिर से पेयर करें।"
           }
         },
         "hr" : {
@@ -6571,7 +6571,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aby użyć innego Maca, zapomnij tego i sparuj ponownie."
+            "value" : "Aby użyć innego Maca, zapomnij tego Maca i sparuj ponownie."
           }
         },
         "pt-BR" : {
@@ -6601,7 +6601,7 @@
         "sk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ak chcete použiť iný Mac, zabudnite tento a spárujte znova."
+            "value" : "Ak chcete použiť iný Mac, odstráňte tento Mac a spustite párovanie znova."
           }
         },
         "sv" : {
@@ -7005,7 +7005,7 @@
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nepornit"
+            "value" : "Neînceput"
           }
         },
         "ru" : {
@@ -7301,7 +7301,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Läuft nicht"
+            "value" : "Nicht aktiv"
           }
         },
         "el" : {
@@ -7509,7 +7509,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mac gekoppelt. Warten auf deinen Mac."
+            "value" : "Mac gekoppelt. Warten auf Ihren Mac."
           }
         },
         "el" : {
@@ -7629,7 +7629,7 @@
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mac asociat. Se așteaptă Macul dvs."
+            "value" : "Mac asociat. În așteptarea Macului dvs."
           }
         },
         "ru" : {
@@ -7671,7 +7671,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Đã ghép đôi Mac. Đang chờ Mac của bạn."
+            "value" : "Mac đã được ghép đôi. Đang chờ Mac của bạn."
           }
         },
         "zh-Hans" : {
@@ -7699,7 +7699,7 @@
         "ca" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Executa-ho una sola vegada al Terminal del Mac. Requereix Homebrew."
+            "value" : "Executa aquestes ordres una sola vegada al Terminal del Mac. Requereix Homebrew."
           }
         },
         "cs" : {
@@ -7717,7 +7717,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Führe diese einmal in Terminal auf deinem Mac aus. Erfordert Homebrew."
+            "value" : "Führen Sie diese einmal im Terminal auf Ihrem Mac aus. Erfordert Homebrew."
           }
         },
         "el" : {
@@ -7765,7 +7765,7 @@
         "hr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pokrenite ovo jednom u Terminalu na svom Macu. Potreban je Homebrew."
+            "value" : "Pokrenite ove naredbe jednom u Terminalu na svom Macu. Potreban je Homebrew."
           }
         },
         "hu" : {
@@ -7837,7 +7837,7 @@
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Rulați-le o singură dată în Terminal pe Mac. Necesită Homebrew."
+            "value" : "Rulați aceste comenzi o singură dată în Terminal pe Macul dvs. Necesită Homebrew."
           }
         },
         "ru" : {
@@ -7873,7 +7873,7 @@
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Виконайте це один раз у Terminal на Mac. Потрібен Homebrew."
+            "value" : "Виконайте ці команди один раз у Terminal на Mac. Потрібен Homebrew."
           }
         },
         "vi" : {
@@ -8133,7 +8133,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Installationsbefehl kopieren"
+            "value" : "install-Befehl kopieren"
           }
         },
         "el" : {
@@ -8947,7 +8947,7 @@
         "ca" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Toca “Torna a enllaçar” i executa-ho al Mac abans de 2 minuts."
+            "value" : "Toca “Torna a enllaçar” i executa-ho al Mac en un termini de 2 minuts."
           }
         },
         "cs" : {
@@ -8965,7 +8965,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tippe auf „Erneut koppeln“ und führe dies dann innerhalb von 2 Minuten auf deinem Mac aus."
+            "value" : "Tippen Sie auf „Erneut koppeln“ und führen Sie dies dann innerhalb von 2 Minuten auf Ihrem Mac aus."
           }
         },
         "el" : {
@@ -9085,7 +9085,7 @@
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Atingeți „Asociați din nou”, apoi rulați aceasta pe Mac în maximum 2 minute."
+            "value" : "Atingeți „Asociați din nou”, apoi rulați această comandă pe Macul dvs. în maximum 2 minute."
           }
         },
         "ru" : {
@@ -9173,7 +9173,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Terminal zeigt eine 6-stellige Zahl an. Wenn sie mit der auf dem iPhone übereinstimmt, tippe auf dem iPhone auf „Koppeln“ und gib dann y in Terminal ein."
+            "value" : "Im Terminal wird eine 6-stellige Nummer angezeigt. Wenn sie mit der Nummer auf dem iPhone übereinstimmt, tippen Sie auf dem iPhone auf „Koppeln“ und geben Sie dann y im Terminal ein."
           }
         },
         "el" : {
@@ -9293,7 +9293,7 @@
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Terminal afișează un număr din 6 cifre. Dacă se potrivește cu cel de pe iPhone, atingeți „Asociați” pe iPhone, apoi tastați y în Terminal."
+            "value" : "Terminalul afișează un număr de 6 cifre. Dacă se potrivește cu cel de pe iPhone, atingeți „Asociați” pe iPhone, apoi tastați y în Terminal."
           }
         },
         "ru" : {
@@ -9381,7 +9381,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Wenn dein Mac mehr als ein iPhone auflistet, wähle %@."
+            "value" : "Wenn Ihr Mac mehrere iPhones auflistet, wählen Sie %@."
           }
         },
         "el" : {
@@ -9501,7 +9501,7 @@
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dacă Mac afișează mai multe dispozitive iPhone, alegeți %@."
+            "value" : "Dacă Macul dvs. afișează mai multe dispozitive iPhone, alegeți %@."
           }
         },
         "ru" : {
@@ -9613,7 +9613,7 @@
         "fi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Kätke"
+            "value" : "Piilota"
           }
         },
         "fr" : {
@@ -9797,7 +9797,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Anzeigen"
+            "value" : "Einblenden"
           }
         },
         "el" : {
@@ -10213,7 +10213,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Kopple nur, wenn diese Zahl mit der in Terminal auf deinem Mac übereinstimmt."
+            "value" : "Koppeln Sie nur, wenn diese Nummer mit der Nummer im Terminal auf Ihrem Mac übereinstimmt."
           }
         },
         "el" : {
@@ -10333,7 +10333,7 @@
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Asociați doar dacă acest număr se potrivește cu cel din Terminal pe Mac."
+            "value" : "Asociați doar dacă acest număr se potrivește cu cel din Terminal de pe Macul dvs."
           }
         },
         "ru" : {
@@ -10381,7 +10381,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "仅当此号码与 Mac 上“终端”中的号码一致时才配对。"
+            "value" : "仅当此数字与 Mac 上“终端”中的数字一致时才配对。"
           }
         },
         "zh-Hant" : {
@@ -10837,7 +10837,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aktiviere zuerst Mac Agent."
+            "value" : "Aktivieren Sie zuerst Mac Agent."
           }
         },
         "el" : {
@@ -11045,7 +11045,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Wenn aktiviert, startet Mac Agent auch, wenn du Walnut öffnest."
+            "value" : "Wenn aktiviert, wird Mac Agent auch gestartet, wenn Sie Walnut öffnen."
           }
         },
         "el" : {
@@ -11093,7 +11093,7 @@
         "hr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dok je uključeno, Mac Agent pokreće se i kada otvorite Walnut."
+            "value" : "Dok je uključen, Mac Agent se pokreće i kada otvorite Walnut."
           }
         },
         "hu" : {
@@ -11253,7 +11253,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Lass dein iPhone und deinen Mac im selben WLAN. Um stattdessen per USB zu verbinden, füge --usb zu den pair- und session-Befehlen hinzu und führe brew install libusbmuxd einmal auf deinem Mac aus. Walnut sendet Diagnosen und von dir genehmigte Daten an deinen Mac, und dein Coding Agent kann sie an seinen KI-Dienst weitergeben."
+            "value" : "Verbinden Sie Ihr iPhone und Ihren Mac mit demselben WLAN. Um stattdessen eine USB-Verbindung zu verwenden, fügen Sie --usb zu den pair- und session-Befehlen hinzu und führen Sie einmal brew install libusbmuxd auf Ihrem Mac aus. Walnut sendet Diagnoseinformationen und von Ihnen genehmigte Daten an Ihren Mac, und Ihr Coding-Agent kann sie an seinen KI-Dienst weitergeben."
           }
         },
         "el" : {
@@ -11307,7 +11307,7 @@
         "hu" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tartsa az iPhone-t és a Macet ugyanazon a Wi‑Fi-hálózaton. Ha inkább USB-n szeretne csatlakozni, adja hozzá a --usb beállítást a pair és session parancsokhoz, és futtassa egyszer a brew install libusbmuxd parancsot a Macen. A Walnut diagnosztikai adatokat és az Ön által jóváhagyott adatokat küld a Macre, a kódolási ügynöke pedig továbbíthatja ezeket az AI-szolgáltatásának."
+            "value" : "Tartsa az iPhone-t és a Macet ugyanazon a Wi‑Fi-hálózaton. Ha inkább USB-n szeretne csatlakozni, adja hozzá a --usb kapcsolót a pair és session parancsokhoz, és futtassa egyszer a brew install libusbmuxd parancsot a Macen. A Walnut diagnosztikai adatokat és az Ön által jóváhagyott adatokat küld a Macre, a kódoló ügynöke pedig továbbíthatja ezeket az AI-szolgáltatásának."
           }
         },
         "id" : {
@@ -11319,7 +11319,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mantieni iPhone e Mac sulla stessa rete Wi‑Fi. Per connetterti invece tramite USB, aggiungi --usb ai comandi pair e session ed esegui brew install libusbmuxd una volta sul Mac. Walnut invia al Mac la diagnostica e i dati che approvi, e il tuo agent di codifica potrebbe trasmetterli al suo servizio AI."
+            "value" : "Mantieni iPhone e Mac sulla stessa rete Wi‑Fi. Per connetterti invece tramite USB, aggiungi --usb ai comandi pair e session ed esegui brew install libusbmuxd una volta sul Mac. Walnut invia al Mac la diagnostica e i dati che approvi, e il tuo agente di programmazione potrebbe trasmetterli al suo servizio di IA."
           }
         },
         "ja" : {
@@ -11355,7 +11355,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Trzymaj iPhone’a i Maca w tej samej sieci Wi‑Fi. Aby połączyć przez USB, dodaj --usb do poleceń parowania i sesji oraz uruchom raz brew install libusbmuxd na Macu. Walnut wysyła diagnostykę i zatwierdzone przez Ciebie dane na Maca, a Twój agent kodowania może przekazać je do swojej usługi AI."
+            "value" : "Niech iPhone i Mac będą w tej samej sieci Wi‑Fi. Aby zamiast tego połączyć przez USB, dodaj --usb do poleceń parowania i sesji oraz uruchom raz brew install libusbmuxd na Macu. Walnut wysyła diagnostykę i zatwierdzone przez Ciebie dane na Maca, a Twój agent programistyczny może przekazać je do swojej usługi AI."
           }
         },
         "pt-BR" : {
@@ -11367,19 +11367,19 @@
         "pt-PT" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mantenha o iPhone e o Mac na mesma rede Wi-Fi. Para ligar por USB, adicione --usb aos comandos pair e session e execute brew install libusbmuxd uma vez no Mac. O Walnut envia diagnósticos e os dados que aprovar para o Mac, e o agente de código pode transmiti-los ao respetivo serviço de IA."
+            "value" : "Mantenha o iPhone e o Mac na mesma rede Wi-Fi. Para ligar por USB, adicione --usb aos comandos pair e session e execute brew install libusbmuxd uma vez no Mac. O Walnut envia diagnósticos e os dados que aprovar para o Mac, e o seu agente de programação pode transmiti-los ao respetivo serviço de IA."
           }
         },
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Țineți iPhone și Mac în aceeași rețea Wi-Fi. Pentru a vă conecta prin USB în schimb, adăugați --usb la comenzile pair și session și rulați brew install libusbmuxd o dată pe Mac. Walnut trimite pe Mac informațiile de diagnostic și datele pe care le aprobați, iar agentul dvs. de codare le poate transmite către serviciul său AI."
+            "value" : "Mențineți iPhone-ul dvs. și Macul dvs. în aceeași rețea Wi-Fi. Pentru a vă conecta prin USB, adăugați --usb la comenzile pair și session și rulați brew install libusbmuxd o dată pe Macul dvs. Walnut trimite către Macul dvs. informațiile de diagnostic și datele pe care le aprobați, iar agentul dvs. de codare le poate transmite către serviciul său AI."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Держите iPhone и Mac в одной сети Wi‑Fi. Чтобы подключаться через USB, добавьте --usb к командам pair и session и один раз выполните brew install libusbmuxd на Mac. Walnut отправляет на ваш Mac диагностические данные и данные, которые вы одобрите, а ваш агент для кода может передать их в свой сервис ИИ."
+            "value" : "Держите iPhone и Mac в одной сети Wi‑Fi. Чтобы подключаться через USB, добавьте --usb к командам pair и session и один раз выполните brew install libusbmuxd на Mac. Walnut отправляет на ваш Mac диагностические данные и данные, которые вы одобрите, а ваш агент для программирования может передать их в свой сервис ИИ."
           }
         },
         "sk" : {
@@ -11403,13 +11403,13 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "iPhone’unuzu ve Mac’inizi aynı Wi‑Fi ağında tutun. Bunun yerine USB ile bağlanmak için pair ve session komutlarına --usb ekleyin ve Mac’inizde bir kez brew install libusbmuxd çalıştırın. Walnut, tanıları ve onayladığınız verileri Mac’inize gönderir; kodlama aracınız bunları kendi yapay zekâ servisine iletebilir."
+            "value" : "iPhone’unuzu ve Mac’inizi aynı Wi‑Fi ağında tutun. Bunun yerine USB ile bağlanmak için pair ve session komutlarına --usb ekleyin ve Mac’inizde bir kez brew install libusbmuxd çalıştırın. Walnut, tanılama verilerini ve onayladığınız verileri Mac’inize gönderir; kodlama aracınız bunları kendi yapay zekâ servisine iletebilir."
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Тримайте iPhone і Mac в одній мережі Wi‑Fi. Щоб натомість під’єднатися через USB, додайте --usb до команд pair і session та один раз виконайте brew install libusbmuxd на Mac. Walnut надсилає на ваш Mac діагностику й дані, які ви схвалюєте, а ваш агент кодування може передати їх своєму сервісу ШІ."
+            "value" : "Тримайте iPhone і Mac в одній мережі Wi‑Fi. Щоб натомість під’єднатися через USB, додайте --usb до команд pair і session та один раз виконайте brew install libusbmuxd на Mac. Walnut надсилає на ваш Mac діагностику й дані, які ви схвалюєте, а ваш агент з програмування може передати їх своєму сервісу ШІ."
           }
         },
         "vi" : {
@@ -11421,7 +11421,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "将 iPhone 和 Mac 保持在同一 Wi-Fi 网络上。若要改用 USB 连接，请在 pair 和 session 命令中添加 --usb，并在 Mac 上运行一次 brew install libusbmuxd。Walnut 会将诊断信息和你批准的数据发送到 Mac，你的编码代理可能会将其传递给其 AI 服务。"
+            "value" : "将 iPhone 和 Mac 保持在同一 Wi-Fi 网络上。若要改用 USB 连接，请在 pair 和 session 命令中添加 --usb，并在 Mac 上运行一次 brew install libusbmuxd。Walnut 会将诊断信息和你批准的数据发送到 Mac，你的编程智能体可能会将其传递给其 AI 服务。"
           }
         },
         "zh-Hant" : {
@@ -11461,7 +11461,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Diese Kopplung konnte nicht gespeichert werden. Starte das Koppeln erneut."
+            "value" : "Diese Kopplung konnte nicht gespeichert werden. Starten Sie die Kopplung erneut."
           }
         },
         "el" : {
@@ -11503,7 +11503,7 @@
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "यह पेयरिंग सेव नहीं हो सकी। फिर से पेयरिंग शुरू करें।"
+            "value" : "यह पेयरिंग सहेजी नहीं जा सकी। फिर से पेयरिंग शुरू करें।"
           }
         },
         "hr" : {
@@ -11545,7 +11545,7 @@
         "ms" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tidak dapat menyimpan pasangan ini. Mulakan pemasangan semula."
+            "value" : "Tidak dapat menyimpan pemasangan ini. Mulakan pemasangan sekali lagi."
           }
         },
         "nb" : {
@@ -11563,7 +11563,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nie można zachować tego parowania. Rozpocznij parowanie ponownie."
+            "value" : "Nie można zapisać tego parowania. Rozpocznij parowanie ponownie."
           }
         },
         "pt-BR" : {
@@ -11623,7 +11623,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Không thể lưu ghép đôi này. Hãy bắt đầu ghép đôi lại."
+            "value" : "Không thể lưu thông tin ghép đôi này. Hãy bắt đầu ghép đôi lại."
           }
         },
         "zh-Hans" : {
@@ -11669,7 +11669,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Die gespeicherte Mac-Kopplung konnte nicht gelesen werden. Entsperre das iPhone oder vergiss die Kopplung."
+            "value" : "Der gespeicherte Mac konnte nicht gelesen werden. Entsperren Sie das iPhone oder entfernen Sie die Kopplung."
           }
         },
         "el" : {
@@ -11711,7 +11711,7 @@
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "सेव किया गया Mac पढ़ा नहीं जा सका। iPhone अनलॉक करें या पेयरिंग भूलें।"
+            "value" : "सहेजा गया Mac पढ़ा नहीं जा सका। iPhone अनलॉक करें या पेयरिंग हटाएँ।"
           }
         },
         "hr" : {
@@ -11753,7 +11753,7 @@
         "ms" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tidak dapat membaca Mac yang disimpan. Buka kunci iPhone atau lupakan pasangan."
+            "value" : "Tidak dapat membaca Mac yang disimpan. Buka kunci iPhone atau lupakan pemasangan."
           }
         },
         "nb" : {
@@ -11771,7 +11771,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nie można odczytać zapisanego Maca. Odblokuj iPhone’a albo zapomnij parowanie."
+            "value" : "Nie można odczytać zapisanego Maca. Odblokuj iPhone’a albo usuń parowanie."
           }
         },
         "pt-BR" : {
@@ -11795,19 +11795,19 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Не удалось прочитать сохранённый Mac. Разблокируйте iPhone или забудьте пару."
+            "value" : "Не удалось прочитать сохранённый Mac. Разблокируйте iPhone или удалите сохранённую пару."
           }
         },
         "sk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Uložený Mac sa nepodarilo načítať. Odomknite iPhone alebo zabudnite párovanie."
+            "value" : "Uložený Mac sa nepodarilo načítať. Odomknite iPhone alebo odstráňte párovanie."
           }
         },
         "sv" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Det gick inte att läsa den sparade Macen. Lås upp iPhone eller ta bort parkopplingen."
+            "value" : "Det gick inte att läsa den sparade Macen. Lås upp iPhone eller glöm parkopplingen."
           }
         },
         "th" : {
@@ -11825,19 +11825,19 @@
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Не вдалося прочитати збережений Mac. Розблокуйте iPhone або забудьте пару."
+            "value" : "Не вдалося прочитати збережений Mac. Розблокуйте iPhone або видаліть збережену пару."
           }
         },
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Không thể đọc Mac đã lưu. Hãy mở khóa iPhone hoặc quên ghép đôi."
+            "value" : "Không thể đọc thông tin Mac đã lưu. Hãy mở khóa iPhone hoặc quên thông tin ghép đôi."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "无法读取已保存的 Mac。请解锁 iPhone 或忽略配对。"
+            "value" : "无法读取已保存的 Mac。请解锁 iPhone 或移除此配对。"
           }
         },
         "zh-Hant" : {
@@ -11865,7 +11865,7 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nepodařilo se zrušit spárování s uloženým Macem. Odemkněte iPhone a zkuste to znovu."
+            "value" : "Uložený Mac se nepodařilo odebrat. Odemkněte iPhone a zkuste to znovu."
           }
         },
         "da" : {
@@ -11877,13 +11877,13 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Der gespeicherte Mac konnte nicht vergessen werden. Entsperre das iPhone und versuche es erneut."
+            "value" : "Der gespeicherte Mac konnte nicht entfernt werden. Entsperren Sie das iPhone und versuchen Sie es erneut."
           }
         },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Δεν ήταν δυνατή η αγνόηση του αποθηκευμένου Mac. Ξεκλειδώστε το iPhone και δοκιμάστε ξανά."
+            "value" : "Δεν ήταν δυνατή η κατάργηση του αποθηκευμένου Mac. Ξεκλειδώστε το iPhone και δοκιμάστε ξανά."
           }
         },
         "en-GB" : {
@@ -11919,7 +11919,7 @@
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "सेव किया गया Mac भुलाया नहीं जा सका। iPhone अनलॉक करें और फिर से कोशिश करें।"
+            "value" : "सहेजा गया Mac हटाया नहीं जा सका। iPhone अनलॉक करें और फिर से कोशिश करें।"
           }
         },
         "hr" : {
@@ -12003,19 +12003,19 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Не удалось забыть сохранённый Mac. Разблокируйте iPhone и повторите попытку."
+            "value" : "Не удалось удалить сохранённую пару с Mac. Разблокируйте iPhone и повторите попытку."
           }
         },
         "sk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Uložený Mac sa nepodarilo zabudnúť. Odomknite iPhone a skúste to znova."
+            "value" : "Uložený Mac sa nepodarilo odstrániť. Odomknite iPhone a skúste to znova."
           }
         },
         "sv" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Det gick inte att ta bort den sparade Mac-parkopplingen. Lås upp iPhone och försök igen."
+            "value" : "Det gick inte att glömma den sparade Macen. Lås upp iPhone och försök igen."
           }
         },
         "th" : {
@@ -12085,7 +12085,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Das Token und die Datei gewähren Zugriff auf diese Sitzung. Gib sie nur an deinen Mac weiter. Wenn du die Verbindung stoppst oder Walnut verlässt, werden sie ungültig. Lösche die empfangene Datei nach dem Koppeln."
+            "value" : "Der Token und die Datei gewähren Zugriff auf diese Sitzung. Teilen Sie sie nur mit Ihrem Mac. Wenn Sie die Verbindung beenden oder Walnut verlassen, werden sie ungültig. Löschen Sie die empfangene Datei nach der Kopplung."
           }
         },
         "el" : {
@@ -12115,7 +12115,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Le jeton et le fichier donnent accès à cette session. Ne les partagez qu’avec votre Mac. L’arrêt de la connexion ou la sortie de Walnut les rend invalides. Supprimez le fichier reçu après le jumelage."
+            "value" : "Le jeton et le fichier donnent accès à cette session. Ne les partagez qu’avec votre Mac. L’arrêt de la connexion ou le fait de quitter Walnut les invalide. Supprimez le fichier reçu après le jumelage."
           }
         },
         "he" : {
@@ -12133,13 +12133,13 @@
         "hr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Token i datoteka daju pristup ovoj sesiji. Dijelite ih samo sa svojim Macom. Zaustavljanje veze ili napuštanje Walnut poništava ih. Nakon uparivanja izbrišite primljenu datoteku."
+            "value" : "Token i datoteka daju pristup ovoj sesiji. Dijelite ih samo sa svojim Macom. Zaustavljanje veze ili izlazak iz aplikacije Walnut poništava ih. Nakon uparivanja izbrišite primljenu datoteku."
           }
         },
         "hu" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "A token és a fájl hozzáférést biztosít ehhez a munkamenethez. Csak a Macével ossza meg őket. A kapcsolat leállítása vagy a Walnut elhagyása érvényteleníti őket. Párosítás után törölje a kapott fájlt."
+            "value" : "A token és a fájl hozzáférést biztosít ehhez a munkamenethez. Csak a saját Macjével ossza meg őket. A kapcsolat leállítása vagy a Walnut elhagyása érvényteleníti őket. Párosítás után törölje a kapott fájlt."
           }
         },
         "id" : {
@@ -12205,7 +12205,7 @@
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tokenul și fișierul acordă acces la această sesiune. Partajați-le doar cu Macul dvs. Oprirea conexiunii sau părăsirea Walnut le invalidează. Ștergeți fișierul primit după asociere."
+            "value" : "Tokenul și fișierul acordă acces la această sesiune. Partajați-le doar cu Macul dvs. Oprirea conexiunii sau ieșirea din Walnut le invalidează. Ștergeți fișierul primit după asociere."
           }
         },
         "ru" : {
@@ -12293,7 +12293,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Füge das Token ein, nachdem du walnut-agent pair --token ausgeführt hast, oder sende die Datei per AirDrop an deinen Mac."
+            "value" : "Fügen Sie den Token ein, nachdem Sie walnut-agent pair --token ausgeführt haben, oder senden Sie die Datei per AirDrop an Ihren Mac."
           }
         },
         "el" : {
@@ -12893,7 +12893,7 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "هل تريد إقران هذا Mac؟"
+            "value" : "هل تريد إقران جهاز Mac هذا؟"
           }
         },
         "ca" : {
@@ -13101,7 +13101,7 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "أبقِ Walnut مفتوحًا أثناء استخدامه من Mac."
+            "value" : "أبقِ Walnut مفتوحًا أثناء استخدام جهاز Mac له."
           }
         },
         "ca" : {
@@ -13125,7 +13125,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Lass Walnut geöffnet, während dein Mac es verwendet."
+            "value" : "Lassen Sie Walnut geöffnet, während Ihr Mac es verwendet."
           }
         },
         "el" : {
@@ -13321,7 +13321,7 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Párování se nepodařilo spustit. Zkuste to znovu nebo nasdílejte párovací soubor."
+            "value" : "Párování se nepodařilo spustit. Zkuste to znovu nebo sdílejte párovací soubor."
           }
         },
         "da" : {
@@ -13333,7 +13333,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Das Koppeln konnte nicht gestartet werden. Versuche es erneut oder teile eine Kopplungsdatei."
+            "value" : "Die Kopplung konnte nicht gestartet werden. Versuchen Sie es erneut oder teilen Sie eine Kopplungsdatei."
           }
         },
         "el" : {
@@ -13465,7 +13465,7 @@
         "sk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Párovanie sa nepodarilo spustiť. Skúste to znova alebo zdieľajte súbor párovania."
+            "value" : "Párovanie sa nepodarilo spustiť. Skúste to znova alebo zdieľajte párovací súbor."
           }
         },
         "sv" : {
@@ -14207,7 +14207,7 @@
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "कमांड कॉपी हो गया"
+            "value" : "कमांड कॉपी हो गई"
           }
         },
         "hr" : {
@@ -14605,7 +14605,7 @@
         "fi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Estä"
+            "value" : "Kiellä"
           }
         },
         "fr" : {
@@ -42972,7 +42972,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pagina di test callback"
+            "value" : "Pagina di test dei callback"
           }
         },
         "ja" : {
@@ -43026,7 +43026,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Тестовая страница callback"
+            "value" : "Тестовая страница обратных вызовов"
           }
         },
         "sk" : {
@@ -103857,7 +103857,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ultimo URL callback"
+            "value" : "Ultimo URL di callback"
           }
         },
         "ja" : {
@@ -103911,7 +103911,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Последний Callback URL"
+            "value" : "URL последнего обратного вызова"
           }
         },
         "sk" : {
@@ -111682,7 +111682,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Medien-Codecs"
+            "value" : "Mediencodecs"
           }
         },
         "el" : {
@@ -122526,7 +122526,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Нет callback"
+            "value" : "Нет обратного вызова"
           }
         },
         "sk" : {
@@ -122674,7 +122674,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nessun callback ancora"
+            "value" : "Ancora nessun callback"
           }
         },
         "ja" : {
@@ -122728,7 +122728,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Callback пока нет"
+            "value" : "Обратных вызовов пока нет"
           }
         },
         "sk" : {
@@ -129892,7 +129892,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Object{%lld}"
+            "value" : "Objekt{%lld}"
           }
         },
         "el" : {
@@ -156054,7 +156054,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "In „Fotos“ gesichert"
+            "value" : "In Fotos gesichert"
           }
         },
         "el" : {
@@ -156144,7 +156144,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Arkivert i Bilder"
+            "value" : "Lagret i Bilder"
           }
         },
         "nl" : {
@@ -156222,7 +156222,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "已存储到“照片”"
+            "value" : "已保存到“照片”"
           }
         },
         "zh-Hant" : {
@@ -157065,7 +157065,7 @@
         "da" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Skema: wina://callback?key=value"
+            "value" : "URL-skema: wina://callback?key=value"
           }
         },
         "de" : {
@@ -157209,7 +157209,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "สคีม: wina://callback?key=value"
+            "value" : "Scheme: wina://callback?key=value"
           }
         },
         "tr" : {
@@ -174458,7 +174458,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tippen Sie auf der Testseite auf eine Callback-Taste"
+            "value" : "Tippen Sie auf der Testseite auf eine Callback-Schaltfläche"
           }
         },
         "el" : {
@@ -174524,7 +174524,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tocca un pulsante callback nella pagina di test"
+            "value" : "Tocca un pulsante di callback nella pagina di test"
           }
         },
         "ja" : {
@@ -174578,7 +174578,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Нажмите кнопку callback на тестовой странице"
+            "value" : "Нажмите кнопку обратного вызова на тестовой странице"
           }
         },
         "sk" : {
@@ -175185,7 +175185,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Проверьте callback с помощью параметров выше"
+            "value" : "Проверьте обратные вызовы с помощью параметров выше"
           }
         },
         "sk" : {
@@ -175387,7 +175387,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Проверьте callback URL-схемы из Safari"
+            "value" : "Проверьте обратные вызовы URL-схемы из Safari"
           }
         },
         "sk" : {
@@ -176278,7 +176278,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Die Testseite bietet Tasten, um Callbacks mit Beispieldaten an diese App zu senden."
+            "value" : "Die Testseite bietet Schaltflächen, mit denen Callbacks mit Beispieldaten an diese App gesendet werden."
           }
         },
         "el" : {
@@ -176398,7 +176398,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "На тестовой странице есть кнопки для отправки callback в это приложение с тестовыми данными."
+            "value" : "На тестовой странице есть кнопки для отправки обратных вызовов в это приложение с тестовыми данными."
           }
         },
         "sk" : {
@@ -184221,7 +184221,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Callback schema URL"
+            "value" : "Callback dello schema URL"
           }
         },
         "ja" : {
@@ -184275,7 +184275,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Callback URL-схемы"
+            "value" : "Обратный вызов URL-схемы"
           }
         },
         "sk" : {
@@ -184423,7 +184423,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Usa pagina di test callback"
+            "value" : "Usa la pagina di test dei callback"
           }
         },
         "ja" : {
@@ -184477,7 +184477,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Использовать тестовую страницу callback"
+            "value" : "Использовать тестовую страницу обратных вызовов"
           }
         },
         "sk" : {
@@ -186752,13 +186752,13 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "يتم ترميز القيم تلقائيًا كـ URL عند الحفظ."
+            "value" : "تُرمَّز القيم تلقائيًا بترميز URL عند الحفظ."
           }
         },
         "ca" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Els valors es codifiquen automàticament com a URL en desar-los."
+            "value" : "Els valors es codifiquen automàticament per a URL en desar-los."
           }
         },
         "cs" : {
@@ -186812,7 +186812,7 @@
         "he" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "הערכים מקודדים אוטומטית כ-URL בעת השמירה."
+            "value" : "הערכים מקודדים אוטומטית בקידוד URL בעת השמירה."
           }
         },
         "hi" : {
@@ -186836,13 +186836,13 @@
         "id" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nilai otomatis dienkode sebagai URL saat disimpan."
+            "value" : "Nilai otomatis dienkode URL saat disimpan."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "I valori vengono codificati automaticamente come URL al salvataggio."
+            "value" : "I valori vengono automaticamente sottoposti a codifica URL al salvataggio."
           }
         },
         "ja" : {
@@ -186860,7 +186860,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Verdier URL-kodes automatisk når de arkiveres."
+            "value" : "Verdier URL-kodes automatisk når de lagres."
           }
         },
         "nl" : {
@@ -186872,7 +186872,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Wartości są automatycznie kodowane jako URL podczas zapisywania."
+            "value" : "Wartości są automatycznie kodowane na potrzeby URL podczas zapisywania."
           }
         },
         "pt-BR" : {
@@ -186902,7 +186902,7 @@
         "sk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Hodnoty sa pri ukladaní automaticky kódujú ako URL."
+            "value" : "Hodnoty sa pri ukladaní automaticky kódujú pre URL."
           }
         },
         "sv" : {
@@ -196077,7 +196077,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Startkonfiguration für Seiten"
+            "value" : "Konfiguration beim Seitenstart"
           }
         },
         "el" : {
@@ -196125,7 +196125,7 @@
         "hr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Postavljanje pri pokretanju stranice"
+            "value" : "Postava pri pokretanju stranice"
           }
         },
         "hu" : {
@@ -196143,7 +196143,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Configurazione di avvio pagina"
+            "value" : "Configurazione di avvio della pagina"
           }
         },
         "ja" : {
@@ -196291,7 +196291,7 @@
         "el" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Πειραματική λειτουργία. Αυτή η διαμόρφωση μπορεί να είναι ασταθής σε ορισμένες σελίδες."
+            "value" : "Πειραματική λειτουργία. Αυτή η διαμόρφωση μπορεί να είναι ασταθής από σελίδα σε σελίδα."
           }
         },
         "en-GB" : {
@@ -196339,7 +196339,7 @@
         "hu" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Kísérleti funkció. Ez a beállítás oldalanként instabil lehet."
+            "value" : "Kísérleti funkció. Ez a beállítás különböző oldalakon instabil lehet."
           }
         },
         "id" : {
@@ -196999,7 +196999,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Arkiver gjeldende oppsett"
+            "value" : "Lagre gjeldende oppsett"
           }
         },
         "nl" : {
@@ -197267,7 +197267,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Boş Ayarla Başla"
+            "value" : "Boş Ayar Başlat"
           }
         },
         "uk" : {
@@ -197509,7 +197509,7 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "طبّق ملفات تعريف الارتباط وقيم window ومحاكاة الجسور والبرامج النصية المخصصة قبل تحميل كل صفحة WKWebView جديدة. يؤدي إيقاف الإعداد إلى إيقاف كل حقن في هذا الإعداد. يؤدي الحفظ باسم إلى إضافته إلى الإعدادات المحفوظة."
+            "value" : "طبّق ملفات تعريف الارتباط وقيم window ومحاكاة الجسور والبرامج النصية المخصصة قبل تحميل كل صفحة WKWebView جديدة. يؤدي إيقاف هذا الإعداد إلى إيقاف كل عمليات الحقن في هذا الإعداد. يؤدي الحفظ باسم إلى إضافته إلى الإعدادات المحفوظة."
           }
         },
         "ca" : {
@@ -197521,25 +197521,25 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Použije cookies, hodnoty window, mocky bridge a vlastní skripty před načtením každé nové stránky WKWebView. Vypnutím nastavení zastavíte veškeré vkládání v tomto nastavení. Uložení s názvem ho přidá do Uložených nastavení."
+            "value" : "Použije soubory cookie, hodnoty window, mocky bridge a vlastní skripty před načtením každé nové stránky WKWebView. Vypnutím nastavení zastavíte veškeré vkládání v tomto nastavení. Uložení s názvem ho přidá do Uložených nastavení."
           }
         },
         "da" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Anvend cookies, window-værdier, bridge-mocks og tilpassede scripts, før hver ny WKWebView-side indlæses. Hvis du slår opsætningen fra, stoppes alle injektioner i denne opsætning. Hvis du gemmer med et navn, føjes den til Gemte opsætninger."
+            "value" : "Anvend cookies, window-værdier, bridge-mocks og brugerdefinerede scripts, før hver ny WKWebView-side indlæses. Hvis du slår opsætningen fra, stoppes alle injektioner i denne opsætning. Hvis du gemmer med et navn, føjes den til Gemte opsætninger."
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Wenden Sie Cookies, window-Werte, Bridge-Mocks und eigene Skripte an, bevor jede neue WKWebView-Seite geladen wird. Wenn Sie die Konfiguration deaktivieren, werden alle Injektionen in dieser Konfiguration gestoppt. Beim Sichern mit einem Namen wird sie zu den gesicherten Konfigurationen hinzugefügt."
+            "value" : "Wenden Sie Cookies, window-Werte, Bridge-Mocks und eigene Skripte an, bevor jede neue WKWebView-Seite geladen wird. Durch Deaktivieren der Konfiguration werden alle Injektionen in dieser Konfiguration gestoppt. Beim Sichern mit einem Namen wird sie zu den gesicherten Konfigurationen hinzugefügt."
           }
         },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Εφαρμόστε cookies, τιμές window, προσομοιώσεις bridge και προσαρμοσμένα scripts πριν από τη φόρτωση κάθε νέας σελίδας WKWebView. Η απενεργοποίηση της διαμόρφωσης σταματά κάθε έγχυση σε αυτήν τη διαμόρφωση. Η αποθήκευση με όνομα την προσθέτει στις αποθηκευμένες διαμορφώσεις."
+            "value" : "Εφαρμόστε cookies, τιμές window, προσομοιώσεις bridge και προσαρμοσμένα σκριπτ πριν από τη φόρτωση κάθε νέας σελίδας WKWebView. Η απενεργοποίηση της διαμόρφωσης σταματά κάθε έγχυση σε αυτήν τη διαμόρφωση. Η αποθήκευση με όνομα την προσθέτει στις αποθηκευμένες διαμορφώσεις."
           }
         },
         "en-GB" : {
@@ -197575,7 +197575,7 @@
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "हर नए WKWebView पेज के लोड होने से पहले cookies, window मान, bridge mocks और कस्टम स्क्रिप्ट लागू करें। सेटअप बंद करने से इस सेटअप के सभी injection रुक जाते हैं। नाम देकर सहेजने पर यह सहेजे गए सेटअप में जुड़ जाता है।"
+            "value" : "हर नए WKWebView पेज के लोड होने से पहले कुकीज़, window मान, bridge mocks और कस्टम स्क्रिप्ट लागू करें। सेटअप बंद करने से इस सेटअप में होने वाला हर injection रुक जाता है। नाम देकर सहेजने पर यह सहेजे गए सेटअप में जुड़ जाता है।"
           }
         },
         "hr" : {
@@ -197593,7 +197593,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Terapkan cookie, nilai window, mock bridge, dan skrip khusus sebelum setiap halaman WKWebView baru dimuat. Mematikan pengaturan akan menghentikan semua injeksi dalam pengaturan ini. Menyimpan dengan nama akan menambahkannya ke Pengaturan Tersimpan."
+            "value" : "Terapkan cookie, nilai window, mock bridge, dan skrip kustom sebelum setiap halaman WKWebView baru dimuat. Mematikan pengaturan akan menghentikan semua injeksi dalam pengaturan ini. Menyimpan dengan nama akan menambahkannya ke Pengaturan Tersimpan."
           }
         },
         "it" : {
@@ -197605,7 +197605,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "新しいWKWebViewページが読み込まれる前に、Cookie、window値、ブリッジモック、カスタムスクリプトを適用します。設定をオフにすると、この設定内のすべての注入が停止します。名前を付けて保存すると、保存済み設定に追加されます。"
+            "value" : "新しいWKWebViewページが読み込まれる前に、クッキー、window値、ブリッジモック、カスタムスクリプトを適用します。設定をオフにすると、この設定内のすべての注入が停止します。名前を付けて保存すると、保存済み設定に追加されます。"
           }
         },
         "ko" : {
@@ -197623,13 +197623,13 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bruk informasjonskapsler, window-verdier, bridge mocks og tilpassede skript før hver nye WKWebView-side lastes inn. Hvis oppsettet slås av, stoppes alle injiseringer i dette oppsettet. Arkivering med et navn legger det til i Arkiverte oppsett."
+            "value" : "Bruk informasjonskapsler, window-verdier, bridge-mocker og tilpassede skript før hver nye WKWebView-side lastes inn. Hvis oppsettet slås av, stoppes alle injiseringer i dette oppsettet. Når du lagrer med et navn, legges det til i Lagrede oppsett."
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pas cookies, window-waarden, bridge-mocks en aangepaste scripts toe voordat elke nieuwe WKWebView-pagina wordt geladen. Als u deze configuratie uitschakelt, worden alle injecties in deze configuratie gestopt. Opslaan met een naam voegt deze toe aan Opgeslagen configuraties."
+            "value" : "Pas cookies, window-waarden, bridge-mocks en aangepaste scripts toe voordat elke nieuwe WKWebView-pagina wordt geladen. Als je deze configuratie uitschakelt, worden alle injecties in deze configuratie gestopt. Opslaan met een naam voegt deze toe aan Opgeslagen configuraties."
           }
         },
         "pl" : {
@@ -197647,25 +197647,25 @@
         "pt-PT" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aplica cookies, valores de window, simulações de bridge e scripts personalizados antes de cada nova página WKWebView carregar. Desativar a configuração interrompe todas as injeções desta configuração. Ao guardar com um nome, é adicionada às Configurações guardadas."
+            "value" : "Aplique cookies, valores de window, simulações de bridge e scripts personalizados antes de cada nova página WKWebView carregar. Desativar a configuração impede todas as injeções desta configuração. Guardá-la com um nome adiciona-a às Configurações guardadas."
           }
         },
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aplică cookieuri, valori window, mockuri bridge și scripturi personalizate înainte ca fiecare pagină WKWebView nouă să se încarce. Dezactivarea configurării oprește toate injectările din această configurare. Salvarea cu un nume o adaugă la Configurări salvate."
+            "value" : "Aplică cookie-uri, valori window, mockuri bridge și scripturi personalizate înainte ca fiecare pagină WKWebView nouă să se încarce. Dezactivarea configurării oprește toate injectările din această configurare. Salvarea cu un nume o adaugă la Configurări salvate."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Применяйте cookies, значения window, заглушки мостов и пользовательские скрипты перед загрузкой каждой новой страницы WKWebView. Отключение настройки останавливает все инъекции в этой настройке. Сохранение с именем добавляет её в Saved Setups."
+            "value" : "Применяйте файлы cookie, значения window, заглушки мостов и пользовательские скрипты перед загрузкой каждой новой страницы WKWebView. Отключение настройки останавливает все внедрения в этой настройке. Сохранение с именем добавляет её в «Сохранённые настройки»."
           }
         },
         "sk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Použite cookies, hodnoty window, mocky bridge a vlastné skripty pred načítaním každej novej stránky WKWebView. Vypnutím nastavenia zastavíte všetky vkladania v tomto nastavení. Uložením s názvom ho pridáte do Uložených nastavení."
+            "value" : "Použite cookies, hodnoty window, mocky bridgu a vlastné skripty pred načítaním každej novej stránky WKWebView. Vypnutím nastavenia zastavíte všetky vkladania v tomto nastavení. Uložením s názvom ho pridáte do Uložených nastavení."
           }
         },
         "sv" : {
@@ -197695,7 +197695,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Áp dụng cookie, giá trị window, bridge mock và script tùy chỉnh trước khi mỗi trang WKWebView mới tải. Tắt thiết lập sẽ dừng mọi thao tác tiêm trong thiết lập này. Lưu với tên sẽ thêm vào Thiết lập đã lưu."
+            "value" : "Áp dụng cookie, giá trị window, bridge mock và script tùy chỉnh trước khi mỗi trang WKWebView mới tải. Tắt thiết lập sẽ dừng mọi thao tác chèn trong thiết lập này. Lưu với tên sẽ thêm vào Thiết lập đã lưu."
           }
         },
         "zh-Hans" : {
@@ -197831,7 +197831,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Arkiverte oppsett"
+            "value" : "Lagrede oppsett"
           }
         },
         "nl" : {
@@ -198039,7 +198039,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Last inn arkivert oppsett"
+            "value" : "Last inn lagret oppsett"
           }
         },
         "nl" : {
@@ -198157,7 +198157,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Laden Sie gesicherte Startkonfigurationen unverändert erneut. Streichen Sie in der Liste nach links, um eine gesicherte Konfiguration zu löschen."
+            "value" : "Laden Sie gesicherte Startkonfigurationen unverändert neu. Streichen Sie in der Liste nach links, um eine gesicherte Konfiguration zu löschen."
           }
         },
         "el" : {
@@ -198247,7 +198247,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Last inn arkiverte oppstartsoppsett på nytt som de er. Sveip mot venstre i listen for å slette et arkivert oppsett."
+            "value" : "Last inn lagrede oppstartsoppsett på nytt som de er. Sveip mot venstre i listen for å slette et lagret oppsett."
           }
         },
         "nl" : {
@@ -198301,7 +198301,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "โหลดการตั้งค่าเริ่มต้นที่บันทึกไว้กลับมาตามเดิม ปัดไปทางซ้ายในรายการเพื่อลบการตั้งค่าที่บันทึกไว้"
+            "value" : "โหลดการตั้งค่าเมื่อเริ่มหน้าที่บันทึกไว้กลับมาตามเดิม ปัดไปทางซ้ายในรายการเพื่อลบการตั้งค่าที่บันทึกไว้"
           }
         },
         "tr" : {
@@ -198455,7 +198455,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Oppsett arkivert"
+            "value" : "Oppsett lagret"
           }
         },
         "nl" : {
@@ -199031,7 +199031,7 @@
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cookie जोड़ें"
+            "value" : "कुकी जोड़ें"
           }
         },
         "hr" : {
@@ -199061,7 +199061,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cookieを追加"
+            "value" : "クッキーを追加"
           }
         },
         "ko" : {
@@ -199163,7 +199163,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "加入 Cookie"
+            "value" : "新增 Cookie"
           }
         }
       }
@@ -199185,7 +199185,7 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Zaregistrujte cookies, které se nastaví před otevřením stránky. Před prvním načtením se vloží jen zapnuté cookies, s možnostmi domény, cesty, vypršení platnosti, SameSite, Secure a HTTP Only."
+            "value" : "Zaregistrujte soubory cookie, které se nastaví před otevřením stránky. Před prvním načtením se vloží jen zapnuté soubory cookie, s možnostmi domény, cesty, vypršení platnosti, SameSite, Secure a HTTP Only."
           }
         },
         "da" : {
@@ -199197,7 +199197,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Registrieren Sie Cookies, die vor dem Öffnen der Seite gesetzt werden. Nur aktivierte Cookies werden vor dem ersten Laden injiziert, mit Optionen für Domain, Pfad, Ablaufdatum, SameSite, Secure und HTTP Only."
+            "value" : "Hinterlegen Sie Cookies, die vor dem Öffnen der Seite gesetzt werden sollen. Nur aktivierte Cookies werden vor dem ersten Laden injiziert, mit Optionen für Domain, Pfad, Ablaufdatum, SameSite, Secure und HTTP Only."
           }
         },
         "el" : {
@@ -199239,7 +199239,7 @@
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "पेज खुलने से पहले सेट करने के लिए cookies रजिस्टर करें। पहले लोड से पहले केवल चालू cookies ही inject की जाती हैं, जिनमें domain, path, expiration, SameSite, Secure और HTTP Only विकल्प होते हैं।"
+            "value" : "पेज खुलने से पहले सेट करने के लिए कुकीज़ रजिस्टर करें। पहले लोड से पहले केवल चालू कुकीज़ ही inject की जाती हैं, जिनमें domain, path, expiration, SameSite, Secure और HTTP Only विकल्प शामिल होते हैं।"
           }
         },
         "hr" : {
@@ -199269,7 +199269,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ページを開く前に設定するCookieを登録します。有効なCookieのみが初回読み込み前に注入され、ドメイン、パス、有効期限、SameSite、Secure、HTTP Onlyオプションを指定できます。"
+            "value" : "ページを開く前に設定するクッキーを登録します。有効なクッキーのみが初回読み込み前に注入され、ドメイン、パス、有効期限、SameSite、Secure、HTTP Onlyオプションを指定できます。"
           }
         },
         "ko" : {
@@ -199281,7 +199281,7 @@
         "ms" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Daftarkan kuki untuk ditetapkan sebelum halaman dibuka. Hanya kuki yang didayakan disuntik sebelum muatan pertama, dengan pilihan domain, path, expiration, SameSite, Secure dan HTTP Only."
+            "value" : "Daftarkan kuki untuk ditetapkan sebelum halaman dibuka. Hanya kuki yang didayakan disuntik sebelum pemuatan pertama, dengan pilihan domain, laluan, tamat tempoh, SameSite, Secure dan HTTP Only."
           }
         },
         "nb" : {
@@ -199317,13 +199317,13 @@
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Înregistrați cookieuri de setat înainte ca pagina să se deschidă. Doar cookieurile activate sunt injectate înainte de prima încărcare, cu opțiuni pentru domeniu, cale, expirare, SameSite, Secure și HTTP Only."
+            "value" : "Înregistrați cookie-uri de setat înainte ca pagina să se deschidă. Doar cookie-urile activate sunt injectate înainte de prima încărcare, cu opțiuni pentru domeniu, cale, expirare, SameSite, Secure și HTTP Only."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Зарегистрируйте cookies, которые нужно установить до открытия страницы. Перед первой загрузкой внедряются только включённые cookies с параметрами домена, пути, срока действия, SameSite, Secure и HTTP Only."
+            "value" : "Зарегистрируйте файлы cookie, которые нужно установить до открытия страницы. Перед первой загрузкой внедряются только включённые файлы cookie с параметрами домена, пути, срока действия, SameSite, Secure и HTTP Only."
           }
         },
         "sk" : {
@@ -199359,7 +199359,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Đăng ký cookie để đặt trước khi trang mở. Chỉ các cookie đã bật mới được tiêm trước lần tải đầu tiên, với các tùy chọn domain, path, expiration, SameSite, Secure và HTTP Only."
+            "value" : "Đăng ký cookie để đặt trước khi trang mở. Chỉ các cookie đã bật mới được chèn trước lần tải đầu tiên, với các tùy chọn miền, đường dẫn, ngày hết hạn, SameSite, Secure và HTTP Only."
           }
         },
         "zh-Hans" : {
@@ -199607,7 +199607,7 @@
         "da" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tilpasset domæne"
+            "value" : "Brugerdefineret domæne"
           }
         },
         "de" : {
@@ -199673,7 +199673,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Domain khusus"
+            "value" : "Domain kustom"
           }
         },
         "it" : {
@@ -199821,7 +199821,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Window-Element"
+            "value" : "window-Element"
           }
         },
         "el" : {
@@ -199989,7 +199989,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Window 项目"
+            "value" : "window 项目"
           }
         },
         "zh-Hant" : {
@@ -200029,7 +200029,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Window-Element hinzufügen"
+            "value" : "window-Element hinzufügen"
           }
         },
         "el" : {
@@ -200197,13 +200197,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "添加 Window 项目"
+            "value" : "添加 window 项目"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "加入 Window 項目"
+            "value" : "新增 Window 項目"
           }
         }
       }
@@ -200237,13 +200237,13 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Injizieren Sie Werte oder Funktionen in window, bevor Seitenskripte ausgeführt werden. Verwenden Sie Punktpfade wie window.appVersion, um Variablen, Funktionen mit Rückgabewert oder reine Funktionsrümpfe beim Dokumentstart festzulegen."
+            "value" : "Fügen Sie Werte oder Funktionen in window ein, bevor Seitenskripte ausgeführt werden. Verwenden Sie Punktpfade wie window.appVersion, um Variablen, Funktionen mit Rückgabewert oder unverarbeitete Funktionskörper beim Dokumentstart festzulegen."
           }
         },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Εγχύστε τιμές ή συναρτήσεις στο window πριν εκτελεστούν τα scripts της σελίδας. Χρησιμοποιήστε διαδρομές με τελείες όπως window.appVersion για να ορίσετε μεταβλητές, συναρτήσεις που επιστρέφουν τιμή ή ακατέργαστα σώματα συναρτήσεων στην αρχή του εγγράφου."
+            "value" : "Εγχύστε τιμές ή συναρτήσεις στο window πριν εκτελεστούν τα σκριπτ της σελίδας. Χρησιμοποιήστε διαδρομές με τελείες όπως window.appVersion για να ορίσετε μεταβλητές, συναρτήσεις που επιστρέφουν τιμή ή ακατέργαστα σώματα συναρτήσεων στην αρχή του εγγράφου."
           }
         },
         "en-GB" : {
@@ -200399,7 +200399,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tiêm giá trị hoặc hàm vào window trước khi script của trang chạy. Dùng đường dẫn có dấu chấm như window.appVersion để đặt biến, hàm trả về giá trị hoặc phần thân hàm thô tại thời điểm bắt đầu tài liệu."
+            "value" : "Chèn giá trị hoặc hàm vào window trước khi script của trang chạy. Dùng đường dẫn có dấu chấm như window.appVersion để đặt biến, hàm trả về giá trị hoặc phần thân hàm thô tại thời điểm bắt đầu tài liệu."
           }
         },
         "zh-Hans" : {
@@ -200445,7 +200445,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Funktionsrumpf"
+            "value" : "Funktionskörper"
           }
         },
         "el" : {
@@ -200565,7 +200565,7 @@
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Corp funcție"
+            "value" : "Corp de funcție"
           }
         },
         "ru" : {
@@ -200635,7 +200635,7 @@
         "ca" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Utilitzeu noms amb punts com app.bridge.getToken per als valors window imbricats."
+            "value" : "Utilitza noms amb punts com app.bridge.getToken per als valors window imbricats."
           }
         },
         "cs" : {
@@ -200653,7 +200653,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Verwenden Sie Namen mit Punktnotation wie app.bridge.getToken für verschachtelte window-Werte."
+            "value" : "Verwenden Sie durch Punkte getrennte Namen wie app.bridge.getToken für verschachtelte window-Werte."
           }
         },
         "el" : {
@@ -201277,7 +201277,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Reiner Funktionsrumpf"
+            "value" : "Unverarbeiteter Funktionskörper"
           }
         },
         "el" : {
@@ -201319,7 +201319,7 @@
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Raw function body"
+            "value" : "रॉ फ़ंक्शन बॉडी"
           }
         },
         "hr" : {
@@ -201521,7 +201521,7 @@
         "he" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mock ל-Bridge"
+            "value" : "הדמיית bridge"
           }
         },
         "hi" : {
@@ -201575,7 +201575,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bridge mock"
+            "value" : "Bridge-mock"
           }
         },
         "nl" : {
@@ -201617,7 +201617,7 @@
         "sk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mock bridge"
+            "value" : "Mock bridgu"
           }
         },
         "sv" : {
@@ -201813,7 +201813,7 @@
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Capturează window.postMessage"
+            "value" : "Capturare window.postMessage"
           }
         },
         "ru" : {
@@ -202283,7 +202283,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "加入通道"
+            "value" : "新增通道"
           }
         }
       }
@@ -202293,7 +202293,7 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "حاكِ جسرًا أصليًا. تُعرض القنوات كـ window.webkit.messageHandlers.<name>، ويمكن لقواعد الاستجابة الرد على الرسائل المطابقة حسب أي رسالة أو type أو مسار JSON. يؤدي تفعيل التقاط window.postMessage إلى عرض استدعاءات postMessage من الصفحة كشارات في Console."
+            "value" : "حاكِ جسرًا أصليًا. تُعرض القنوات كـ window.webkit.messageHandlers.<name>، ويمكن لقواعد الاستجابة الرد على الرسائل المطابقة حسب أي رسالة أو type أو مسار JSON. يؤدي تفعيل التقاط window.postMessage إلى عرض استدعاءات postMessage من الصفحة كشارات في وحدة التحكم."
           }
         },
         "ca" : {
@@ -202311,13 +202311,13 @@
         "da" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mock en native bridge. Kanaler eksponeres som window.webkit.messageHandlers.<name>, og svarregler kan svare på matchende beskeder efter enhver besked, type eller JSON-sti. Når Registrer window.postMessage er slået til, vises sidens postMessage-kald som badges i Console."
+            "value" : "Mock en native bridge. Kanaler eksponeres som window.webkit.messageHandlers.<name>, og svarregler kan svare på matchende beskeder efter matchtypen Alle beskeder, type eller JSON-sti. Når Registrer window.postMessage er slået til, vises sidens postMessage-kald som badges i Console."
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Simulieren Sie eine native Bridge. Kanäle werden als window.webkit.messageHandlers.<name> bereitgestellt, und Antwortregeln können auf passende Nachrichten nach beliebiger Nachricht, Typ oder JSON-Pfad antworten. Wenn window.postMessage erfassen aktiviert ist, werden postMessage-Aufrufe der Seite als Badges in der Konsole angezeigt."
+            "value" : "Simulieren Sie eine native Bridge. Kanäle werden als window.webkit.messageHandlers.<name> bereitgestellt, und Antwortregeln können auf passende Nachrichten nach beliebiger Nachricht, type oder JSON-Pfad antworten. Wenn „window.postMessage erfassen“ aktiviert ist, werden postMessage-Aufrufe der Seite als Badges in der Konsole angezeigt."
           }
         },
         "el" : {
@@ -202359,7 +202359,7 @@
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Native bridge का mock करें। चैनल window.webkit.messageHandlers.<name> के रूप में उपलब्ध होते हैं, और response rules किसी भी message, type या JSON path से मेल खाने वाले messages का जवाब दे सकते हैं। Capture window.postMessage चालू करने पर पेज के postMessage calls Console में badges के रूप में दिखते हैं।"
+            "value" : "नेटिव bridge का mock करें। चैनल window.webkit.messageHandlers.<name> के रूप में उपलब्ध होते हैं, और प्रतिक्रिया नियम किसी भी संदेश, type या JSON पाथ से मेल खाने वाले संदेशों का जवाब दे सकते हैं। Capture window.postMessage चालू करने पर पेज के postMessage calls कंसोल में बैज के रूप में दिखते हैं।"
           }
         },
         "hr" : {
@@ -202377,7 +202377,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mock bridge native. Saluran diekspos sebagai window.webkit.messageHandlers.<name>, dan aturan respons dapat membalas pesan yang cocok berdasarkan pesan apa pun, type, atau path JSON. Mengaktifkan Tangkap window.postMessage menampilkan panggilan postMessage halaman sebagai lencana di Konsol."
+            "value" : "Buat mock untuk bridge native. Saluran diekspos sebagai window.webkit.messageHandlers.<name>, dan aturan respons dapat membalas pesan yang cocok berdasarkan pesan apa pun, type, atau path JSON. Mengaktifkan Tangkap window.postMessage menampilkan panggilan postMessage halaman sebagai lencana di Konsol."
           }
         },
         "it" : {
@@ -202407,13 +202407,13 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mock en innebygd bridge. Kanaler eksponeres som window.webkit.messageHandlers.<name>, og svarregler kan svare på meldinger som samsvarer etter hvilken som helst melding, type eller JSON-sti. Når Fang opp window.postMessage er slått på, vises postMessage-kall fra siden som merker i Konsoll."
+            "value" : "Lag en mock av en native bridge. Kanaler eksponeres som window.webkit.messageHandlers.<name>, og svarregler kan svare på meldinger som samsvarer med alle meldinger, type eller JSON-sti. Når Fang opp window.postMessage er slått på, vises postMessage-kall fra siden som merker i Konsoll."
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mock een native bridge. Kanalen worden beschikbaar gemaakt als window.webkit.messageHandlers.<name>, en responsregels kunnen antwoorden op overeenkomende berichten op basis van volledig bericht, type of JSON-pad. Als u window.postMessage vastleggen inschakelt, worden postMessage-aanroepen van de pagina als badges weergegeven in Console."
+            "value" : "Mock een native bridge. Kanalen worden beschikbaar gemaakt als window.webkit.messageHandlers.<name>, en antwoordregels kunnen reageren op overeenkomende berichten op basis van ‘Elk bericht’, type of JSON-pad. Als je het vastleggen van window.postMessage inschakelt, worden postMessage-aanroepen van de pagina als badges weergegeven in Console."
           }
         },
         "pl" : {
@@ -202425,7 +202425,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Simule uma bridge nativa. Os canais são expostos como window.webkit.messageHandlers.<name>, e as regras de resposta podem responder a mensagens correspondentes por qualquer mensagem, type ou caminho JSON. Ativar Capturar window.postMessage mostra as chamadas postMessage da página como avisos no Console."
+            "value" : "Simule uma bridge nativa. Os canais são expostos como window.webkit.messageHandlers.<name>, e as regras de resposta podem responder a mensagens que correspondam a qualquer mensagem, type ou caminho JSON. Ativar Capturar window.postMessage mostra as chamadas postMessage da página como badges no Console."
           }
         },
         "pt-PT" : {
@@ -202437,13 +202437,13 @@
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Simulați un bridge nativ. Canalele sunt expuse ca window.webkit.messageHandlers.<name>, iar regulile de răspuns pot răspunde la mesajele potrivite după orice mesaj, type sau cale JSON. Activarea Capturează window.postMessage afișează apelurile postMessage ale paginii ca insigne în Consolă."
+            "value" : "Simulați un bridge nativ. Canalele sunt expuse ca window.webkit.messageHandlers.<name>, iar regulile de răspuns pot răspunde mesajelor care corespund unui criteriu: orice mesaj, type sau cale JSON. Activarea opțiunii Capturare window.postMessage afișează apelurile postMessage ale paginii ca insigne în Consolă."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Создайте заглушку нативного моста. Каналы доступны как window.webkit.messageHandlers.<name>, а правила ответа могут отвечать на подходящие сообщения по всему сообщению, type или пути JSON. При включении Capture window.postMessage вызовы postMessage со страницы отображаются в Console в виде значков."
+            "value" : "Создайте заглушку нативного моста. Каналы доступны как window.webkit.messageHandlers.<name>, а правила ответа могут отвечать на подходящие сообщения: на любое сообщение, по type или по пути JSON. При включении «Захват window.postMessage» вызовы postMessage со страницы отображаются в консоли в виде значков."
           }
         },
         "sk" : {
@@ -202455,25 +202455,25 @@
         "sv" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mocka en inbyggd brygga. Kanaler exponeras som window.webkit.messageHandlers.<name>, och svarsregler kan svara på matchande meddelanden via valfritt meddelande, type eller JSON-sökväg. När Fånga window.postMessage aktiveras visas sidans postMessage-anrop som brickor i Console."
+            "value" : "Mocka en nativ brygga. Kanaler exponeras som window.webkit.messageHandlers.<name>, och svarsregler kan svara på matchande meddelanden via valfritt meddelande, type eller JSON-sökväg. När Fånga window.postMessage aktiveras visas sidans postMessage-anrop som brickor i Console."
           }
         },
         "th" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "จำลองเนทีฟบริดจ์ ช่องจะแสดงเป็น window.webkit.messageHandlers.<name> และกฎการตอบกลับสามารถตอบกลับข้อความที่ตรงกันได้ตามข้อความใดก็ได้ type หรือเส้นทาง JSON การเปิดใช้การจับ window.postMessage จะแสดงการเรียก postMessage ของหน้าเป็นป้ายใน Console"
+            "value" : "จำลองเนทีฟบริดจ์ ช่องจะแสดงเป็น window.webkit.messageHandlers.<name> และกฎการตอบกลับสามารถตอบกลับข้อความที่ตรงกันได้โดยอิงจากข้อความใดก็ได้, type หรือพาธ JSON การเปิดใช้การจับ window.postMessage จะแสดงการเรียก postMessage ของหน้าเป็นป้ายใน Console"
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Yerel bir bridge’i taklit edin. Kanallar window.webkit.messageHandlers.<name> olarak sunulur; yanıt kuralları herhangi bir message, type veya JSON yolu ile eşleşen mesajlara yanıt verebilir. Capture window.postMessage etkinleştirildiğinde, sayfa postMessage çağrıları Console’da rozet olarak gösterilir."
+            "value" : "Yerel bir bridge’i taklit edin. Kanallar window.webkit.messageHandlers.<name> olarak sunulur; yanıt kuralları herhangi bir message, type veya JSON yolu ile eşleşen mesajlara yanıt verebilir. window.postMessage yakalama etkinleştirildiğinde, sayfa postMessage çağrıları Konsol’da rozet olarak gösterilir."
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Імітуйте нативний bridge. Канали доступні як window.webkit.messageHandlers.<name>, а правила відповіді можуть відповідати на повідомлення, що збігаються за всім повідомленням, type або шляхом JSON. Якщо ввімкнути захоплення window.postMessage, виклики postMessage зі сторінки відображатимуться як бейджі в консолі."
+            "value" : "Імітуйте нативний bridge. Канали доступні як window.webkit.messageHandlers.<name>, а правила відповіді можуть відповідати на повідомлення за критеріями: будь-яке повідомлення, type або шлях JSON. Якщо ввімкнути захоплення window.postMessage, виклики postMessage зі сторінки відображатимуться як бейджі в консолі."
           }
         },
         "vi" : {
@@ -202715,7 +202715,7 @@
         "ca" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Utilitzeu un identificador JavaScript que no estigui reservat."
+            "value" : "Utilitza un identificador JavaScript que no estigui reservat."
           }
         },
         "cs" : {
@@ -202817,7 +202817,7 @@
         "ms" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Gunakan pengecam JavaScript yang bukan nama tersimpan."
+            "value" : "Gunakan pengecam JavaScript yang tidak dikhaskan."
           }
         },
         "nb" : {
@@ -202829,7 +202829,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Gebruik een JavaScript-id die niet gereserveerd is."
+            "value" : "Gebruik een JavaScript-identifier die niet gereserveerd is."
           }
         },
         "pl" : {
@@ -202983,7 +202983,7 @@
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Response Rules"
+            "value" : "प्रतिक्रिया नियम"
           }
         },
         "hr" : {
@@ -203037,7 +203037,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Responsregels"
+            "value" : "Antwoordregels"
           }
         },
         "pl" : {
@@ -203221,7 +203221,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "レスポンスルールを追加"
+            "value" : "応答ルールを追加"
           }
         },
         "ko" : {
@@ -203429,7 +203429,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "レスポンスルール"
+            "value" : "応答ルール"
           }
         },
         "ko" : {
@@ -203691,7 +203691,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ответить через"
+            "value" : "Ответить с помощью"
           }
         },
         "sk" : {
@@ -203721,7 +203721,7 @@
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Відповідати через"
+            "value" : "Відповідати за допомогою"
           }
         },
         "vi" : {
@@ -204261,7 +204261,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "レスポンスJSON"
+            "value" : "応答JSON"
           }
         },
         "ko" : {
@@ -204397,7 +204397,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Antwort-JSON-Syntax und Platzhalter müssen gültig sein."
+            "value" : "Die Syntax des Antwort-JSON und die Platzhalter müssen gültig sein."
           }
         },
         "el" : {
@@ -204469,7 +204469,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "レスポンスJSONの構文とプレースホルダが有効である必要があります。"
+            "value" : "応答JSONの構文とプレースホルダが有効である必要があります。"
           }
         },
         "ko" : {
@@ -204599,13 +204599,13 @@
         "da" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Svar-JSON-syntaks og pladsholdere skal være gyldige, før der anvendes."
+            "value" : "Svar-JSON-syntaks og pladsholdere skal være gyldige, før du anvender ændringerne."
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Antwort-JSON-Syntax und Platzhalter müssen vor dem Anwenden gültig sein."
+            "value" : "Die Syntax des Antwort-JSON und die Platzhalter müssen vor dem Anwenden gültig sein."
           }
         },
         "el" : {
@@ -204671,13 +204671,13 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "La sintassi del JSON della risposta e i segnaposto devono essere validi prima di applicare."
+            "value" : "La sintassi del JSON della risposta e i segnaposto devono essere validi prima dell’applicazione."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "適用する前に、レスポンスJSONの構文とプレースホルダが有効である必要があります。"
+            "value" : "適用する前に、応答JSONの構文とプレースホルダが有効である必要があります。"
           }
         },
         "ko" : {
@@ -204701,7 +204701,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "De syntaxis van de antwoord-JSON en de plaatsaanduidingen moeten geldig zijn voordat u deze toepast."
+            "value" : "De syntaxis van de antwoord-JSON en de plaatsaanduidingen moeten geldig zijn voordat je deze toepast."
           }
         },
         "pl" : {
@@ -205217,7 +205217,7 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Název callbacku"
+            "value" : "Název zpětného volání"
           }
         },
         "da" : {
@@ -205259,7 +205259,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nom du rappel"
+            "value" : "Nom du callback"
           }
         },
         "he" : {
@@ -205319,7 +205319,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tilbakekallsnavn"
+            "value" : "Callback-navn"
           }
         },
         "nl" : {
@@ -205331,7 +205331,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nazwa wywołania zwrotnego"
+            "value" : "Nazwa callbacku"
           }
         },
         "pt-BR" : {
@@ -205361,7 +205361,7 @@
         "sk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Názov callbacku"
+            "value" : "Názov spätného volania"
           }
         },
         "sv" : {
@@ -205373,19 +205373,19 @@
         "th" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ชื่อ callback"
+            "value" : "ชื่อ Callback"
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Callback adı"
+            "value" : "Geri çağrı adı"
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Назва callback-функції"
+            "value" : "Назва функції зворотного виклику"
           }
         },
         "vi" : {
@@ -205419,7 +205419,7 @@
         "ca" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Utilitzeu un camí de funció JavaScript amb punts."
+            "value" : "Utilitza un camí de funció JavaScript amb punts."
           }
         },
         "cs" : {
@@ -205437,7 +205437,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Verwenden Sie einen JavaScript-Funktionspfad mit Punktnotation."
+            "value" : "Verwenden Sie einen durch Punkte getrennten JavaScript-Funktionspfad."
           }
         },
         "el" : {
@@ -205627,7 +205627,7 @@
         "ca" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Utilitzeu un camí de funció amb punts com app.onNativeResponse."
+            "value" : "Utilitza un camí de funció amb punts com app.onNativeResponse."
           }
         },
         "cs" : {
@@ -205645,7 +205645,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Verwenden Sie einen Funktionspfad mit Punktnotation wie app.onNativeResponse."
+            "value" : "Verwenden Sie einen durch Punkte getrennten Funktionspfad wie app.onNativeResponse."
           }
         },
         "el" : {
@@ -205949,7 +205949,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aangepaste JavaScript"
+            "value" : "Aangepast JavaScript"
           }
         },
         "pl" : {
@@ -206043,7 +206043,7 @@
         "ca" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Utilitzeu els marcadors de posició {{message}}, {{response}}, {{channel}}."
+            "value" : "Utilitza els marcadors de posició {{message}}, {{response}}, {{channel}}."
           }
         },
         "cs" : {
@@ -206471,7 +206471,7 @@
         "da" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Alle meddelelser"
+            "value" : "Alle beskeder"
           }
         },
         "de" : {
@@ -206639,7 +206639,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bất kỳ thông báo nào"
+            "value" : "Bất kỳ thông điệp nào"
           }
         },
         "zh-Hans" : {
@@ -207505,7 +207505,7 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Funkce callbacku"
+            "value" : "Funkce zpětného volání"
           }
         },
         "da" : {
@@ -207547,7 +207547,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fonction de rappel"
+            "value" : "Fonction de callback"
           }
         },
         "he" : {
@@ -207607,7 +207607,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tilbakekallsfunksjon"
+            "value" : "Callback-funksjon"
           }
         },
         "nl" : {
@@ -207619,7 +207619,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Funkcja wywołania zwrotnego"
+            "value" : "Funkcja callbacku"
           }
         },
         "pt-BR" : {
@@ -207649,7 +207649,7 @@
         "sk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Callback funkcia"
+            "value" : "Funkcia spätného volania"
           }
         },
         "sv" : {
@@ -207661,19 +207661,19 @@
         "th" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ฟังก์ชัน callback"
+            "value" : "ฟังก์ชัน Callback"
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Callback işlevi"
+            "value" : "Geri çağrı işlevi"
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Callback-функція"
+            "value" : "Функція зворотного виклику"
           }
         },
         "vi" : {
@@ -207909,7 +207909,7 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "إضافة سكربت مخصص"
+            "value" : "إضافة برنامج نصي مخصص"
           }
         },
         "ca" : {
@@ -208117,13 +208117,13 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "شغّل JavaScript مخصصًا قبل تحميل الصفحة عند بدء المستند. يتم تغليف كل سكربت بـ try/catch، لذا تبقى الأخطاء كتحذيرات في وحدة التحكم، ويمكن للسكربتات استهداف الإطار الرئيسي فقط أو كل الإطارات."
+            "value" : "شغّل JavaScript مخصصًا قبل تحميل الصفحة عند بدء المستند. يتم تغليف كل برنامج نصي بـ try/catch، لذا تبقى الأخطاء كتحذيرات في وحدة التحكم، ويمكن للبرامج النصية استهداف الإطار الرئيسي فقط أو كل الإطارات."
           }
         },
         "ca" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Executeu JavaScript personalitzat abans que es carregui la pàgina, a l’inici del document. Cada script s’embolcalla amb try/catch, de manera que els errors queden com a avisos de la consola, i els scripts poden adreçar-se només al marc principal o a tots els marcs."
+            "value" : "Executa JavaScript personalitzat abans que es carregui la pàgina, a l’inici del document. Cada script s’embolcalla amb try/catch, de manera que els errors queden com a avisos de la consola, i els scripts poden adreçar-se només al marc principal o a tots els marcs."
           }
         },
         "cs" : {
@@ -208141,7 +208141,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Führen Sie eigenes JavaScript beim Dokumentstart aus, bevor die Seite geladen wird. Jedes Skript wird in try/catch eingeschlossen, sodass Fehler nur als Konsolenwarnungen erscheinen. Skripte können nur auf den Hauptframe oder auf alle Frames angewendet werden."
+            "value" : "Führen Sie eigenes JavaScript beim Dokumentstart aus, bevor die Seite geladen wird. Jedes Skript wird in try/catch eingeschlossen, sodass Fehler nur als Konsolenwarnungen erscheinen. Skripte können nur den Hauptrahmen oder alle Frames betreffen."
           }
         },
         "el" : {
@@ -208237,7 +208237,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Voer aangepaste JavaScript uit voordat de pagina wordt geladen, bij het begin van het document. Elk script wordt verpakt in try/catch, zodat fouten consolewaarschuwingen blijven. Scripts kunnen alleen op het hoofdframe of op alle frames worden toegepast."
+            "value" : "Voer aangepast JavaScript uit voordat de pagina wordt geladen, bij het begin van het document. Elk script wordt verpakt in try/catch, zodat fouten consolewaarschuwingen blijven. Scripts kunnen alleen op het hoofdframe of op alle frames worden toegepast."
           }
         },
         "pl" : {
@@ -208349,7 +208349,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Hauptframe"
+            "value" : "Hauptrahmen"
           }
         },
         "el" : {
@@ -208765,7 +208765,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nur Hauptframe"
+            "value" : "Nur Hauptrahmen"
           }
         },
         "el" : {
@@ -209365,7 +209365,7 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "سكربت مخصص"
+            "value" : "برنامج نصي مخصص"
           }
         },
         "ca" : {
@@ -209597,7 +209597,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "1 Element"
+            "value" : "1 Objekt"
           }
         },
         "el" : {
@@ -209805,7 +209805,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Der Kanalname muss gültig sein und darf nicht reserviert sein."
+            "value" : "Der Kanalname muss gültig und nicht reserviert sein."
           }
         },
         "el" : {
@@ -209865,7 +209865,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nama channel harus valid dan tidak dicadangkan."
+            "value" : "Nama saluran harus valid dan tidak dicadangkan."
           }
         },
         "it" : {
@@ -209889,7 +209889,7 @@
         "ms" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nama saluran mestilah sah dan bukan nama tersimpan."
+            "value" : "Nama saluran mestilah sah dan bukan nama yang dikhaskan."
           }
         },
         "nb" : {
@@ -209979,7 +209979,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "頻道名稱必須有效，且不得為保留名稱。"
+            "value" : "通道名稱必須有效，且不得為保留名稱。"
           }
         }
       }
@@ -210001,7 +210001,7 @@
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Název callbacku musí být platnou cestou JavaScriptu."
+            "value" : "Název zpětného volání musí být platnou cestou JavaScriptu."
           }
         },
         "da" : {
@@ -210043,7 +210043,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Le nom du rappel doit être un chemin JavaScript valide."
+            "value" : "Le nom du callback doit être un chemin JavaScript valide."
           }
         },
         "he" : {
@@ -210103,7 +210103,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tilbakekallsnavnet må være en gyldig JavaScript-bane."
+            "value" : "Callback-navnet må være en gyldig JavaScript-bane."
           }
         },
         "nl" : {
@@ -210115,7 +210115,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nazwa wywołania zwrotnego musi być prawidłową ścieżką JavaScript."
+            "value" : "Nazwa callbacku musi być prawidłową ścieżką JavaScript."
           }
         },
         "pt-BR" : {
@@ -210145,7 +210145,7 @@
         "sk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Názov callbacku musí byť platná cesta JavaScript."
+            "value" : "Názov spätného volania musí byť platná cesta v JavaScripte."
           }
         },
         "sv" : {
@@ -210157,19 +210157,19 @@
         "th" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ชื่อ callback ต้องเป็นพาธ JavaScript ที่ถูกต้อง"
+            "value" : "ชื่อ Callback ต้องเป็นพาธ JavaScript ที่ถูกต้อง"
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Callback adı geçerli bir JavaScript yolu olmalıdır."
+            "value" : "Geri çağrı adı geçerli bir JavaScript yolu olmalıdır."
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Назва callback-функції має бути коректним шляхом JavaScript."
+            "value" : "Назва функції зворотного виклику має бути коректним шляхом JavaScript."
           }
         },
         "vi" : {
@@ -210203,7 +210203,7 @@
         "ca" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cookie"
+            "value" : "Galeta"
           }
         },
         "cs" : {
@@ -210411,7 +210411,7 @@
         "ca" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cookies"
+            "value" : "Galetes"
           }
         },
         "cs" : {
@@ -210637,7 +210637,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Window"
+            "value" : "window"
           }
         },
         "el" : {
@@ -210805,7 +210805,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Window"
+            "value" : "window"
           }
         },
         "zh-Hant" : {
@@ -211059,7 +211059,7 @@
         "el" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Περίοδος λειτουργίας προγράμματος περιήγησης"
+            "value" : "Συνεδρία προγράμματος περιήγησης"
           }
         },
         "en-GB" : {
@@ -211243,7 +211243,7 @@
         "ca" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Detalls de la cookie"
+            "value" : "Detalls de la galeta"
           }
         },
         "cs" : {
@@ -211451,7 +211451,7 @@
         "ca" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nom de la cookie"
+            "value" : "Nom de la galeta"
           }
         },
         "cs" : {
@@ -211659,7 +211659,7 @@
         "ca" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Àmbit de la cookie"
+            "value" : "Àmbit de la galeta"
           }
         },
         "cs" : {
@@ -211797,7 +211797,7 @@
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Domeniu de aplicare cookie"
+            "value" : "Domeniu de aplicare al cookie-ului"
           }
         },
         "ru" : {
@@ -211867,7 +211867,7 @@
         "ca" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Valor de la cookie"
+            "value" : "Valor de la galeta"
           }
         },
         "cs" : {
@@ -212069,13 +212069,13 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "تمكين ملف تعريف الارتباط"
+            "value" : "تفعيل ملف تعريف الارتباط"
           }
         },
         "ca" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Activa la cookie"
+            "value" : "Activa la galeta"
           }
         },
         "cs" : {
@@ -213317,7 +213317,7 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "اسم السكربت"
+            "value" : "اسم البرنامج النصي"
           }
         },
         "ca" : {
@@ -213531,7 +213531,7 @@
         "ca" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Utilitzeu / per aplicar la cookie a tots els camins del domini seleccionat."
+            "value" : "Utilitza / per aplicar la galeta a tots els camins del domini seleccionat."
           }
         },
         "cs" : {
@@ -213555,7 +213555,7 @@
         "el" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Χρησιμοποιήστε / για να εφαρμόσετε το cookie σε όλες τις διαδρομές στον επιλεγμένο τομέα."
+            "value" : "Χρησιμοποιήστε / για να εφαρμόσετε το cookie σε όλες τις διαδρομές στο επιλεγμένο domain."
           }
         },
         "en-GB" : {
@@ -213739,7 +213739,7 @@
         "ca" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Utilitzeu noms amb punts com app.bridge.getToken per crear valors window imbricats."
+            "value" : "Utilitza noms amb punts com app.bridge.getToken per crear valors window imbricats."
           }
         },
         "cs" : {
@@ -213757,7 +213757,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Verwenden Sie Namen mit Punktnotation wie app.bridge.getToken, um verschachtelte window-Werte zu erstellen."
+            "value" : "Verwenden Sie durch Punkte getrennte Namen wie app.bridge.getToken, um verschachtelte window-Werte zu erstellen."
           }
         },
         "el" : {
@@ -214149,13 +214149,13 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "عند التمكين، يتم تعيين ملف تعريف الارتباط هذا قبل فتح الصفحة."
+            "value" : "عند تفعيله، يتم تعيين ملف تعريف الارتباط هذا قبل فتح الصفحة."
           }
         },
         "ca" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Quan està activada, aquesta cookie es defineix abans d’obrir la pàgina."
+            "value" : "Quan està activada, aquesta galeta s’estableix abans d’obrir la pàgina."
           }
         },
         "cs" : {
@@ -214791,7 +214791,7 @@
         "da" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Kunne ikke klargøre parringsfil"
+            "value" : "Kunne ikke klargøre pardannelsesfil"
           }
         },
         "de" : {
@@ -214821,7 +214821,7 @@
         "fi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pariliitostiedostoa ei voitu valmistella"
+            "value" : "Parinmuodostustiedostoa ei voitu valmistella"
           }
         },
         "fr" : {
@@ -214833,7 +214833,7 @@
         "he" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "לא ניתן היה להכין את קובץ הקישור"
+            "value" : "לא ניתן היה להכין את קובץ ההתאמה"
           }
         },
         "hi" : {
@@ -214857,7 +214857,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tidak dapat menyiapkan file pairing"
+            "value" : "Tidak dapat menyiapkan file pemasangan"
           }
         },
         "it" : {
@@ -214881,7 +214881,7 @@
         "ms" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tidak dapat menyediakan fail berpasangan"
+            "value" : "Tidak dapat menyediakan fail pemasangan"
           }
         },
         "nb" : {
@@ -214923,7 +214923,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Не удалось подготовить файл сопряжения"
+            "value" : "Не удалось подготовить файл для создания пары"
           }
         },
         "sk" : {
@@ -214999,7 +214999,7 @@
         "da" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Del parringsfil"
+            "value" : "Del pardannelsesfil"
           }
         },
         "de" : {
@@ -215029,7 +215029,7 @@
         "fi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Jaa pariliitostiedosto"
+            "value" : "Jaa parinmuodostustiedosto"
           }
         },
         "fr" : {
@@ -215041,7 +215041,7 @@
         "he" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "שיתוף קובץ הקישור"
+            "value" : "שיתוף קובץ ההתאמה"
           }
         },
         "hi" : {
@@ -215065,7 +215065,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bagikan file pairing"
+            "value" : "Bagikan file pemasangan"
           }
         },
         "it" : {
@@ -215089,7 +215089,7 @@
         "ms" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Kongsi fail berpasangan"
+            "value" : "Kongsi fail pemasangan"
           }
         },
         "nb" : {
@@ -215131,7 +215131,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Поделиться файлом сопряжения"
+            "value" : "Поделиться файлом для создания пары"
           }
         },
         "sk" : {
@@ -215219,7 +215219,7 @@
         "el" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Εμφανίζονται οι πρώτοι 50,000 χαρακτήρες."
+            "value" : "Εμφανίζονται οι πρώτοι 50.000 χαρακτήρες."
           }
         },
         "en-GB" : {
@@ -215261,7 +215261,7 @@
         "hr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Prikazuje se prvih 50,000 znakova."
+            "value" : "Prikazuje se prvih 50.000 znakova."
           }
         },
         "hu" : {
@@ -215303,7 +215303,7 @@
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Viser de første 50,000 tegnene."
+            "value" : "Viser de første 50 000 tegnene."
           }
         },
         "nl" : {
@@ -215339,13 +215339,13 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Показаны первые 50,000 символов."
+            "value" : "Показаны первые 50 000 символов."
           }
         },
         "sk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Zobrazuje sa prvých 50,000 znakov."
+            "value" : "Zobrazuje sa prvých 50 000 znakov."
           }
         },
         "sv" : {
@@ -215605,7 +215605,7 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "تم توصيل Mac"
+            "value" : "Mac متصل"
           }
         },
         "ca" : {
@@ -215623,7 +215623,7 @@
         "da" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mac tilsluttet"
+            "value" : "Mac er forbundet"
           }
         },
         "de" : {
@@ -215785,13 +215785,13 @@
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mac підключено"
+            "value" : "Mac під’єднано"
           }
         },
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Đã kết nối Mac"
+            "value" : "Đã kết nối với Mac"
           }
         },
         "zh-Hans" : {
@@ -216051,7 +216051,7 @@
         "el" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Αποθήκευση στιγμιότυπου"
+            "value" : "Αποθήκευση στιγμιότυπου οθόνης"
           }
         },
         "en-GB" : {
@@ -216105,7 +216105,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Simpan Jepretan Layar"
+            "value" : "Simpan Tangkapan Layar"
           }
         },
         "it" : {
@@ -216147,7 +216147,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Zachowaj zrzut ekranu"
+            "value" : "Zapisz zrzut ekranu"
           }
         },
         "pt-BR" : {
@@ -216213,7 +216213,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "存储截屏"
+            "value" : "保存截屏"
           }
         },
         "zh-Hant" : {
@@ -216313,7 +216313,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mulai Rekam"
+            "value" : "Mulai Merekam"
           }
         },
         "it" : {
@@ -216385,7 +216385,7 @@
         "sk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Spustiť záznam"
+            "value" : "Spustiť nahrávanie"
           }
         },
         "sv" : {
@@ -216521,7 +216521,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Hentikan Rekam"
+            "value" : "Hentikan Perekaman"
           }
         },
         "it" : {
@@ -216593,7 +216593,7 @@
         "sk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Zastaviť záznam"
+            "value" : "Zastaviť nahrávanie"
           }
         },
         "sv" : {
@@ -216883,7 +216883,7 @@
         "el" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Το στιγμιότυπο δεν αποθηκεύτηκε"
+            "value" : "Το στιγμιότυπο οθόνης δεν αποθηκεύτηκε"
           }
         },
         "en-GB" : {
@@ -216937,7 +216937,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Jepretan Layar Tidak Disimpan"
+            "value" : "Tangkapan Layar Tidak Disimpan"
           }
         },
         "it" : {
@@ -216979,7 +216979,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nie zachowano zrzutu ekranu"
+            "value" : "Nie zapisano zrzutu ekranu"
           }
         },
         "pt-BR" : {
@@ -217003,7 +217003,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Снимок не сохранен"
+            "value" : "Снимок не сохранён"
           }
         },
         "sk" : {
@@ -217039,13 +217039,13 @@
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Chưa lưu ảnh chụp màn hình"
+            "value" : "Không lưu được ảnh chụp màn hình"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "截屏未存储"
+            "value" : "截屏未保存"
           }
         },
         "zh-Hant" : {
@@ -217067,7 +217067,7 @@
         "ca" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Permeteu que Walnut afegeixi elements a Fotos a Configuració."
+            "value" : "Permet que Walnut afegeixi elements a Fotos a Configuració."
           }
         },
         "cs" : {
@@ -217079,19 +217079,19 @@
         "da" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Giv Walnut tilladelse til at føje til Fotos i Indstillinger."
+            "value" : "Giv Walnut tilladelse til at føje fotos til Fotos i Indstillinger."
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Erlauben Sie Walnut in den Einstellungen, der Fotos-Mediathek Objekte hinzuzufügen."
+            "value" : "Erlauben Sie Walnut in den Einstellungen, Objekte zu Fotos hinzuzufügen."
           }
         },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Επιτρέψτε στο Walnut να προσθέτει στοιχεία στις Φωτογραφίες από τις Ρυθμίσεις."
+            "value" : "Στις Ρυθμίσεις, επιτρέψτε στο Walnut να προσθέτει στοιχεία στις Φωτογραφίες."
           }
         },
         "en-GB" : {
@@ -217169,7 +217169,7 @@
         "ms" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Benarkan Walnut menambah pada Foto dalam Seting."
+            "value" : "Benarkan Walnut menambah pada Foto dalam Tetapan."
           }
         },
         "nb" : {
@@ -217181,7 +217181,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Geef Walnut in Instellingen toestemming om aan Foto's toe te voegen."
+            "value" : "Geef Walnut in Instellingen toestemming om aan Foto’s toe te voegen."
           }
         },
         "pl" : {
@@ -217199,7 +217199,7 @@
         "pt-PT" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nas Definições, permita que Walnut adicione elementos a Fotografias."
+            "value" : "Nas Definições, permita que o Walnut adicione elementos às Fotografias."
           }
         },
         "ro" : {
@@ -217259,7 +217259,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "請在「設定」中允許 Walnut 加入「照片」。"
+            "value" : "請在「設定」中允許 Walnut 將項目加入「照片」。"
           }
         }
       }
