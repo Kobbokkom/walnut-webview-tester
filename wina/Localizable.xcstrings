@@ -70,6 +70,66 @@
         }
       }
     },
+    "Copy the pairing token instead, or try again." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "대신 페어링 토큰을 복사하거나 다시 시도하세요."
+          }
+        }
+      }
+    },
+    "Walnut removes the saved pairing. Pair again to use this Mac." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "저장된 페어링이 삭제됩니다. 이 Mac을 다시 사용하려면 다시 페어링하세요."
+          }
+        }
+      }
+    },
+    "Connected" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "연결됨"
+          }
+        }
+      }
+    },
+    "Waiting for Mac" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mac 대기 중"
+          }
+        }
+      }
+    },
+    "Allow Mac Agent action?" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mac Agent 작업을 허용할까요?"
+          }
+        }
+      }
+    },
+    "Mac Agent recording" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mac Agent 녹화 중"
+          }
+        }
+      }
+    },
     "Could not save this pairing. Start pairing again." : {
       "localizations" : {
         "ko" : {

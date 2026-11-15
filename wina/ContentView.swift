@@ -181,19 +181,6 @@ struct ContentView: View {
         }
         .background { safariPresentation }
         .environment(\.agentBrowserSettings, agentBrowserSettings)
-        .overlay(alignment: .top) {
-            if showWebView && !useSafariWebView && agentSession.isRunning {
-                let isRecording = ownedAgentRecorder?.isRecording == true
-                GlassIconButton(
-                    icon: isRecording ? "record.circle.fill" : "network",
-                    color: isRecording ? .red : .green,
-                    accessibilityLabel: isRecording ? "Mac Agent recording" : "Mac Agent"
-                ) {
-                    showAgentConnection = true
-                }
-                .padding(.top, 8)
-            }
-        }
         .agentAnnouncement(openConnection: $showAgentConnection, canPresent: canPresentAgentAnnouncement, preferredScheme: preferredScheme)
         .sheet(isPresented: $showAgentConnection) {
             AgentConnectionView(session: agentSession) { rememberedOnly in
@@ -411,7 +398,8 @@ struct ContentView: View {
                     showSettings: $showSettings,
                     showBookmarks: $showBookmarks,
                     showInfo: $showInfo,
-                    devToolsState: devToolsState
+                    devToolsState: devToolsState,
+                    macAgentButton: agentSession.isRunning ? AnyView(webMacAgentButton) : nil
                 )
             } else if !showWebView {
                 topBar

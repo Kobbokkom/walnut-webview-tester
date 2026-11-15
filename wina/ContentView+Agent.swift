@@ -48,6 +48,27 @@ extension ContentView {
 
     private var agentMode: String { useSafariWebView ? "safarivc" : "wkwebview" }
 
+    var macAgentIndicatorColor: Color {
+        agentSession.isConnected ? .green : agentSession.isRunning ? .accentColor : .primary
+    }
+
+    var macAgentStatusValue: Text {
+        agentSession.isConnected ? Text("Connected") : agentSession.isRunning ? Text("Waiting for Mac") : Text("Off")
+    }
+
+    @ViewBuilder
+    var webMacAgentButton: some View {
+        let isRecording = ownedAgentRecorder?.isRecording == true
+        GlassIconButton(
+            icon: isRecording ? "record.circle.fill" : "network",
+            color: isRecording ? .red : macAgentIndicatorColor,
+            accessibilityLabel: isRecording ? LocalizedStringKey("Mac Agent recording") : LocalizedStringKey("Mac Agent")
+        ) {
+            showAgentConnection = true
+        }
+        .accessibilityValue(macAgentStatusValue)
+    }
+
     var ownedAgentRecorder: WebViewRecorder? {
         agentCaptureRecorder.flatMap { $0.isAgentCapture ? $0 : nil }
     }

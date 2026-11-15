@@ -12,13 +12,17 @@ struct AgentConnectionView: View {
         }
     }
 
+    private enum Status {
+        case off, saved, starting, pairing, pairingEnded, waiting, connected
+    }
+
     @Environment(\.dismiss) private var dismiss
     @AppStorage(AgentSession.autoConnectKey) private var autoConnect = false
     @AppStorage("macAgentConnectionMethod") private var connectionMethod = ConnectionMethod.wifi
     @State private var copyFeedback = CopiedFeedbackState()
     @State private var showPairingFileOptions = false
     @State private var showInstallOptions = false
-    @AccessibilityFocusState private var focusNewCode: Bool
+    @AccessibilityFocusState private var focusStatus: Bool
     @State private var pairingFile: AgentPairingFile?
     @State private var pairingShareFailed = false
     @State private var confirmForgetMac = false
@@ -31,23 +35,38 @@ struct AgentConnectionView: View {
     """
     private static let setupGuide = URL(string: "https://github.com/Kobbokkom/walnut-webview-tester/tree/walnut-agent-v0.1.4/walnut-agent#install-on-mac")!
 
+    private var status: Status {
+        if session.isConnected { return .connected }
+        if session.isPairingAvailable { return .pairing }
+        if session.isRunning, session.isPairingReady { return .waiting }
+        if session.isRunning, session.pairingCode != nil, !session.hasRememberedMac { return .pairingEnded }
+        if session.isRunning { return .starting }
+        return session.hasRememberedMac ? .saved : .off
+    }
+
+    private var visibleError: String? {
+        if let error = session.pairingStorageError ?? session.reconnectError { return error }
+        if status == .pairingEnded { return session.pairingError }
+        if !session.isRunning { return session.connectionError }
+        return nil
+    }
+
     var body: some View {
         @Bindable var feedback = copyFeedback
         NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    installSection
-                    connectionSection
-                    if (session.pairingCode != nil && !session.isConnected)
-                        || session.hasRememberedMac || session.pairingStorageError != nil {
-                        connectionOptions
-                    }
-                }
-                .frame(maxWidth: 520, alignment: .leading)
-                .padding(20)
-                .frame(maxWidth: .infinity)
+            Form {
+                if !session.hasRememberedMac { installSection }
+                statusSection
+                if status != .connected { connectionMethodSection }
+                if session.pairingCode != nil, !session.hasPairingGrant { pairingFileSection }
+                if session.hasRememberedMac { thisMacSection }
+                if session.hasRememberedMac || session.pairingStorageError != nil { forgetSection }
+                if session.hasRememberedMac { installSection }
             }
+            .frame(maxWidth: 560)
+            .frame(maxWidth: .infinity)
             .background(Color(uiColor: .systemGroupedBackground))
+            .animation(.smooth(duration: 0.3), value: status)
             .navigationTitle("Mac Agent")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -63,12 +82,14 @@ struct AgentConnectionView: View {
         }
         .alert("Could not prepare pairing file", isPresented: $pairingShareFailed) {
             Button("OK", role: .cancel) {}
+        } message: {
+            Text("Copy the pairing token instead, or try again.")
         }
         .alert("Forget this Mac?", isPresented: $confirmForgetMac) {
             Button("Forget Mac", role: .destructive) { session.forgetRememberedMac() }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("The current connection will end. Pair again to use this Mac.")
+            Text("Walnut removes the saved pairing. Pair again to use this Mac.")
         }
         .onAppear { session.refreshRememberedMac() }
         .onChange(of: session.pairingCode) { _, _ in
@@ -87,202 +108,209 @@ struct AgentConnectionView: View {
                 announce("Ready to pair")
             } else if wasAvailable, session.isRunning, !session.isConnected, !session.hasPairingGrant {
                 announce("Start pairing again to connect a Mac.")
-                focusNewCode = true
+                focusStatus = true
             }
         }
         .onChange(of: session.hasPairingGrant) { _, granted in
             if granted { announce("Mac paired") }
         }
+        .onChange(of: visibleError) { _, error in
+            if let error { UIAccessibility.post(notification: .announcement, argument: error) }
+        }
+        .onChange(of: session.isRunning) { _, _ in focusStatus = true }
     }
 
-    private var connectionSection: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            if session.isConnected {
-                Label("Mac connected", systemImage: "checkmark.circle.fill")
-                    .font(.title3.bold())
-                    .accessibilityAddTraits(.isHeader)
-                Text("Keep Walnut open while your Mac uses it.")
+    // MARK: - Status
+
+    private var statusSection: some View {
+        Section {
+            Group {
+                statusHeader
+                statusContent
+                if let error = visibleError {
+                    Label {
+                        Text(verbatim: error)
+                    } icon: {
+                        Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+                    }
                     .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            } else {
-                Text("Connect your Mac")
-                    .font(.title2.bold())
-                    .accessibilityAddTraits(.isHeader)
-                connectionMethodPicker
-                connectionStatus
-            }
-            if let error = session.pairingStorageError ?? session.reconnectError {
-                Label(error, systemImage: "exclamationmark.circle")
-                    .font(.subheadline)
-            }
-            if session.isRunning {
-                Button(role: .destructive) { session.stopManually() } label: {
-                    Label("Stop connection", systemImage: "stop.circle")
-                        .font(.subheadline.weight(.medium))
-                        .foregroundStyle(.primary)
-                        .frame(minHeight: 44)
-                        .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
+                if session.isRunning {
+                    Button { session.stopManually() } label: {
+                        Label("Stop connection", systemImage: "stop.circle")
+                            .frame(maxWidth: .infinity, minHeight: 32)
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.large)
+                }
+            }
+            .listRowSeparator(.hidden)
+        } footer: {
+            if !session.isRunning {
+                Text("Diagnostics and approved data are sent to your Mac and may also be shared with the AI service you use.")
             }
         }
-        .padding(18)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 30))
     }
 
-    private var connectionMethodPicker: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Choose one connection method.")
-                .font(.subheadline)
+    private var statusHeader: some View {
+        HStack(spacing: 12) {
+            Group {
+                switch status {
+                case .connected, .waiting, .saved:
+                    Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
+                case .starting:
+                    ProgressView()
+                case .pairing:
+                    Image(systemName: "number.circle.fill").foregroundStyle(Color.accentColor)
+                case .off, .pairingEnded:
+                    Image(systemName: "laptopcomputer.and.iphone").foregroundStyle(.secondary)
+                }
+            }
+            .font(.title2)
+            .frame(width: 32)
+            .accessibilityHidden(true)
+            Text(statusTitle)
+                .font(.title3.bold())
+                .accessibilityAddTraits(.isHeader)
+                .accessibilityFocused($focusStatus)
+        }
+        .padding(.vertical, 4)
+    }
+
+    private var statusTitle: LocalizedStringKey {
+        switch status {
+        case .connected: "Mac connected"
+        case .waiting, .saved: "Mac paired"
+        case .starting: "Starting connection"
+        case .pairing: "Ready to pair"
+        case .off, .pairingEnded: "Connect your Mac"
+        }
+    }
+
+    @ViewBuilder
+    private var statusContent: some View {
+        switch status {
+        case .connected:
+            Text("Keep Walnut open while your Mac uses it.")
+                .foregroundStyle(.secondary)
+        case .pairing:
+            Text("Run this command in Terminal on your Mac.")
+            commandRow(connectionMethod.command("pair"))
+            Text("If the six digits match on both devices, confirm on iPhone, then enter y in Terminal.")
+            if connectionMethod == .wifi, let name = session.pairingDeviceName {
+                Text("Pairing name: \(Text(verbatim: name).font(.footnote.monospaced()))")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+        case .waiting:
+            Text("Start a session in Terminal or ask your coding agent to use Walnut.")
+            commandRow(connectionMethod.command("session"))
+        case .pairingEnded:
+            if session.pairingError == nil {
+                Text("Start pairing again to connect a Mac.")
+            }
+            Button { session.startPairing() } label: {
+                Text("Start pairing again").frame(maxWidth: .infinity, minHeight: 32)
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
+        case .starting:
+            EmptyView()
+        case .saved, .off:
+            if status == .saved {
+                Text("Start the connection to use your saved pairing.")
+            }
+            Button { start(false) } label: {
+                Label("Start connection", systemImage: "link")
+                    .frame(maxWidth: .infinity, minHeight: 32)
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
+        }
+    }
+
+    // MARK: - Sections
+
+    private var connectionMethodSection: some View {
+        Section {
             Picker("Connection method", selection: $connectionMethod) {
                 Text(verbatim: "Wi-Fi").tag(ConnectionMethod.wifi)
                 Text(verbatim: "USB").tag(ConnectionMethod.usb)
             }
             .pickerStyle(.segmented)
+            .listRowBackground(Color.clear)
+            .listRowInsets(EdgeInsets())
+            if connectionMethod == .usb {
+                Text("For USB, install this helper once on your Mac.")
+                commandRow("brew install libusbmuxd")
+            }
+        } header: {
+            Text("Connection method")
+        } footer: {
             if connectionMethod == .usb {
                 Text("Connect your iPhone by USB, unlock it, and tap Trust if asked. A shared Wi-Fi network is not required.")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                Text("For USB, install this helper once on your Mac.")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                commandRow("brew install libusbmuxd")
             } else {
                 Text("Connect both devices to the same Wi-Fi network. No cable is needed. Allow Local Network access if asked.")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
             }
         }
     }
 
-    @ViewBuilder
-    private var connectionStatus: some View {
-        if session.isPairingAvailable {
-            Text("Run this command in Terminal on your Mac.")
-                .font(.subheadline)
-            commandRow(connectionMethod.command("pair"))
-            Text("If the six digits match on both devices, confirm on iPhone, then enter y in Terminal.")
-                .font(.footnote)
-            if connectionMethod == .wifi, let name = session.pairingDeviceName {
-                Text("Pairing name: \(name)")
-                    .font(.caption.monospaced())
+    private var pairingFileSection: some View {
+        Section {
+            DisclosureGroup(isExpanded: $showPairingFileOptions) {
+                if let code = session.pairingCode { pairingFileOptions(code) }
+            } label: {
+                rowLabel("Pair with a file or token", icon: "doc.badge.arrow.up")
             }
-        } else if session.isRunning, session.isPairingReady {
-            Label("Mac paired", systemImage: "checkmark.circle.fill")
-                .font(.headline)
-            Text("Start a session in Terminal or ask your coding agent to use Walnut.")
-                .font(.subheadline)
-            commandRow(connectionMethod.command("session"))
-        } else if session.pairingCode != nil, !session.hasRememberedMac {
-            if let error = session.pairingError {
-                Label(error, systemImage: "exclamationmark.circle")
-                    .font(.subheadline)
-            } else {
-                Text("Start pairing again to connect a Mac.")
-                    .font(.subheadline)
-            }
-            Button("Start pairing again") { session.startPairing() }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
-                .accessibilityFocused($focusNewCode)
-        } else if session.isRunning {
-            if session.reconnectError == nil {
-                ProgressView("Starting connection")
-            }
-        } else {
-            if session.hasRememberedMac {
-                Label("Mac paired", systemImage: "checkmark.circle.fill")
-                    .font(.headline)
-                Text("Start the connection to use your saved pairing.")
-                    .font(.subheadline)
-            }
-            if session.pairingStorageError == nil, let error = session.connectionError {
-                Label(error, systemImage: "exclamationmark.circle")
-                    .font(.subheadline)
-            }
-            Button { start(false) } label: {
-                Label("Start connection", systemImage: "link")
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
-            Text("Diagnostics and approved data are sent to your Mac and may also be shared with the AI service you use.")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
         }
     }
 
-    private var connectionOptions: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            if let code = session.pairingCode, !session.isConnected {
-                DisclosureGroup(isExpanded: $showPairingFileOptions) {
-                    pairingFileOptions(code)
-                        .padding(.bottom, 10)
-                } label: {
-                    optionLabel("Pair with a file or token", icon: "doc.badge.arrow.up")
+    private var thisMacSection: some View {
+        Section {
+            Toggle(isOn: Binding(get: { autoConnect }, set: { enabled in
+                autoConnect = enabled
+                if enabled { start(true) }
+            })) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Connect automatically")
+                    Text("Start Mac Agent when Walnut opens.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
                 }
-            }
-            if session.hasRememberedMac {
-                if session.pairingCode != nil, !session.isConnected { Divider() }
-                Toggle(isOn: Binding(get: { autoConnect }, set: { enabled in
-                    autoConnect = enabled
-                    if enabled { start(true) }
-                })) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Connect automatically")
-                            .font(.subheadline.weight(.medium))
-                        Text("Start Mac Agent when Walnut opens.")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                    }
-                    .padding(.vertical, 8)
-                    .frame(minHeight: 48, alignment: .leading)
-                }
-                .tint(.accentColor)
-            }
-            if session.hasRememberedMac || session.pairingStorageError != nil {
-                if session.hasRememberedMac { Divider() }
-                Button(role: .destructive) { confirmForgetMac = true } label: {
-                    optionLabel("Forget Mac", icon: "link.badge.minus")
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
             }
         }
-        .padding(.horizontal, 16)
-        .tint(Color.primary)
-        .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
+    }
+
+    private var forgetSection: some View {
+        Section {
+            Button(role: .destructive) { confirmForgetMac = true } label: {
+                Label("Forget Mac", systemImage: "trash")
+                    .foregroundStyle(.red)
+            }
+        }
     }
 
     private var installSection: some View {
-        DisclosureGroup(isExpanded: $showInstallOptions) {
-            VStack(alignment: .leading, spacing: 8) {
+        Section {
+            DisclosureGroup(isExpanded: $showInstallOptions) {
                 Text("Install Walnut Agent once on your Mac for either connection method.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                 commandRow(Self.installCommands)
                 ShareLink(item: Self.setupGuide) {
                     Label("Share Mac setup guide", systemImage: "square.and.arrow.up")
-                        .font(.subheadline)
-                        .frame(minHeight: 44)
                 }
+            } label: {
+                rowLabel("Install on Mac", icon: "terminal")
             }
-            .padding(.bottom, 10)
-        } label: {
-            optionLabel("Install on Mac", icon: "terminal")
         }
-        .padding(.horizontal, 16)
-        .tint(Color.primary)
-        .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
     }
 
-    private func optionLabel(_ title: LocalizedStringKey, icon: String) -> some View {
+    // MARK: - Rows
+
+    private func rowLabel(_ title: LocalizedStringKey, icon: String) -> some View {
         Label(title, systemImage: icon)
-            .font(.subheadline.weight(.medium))
             .foregroundStyle(.primary)
-            .frame(minHeight: 48, alignment: .leading)
     }
 
     private func commandRow(_ command: String) -> some View {
@@ -302,38 +330,40 @@ struct AgentConnectionView: View {
                     .frame(width: 44, height: 44)
                     .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.borderless)
             .accessibilityLabel("Copy command")
             .accessibilityHint(Text(verbatim: command))
+            .accessibilityInputLabels([Text("Copy command"), Text(verbatim: command)])
         }
         .padding(.leading, 12)
         .background(Color(uiColor: .tertiarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
     }
 
     private func pairingFileOptions(_ code: String) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Button {
-                UIPasteboard.general.setItems(
-                    [[UTType.plainText.identifier: code]],
-                    options: [.expirationDate: Date().addingTimeInterval(120)]
-                )
-                copyFeedback.show("Pairing token copied")
-                announce("Pairing token copied")
-            } label: {
-                Label("Copy pairing token", systemImage: "doc.on.doc")
-                    .frame(minHeight: 44)
-            }
-            .buttonStyle(.bordered)
-            Button {
-                do {
-                    clearPairingFile()
-                    pairingFile = try AgentPairingFile(code: code)
-                } catch {
-                    pairingShareFailed = true
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
+                Button {
+                    UIPasteboard.general.setItems(
+                        [[UTType.plainText.identifier: code]],
+                        options: [.expirationDate: Date().addingTimeInterval(120)]
+                    )
+                    copyFeedback.show("Pairing token copied")
+                    announce("Pairing token copied")
+                } label: {
+                    Label("Copy pairing token", systemImage: "doc.on.doc")
+                        .frame(maxWidth: .infinity, minHeight: 32)
                 }
-            } label: {
-                Label("Share pairing file", systemImage: "square.and.arrow.up")
-                    .frame(minHeight: 44)
+                Button {
+                    do {
+                        clearPairingFile()
+                        pairingFile = try AgentPairingFile(code: code)
+                    } catch {
+                        pairingShareFailed = true
+                    }
+                } label: {
+                    Label("Share pairing file", systemImage: "square.and.arrow.up")
+                        .frame(maxWidth: .infinity, minHeight: 32)
+                }
             }
             .buttonStyle(.bordered)
             Text("Paste the token after running walnut-agent pair --token, or AirDrop the file to your Mac.")
@@ -344,6 +374,7 @@ struct AgentConnectionView: View {
                 .font(.footnote)
                 .foregroundStyle(.secondary)
         }
+        .padding(.vertical, 4)
     }
 
     private func announce(_ message: String.LocalizationValue) {
@@ -403,16 +434,25 @@ private struct AgentApprovalView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding()
             }
-            .navigationTitle(request.pairingConfirmation == nil ? "Allow Mac Agent action?" : "Pair this Mac?")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Deny") { resolve(false) }
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                VStack(spacing: 10) {
+                    Button { resolve(true) } label: {
+                        Text(request.pairingConfirmation == nil ? LocalizedStringKey("Allow") : LocalizedStringKey("Numbers Match"))
+                            .frame(maxWidth: .infinity, minHeight: 32)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    Button { resolve(false) } label: {
+                        Text("Deny").frame(maxWidth: .infinity, minHeight: 32)
+                    }
+                    .buttonStyle(.bordered)
                 }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(request.pairingConfirmation == nil ? "Allow" : "Numbers Match") { resolve(true) }
-                }
+                .controlSize(.large)
+                .padding(.horizontal)
+                .padding(.vertical, 12)
+                .background(Color(uiColor: .systemBackground))
             }
+            .navigationTitle(request.pairingConfirmation == nil ? LocalizedStringKey("Allow Mac Agent action?") : LocalizedStringKey("Pair this Mac?"))
+            .navigationBarTitleDisplayMode(.inline)
         }
         .accessibilityAction(.escape) { resolve(false) }
         .onAppear { focusConfirmation = request.pairingConfirmation != nil }

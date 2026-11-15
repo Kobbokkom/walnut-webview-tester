@@ -29,6 +29,7 @@ struct OverlayMenuBars: View {
     @Binding var showBookmarks: Bool
     @Binding var showInfo: Bool
     var devToolsState: DevToolsOverlayState
+    var macAgentButton: AnyView?
 
     @State private var isExpanded: Bool = false
     @State private var dragOffset: CGFloat = 0
@@ -268,6 +269,7 @@ private extension OverlayMenuBars {
                         BookmarkButton(showBookmarks: $showBookmarks, hasBookmarks: hasBookmarks)
                     }
 
+                    macAgentButton
                     // Info & Settings buttons (always visible)
                     InfoSheetButton(showInfo: $showInfo)
                     SettingsButton(showSettings: $showSettings)
