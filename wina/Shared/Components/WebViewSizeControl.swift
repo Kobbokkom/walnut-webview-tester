@@ -99,7 +99,7 @@ struct WebViewSizeControl: View {
 // MARK: - Preset Button
 
 struct PresetButton: View {
-    let label: String
+    let label: LocalizedStringKey
     let isSelected: Bool
     let action: () -> Void
 

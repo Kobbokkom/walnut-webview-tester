@@ -56,7 +56,7 @@ struct CallbackTestSettingsView: View {
         } header: {
             Text("URL Scheme Callback")
         } footer: {
-            Text("Scheme: wina://callback?key=value")
+            Text("Scheme: \(CallbackTestManager.urlScheme)://callback?key=value")
         }
     }
 

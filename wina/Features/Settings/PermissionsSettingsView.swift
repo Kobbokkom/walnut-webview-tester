@@ -73,7 +73,7 @@ struct PermissionsSettingsView: View {
         locationStatus = locationDelegate.locationManager.authorizationStatus
     }
 
-    private func permissionText(for status: AVAuthorizationStatus) -> String {
+    private func permissionText(for status: AVAuthorizationStatus) -> LocalizedStringKey {
         switch status {
         case .notDetermined: return "Not Requested"
         case .restricted: return "Restricted"
@@ -83,7 +83,7 @@ struct PermissionsSettingsView: View {
         }
     }
 
-    private func permissionText(for status: CLAuthorizationStatus) -> String {
+    private func permissionText(for status: CLAuthorizationStatus) -> LocalizedStringKey {
         switch status {
         case .notDetermined: return "Not Requested"
         case .restricted: return "Restricted"
@@ -138,8 +138,8 @@ struct PermissionsSettingsView: View {
 // MARK: - Permission Row
 
 private struct PermissionRow: View {
-    let title: String
-    let status: String
+    let title: LocalizedStringKey
+    let status: LocalizedStringKey
     let granted: Bool
     let action: () -> Void
 

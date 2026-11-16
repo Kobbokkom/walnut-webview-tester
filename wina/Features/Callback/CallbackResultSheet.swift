@@ -154,7 +154,7 @@ struct CallbackResultSheet: View {
     // MARK: - Section Header
 
     @ViewBuilder
-    private func sectionHeader(_ title: String) -> some View {
+    private func sectionHeader(_ title: LocalizedStringKey) -> some View {
         Text(title)
             .font(.system(size: 13, weight: .medium))
             .foregroundStyle(.secondary)
@@ -164,7 +164,7 @@ struct CallbackResultSheet: View {
     // MARK: - Component Row
 
     @ViewBuilder
-    private func componentRow(label: String, value: String, color: Color) -> some View {
+    private func componentRow(label: LocalizedStringKey, value: String, color: Color) -> some View {
         HStack {
             Text(label)
                 .font(.system(.subheadline))

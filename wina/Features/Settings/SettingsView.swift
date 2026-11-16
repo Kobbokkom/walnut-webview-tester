@@ -114,7 +114,7 @@ struct LiveSettingsView: View {
                     HStack {
                         Text("User Agent")
                         Spacer()
-                        Text(customUserAgent.isEmpty ? "Default" : "Custom")
+                        (customUserAgent.isEmpty ? Text("Default") : Text("Custom"))
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
                     }
@@ -641,7 +641,7 @@ struct SettingsView: View {
                 HStack {
                     Text("App Settings")
                     Spacer()
-                    Text(AppLanguage(rawValue: appLanguage)?.displayName ?? "System")
+                    Text(AppLanguage(rawValue: appLanguage)?.displayName ?? String(localized: "System"))
                         .foregroundStyle(.secondary)
                 }
             }
@@ -868,7 +868,7 @@ struct SettingsView: View {
                 HStack {
                     Text("User Agent")
                     Spacer()
-                    Text(customUserAgent.isEmpty ? "Default" : "Custom")
+                    (customUserAgent.isEmpty ? Text("Default") : Text("Custom"))
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }
