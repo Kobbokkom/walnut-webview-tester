@@ -61,7 +61,9 @@ extension AgentDevTools {
         request["frameDocumentId"] = try input.string("frameDocumentId", maxLength: 48)
         switch action {
         case "observe":
-            try await context.confirm("Share page text near the current viewport and visible controls with the Mac?")
+            try await context.confirm(
+                String(localized: "Share page text near the current viewport and visible controls with the Mac?"), scope: .page
+            )
             request["observationId"] = UUID().uuidString
             request["optionOffset"] = try input.int("optionOffset", default: 0, range: 0...100_000)
         case "scroll":
@@ -114,10 +116,10 @@ extension AgentDevTools {
         try checkInteractionResult(target)
         guard let label = target["label"] as? String,
               let site = target["site"] as? String else { throw AgentError("Observe the current page first.") }
-        let destination = (target["destination"] as? String).map { "\nDestination: \($0)" } ?? ""
+        let destination = (target["destination"] as? String).map { "\n" + String(localized: "Destination: \($0)") } ?? ""
         let question: String
         if let text {
-            question = "Fill “\(label)” on \(site) with this value?\(destination)\n\n\(String(reflecting: text))"
+            question = String(localized: "Fill “\(label)” on \(site) with this value?") + destination + "\n\n\(String(reflecting: text))"
         } else if action == "select" {
             guard let options = target["selectedOptions"] as? [[String: Any]] else {
                 throw AgentError("Could not inspect the selected options.")
@@ -125,19 +127,23 @@ extension AgentDevTools {
             let choices = try options.map { option -> String in
                 guard let index = option["index"] as? Int, let label = option["label"] as? String,
                       let value = option["value"] as? String else { throw AgentError("Could not inspect the selected option.") }
-                let suffix = option["valueTruncated"] as? Bool == true ? " (value truncated)" : ""
-                return "[\(index)] \(String(reflecting: label)) (value \(String(reflecting: value)))\(suffix)"
+                let quotedLabel = String(reflecting: label), quotedValue = String(reflecting: value)
+                if option["valueTruncated"] as? Bool == true {
+                    return String(localized: "[\(index)] \(quotedLabel) (value \(quotedValue), truncated)")
+                }
+                return String(localized: "[\(index)] \(quotedLabel) (value \(quotedValue))")
             }
-            let summary = choices.isEmpty ? "Clear the selection." : choices.joined(separator: "\n")
-            question = "Change the selection in “\(label)” on \(site)?\(destination)\n\n\(summary)"
+            let summary = choices.isEmpty ? String(localized: "Clear the selection.") : choices.joined(separator: "\n")
+            question = String(localized: "Change the selection in “\(label)” on \(site)?") + destination + "\n\n\(summary)"
         } else if action == "press" {
-            question = "Press \(String(reflecting: request["key"] as? String ?? "")) on “\(label)” at \(site)?\(destination)"
+            let key = String(reflecting: request["key"] as? String ?? "")
+            question = String(localized: "Press \(key) on “\(label)” at \(site)?") + destination
         } else if action == "move" {
-            question = "Move the pointer over “\(label)” on \(site)?"
+            question = String(localized: "Move the pointer over “\(label)” on \(site)?")
         } else {
-            question = "Click “\(label)” on \(site)?\(destination)"
+            question = String(localized: "Click “\(label)” on \(site)?") + destination
         }
-        try await context.confirm(question)
+        try await context.confirm(question, scope: .page)
         try checkInteractionDocument(context)
         request["prepare"] = false
 

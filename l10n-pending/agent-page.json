@@ -1,0 +1,114 @@
+[
+  {
+    "key": "Clear Walnut's Performance results?",
+    "comment": "Mac Agent approval prompt"
+  },
+  {
+    "key": "Share the selected accessibility issue and its markup with the Mac?",
+    "comment": "Mac Agent approval prompt"
+  },
+  {
+    "key": "Clear Walnut's accessibility audit results?",
+    "comment": "Mac Agent approval prompt"
+  },
+  {
+    "key": "Run Walnut's %@ snippet on this page?",
+    "comment": "Mac Agent approval prompt; %@ is the snippet name"
+  },
+  {
+    "key": "Undo Walnut's active snippets on this page?",
+    "comment": "Mac Agent approval prompt"
+  },
+  {
+    "key": "Find and highlight text on the current page and share the match count with the Mac?",
+    "comment": "Mac Agent approval prompt"
+  },
+  {
+    "key": "Share captured resource URLs from Performance with the Mac?",
+    "comment": "Mac Agent approval prompt"
+  },
+  {
+    "key": "Export Walnut's accessibility report, including its page URL and markup, to the Mac?",
+    "comment": "Mac Agent approval prompt"
+  },
+  {
+    "key": "Share or search details from Walnut's accessibility results on the Mac?",
+    "comment": "Mac Agent approval prompt"
+  },
+  {
+    "key": "Inspect the DOM tree from the current page on the Mac?",
+    "comment": "Mac Agent approval prompt (Sources tree)"
+  },
+  {
+    "key": "Inspect the HTML source from the current page on the Mac?",
+    "comment": "Mac Agent approval prompt (Sources HTML)"
+  },
+  {
+    "key": "Inspect the stylesheets from the current page on the Mac?",
+    "comment": "Mac Agent approval prompt (Sources stylesheets)"
+  },
+  {
+    "key": "Inspect the scripts from the current page on the Mac?",
+    "comment": "Mac Agent approval prompt (Sources scripts)"
+  },
+  {
+    "key": "Share the selected element details from this page with the Mac?",
+    "comment": "Mac Agent approval prompt"
+  },
+  {
+    "key": "Share the selected script details from this page with the Mac?",
+    "comment": "Mac Agent approval prompt"
+  },
+  {
+    "key": "Share the selected stylesheet details from this page with the Mac?",
+    "comment": "Mac Agent approval prompt"
+  },
+  {
+    "key": "Walnut may request this resource under the page's network policy.",
+    "comment": "Second paragraph of a Mac Agent approval prompt, after the resource label"
+  },
+  {
+    "key": "The request may include credentials for the resource's origin.",
+    "comment": "Third paragraph of a Mac Agent approval prompt"
+  },
+  {
+    "key": "Share page text near the current viewport and visible controls with the Mac?",
+    "comment": "Mac Agent approval prompt (page observe)"
+  },
+  {
+    "key": "Destination: %@",
+    "comment": "Line in a Mac Agent page-interaction approval prompt; %@ is the link/form destination URL"
+  },
+  {
+    "key": "Fill “%@” on %@ with this value?",
+    "comment": "Mac Agent approval prompt; first %@ is the control label, second is the site"
+  },
+  {
+    "key": "[%lld] %@ (value %@, truncated)",
+    "comment": "Option row in a select approval prompt; index, quoted label, quoted value (value was truncated)"
+  },
+  {
+    "key": "[%lld] %@ (value %@)",
+    "comment": "Option row in a select approval prompt; index, quoted label, quoted value"
+  },
+  {
+    "key": "Clear the selection.",
+    "comment": "Line in a select approval prompt when no option stays selected"
+  },
+  {
+    "key": "Change the selection in “%@” on %@?",
+    "comment": "Mac Agent approval prompt; control label, site"
+  },
+  {
+    "key": "Press %@ on “%@” at %@?",
+    "comment": "Mac Agent approval prompt; quoted key, control label, site"
+  },
+  {
+    "key": "Move the pointer over “%@” on %@?",
+    "comment": "Mac Agent approval prompt; control label, site"
+  },
+  {
+    "key": "Click “%@” on %@?",
+    "comment": "Mac Agent approval prompt; control label, site"
+  }
+]

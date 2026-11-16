@@ -15,7 +15,13 @@ extension AgentDevTools {
         let raw = try input.bool("raw") ?? false
         guard ["tree", "html", "stylesheets", "scripts"].contains(section) else { throw AgentError("Invalid Sources section.") }
         if raw || section == "tree" || section == "html" || !query.isEmpty {
-            try await context.confirm("Inspect \(section) from the current page on the Mac?")
+            let prompt = switch section {
+            case "tree": String(localized: "Inspect the DOM tree from the current page on the Mac?")
+            case "html": String(localized: "Inspect the HTML source from the current page on the Mac?")
+            case "stylesheets": String(localized: "Inspect the stylesheets from the current page on the Mac?")
+            default: String(localized: "Inspect the scripts from the current page on the Mac?")
+            }
+            try await context.confirm(prompt, scope: .page)
         }
         if section == "tree" {
             let sources = SourcesManager()
@@ -65,7 +71,9 @@ extension AgentDevTools {
         switch kind {
         case "element":
             let script = try elementDetailScript(input)
-            try await context.confirm("Share the selected element details from this page with the Mac?")
+            try await context.confirm(
+                String(localized: "Share the selected element details from this page with the Mac?"), scope: .page
+            )
             let result = try await evaluateSourcePage(script, input, query: query, context: context)
             return groupComputedStyles ? try groupComputedStylePage(result, input: input) : result
         case "stylesheet", "script":
@@ -110,14 +118,18 @@ extension AgentDevTools {
               let expected = selection["identity"], let label = selection["label"] else {
             throw AgentError("Source not found. Refresh Sources and select it again.")
         }
-        var prompt = "Share the selected \(kind.rawValue) details from this page with the Mac?"
+        var prompt = switch kind {
+        case .script: String(localized: "Share the selected script details from this page with the Mac?")
+        case .stylesheet: String(localized: "Share the selected stylesheet details from this page with the Mac?")
+        }
         if !label.isEmpty {
-            prompt += "\n\n\(label)\n\nWalnut may request this resource under the page's network policy."
+            prompt += "\n\n\(label)\n\n" + String(localized: "Walnut may request this resource under the page's network policy.")
             if selection["credentials"] == "include" {
-                prompt += " The request may include credentials for the resource's origin."
+                prompt += "\n\n" + String(localized: "The request may include credentials for the resource's origin.")
             }
         }
-        try await context.confirm(prompt)
+        // A non-empty label means Walnut itself fetches the resource, which goes beyond reading the open page.
+        try await context.confirm(prompt, scope: label.isEmpty ? .page : .sensitive)
         return expected
     }
 
