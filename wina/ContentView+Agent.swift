@@ -48,27 +48,6 @@ extension ContentView {
 
     private var agentMode: String { useSafariWebView ? "safarivc" : "wkwebview" }
 
-    var macAgentIndicatorColor: Color {
-        agentSession.isConnected ? .green : agentSession.isRunning ? .accentColor : .primary
-    }
-
-    var macAgentStatusValue: Text {
-        agentSession.isConnected ? Text("Connected") : agentSession.isRunning ? Text("Waiting for Mac") : Text("Not running")
-    }
-
-    @ViewBuilder
-    var webMacAgentButton: some View {
-        let isRecording = ownedAgentRecorder?.isRecording == true
-        GlassIconButton(
-            icon: isRecording ? "record.circle.fill" : "network",
-            color: isRecording ? .red : macAgentIndicatorColor,
-            accessibilityLabel: isRecording ? LocalizedStringKey("Mac Agent recording") : LocalizedStringKey("Mac Agent")
-        ) {
-            showAgentConnection = true
-        }
-        .accessibilityValue(macAgentStatusValue)
-    }
-
     var ownedAgentRecorder: WebViewRecorder? {
         agentCaptureRecorder.flatMap { $0.isAgentCapture ? $0 : nil }
     }
@@ -79,8 +58,8 @@ extension ContentView {
             && !showCleanStartOptionsChanged && !showSafariUnsupportedAlert && !textFieldFocused
     }
 
-    func startAgentConnection(rememberedOnly: Bool) {
-        agentSession.start(rememberedOnly: rememberedOnly, handler: { name, arguments in
+    func startAgentConnection(rememberedOnly: Bool, automatic: Bool = false) {
+        agentSession.start(rememberedOnly: rememberedOnly, automatic: automatic, handler: { name, arguments in
             try await agentCall(name, arguments)
         }, onDisconnect: resetAgentSession)
     }
@@ -89,7 +68,8 @@ extension ContentView {
         if phase == .background {
             stopBackgroundSession()
         } else if phase == .active, UserDefaults.standard.bool(forKey: AgentSession.autoConnectKey) {
-            startAgentConnection(rememberedOnly: true)
+            // The Mac Agent switch stays on across launches, including before the first pairing.
+            startAgentConnection(rememberedOnly: false, automatic: true)
         }
     }
 
@@ -225,7 +205,7 @@ extension ContentView {
             try requireWKWebView()
             return try await AgentDevTools.call(
                 name, arguments: arguments, navigator: webViewNavigator, storage: storageManager,
-                console: consoleSession, authorize: agentSession.authorize
+                console: consoleSession, authorize: { await agentSession.authorize($0, scope: $1) }
             )
         }
     }
@@ -259,7 +239,7 @@ extension ContentView {
                     }
                 }
             },
-            authorize: agentSession.authorize
+            authorize: { await agentSession.authorize($0, scope: $1) }
         )
         var reloaded = false
         closeWKPageIfPrivacyEnded(wasPrivate: wasPrivate)

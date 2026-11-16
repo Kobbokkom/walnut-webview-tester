@@ -399,7 +399,9 @@ struct ContentView: View {
                     showBookmarks: $showBookmarks,
                     showInfo: $showInfo,
                     devToolsState: devToolsState,
-                    macAgentButton: agentSession.isRunning ? AnyView(webMacAgentButton) : nil
+                    agentSession: agentSession,
+                    isAgentRecording: ownedAgentRecorder?.isRecording == true,
+                    onMacAgent: { showAgentConnection = true }
                 )
             } else if !showWebView {
                 topBar

@@ -819,7 +819,7 @@ extension SearchTextDOMIntegrationTests {
         navigator.attach(to: webView)
         defer { navigator.detach() }
         var approvals = 0
-        let context = AgentDevContext(navigator: navigator) { _ in approvals += 1; return true }
+        let context = AgentDevContext(navigator: navigator) { _, _ in approvals += 1; return true }
         func search(_ action: String, query: String? = nil) async throws -> [String: Any] {
             var arguments = ["action": action]
             arguments["query"] = query
@@ -873,7 +873,7 @@ extension SearchTextDOMIntegrationTests {
 
         let found = try await AgentDevTools.callPage(
             "page_search", AgentDevInput(values: ["action": "find", "query": "Walnut"]),
-            AgentDevContext(navigator: navigator) { _ in true }
+            AgentDevContext(navigator: navigator) { _, _ in true }
         ) as? [String: Any]
         XCTAssertEqual(found?["count"] as? Int, 2)
         let state = try await webView.evaluateJavaScript("document.readyState")
@@ -887,7 +887,7 @@ extension SearchTextDOMIntegrationTests {
         navigator.attach(to: webView)
         defer { navigator.detach() }
         let manager = navigator.accessibilityManager
-        let context = AgentDevContext(navigator: navigator) { _ in
+        let context = AgentDevContext(navigator: navigator) { _, _ in
             XCTFail("Reading status or rejecting an incomplete report must not ask to share page data.")
             return false
         }
@@ -935,7 +935,7 @@ extension SearchTextDOMIntegrationTests {
         try await loadTestHTML("<html><body>A different document</body></html>")
         navigator.documentDidChange(in: webView)
         XCTAssertNotEqual(navigator.documentID, attemptedDocument)
-        let current = AgentDevContext(navigator: navigator) { _ in false }
+        let current = AgentDevContext(navigator: navigator) { _, _ in false }
         let prior = try await AgentDevTools.callPage("accessibility_audit", retained, current) as? [String: Any]
         XCTAssertEqual(prior?["documentId"] as? String, attemptedDocument.uuidString)
     }
@@ -953,7 +953,7 @@ extension SearchTextDOMIntegrationTests {
                                selector: nil, helpUrl: nil, ruleId: "image-alt")
         }
         manager.issues = [issue("Audit fixture")]
-        let context = AgentDevContext(navigator: navigator) { _ in true }
+        let context = AgentDevContext(navigator: navigator) { _, _ in true }
         let first = try await AgentDevTools.callPage(
             "accessibility_audit", AgentDevInput(values: ["format": "markdown", "run": false]), context
         ) as? [String: Any]
@@ -992,7 +992,7 @@ extension SearchTextDOMIntegrationTests {
         var didAuthorize = false
         let report = try await AgentDevTools.callPage(
             "accessibility_audit", AgentDevInput(values: ["format": "markdown"]),
-            AgentDevContext(navigator: navigator) { _ in didAuthorize = true; return true }
+            AgentDevContext(navigator: navigator) { _, _ in didAuthorize = true; return true }
         ) as? [String: Any]
         let markdown = try XCTUnwrap(report?["export"] as? String)
         XCTAssertTrue(didAuthorize)
@@ -1030,7 +1030,7 @@ extension SearchTextDOMIntegrationTests {
         defer { navigator.detach() }
         let report = try await AgentDevTools.callPage(
             "accessibility_audit", AgentDevInput(values: ["format": "markdown"]),
-            AgentDevContext(navigator: navigator) { _ in true }
+            AgentDevContext(navigator: navigator) { _, _ in true }
         ) as? [String: Any]
         XCTAssertEqual(report?["scope"] as? String, "main-frame")
         XCTAssertEqual(report?["hasUntestedFrames"] as? Bool, true)

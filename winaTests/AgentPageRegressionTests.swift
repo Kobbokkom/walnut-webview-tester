@@ -208,7 +208,7 @@ final class AgentPageRegressionTests: XCTestCase {
         var replacedDuringApproval = false
 
         do {
-            _ = try await call("page_interact", ["action": "click_at", "documentId": document, "x": 90, "y": 100], navigator) { _ in
+            _ = try await call("page_interact", ["action": "click_at", "documentId": document, "x": 90, "y": 100], navigator) { _, _ in
                 let replacement = try? await webView.evaluateJavaScript("""
                     const button = document.querySelector('#submit');
                     button.replaceWith(button.cloneNode(true));
@@ -236,7 +236,7 @@ final class AgentPageRegressionTests: XCTestCase {
         let page = try await call("page_interact", ["action": "observe"], navigator)
         let document = try XCTUnwrap(page["documentId"] as? String)
         let move = Task {
-            _ = try await call("page_interact", ["action": "move", "documentId": document, "x": 60, "y": 90], navigator) { _ in
+            _ = try await call("page_interact", ["action": "move", "documentId": document, "x": 60, "y": 90], navigator) { _, _ in
                 navigator.cancelAfterEvaluation = true
                 return true
             }
@@ -268,7 +268,7 @@ final class AgentPageRegressionTests: XCTestCase {
         let navigator = WebViewNavigator()
         navigator.attach(to: webView)
         do {
-            _ = try await call("page_interact", ["action": "observe"], navigator, authorize: { _ in false })
+            _ = try await call("page_interact", ["action": "observe"], navigator, authorize: { _, _ in false })
             XCTFail("Sharing page text requires approval")
         } catch {
             XCTAssertEqual(error.localizedDescription, "The iPhone did not approve this action.")
@@ -285,7 +285,7 @@ final class AgentPageRegressionTests: XCTestCase {
         do {
             _ = try await call(
                 "page_interact", ["action": "fill", "documentId": document, "ref": field, "text": "denied value"],
-                navigator, authorize: { _ in false }
+                navigator, authorize: { _, _ in false }
             )
             XCTFail("Filling a page field requires approval")
         } catch {
@@ -297,7 +297,7 @@ final class AgentPageRegressionTests: XCTestCase {
         let button = try interactionRef(page, label: "Confirm shipment", capability: "canClick")
         var replacedDuringApproval = false
         do {
-            _ = try await call("page_interact", ["action": "click", "documentId": document, "ref": button], navigator) { _ in
+            _ = try await call("page_interact", ["action": "click", "documentId": document, "ref": button], navigator) { _, _ in
                 let replacement = try? await webView.evaluateJavaScript("""
                     const button = document.querySelector('#confirm');
                     button.replaceWith(button.cloneNode(true));
@@ -315,7 +315,7 @@ final class AgentPageRegressionTests: XCTestCase {
         let movedButton = try interactionRef(freshPage, label: "Confirm shipment", capability: "canClick")
         var movedDuringApproval = false
         do {
-            _ = try await call("page_interact", ["action": "click", "documentId": document, "ref": movedButton], navigator) { _ in
+            _ = try await call("page_interact", ["action": "click", "documentId": document, "ref": movedButton], navigator) { _, _ in
                 let changed = try? await webView.evaluateJavaScript("""
                     document.querySelector('#confirm').setAttribute('form', 'other');
                     true;
@@ -351,7 +351,7 @@ final class AgentPageRegressionTests: XCTestCase {
         let field = try interactionRef(page, label: "Delivery reference", capability: "canFill")
         var arguments: [String: Any] = ["action": "fill", "documentId": document, "ref": field, "text": "too long"]
         do {
-            _ = try await call("page_interact", arguments, navigator) { _ in
+            _ = try await call("page_interact", arguments, navigator) { _, _ in
                 XCTFail("A known invalid fill must fail before approval")
                 return true
             }
@@ -513,7 +513,7 @@ final class AgentPageRegressionTests: XCTestCase {
         let navigator = SourcesNavigator()
         navigator.attach(to: webView)
 
-        let redacted = try await call("sources_list", ["section": "scripts"], navigator, authorize: { _ in false })
+        let redacted = try await call("sources_list", ["section": "scripts"], navigator, authorize: { _, _ in false })
         let entries = try XCTUnwrap(redacted["entries"] as? [[String: Any]])
         XCTAssertEqual(entries.map { $0["url"] as? String }, ["", "https://assets.example:8443"])
         XCTAssertLessThan(navigator.resultBytes, 512)
@@ -531,7 +531,7 @@ final class AgentPageRegressionTests: XCTestCase {
         _ tool: String,
         _ arguments: [String: Any],
         _ navigator: WebViewNavigator,
-        authorize: @escaping (String) async -> Bool = { _ in true }
+        authorize: @escaping (String, ApprovalScope) async -> Bool = { _, _ in true }
     ) async throws -> [String: Any] {
         let result = try await AgentDevTools.call(
             tool, arguments: arguments, navigator: navigator,
@@ -593,7 +593,7 @@ extension AgentPageRegressionTests {
         XCTAssertEqual(choices[2]["disabled"] as? Bool, true)
         var arguments: [String: Any] = ["action": "select", "documentId": document, "ref": field, "values": ["blocked"]]
         do {
-            _ = try await call("page_interact", arguments, navigator) { _ in
+            _ = try await call("page_interact", arguments, navigator) { _, _ in
                 XCTFail("A disabled option must fail before approval")
                 return true
             }
@@ -612,7 +612,7 @@ extension AgentPageRegressionTests {
         arguments["ref"] = try interactionRef(fresh, label: "Shipping method", capability: "canSelect")
         arguments["values"] = ["standard"]
         do {
-            _ = try await call("page_interact", arguments, navigator) { _ in
+            _ = try await call("page_interact", arguments, navigator) { _, _ in
                 _ = try? await webView.evaluateJavaScript("shipping.options[0].textContent = 'Different delivery'; void 0;")
                 return true
             }
@@ -646,7 +646,7 @@ extension AgentPageRegressionTests {
 
         var arguments: [String: Any] = ["action": "select", "documentId": document, "ref": field, "values": ["duplicate"]]
         do {
-            _ = try await call("page_interact", arguments, navigator) { _ in
+            _ = try await call("page_interact", arguments, navigator) { _, _ in
                 XCTFail("An ambiguous value must fail before approval")
                 return true
             }
@@ -658,7 +658,7 @@ extension AgentPageRegressionTests {
         arguments.removeValue(forKey: "values")
         arguments["optionIndexes"] = [1]
         do {
-            _ = try await call("page_interact", arguments, navigator) { prompt in
+            _ = try await call("page_interact", arguments, navigator) { prompt, _ in
                 XCTAssertTrue(prompt.contains("[1] \"Second delivery\" (value \"duplicate\")"), prompt)
                 _ = try? await webView.evaluateJavaScript("const option = shipping.options[1]; option.replaceWith(option.cloneNode(true)); void 0;")
                 return true
@@ -670,7 +670,7 @@ extension AgentPageRegressionTests {
 
         let fresh = try await call("page_interact", ["action": "observe"], navigator)
         arguments["ref"] = try interactionRef(fresh, label: "Shipping method", capability: "canSelect")
-        let result = try await call("page_interact", arguments, navigator) { prompt in
+        let result = try await call("page_interact", arguments, navigator) { prompt, _ in
             XCTAssertTrue(prompt.contains("[1] \"Second delivery\" (value \"duplicate\")"), prompt)
             return true
         }
@@ -783,7 +783,7 @@ extension AgentPageRegressionTests {
         for var arguments in [["action": "click_at", "x": 30, "y": 25], ["action": "press", "key": "Escape"]] as [[String: Any]] {
             arguments["documentId"] = document
             do {
-                _ = try await call("page_interact", arguments, navigator) { _ in
+                _ = try await call("page_interact", arguments, navigator) { _, _ in
                     XCTFail("An unsupported control must fail before approval")
                     return true
                 }
@@ -837,7 +837,7 @@ extension AgentPageRegressionTests {
         arguments.removeValue(forKey: "ref")
         arguments.removeValue(forKey: "text")
         do {
-            _ = try await call("page_interact", arguments, navigator) { _ in
+            _ = try await call("page_interact", arguments, navigator) { _, _ in
                 XCTFail("A replaced frame must fail before approval")
                 return true
             }
@@ -887,7 +887,7 @@ extension AgentPageRegressionTests {
         ]
         var prompted = false
         do {
-            _ = try await call("page_interact", arguments, navigator) { _ in
+            _ = try await call("page_interact", arguments, navigator) { _, _ in
                 prompted = true
                 _ = try? await webView.evaluateJavaScript("wrapper.style.transform = 'rotate(90deg)'; void 0;")
                 return true
@@ -904,7 +904,7 @@ extension AgentPageRegressionTests {
 
         _ = try await webView.evaluateJavaScript("wrapper.style.transform = 'none'; wrapper.style.rotate = '90deg'; void 0;")
         do {
-            _ = try await call("page_interact", arguments, navigator) { _ in
+            _ = try await call("page_interact", arguments, navigator) { _, _ in
                 XCTFail("An individually rotated ancestor must fail before approval")
                 return true
             }
@@ -954,7 +954,7 @@ extension AgentPageRegressionTests {
             """)
         XCTAssertEqual(covered as? String, "cover")
         do {
-            _ = try await call("page_interact", arguments, navigator) { _ in
+            _ = try await call("page_interact", arguments, navigator) { _, _ in
                 XCTFail("A covered point in the padded frame must fail before approval")
                 return true
             }
@@ -1012,7 +1012,7 @@ extension AgentPageRegressionTests {
         }
         func rejectBeforeApproval(_ arguments: [String: Any], message: String) async {
             do {
-                _ = try await call("page_interact", arguments, navigator) { _ in
+                _ = try await call("page_interact", arguments, navigator) { _, _ in
                     XCTFail("An unavailable target must be rejected before approval")
                     return true
                 }
@@ -1026,7 +1026,7 @@ extension AgentPageRegressionTests {
         XCTAssertEqual(before as? String, "")
         var prompted = false
         do {
-            _ = try await call("page_interact", args(["action": "move", "x": 20, "y": 40]), navigator) { _ in
+            _ = try await call("page_interact", args(["action": "move", "x": 20, "y": 40]), navigator) { _, _ in
                 prompted = true
                 _ = try? await webView.evaluateJavaScript("cover.style.height = '45px'; void 0;")
                 return true
@@ -1075,7 +1075,7 @@ extension AgentPageRegressionTests {
 
         for key in ["A", "Space", "Backspace", "Delete"] {
             do {
-                _ = try await call("page_interact", ["action": "press", "documentId": document, "key": key], navigator) { _ in
+                _ = try await call("page_interact", ["action": "press", "documentId": document, "key": key], navigator) { _, _ in
                     XCTFail("Unsupported email editing must fail before approval")
                     return true
                 }

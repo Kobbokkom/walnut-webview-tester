@@ -11,7 +11,7 @@ enum AgentDevTools {
         navigator: WebViewNavigator,
         storage: StorageManager,
         console: ConsoleSession,
-        authorize: @escaping (String) async -> Bool
+        authorize: @escaping (String, ApprovalScope) async -> Bool
     ) async throws -> Any {
         let context = AgentDevContext(navigator: navigator, authorize: authorize)
         try context.checkDocument()
@@ -77,9 +77,9 @@ enum AgentDevTools {
 struct AgentDevContext {
     let navigator: WebViewNavigator
     let document: UUID
-    let authorize: (String) async -> Bool
+    let authorize: (String, ApprovalScope) async -> Bool
 
-    init(navigator: WebViewNavigator, authorize: @escaping (String) async -> Bool) {
+    init(navigator: WebViewNavigator, authorize: @escaping (String, ApprovalScope) async -> Bool) {
         self.navigator = navigator
         self.document = navigator.documentID
         self.authorize = authorize
@@ -92,8 +92,9 @@ struct AgentDevContext {
         }
     }
 
-    func confirm(_ prompt: String) async throws {
-        guard await authorize(prompt) else {
+    /// `prompt` is shown verbatim, so pass already-localized text.
+    func confirm(_ prompt: String, scope: ApprovalScope = .sensitive) async throws {
+        guard await authorize(prompt, scope) else {
             throw AgentError("The iPhone did not approve this action.")
         }
         try checkDocument()

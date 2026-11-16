@@ -1,7 +1,15 @@
-import Foundation
+import SwiftUI
+
+/// What an approval prompt protects. Call sites declare it next to the prompt text.
+enum ApprovalScope {
+    /// Reads or interacts with the open page only.
+    case page
+    /// Shares data beyond the open page, deletes data, captures the screen, or changes settings.
+    case sensitive
+}
 
 /// How much the connected Mac agent may do without an on-device approval.
-enum AgentApprovalMode: String, CaseIterable, Identifiable {
+enum AgentApprovalMode: String, CaseIterable {
     case ask, pageActions, all
 
     static let defaultsKey = "macAgentApprovalMode"
@@ -10,26 +18,30 @@ enum AgentApprovalMode: String, CaseIterable, Identifiable {
         UserDefaults.standard.string(forKey: defaultsKey).flatMap(AgentApprovalMode.init) ?? .ask
     }
 
-    var id: String { rawValue }
-
-    /// Tools that only read or act on the open page, so page-level approval covers them.
-    private static let pageTools: Set<String> = [
-        "walnut_browser", "page_interact", "page_search",
-        "console_list", "console_detail", "console_group", "console_evaluate", "console_clear",
-        "network_list", "network_detail", "network_clear", "resources_detail",
-        "sources_list", "sources_detail", "performance_read", "performance_clear",
-        "accessibility_audit", "accessibility_detail", "accessibility_clear",
-        "storage_list", "snippets_run"
-    ]
-
-    func approvesWithoutAsking(tool: String, arguments: [String: Any]) -> Bool {
+    var title: LocalizedStringKey {
         switch self {
-        case .ask: return false
-        case .all: return true
+        case .ask: "Ask every time"
+        case .pageActions: "Allow page actions"
+        case .all: "Allow everything"
+        }
+    }
+
+    var summary: Text {
+        switch self {
+        case .ask:
+            Text("Walnut asks on iPhone before each action.")
         case .pageActions:
-            // Clearing website data is destructive even though it arrives through the browser tool.
-            if tool == "walnut_browser", arguments["cleanStart"] as? Bool == true { return false }
-            return Self.pageTools.contains(tool)
+            Text("Reading, interacting with and running scripts on the open page run without asking. Screenshots, recordings, data deletion and settings changes still ask.")
+        case .all:
+            Text("Every action runs without asking, including screenshots and settings changes. Use only with a Mac and agent you trust.")
+        }
+    }
+
+    func approvesWithoutAsking(_ scope: ApprovalScope) -> Bool {
+        switch self {
+        case .ask: false
+        case .pageActions: scope == .page
+        case .all: true
         }
     }
 }

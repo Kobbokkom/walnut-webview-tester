@@ -304,7 +304,7 @@ final class NavigationLogRegressionTests: XCTestCase {
         XCTAssertTrue(addedInApp)
         let result = try await AgentDevTools.call(
             "storage_write", arguments: ["action": "add", "type": "cookies", "key": "agent", "value": "original", "path": "/"],
-            navigator: navigator, storage: storage, console: ConsoleSession(), authorize: { _ in true }
+            navigator: navigator, storage: storage, console: ConsoleSession(), authorize: { _, _ in true }
         ) as? [String: Any]
         XCTAssertEqual(result?["applied"] as? Bool, true)
 
@@ -312,7 +312,7 @@ final class NavigationLogRegressionTests: XCTestCase {
             do {
                 _ = try await AgentDevTools.call(
                     "storage_write", arguments: ["action": "add", "type": "cookies", "key": key, "value": "replace"],
-                    navigator: navigator, storage: storage, console: ConsoleSession(), authorize: { _ in true }
+                    navigator: navigator, storage: storage, console: ConsoleSession(), authorize: { _, _ in true }
                 )
                 XCTFail("An existing root cookie should not be overwritten")
             } catch {

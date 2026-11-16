@@ -43,7 +43,7 @@ enum AgentSettings {
         arguments: [String: Any],
         navigator: WebViewNavigator?,
         validateApplyTarget: () throws -> Void = {},
-        authorize: @escaping (String) async -> Bool
+        authorize: @escaping (String, ApprovalScope) async -> Bool
     ) async throws -> Any {
         let input = AgentSettingsInput(arguments: arguments, authorize: authorize)
         try Task.checkCancellation()
@@ -175,7 +175,7 @@ enum AgentSettings {
 @MainActor
 struct AgentSettingsInput {
     let arguments: [String: Any]
-    let authorize: (String) async -> Bool
+    let authorize: (String, ApprovalScope) async -> Bool
 
     func string(_ name: String, default fallback: String? = nil, limit: Int = 4_096) throws -> String {
         if arguments[name] == nil, let fallback { return fallback }
@@ -194,8 +194,9 @@ struct AgentSettingsInput {
         return number.boolValue
     }
 
-    func confirm(_ prompt: String) async throws {
-        guard await authorize(prompt) else { throw AgentError("The iPhone did not approve this action.") }
+    /// `prompt` is shown verbatim, so pass already-localized text.
+    func confirm(_ prompt: String, scope: ApprovalScope = .sensitive) async throws {
+        guard await authorize(prompt, scope) else { throw AgentError("The iPhone did not approve this action.") }
         try Task.checkCancellation()
     }
 }

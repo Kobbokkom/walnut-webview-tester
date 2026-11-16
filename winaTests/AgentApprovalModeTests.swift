@@ -3,20 +3,17 @@ import Testing
 
 struct AgentApprovalModeTests {
     @Test func askAlwaysPrompts() {
-        #expect(!AgentApprovalMode.ask.approvesWithoutAsking(tool: "page_interact", arguments: [:]))
+        #expect(!AgentApprovalMode.ask.approvesWithoutAsking(.page))
+        #expect(!AgentApprovalMode.ask.approvesWithoutAsking(.sensitive))
     }
 
-    @Test func pageActionsCoverPageToolsOnly() {
-        let mode = AgentApprovalMode.pageActions
-        #expect(mode.approvesWithoutAsking(tool: "page_interact", arguments: [:]))
-        #expect(mode.approvesWithoutAsking(tool: "console_list", arguments: [:]))
-        #expect(!mode.approvesWithoutAsking(tool: "walnut_screenshot", arguments: [:]))
-        #expect(!mode.approvesWithoutAsking(tool: "settings_apply", arguments: [:]))
-        #expect(!mode.approvesWithoutAsking(tool: "walnut_browser", arguments: ["cleanStart": true]))
-        #expect(mode.approvesWithoutAsking(tool: "walnut_browser", arguments: ["action": "open"]))
+    @Test func pageActionsCoverOnlyPageScope() {
+        #expect(AgentApprovalMode.pageActions.approvesWithoutAsking(.page))
+        #expect(!AgentApprovalMode.pageActions.approvesWithoutAsking(.sensitive))
     }
 
     @Test func allSkipsEveryPrompt() {
-        #expect(AgentApprovalMode.all.approvesWithoutAsking(tool: "walnut_screenshot", arguments: [:]))
+        #expect(AgentApprovalMode.all.approvesWithoutAsking(.page))
+        #expect(AgentApprovalMode.all.approvesWithoutAsking(.sensitive))
     }
 }

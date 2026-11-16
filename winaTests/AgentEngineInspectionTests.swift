@@ -10,7 +10,7 @@ final class AgentEngineInspectionTests: XCTestCase {
         let navigator = WebViewNavigator()
         navigator.attach(to: webView)
         do {
-            _ = try await call(["action": "authorize"], navigator) { _ in false }
+            _ = try await call(["action": "authorize"], navigator) { _, _ in false }
             XCTFail("Unapproved inspection must not create a grant")
         } catch {
             XCTAssertEqual(error.localizedDescription, "The iPhone did not approve this action.")
@@ -19,7 +19,7 @@ final class AgentEngineInspectionTests: XCTestCase {
         let before = try await marker(navigator)
         XCTAssertNil(before)
 
-        let grant = try await call(["action": "authorize"], navigator) { prompt in
+        let grant = try await call(["action": "authorize"], navigator) { prompt, _ in
             XCTAssertTrue(prompt.contains("unredacted"))
             XCTAssertTrue(prompt.contains("pause JavaScript"))
             return true
@@ -34,7 +34,7 @@ final class AgentEngineInspectionTests: XCTestCase {
         let visibleToPage = try await navigator.evaluateJavaScriptReportingErrors("typeof globalThis.__walnutInspectorNonce")
         XCTAssertEqual(visibleToPage as? String, "undefined")
 
-        let read = try await call(["action": "validate", "grantId": id, "method": "Debugger.getScriptSource"], navigator) { _ in
+        let read = try await call(["action": "validate", "grantId": id, "method": "Debugger.getScriptSource"], navigator) { _, _ in
             XCTFail("Approved raw reads should use the existing grant")
             return false
         }
@@ -47,7 +47,7 @@ final class AgentEngineInspectionTests: XCTestCase {
             "params": ["functionDeclaration": code, "objectId": "fixture-object"]
         ]
         do {
-            _ = try await call(arguments, navigator) { prompt in
+            _ = try await call(arguments, navigator) { prompt, _ in
                 XCTAssertTrue(prompt.contains("Runtime.callFunctionOn"))
                 XCTAssertTrue(prompt.contains(code))
                 XCTAssertTrue(prompt.contains("fixture-object"))
@@ -58,7 +58,7 @@ final class AgentEngineInspectionTests: XCTestCase {
             XCTAssertEqual(error.localizedDescription, "The iPhone did not approve this action.")
         }
         do {
-            _ = try await call(["action": "validate", "grantId": id, "method": "Target.sendMessageToTarget"], navigator) { _ in
+            _ = try await call(["action": "validate", "grantId": id, "method": "Target.sendMessageToTarget"], navigator) { _, _ in
                 XCTFail("A target-switch command cannot request approval")
                 return true
             }
@@ -119,7 +119,7 @@ final class AgentEngineInspectionTests: XCTestCase {
         let grant = try await call(["action": "authorize"], navigator)
         let id = try XCTUnwrap(grant["grantId"] as? String)
         do {
-            _ = try await call(["action": "validate", "grantId": id, "method": "Debugger.pause"], navigator) { _ in
+            _ = try await call(["action": "validate", "grantId": id, "method": "Debugger.pause"], navigator) { _, _ in
                 AgentEngineInspection.revoke(navigator)
                 return true
             }
@@ -147,7 +147,7 @@ final class AgentEngineInspectionTests: XCTestCase {
     }
 
     private func call(
-        _ arguments: [String: Any], _ navigator: WebViewNavigator, approve: @escaping (String) async -> Bool = { _ in true }
+        _ arguments: [String: Any], _ navigator: WebViewNavigator, approve: @escaping (String, ApprovalScope) async -> Bool = { _, _ in true }
     ) async throws -> [String: Any] {
         try await AgentEngineInspection.call(
             input: AgentDevInput(values: arguments), context: AgentDevContext(navigator: navigator, authorize: approve)

@@ -77,7 +77,7 @@ final class AgentScrollNavigationTests: XCTestCase {
     private func scroll(using navigator: WebViewNavigator) async throws -> [String: Any] {
         let result = try await AgentDevTools.call(
             "page_interact", arguments: ["action": "scroll", "direction": "down", "documentId": navigator.documentID.uuidString],
-            navigator: navigator, storage: StorageManager(), console: ConsoleSession(), authorize: { _ in true }
+            navigator: navigator, storage: StorageManager(), console: ConsoleSession(), authorize: { _, _ in true }
         )
         return try XCTUnwrap(result as? [String: Any])
     }

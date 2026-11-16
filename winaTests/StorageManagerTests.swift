@@ -204,7 +204,7 @@ final class StorageManagerTests: XCTestCase {
 
         func call(_ tool: String, _ args: [String: Any], approve: Bool = true) async throws -> [String: Any] {
             let result = try await AgentDevTools.call(
-                tool, arguments: args, navigator: navigator, storage: storage, console: ConsoleSession(), authorize: { _ in approve }
+                tool, arguments: args, navigator: navigator, storage: storage, console: ConsoleSession(), authorize: { _, _ in approve }
             )
             return try XCTUnwrap(result as? [String: Any])
         }
@@ -262,7 +262,7 @@ final class StorageManagerTests: XCTestCase {
         let arguments: [String: Any] = [
             "type": "cookies", "action": "add", "key": "scoped", "value": "approved", "domain": ".example.com", "path": "/receipt"
         ]
-        func write(_ changes: [String: Any], authorize: @escaping (String) async -> Bool = { _ in true }) async throws -> Any {
+        func write(_ changes: [String: Any], authorize: @escaping (String, ApprovalScope) async -> Bool = { _, _ in true }) async throws -> Any {
             try await AgentDevTools.call(
                 "storage_write", arguments: arguments.merging(changes) { _, new in new },
                 navigator: navigator, storage: storage, console: ConsoleSession(), authorize: authorize
@@ -277,7 +277,7 @@ final class StorageManagerTests: XCTestCase {
             (["action": "remove", "key": "foreign", "domain": "unrelated.test", "path": "/", "cookieScope": "current"], true)
         ] {
             do {
-                _ = try await write(changes, authorize: { _ in approval })
+                _ = try await write(changes, authorize: { _, _ in approval })
                 XCTFail("Cookie mutation escaped its approved scope")
             } catch {
                 let cookies = await cookieStore.allCookies()
@@ -285,7 +285,7 @@ final class StorageManagerTests: XCTestCase {
                 XCTAssertEqual(cookies.count, 2)
             }
         }
-        let added = try await write([:], authorize: { prompt in
+        let added = try await write([:], authorize: { prompt, _ in
             XCTAssertTrue(prompt.contains("example.com and its subdomains"))
             XCTAssertTrue(prompt.contains("at path /receipt"))
             return true
@@ -300,13 +300,13 @@ final class StorageManagerTests: XCTestCase {
         XCTAssertFalse(scoped.isHTTPOnly)
         let listed = try await AgentDevTools.call(
             "storage_list", arguments: ["domain": ".example.com", "path": "/receipt", "query": "scoped", "raw": true],
-            navigator: navigator, storage: storage, console: ConsoleSession(), authorize: { _ in true }
+            navigator: navigator, storage: storage, console: ConsoleSession(), authorize: { _, _ in true }
         ) as? [String: Any]
         XCTAssertEqual((listed?["entries"] as? [[String: Any]])?.compactMap { $0["key"] as? String }, ["scoped"])
 
         let foreign = ["action": "edit", "key": "foreign", "domain": "unrelated.test", "path": "/", "value": "changed"]
         do {
-            _ = try await write(foreign, authorize: { prompt in
+            _ = try await write(foreign, authorize: { prompt, _ in
                 XCTAssertTrue(prompt.contains("the exact domain unrelated.test at path /"))
                 return false
             })
@@ -349,7 +349,7 @@ final class StorageManagerTests: XCTestCase {
             arguments["rowId"] = rowId
             let result = try await AgentDevTools.call(
                 "storage_list", arguments: arguments,
-                navigator: navigator, storage: storage, console: ConsoleSession(), authorize: { _ in approve }
+                navigator: navigator, storage: storage, console: ConsoleSession(), authorize: { _, _ in approve }
             )
             return try XCTUnwrap(result as? [String: Any])
         }
@@ -428,7 +428,7 @@ final class StorageManagerTests: XCTestCase {
             cookieStore.cookies = [makeCookie(name: "target", value: "one", domain: "example.com")]
             cookieStore.afterDeletingCookie = { navigator.documentDidChange(in: webView) }
             let result = try await AgentDevTools.call(
-                tool, arguments: arguments, navigator: navigator, storage: storage, console: ConsoleSession(), authorize: { _ in true }
+                tool, arguments: arguments, navigator: navigator, storage: storage, console: ConsoleSession(), authorize: { _, _ in true }
             ) as? [String: Any]
             XCTAssertEqual(result?[resultKey] as? Bool, true)
             XCTAssertNotEqual(navigator.documentID, document)
@@ -461,7 +461,7 @@ final class StorageManagerTests: XCTestCase {
             do {
                 _ = try await AgentDevTools.call(
                     tool, arguments: arguments, navigator: navigator, storage: storage, console: ConsoleSession(),
-                    authorize: { _ in true }
+                    authorize: { _, _ in true }
                 )
                 XCTFail("A stale approved document must not mutate cookies")
             } catch {

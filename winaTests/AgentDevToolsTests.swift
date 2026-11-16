@@ -16,7 +16,7 @@ final class AgentDevToolsTests: XCTestCase {
             element: "<img>", fullHtml: markup, selector: "#picture", helpUrl: nil, ruleId: "image-alt"
         )
         navigator.accessibilityManager.issues = [issue]
-        let context = AgentDevContext(navigator: navigator) { _ in true }
+        let context = AgentDevContext(navigator: navigator) { _, _ in true }
         for query in ["IMAGE-ALT", "Images", "#picture"] {
             let value = try await AgentDevTools.callPage(
                 "accessibility_audit", AgentDevInput(values: ["run": false, "query": query]), context
@@ -64,7 +64,7 @@ final class AgentDevToolsTests: XCTestCase {
         XCTAssertEqual(manager.logs.count, 2, "Identical messages must not collapse across documents")
         let response = try await AgentDevTools.call(
             "console_list", arguments: ["documentId": second.uuidString], navigator: navigator,
-            storage: StorageManager(), console: ConsoleSession(), authorize: { _ in false }
+            storage: StorageManager(), console: ConsoleSession(), authorize: { _, _ in false }
         )
         let result = try XCTUnwrap(response as? [String: Any])
         let rows = try XCTUnwrap(result["records"] as? [[String: Any]])
@@ -75,7 +75,7 @@ final class AgentDevToolsTests: XCTestCase {
         do {
             _ = try await AgentDevTools.call(
                 "console_list", arguments: ["raw": true], navigator: navigator,
-                storage: StorageManager(), console: ConsoleSession(), authorize: { _ in false }
+                storage: StorageManager(), console: ConsoleSession(), authorize: { _, _ in false }
             )
             XCTFail("Raw Console data requires approval")
         } catch {
@@ -96,7 +96,7 @@ final class AgentDevToolsTests: XCTestCase {
         let console = ConsoleSession()
         let list = try await AgentDevTools.call(
             "console_list", arguments: ["raw": true], navigator: navigator,
-            storage: storage, console: console, authorize: { _ in true }
+            storage: storage, console: console, authorize: { _, _ in true }
         )
         let listPayload = try XCTUnwrap(list as? [String: Any])
         let rows = try XCTUnwrap(listPayload["records"] as? [[String: Any]])
@@ -106,7 +106,7 @@ final class AgentDevToolsTests: XCTestCase {
 
         let detail = try await AgentDevTools.call(
             "console_detail", arguments: ["id": log.id.uuidString], navigator: navigator,
-            storage: storage, console: console, authorize: { _ in true }
+            storage: storage, console: console, authorize: { _, _ in true }
         )
         XCTAssertEqual((detail as? [String: Any])?["object"] as? String, rows.first?["object"] as? String)
         withExtendedLifetime(webView) {}
@@ -122,7 +122,7 @@ final class AgentDevToolsTests: XCTestCase {
 
         let response = try await AgentDevTools.call(
             "console_list", arguments: ["query": "tail marker$", "regex": true], navigator: navigator,
-            storage: StorageManager(), console: ConsoleSession(), authorize: { _ in true }
+            storage: StorageManager(), console: ConsoleSession(), authorize: { _, _ in true }
         )
         let result = try XCTUnwrap(response as? [String: Any])
         let rows = try XCTUnwrap(result["records"] as? [[String: Any]])
@@ -136,7 +136,7 @@ final class AgentDevToolsTests: XCTestCase {
         do {
             _ = try await AgentDevTools.call(
                 "console_list", arguments: ["query": "^(a+)+$", "regex": true], navigator: navigator,
-                storage: StorageManager(), console: ConsoleSession(), authorize: { _ in true }
+                storage: StorageManager(), console: ConsoleSession(), authorize: { _, _ in true }
             )
             XCTFail("An unfinished Console regex search must surface an error")
         } catch let error as AgentError {
@@ -169,7 +169,7 @@ final class AgentDevToolsTests: XCTestCase {
             arguments["id"] = log.id.uuidString
             let response = try await AgentDevTools.call(
                 "console_detail", arguments: arguments, navigator: navigator,
-                storage: storage, console: console, authorize: { _ in true }
+                storage: storage, console: console, authorize: { _, _ in true }
             )
             return try XCTUnwrap(response as? [String: Any])
         }
@@ -195,7 +195,7 @@ final class AgentDevToolsTests: XCTestCase {
             arguments["format"] = "json"
             let response = try await AgentDevTools.call(
                 "console_list", arguments: arguments, navigator: navigator,
-                storage: storage, console: console, authorize: { _ in true }
+                storage: storage, console: console, authorize: { _, _ in true }
             )
             return try XCTUnwrap(response as? [String: Any])
         }
@@ -227,7 +227,7 @@ final class AgentDevToolsTests: XCTestCase {
             arguments["format"] = "text"
             let response = try await AgentDevTools.call(
                 "console_list", arguments: arguments, navigator: navigator,
-                storage: storage, console: console, authorize: { _ in approved }
+                storage: storage, console: console, authorize: { _, _ in approved }
             )
             return try XCTUnwrap(response as? [String: Any])
         }
@@ -293,7 +293,7 @@ final class AgentDevToolsTests: XCTestCase {
         exportTask = Task { @MainActor in
             _ = try await AgentDevTools.call(
                 "console_list", arguments: ["format": "json"], navigator: navigator,
-                storage: StorageManager(), console: ConsoleSession(), authorize: { _ in
+                storage: StorageManager(), console: ConsoleSession(), authorize: { _, _ in
                     Task { @MainActor in exportTask?.cancel() }
                     return true
                 }
@@ -324,12 +324,12 @@ final class AgentDevToolsTests: XCTestCase {
 
         let sanitized = try await AgentDevTools.call(
             "network_list", arguments: ["query": "fixture asset.css"], navigator: navigator,
-            storage: storage, console: console, authorize: { _ in false }
+            storage: storage, console: console, authorize: { _, _ in false }
         )
         XCTAssertEqual((sanitized as? [String: Any])?["resourceCount"] as? Int, 0)
         let approved = try await AgentDevTools.call(
             "network_list", arguments: ["query": "fixture asset.css", "raw": true], navigator: navigator,
-            storage: storage, console: console, authorize: { _ in true }
+            storage: storage, console: console, authorize: { _, _ in true }
         )
         XCTAssertEqual((approved as? [String: Any])?["resourceCount"] as? Int, 1)
         withExtendedLifetime(webView) {}
@@ -364,7 +364,7 @@ final class AgentDevToolsTests: XCTestCase {
             arguments["format"] = format
             let response = try await AgentDevTools.call(
                 "network_list", arguments: arguments, navigator: navigator,
-                storage: storage, console: console, authorize: { _ in approved }
+                storage: storage, console: console, authorize: { _, _ in approved }
             )
             return try XCTUnwrap(response as? [String: Any])
         }
@@ -437,12 +437,12 @@ final class AgentDevToolsTests: XCTestCase {
         let console = ConsoleSession()
         let sanitized = try await AgentDevTools.call(
             "network_detail", arguments: ["id": request.id.uuidString], navigator: navigator,
-            storage: storage, console: console, authorize: { _ in false }
+            storage: storage, console: console, authorize: { _, _ in false }
         )
         XCTAssertNil((sanitized as? [String: Any])?["stack"])
         let approved = try await AgentDevTools.call(
             "network_detail", arguments: ["id": request.id.uuidString, "raw": true], navigator: navigator,
-            storage: storage, console: console, authorize: { _ in true }
+            storage: storage, console: console, authorize: { _, _ in true }
         )
         let stack = try XCTUnwrap((approved as? [String: Any])?["stack"] as? [[String: Any]])
         XCTAssertEqual(stack.compactMap { $0["functionName"] as? String }, frames.map(\.functionName))
@@ -463,7 +463,7 @@ final class AgentDevToolsTests: XCTestCase {
             do {
                 _ = try await AgentDevTools.call(
                     "console_configure", arguments: arguments, navigator: navigator,
-                    storage: storage, console: console, authorize: { _ in false }
+                    storage: storage, console: console, authorize: { _, _ in false }
                 )
                 XCTFail("A policy that can delete retained logs requires approval")
             } catch {
@@ -524,7 +524,7 @@ extension AgentDevToolsTests {
         func list(_ arguments: [String: Any]) async throws -> [String] {
             let result = try await AgentDevTools.call(
                 "console_list", arguments: arguments, navigator: navigator,
-                storage: storage, console: console, authorize: { _ in false }
+                storage: storage, console: console, authorize: { _, _ in false }
             )
             let response = try XCTUnwrap(result as? [String: Any])
             let rows = try XCTUnwrap(response["records"] as? [[String: Any]])
@@ -543,7 +543,7 @@ extension AgentDevToolsTests {
         func configure(_ arguments: [String: Any] = [:]) async throws -> [String: Any] {
             let result = try await AgentDevTools.call(
                 "console_configure", arguments: arguments, navigator: navigator,
-                storage: storage, console: console, authorize: { _ in false }
+                storage: storage, console: console, authorize: { _, _ in false }
             )
             return try XCTUnwrap(result as? [String: Any])
         }

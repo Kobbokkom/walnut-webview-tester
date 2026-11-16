@@ -9,6 +9,8 @@ final class AgentPINListener {
     private(set) var error: String?
     private(set) var didGrant = false
     private(set) var isReady = false
+    /// The listener exists, even before it is ready; false once the pairing window has closed.
+    private(set) var isListening = false
 
     @ObservationIgnored private var listener: NWListener?
     @ObservationIgnored private var peer: Peer?
@@ -108,6 +110,7 @@ final class AgentPINListener {
             }
         }
         self.listener = listener
+        isListening = true
         attempts = 0
         if credential.requiresApproval {
             deadline = .now + Self.lifetime
@@ -130,6 +133,7 @@ final class AgentPINListener {
         expiry = nil
         listener?.cancel()
         listener = nil
+        isListening = false
         isReady = false
         deadline = nil
     }

@@ -55,7 +55,7 @@ final class NetworkHookTests: XCTestCase {
 
         let result = try await AgentDevTools.call(
             "network_detail", arguments: ["id": id.uuidString, "section": "overview", "raw": true], navigator: navigator,
-            storage: StorageManager(), console: ConsoleSession(), authorize: { _ in true }
+            storage: StorageManager(), console: ConsoleSession(), authorize: { _, _ in true }
         )
         let details = try XCTUnwrap(result as? [String: Any])
         XCTAssertNotNil(details["durationMs"] as? Double)

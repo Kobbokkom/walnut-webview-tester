@@ -76,7 +76,6 @@ Additional Features
 Perfect for iOS developers who need to test web content rendering, debug JavaScript, analyze network requests, and ensure accessibility compliance.
 """,
         "keywords": "webview,developer,debug,console,network,safari,wkwebview,devtools,test,inspect,ios,javascript,html",
-        "whatsNew": "- Added screenshot and screen recording support for SafariVC mode.\n- Improved recording state management.",
         "promotionalText": "New: Mac Agent lets your coding agent test pages in Walnut from your Mac. Plus Console, Network and Sources built in for WebView debugging."
     },
     "en-AU": {
@@ -122,7 +121,6 @@ Additional Features
 Perfect for iOS developers who need to test web content rendering, debug JavaScript, analyze network requests, and ensure accessibility compliance.
 """,
         "keywords": "webview,developer,debug,console,network,safari,wkwebview,devtools,test,inspect,ios,javascript,html",
-        "whatsNew": "- Added screenshot and screen recording support for SafariVC mode.\n- Improved recording state management.",
         "promotionalText": "New: Mac Agent lets your coding agent test pages in Walnut from your Mac. Plus Console, Network and Sources built in for WebView debugging."
     },
     "en-CA": {
@@ -168,7 +166,6 @@ Additional Features
 Perfect for iOS developers who need to test web content rendering, debug JavaScript, analyze network requests, and ensure accessibility compliance.
 """,
         "keywords": "webview,developer,debug,console,network,safari,wkwebview,devtools,test,inspect,ios,javascript,html",
-        "whatsNew": "- Added screenshot and screen recording support for SafariVC mode.\n- Improved recording state management.",
         "promotionalText": "New: Mac Agent lets your coding agent test pages in Walnut from your Mac. Plus Console, Network and Sources built in for WebView debugging."
     },
     "en-GB": {
@@ -214,7 +211,6 @@ Additional Features
 Perfect for iOS developers who need to test web content rendering, debug JavaScript, analyze network requests, and ensure accessibility compliance.
 """,
         "keywords": "webview,developer,debug,console,network,safari,wkwebview,devtools,test,inspect,ios,javascript,html",
-        "whatsNew": "- Added screenshot and screen recording support for SafariVC mode.\n- Improved recording state management.",
         "promotionalText": "New: Mac Agent lets your coding agent test pages in Walnut from your Mac. Plus Console, Network and Sources built in for WebView debugging."
     },
     "ko": {
@@ -260,7 +256,6 @@ SFSafariViewController 테스트
 웹 콘텐츠 렌더링 테스트, JavaScript 디버깅, 네트워크 요청 분석, 접근성 준수 확인이 필요한 iOS 개발자에게 적합합니다.
 """,
         "keywords": "웹뷰,개발자,디버그,콘솔,네트워크,사파리,devtools,테스트,검사,ios,자바스크립트,html,css,쿠키,성능,접근성,개발도구,브라우저,앱,모바일,웹킷,사파리뷰",
-        "whatsNew": "- SafariVC 모드에서 스크린샷 및 화면 녹화를 지원합니다.\n- 녹화 상태 관리가 개선되었습니다.",
         "promotionalText": "새로운 Mac Agent로 Mac의 코딩 에이전트가 Walnut에서 페이지를 테스트합니다. WebView 디버깅용 Console, Network, Sources도 내장."
     },
     "ja": {
@@ -306,7 +301,6 @@ SFSafariViewControllerテスト
 Webコンテンツのレンダリングテスト、JavaScriptデバッグ、ネットワークリクエスト分析、アクセシビリティ準拠の確認が必要なiOS開発者に最適です。
 """,
         "keywords": "webview,開発者,デバッグ,コンソール,ネットワーク,safari,devtools,テスト,検査,ios,javascript,html,css,開発ツール,ブラウザ,アプリ",
-        "whatsNew": "- SafariVCモードでスクリーンショットと画面録画をサポートしました。\n- 録画状態の管理を改善しました。",
         "promotionalText": "新機能: Mac Agentで、MacからコーディングエージェントがWalnut内のページをテスト。WebViewデバッグ用のConsole、Network、Sourcesも内蔵。"
     },
     "zh-Hans": {
@@ -352,7 +346,6 @@ SFSafariViewController测试
 非常适合需要测试网页内容渲染、调试JavaScript、分析网络请求和确保可访问性合规的iOS开发者。
 """,
         "keywords": "webview,开发者,调试,控制台,网络,safari,devtools,测试,检查,ios,javascript,html,css,cookie,性能,开发工具,浏览器,应用,工具",
-        "whatsNew": "- 增加了SafariVC模式下的截屏和屏幕录制功能。\n- 改进了录制状态管理。",
         "promotionalText": "全新 Mac Agent 可让你的编码代理从 Mac 在 Walnut 中测试页面。内置 Console、Network 和 Sources，方便调试 WebView。"
     },
     "zh-Hant": {
@@ -398,7 +391,6 @@ SFSafariViewController測試
 非常適合需要測試網頁內容呈現、除錯JavaScript、分析網路請求和確保無障礙合規的iOS開發者。
 """,
         "keywords": "webview,開發者,除錯,控制台,網路,safari,devtools,測試,檢查,ios,javascript,html,css,cookie,效能,開發工具,瀏覽器,應用,工具",
-        "whatsNew": "- 增加了SafariVC模式下的截圖和螢幕錄製功能。\n- 改進了錄製狀態管理。",
         "promotionalText": "全新：Mac Agent 可讓你的編碼代理從 Mac 測試 Walnut 中的頁面。內建 Console、Network 和 Sources，方便 WebView 除錯。"
     },
     "de-DE": {
@@ -444,7 +436,6 @@ Zusätzliche Funktionen
 Perfekt für iOS-Entwickler, die Web-Content-Rendering testen, JavaScript debuggen, Netzwerkanfragen analysieren und Barrierefreiheit sicherstellen müssen.
 """,
         "keywords": "webview,entwickler,debug,konsole,netzwerk,safari,devtools,test,inspektor,ios,javascript,html,browser",
-        "whatsNew": "- Screenshot- und Bildschirmaufnahme-Unterstützung für den SafariVC-Modus hinzugefügt.\n- Aufnahmestatusverwaltung verbessert.",
         "promotionalText": "Neu: Mit Mac Agent testet dein Coding-Agent Seiten in Walnut von deinem Mac aus. Plus Console, Network und Sources für WebView-Debugging."
     },
     "fr-FR": {
@@ -490,7 +481,6 @@ Fonctionnalités supplémentaires
 Parfait pour les développeurs iOS qui doivent tester le rendu de contenu web, déboguer JavaScript, analyser les requêtes réseau et assurer la conformité d'accessibilité.
 """,
         "keywords": "webview,développeur,debug,console,réseau,safari,devtools,test,inspecteur,ios,javascript,html,cookie",
-        "whatsNew": "- Ajout de la prise en charge des captures d'écran et de l'enregistrement vidéo pour le mode SafariVC.\n- Amélioration de la gestion de l'état d'enregistrement.",
         "promotionalText": "Nouveau : Mac Agent permet à votre agent de codage de tester des pages dans Walnut depuis votre Mac. Avec Console, Network et Sources pour déboguer WebView."
     },
     "fr-CA": {
@@ -536,7 +526,6 @@ Fonctionnalités supplémentaires
 Parfait pour les développeurs iOS qui doivent tester le rendu de contenu web, déboguer JavaScript, analyser les requêtes réseau et assurer la conformité d'accessibilité.
 """,
         "keywords": "webview,développeur,debug,console,réseau,safari,devtools,test,inspecteur,ios,javascript,html,cookie",
-        "whatsNew": "- Ajout de la prise en charge des captures d'écran et de l'enregistrement vidéo pour le mode SafariVC.\n- Amélioration de la gestion de l'état d'enregistrement.",
         "promotionalText": "Nouveau : Mac Agent permet à votre agent de codage de tester des pages dans Walnut depuis votre Mac. Console, Network et Sources intégrés pour déboguer WebView."
     },
     "es-ES": {
@@ -582,7 +571,6 @@ Características adicionales
 Perfecto para desarrolladores iOS que necesitan probar el renderizado de contenido web, depurar JavaScript, analizar solicitudes de red y asegurar el cumplimiento de accesibilidad.
 """,
         "keywords": "webview,desarrollador,debug,consola,red,safari,devtools,prueba,inspector,ios,javascript,html,cookie",
-        "whatsNew": "- Añadida la captura de pantalla y grabación de video en modo SafariVC.\n- Mejora en la gestión del estado de grabación.",
         "promotionalText": "Nuevo: Mac Agent permite a tu agente probar páginas en Walnut desde tu Mac. Además, Console, Network y Sources integrados para depurar WebView."
     },
     "es-MX": {
@@ -628,7 +616,6 @@ Características adicionales
 Perfecto para desarrolladores iOS que necesitan probar el renderizado de contenido web, depurar JavaScript, analizar solicitudes de red y asegurar el cumplimiento de accesibilidad.
 """,
         "keywords": "webview,desarrollador,debug,consola,red,safari,devtools,prueba,inspector,ios,javascript,html,cookie",
-        "whatsNew": "- Añadida la captura de pantalla y grabación de video en modo SafariVC.\n- Mejora en la gestión del estado de grabación.",
         "promotionalText": "Nuevo: Mac Agent permite que tu agente de programación pruebe páginas en Walnut desde tu Mac. Con Console, Network y Sources para depurar WebView."
     },
     "it": {
@@ -675,7 +662,6 @@ Funzionalità aggiuntive
 Perfetto per sviluppatori iOS che devono testare il rendering di contenuti web, debuggare JavaScript, analizzare richieste di rete e garantire la conformità all'accessibilità.
 """,
         "keywords": "webview,sviluppatore,debug,console,rete,safari,devtools,test,ispettore,ios,javascript,html,css",
-        "whatsNew": "- Aggiunto supporto per screenshot e registrazione dello schermo in modalità SafariVC.\n- Migliorata la gestione dello stato di registrazione.",
         "promotionalText": "Novità: Mac Agent permette al tuo agente di coding di testare pagine in Walnut dal tuo Mac. Console, Network e Sources integrati per il debug WebView."
     },
     "pt-BR": {
@@ -722,7 +708,6 @@ Recursos adicionais
 Perfeito para desenvolvedores iOS que precisam testar renderização de conteúdo web, depurar JavaScript, analisar requisições de rede e garantir conformidade de acessibilidade.
 """,
         "keywords": "webview,desenvolvedor,debug,console,rede,safari,devtools,teste,inspetor,ios,javascript,html,cookie",
-        "whatsNew": "- Adicionado suporte a captura de tela e gravação de vídeo no modo SafariVC.\n- Melhoria no gerenciamento do estado de gravação.",
         "promotionalText": "Novo: Mac Agent permite que seu agente de código teste páginas no Walnut pelo Mac. Console, Network e Sources integrados para depurar WebView."
     },
     "pt-PT": {
@@ -769,7 +754,6 @@ Recursos adicionais
 Perfeito para desenvolvedores iOS que precisam testar renderização de conteúdo web, depurar JavaScript, analisar requisições de rede e garantir conformidade de acessibilidade.
 """,
         "keywords": "webview,desenvolvedor,debug,console,rede,safari,devtools,teste,inspetor,ios,javascript,html,cookie",
-        "whatsNew": "- Adicionado suporte a captura de tela e gravação de vídeo no modo SafariVC.\n- Melhoria no gerenciamento do estado de gravação.",
         "promotionalText": "Novo: Mac Agent permite ao seu agente de programação testar páginas no Walnut a partir do Mac. Com Console, Network e Sources integrados para depuração de WebView."
     },
     "ru": {
@@ -815,7 +799,6 @@ MAC AGENT (НОВОЕ)
 Идеально подходит для iOS-разработчиков, которым нужно тестировать рендеринг веб-контента, отлаживать JavaScript, анализировать сетевые запросы и обеспечивать соответствие требованиям доступности.
 """,
         "keywords": "webview,разработчик,отладка,консоль,сеть,safari,devtools,тест,инспектор,ios,javascript,html,css",
-        "whatsNew": "- Добавлена поддержка снимков экрана и записи экрана в режиме SafariVC.\n- Улучшено управление состоянием записи.",
         "promotionalText": "Новое: Mac Agent позволяет ИИ-агенту для кода тестировать страницы в Walnut с Mac. А Console, Network и Sources помогают отлаживать WebView."
     },
     "ar-SA": {
@@ -861,7 +844,6 @@ MAC AGENT (جديد)
 مثالية لمطوري iOS الذين يحتاجون إلى اختبار عرض محتوى الويب وتصحيح أخطاء JavaScript وتحليل طلبات الشبكة وضمان الامتثال لإمكانية الوصول.
 """,
         "keywords": "webview,مطور,تصحيح,وحدة التحكم,شبكة,safari,devtools,اختبار,فحص,ios,javascript,html,css,متصفح,أداة",
-        "whatsNew": "- تمت إضافة دعم لقطة الشاشة وتسجيل الشاشة لوضع SafariVC.\n- تحسين إدارة حالة التسجيل.",
         "promotionalText": "جديد: Mac Agent يتيح لوكيل البرمجة اختبار الصفحات في Walnut من Mac. مع Console وNetwork وSources مدمجة لتصحيح WebView."
     },
     "hi": {
@@ -907,7 +889,6 @@ SFSafariViewController टेस्टिंग
 iOS डेवलपर्स के लिए परफेक्ट जिन्हें वेब कंटेंट रेंडरिंग टेस्ट करना है, JavaScript डीबग करना है, नेटवर्क रिक्वेस्ट एनालाइज़ करना है और एक्सेसिबिलिटी कंप्लायंस सुनिश्चित करना है।
 """,
         "keywords": "webview,डेवलपर,डीबग,कंसोल,नेटवर्क,safari,devtools,टेस्ट,इंस्पेक्ट,ios,javascript,html,css,ब्राउज़र",
-        "whatsNew": "- SafariVC मोड के लिए स्क्रीनशॉट और स्क्रीन रिकॉर्डिंग सपोर्ट जोड़ा गया।\n- रिकॉर्डिंग स्टेट मैनेजमेंट में सुधार।",
         "promotionalText": "नया: Mac Agent आपके कोडिंग एजेंट को Mac से Walnut में पेज टेस्ट करने देता है। WebView डीबगिंग के लिए Console, Network, Sources भी।"
     },
     "th": {
@@ -953,7 +934,6 @@ MAC AGENT (ใหม่)
 เหมาะสำหรับนักพัฒนา iOS ที่ต้องการทดสอบการแสดงผลเนื้อหาเว็บ ดีบัก JavaScript วิเคราะห์คำขอเครือข่าย และรับรองการปฏิบัติตามการเข้าถึง
 """,
         "keywords": "webview,นักพัฒนา,ดีบัก,คอนโซล,เครือข่าย,safari,devtools,ทดสอบ,ตรวจสอบ,ios,javascript,html,css",
-        "whatsNew": "- เพิ่มการสนับสนุนการจับภาพหน้าจอและการบันทึกหน้าจอสำหรับโหมด SafariVC\n- ปรับปรุงการจัดการสถานะการบันทึก",
         "promotionalText": "ใหม่: Mac Agent ให้เอเจนต์เขียนโค้ดทดสอบหน้าใน Walnut จาก Mac ของคุณ พร้อม Console, Network และ Sources ในตัวสำหรับดีบัก WebView"
     },
     "vi": {
@@ -999,7 +979,6 @@ Tính năng bổ sung
 Hoàn hảo cho các nhà phát triển iOS cần kiểm thử hiển thị nội dung web, gỡ lỗi JavaScript, phân tích yêu cầu mạng và đảm bảo tuân thủ khả năng truy cập.
 """,
         "keywords": "webview,lập trình,debug,console,mạng,safari,devtools,kiểm thử,kiểm tra,ios,javascript,html,css",
-        "whatsNew": "- Thêm hỗ trợ chụp màn hình và quay màn hình cho chế độ SafariVC.\n- Cải thiện quản lý trạng thái ghi.",
         "promotionalText": "Mới: Mac Agent cho phép coding agent kiểm thử trang trong Walnut từ Mac. Có sẵn Console, Network và Sources để gỡ lỗi WebView."
     },
     "id": {
@@ -1045,7 +1024,6 @@ Fitur Tambahan
 Sempurna untuk pengembang iOS yang perlu menguji rendering konten web, debug JavaScript, menganalisis permintaan jaringan, dan memastikan kepatuhan aksesibilitas.
 """,
         "keywords": "webview,developer,debug,console,jaringan,safari,devtools,tes,inspeksi,ios,javascript,html,css",
-        "whatsNew": "- Menambahkan dukungan tangkapan layar dan perekaman layar untuk mode SafariVC.\n- Peningkatan manajemen status perekaman.",
         "promotionalText": "Baru: Mac Agent memungkinkan agen coding menguji halaman di Walnut dari Mac. Serta Console, Network, dan Sources bawaan untuk debugging WebView."
     },
     "ms": {
@@ -1091,7 +1069,6 @@ Ciri-ciri Tambahan
 Sempurna untuk pembangun iOS yang perlu menguji pemaparan kandungan web, nyahpepijat JavaScript, menganalisis permintaan rangkaian, dan memastikan pematuhan kebolehcapaian.
 """,
         "keywords": "webview,pembangun,debug,konsol,rangkaian,safari,devtools,uji,periksa,ios,javascript,html,css,pelayar",
-        "whatsNew": "- Menambah sokongan tangkapan skrin dan rakaman skrin untuk mod SafariVC.\n- Pengurusan status rakaman yang dipertingkatkan.",
         "promotionalText": "Baru: Mac Agent membolehkan ejen pengekodan anda menguji halaman dalam Walnut dari Mac. Console, Network dan Sources terbina untuk nyahpepijat WebView."
     },
     "nl-NL": {
@@ -1137,7 +1114,6 @@ Extra functies
 Perfect voor iOS-ontwikkelaars die webcontent-rendering moeten testen, JavaScript moeten debuggen, netwerkverzoeken moeten analyseren en toegankelijkheidsconformiteit moeten waarborgen.
 """,
         "keywords": "webview,ontwikkelaar,debug,console,netwerk,safari,devtools,test,inspecteer,ios,javascript,html,css",
-        "whatsNew": "- Ondersteuning voor schermafbeeldingen en schermopname toegevoegd voor SafariVC-modus.\n- Verbeterd beheer van opnamestatus.",
         "promotionalText": "Nieuw: Mac Agent laat je codeeragent pagina's testen in Walnut vanaf je Mac. Met Console, Network en Sources voor WebView-debugging."
     },
     "pl": {
@@ -1183,7 +1159,6 @@ Dodatkowe funkcje
 Idealne dla programistów iOS, którzy muszą testować renderowanie treści webowych, debugować JavaScript, analizować żądania sieciowe i zapewniać zgodność z dostępnością.
 """,
         "keywords": "webview,programista,debug,konsola,sieć,safari,devtools,test,inspektor,ios,javascript,html,css",
-        "whatsNew": "- Dodano obsługę zrzutów ekranu i nagrywania ekranu w trybie SafariVC.\n- Poprawiono zarządzanie stanem nagrywania.",
         "promotionalText": "Nowość: Mac Agent pozwala testować strony w Walnut z poziomu Mac. Wbudowane Console, Network i Sources do debugowania WebView."
     },
     "tr": {
@@ -1229,7 +1204,6 @@ Ek Özellikler
 Web içerik görüntülemeyi test etmesi, JavaScript hata ayıklaması, ağ isteklerini analiz etmesi ve erişilebilirlik uyumluluğunu sağlaması gereken iOS geliştiricileri için mükemmel.
 """,
         "keywords": "webview,geliştirici,debug,konsol,ağ,safari,devtools,test,denetim,ios,javascript,html,css,tarayıcı",
-        "whatsNew": "- SafariVC modunda ekran görüntüsü ve ekran kaydı desteği eklendi.\n- Kayıt durumu yönetimi iyileştirildi.",
         "promotionalText": "Yeni: Mac Agent ile kodlama aracınız Mac’inizden Walnut’ta sayfaları test eder. WebView hata ayıklama için Console, Network ve Sources yerleşik."
     },
     "uk": {
@@ -1275,7 +1249,6 @@ MAC AGENT (НОВЕ)
 Ідеально підходить для iOS-розробників, яким потрібно тестувати рендеринг веб-контенту, налагоджувати JavaScript, аналізувати мережеві запити та забезпечувати відповідність вимогам доступності.
 """,
         "keywords": "webview,розробник,налагодження,консоль,мережа,safari,devtools,тест,інспектор,ios,javascript,html",
-        "whatsNew": "- Додано підтримку знімків екрану та запису екрану для режиму SafariVC.\n- Покращено керування станом запису.",
         "promotionalText": "Нове: Mac Agent дає агенту кодування тестувати сторінки в Walnut із Mac. А Console, Network і Sources вже вбудовані для налагодження WebView."
     },
     "sv": {
@@ -1321,7 +1294,6 @@ Ytterligare funktioner
 Perfekt för iOS-utvecklare som behöver testa webbinnehållsrendering, felsöka JavaScript, analysera nätverksförfrågningar och säkerställa tillgänglighetsefterlevnad.
 """,
         "keywords": "webview,utvecklare,debug,konsol,nätverk,safari,devtools,test,inspektera,ios,javascript,html,css",
-        "whatsNew": "- Lagt till stöd för skärmdumpar och skärminspelning för SafariVC-läge.\n- Förbättrad hantering av inspelningsstatus.",
         "promotionalText": "Nytt: Mac Agent låter din kodagent testa sidor i Walnut från din Mac. Console, Network och Sources ingår för WebView-felsökning."
     },
     "no": {
@@ -1367,7 +1339,6 @@ Ytterligere funksjoner
 Perfekt for iOS-utviklere som trenger å teste webinnholdsrendering, feilsøke JavaScript, analysere nettverksforespørsler og sikre tilgjengelighetsoverholdelse.
 """,
         "keywords": "webview,utvikler,debug,konsoll,nettverk,safari,devtools,test,inspiser,ios,javascript,html,css",
-        "whatsNew": "- Lagt til støtte for skjermbilder og skjermopptak for SafariVC-modus.\n- Forbedret håndtering av innspillingsstatus.",
         "promotionalText": "Nytt: Mac Agent lar kodeagenten teste sider i Walnut fra Mac. Med Console, Network og Sources innebygd for WebView-feilsøking."
     },
     "da": {
@@ -1413,7 +1384,6 @@ Yderligere funktioner
 Perfekt til iOS-udviklere, der skal teste webindholdsgengivelse, debugge JavaScript, analysere netværksanmodninger og sikre tilgængelighedsoverholdelse.
 """,
         "keywords": "webview,udvikler,debug,konsol,netværk,safari,devtools,test,inspicér,ios,javascript,html,css,browser",
-        "whatsNew": "- Tilføjet understøttelse af skærmbilleder og skærmoptagelse for SafariVC-tilstand.\n- Forbedret styring af optagelsesstatus.",
         "promotionalText": "Nyt: Mac Agent lader din kodeagent teste sider i Walnut fra din Mac. Plus Console, Network og Sources indbygget til WebView-fejlfinding."
     },
     "fi": {
@@ -1459,7 +1429,6 @@ Lisäominaisuudet
 Täydellinen iOS-kehittäjille, jotka tarvitsevat web-sisällön renderöinnin testausta, JavaScript-virheenkorjausta, verkkopyyntöjen analysointia ja saavutettavuusvaatimusten varmistamista.
 """,
         "keywords": "webview,kehittäjä,debug,konsoli,verkko,safari,devtools,testi,tarkasta,ios,javascript,html,css,selain",
-        "whatsNew": "- Lisätty kuvakaappaus- ja näytön tallennustuki SafariVC-tilaan.\n- Parannettu tallennustilan hallintaa.",
         "promotionalText": "Uusi: Mac Agent antaa koodausagenttisi testata sivuja Walnutissa Maciltasi. Console, Network ja Sources sisäänrakennettuina WebView-vianetsintään."
     },
     "cs": {
@@ -1505,7 +1474,6 @@ Další funkce
 Ideální pro iOS vývojáře, kteří potřebují testovat vykreslování webového obsahu, debugovat JavaScript, analyzovat síťové požadavky a zajistit soulad s přístupností.
 """,
         "keywords": "webview,vývojář,debug,konzole,síť,safari,devtools,test,inspektor,ios,javascript,html,css,prohlížeč",
-        "whatsNew": "- Přidána podpora snímků obrazovky a nahrávání obrazovky pro režim SafariVC.\n- Vylepšená správa stavu nahrávání.",
         "promotionalText": "Novinka: Mac Agent umožní programovacímu agentovi testovat stránky ve Walnut z Mac. Console, Network a Sources jsou vestavěné pro ladění WebView."
     },
     "sk": {
@@ -1551,7 +1519,6 @@ Vývojárske nástroje
 Ideálne pre iOS vývojárov, ktorí potrebujú testovať vykresľovanie webového obsahu, debugovať JavaScript, analyzovať sieťové požiadavky a zabezpečiť súlad s prístupnosťou.
 """,
         "keywords": "webview,vývojár,debug,konzola,sieť,safari,devtools,test,inšpektor,ios,javascript,html,css,prehliadač",
-        "whatsNew": "- Pridaná podpora snímok obrazovky a nahrávania obrazovky pre režim SafariVC.\n- Vylepšená správa stavu nahrávania.",
         "promotionalText": "Novinka: Mac Agent umožní agentovi na kódovanie testovať stránky vo Walnut z Mac. Plus Console, Network a Sources na ladenie WebView."
     },
     "hu": {
@@ -1597,7 +1564,6 @@ További funkciók
 Tökéletes iOS fejlesztőknek, akiknek webtartalom renderelést kell tesztelniük, JavaScript-et debugolniuk, hálózati kéréseket elemezniük és akadálymentességi megfelelőséget biztosítaniuk.
 """,
         "keywords": "webview,fejlesztő,debug,konzol,hálózat,safari,devtools,teszt,vizsgálat,ios,javascript,html,css",
-        "whatsNew": "- Képernyőkép és képernyőfelvétel támogatás hozzáadva a SafariVC módhoz.\n- Javított felvételi állapotkezelés.",
         "promotionalText": "Új: a Mac Agenttel a kódoló asszisztensed oldalakat tesztelhet a Walnutban a Macről. Console, Network és Sources a WebView hibakereséshez."
     },
     "ro": {
@@ -1643,7 +1609,6 @@ Caracteristici suplimentare
 Perfect pentru dezvoltatorii iOS care trebuie să testeze redarea conținutului web, să depaneze JavaScript, să analizeze cererile de rețea și să asigure conformitatea cu accesibilitatea.
 """,
         "keywords": "webview,dezvoltator,debug,consolă,rețea,safari,devtools,test,inspector,ios,javascript,html,css",
-        "whatsNew": "- Adăugat suport pentru capturi de ecran și înregistrare ecran în modul SafariVC.\n- Îmbunătățită gestionarea stării de înregistrare.",
         "promotionalText": "Nou: Mac Agent permite agentului tău de codare să testeze pagini în Walnut de pe Mac. Plus Console, Network și Sources integrate pentru depanarea WebView."
     },
     "hr": {
@@ -1689,7 +1654,6 @@ Dodatne značajke
 Savršeno za iOS programere koji trebaju testirati prikazivanje web sadržaja, debugirati JavaScript, analizirati mrežne zahtjeve i osigurati usklađenost s pristupačnošću.
 """,
         "keywords": "webview,programer,debug,konzola,mreža,safari,devtools,test,inspektor,ios,javascript,html,css",
-        "whatsNew": "- Dodana podrška za snimanje zaslona i snimanje zaslona za SafariVC način rada.\n- Poboljšano upravljanje stanjem snimanja.",
         "promotionalText": "Novo: Mac Agent omogućuje agentu za kodiranje testiranje stranica u Walnut s Mac računala. Ugrađeni Console, Network i Sources za WebView."
     },
     "el": {
@@ -1735,7 +1699,6 @@ MAC AGENT (ΝΕΟ)
 Ιδανικό για iOS προγραμματιστές που χρειάζεται να δοκιμάσουν απόδοση περιεχομένου web, να κάνουν debug σε JavaScript, να αναλύσουν αιτήματα δικτύου και να εξασφαλίσουν συμμόρφωση προσβασιμότητας.
 """,
         "keywords": "webview,προγραμματιστής,debug,κονσόλα,δίκτυο,safari,devtools,δοκιμή,ios,javascript,html,css",
-        "whatsNew": "- Προστέθηκε υποστήριξη λήψης στιγμιότυπων και εγγραφής οθόνης για τη λειτουργία SafariVC.\n- Βελτιωμένη διαχείριση κατάστασης εγγραφής.",
         "promotionalText": "Νέο: Το Mac Agent δοκιμάζει σελίδες στο Walnut από το Mac μέσω agent κώδικα. Με Console, Network και Sources για WebView debugging."
     },
     "he": {
@@ -1781,7 +1744,6 @@ MAC AGENT (חדש)
 מושלם למפתחי iOS שצריכים לבדוק רינדור תוכן אינטרנט, לדבג JavaScript, לנתח בקשות רשת ולהבטיח עמידה בדרישות נגישות.
 """,
         "keywords": "webview,מפתח,דיבאג,קונסול,רשת,safari,devtools,בדיקה,בדיקת,ios,javascript,html,css,דפדפן,כלי,פיתוח",
-        "whatsNew": "- נוספה תמיכה בצילום מסך והקלטת מסך למצב SafariVC.\n- שיפור ניהול מצב ההקלטה.",
         "promotionalText": "חדש: Mac Agent מאפשר לסוכן הקידוד לבדוק דפים ב-Walnut מה-Mac. כולל Console, Network ו-Sources לניפוי WebView."
     },
     "ca": {
@@ -1827,7 +1789,6 @@ Característiques addicionals
 Perfecte per a desenvolupadors iOS que necessiten provar el renderitzat de contingut web, depurar JavaScript, analitzar peticions de xarxa i assegurar el compliment d'accessibilitat.
 """,
         "keywords": "webview,desenvolupador,debug,consola,xarxa,safari,devtools,prova,inspector,ios,javascript,html,css",
-        "whatsNew": "- Afegit suport per a captures de pantalla i gravació de pantalla per al mode SafariVC.\n- Millora en la gestió de l'estat de gravació.",
         "promotionalText": "Nou: Mac Agent permet al teu agent de codi provar pàgines a Walnut des del Mac. Amb Console, Network i Sources integrats per depurar WebView."
     }
 }
@@ -1981,6 +1942,12 @@ def create_app_info_localization(app_info_id, locale, metadata):
     return True
 
 
+def release_notes(locale):
+    """Release notes live in fastlane/metadata/<locale>/release_notes.txt (one owner)."""
+    path = Path(__file__).resolve().parent.parent / "fastlane" / "metadata" / locale / "release_notes.txt"
+    return path.read_text().strip() if path.exists() else ""
+
+
 def update_version_localization(localization_id, locale, metadata):
     """Update existing app store version localization"""
     headers = get_headers()
@@ -1991,7 +1958,7 @@ def update_version_localization(localization_id, locale, metadata):
             "attributes": {
                 "description": metadata.get("description", ""),
                 "keywords": metadata.get("keywords", "")[:100],
-                "whatsNew": metadata.get("whatsNew", ""),
+                "whatsNew": release_notes(locale),
                 "promotionalText": metadata.get("promotionalText", "")
             }
         }
@@ -2022,7 +1989,7 @@ def create_version_localization(version_id, locale, metadata):
                 "locale": locale,
                 "description": metadata.get("description", ""),
                 "keywords": metadata.get("keywords", "")[:100],
-                "whatsNew": metadata.get("whatsNew", ""),
+                "whatsNew": release_notes(locale),
                 "promotionalText": metadata.get("promotionalText", "")
             },
             "relationships": {

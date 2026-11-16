@@ -29,7 +29,9 @@ struct OverlayMenuBars: View {
     @Binding var showBookmarks: Bool
     @Binding var showInfo: Bool
     var devToolsState: DevToolsOverlayState
-    var macAgentButton: AnyView?
+    var agentSession: AgentSession?
+    var isAgentRecording = false
+    var onMacAgent: () -> Void = {}
 
     @State private var isExpanded: Bool = false
     @State private var dragOffset: CGFloat = 0
@@ -63,6 +65,14 @@ struct OverlayMenuBars: View {
             if showBottomBar {
                 bottomBar
                     .frame(maxHeight: .infinity, alignment: .bottom)
+            }
+
+            // Keep the Mac Agent state visible while the collapsed top bar is off screen.
+            if isOverlayMode, !isExpanded, let agentSession, agentSession.isRunning {
+                MacAgentButton(session: agentSession, isRecording: isAgentRecording, action: onMacAgent)
+                    .padding(.top, topHandleVisible + 8)
+                    .frame(maxHeight: .infinity, alignment: .top)
+                    .transition(.opacity)
             }
         }
         .animation(.spring(response: 0.35, dampingFraction: 0.8), value: isExpanded)
@@ -269,7 +279,9 @@ private extension OverlayMenuBars {
                         BookmarkButton(showBookmarks: $showBookmarks, hasBookmarks: hasBookmarks)
                     }
 
-                    macAgentButton
+                    if let agentSession, agentSession.isRunning {
+                        MacAgentButton(session: agentSession, isRecording: isAgentRecording, action: onMacAgent)
+                    }
                     // Info & Settings buttons (always visible)
                     InfoSheetButton(showInfo: $showInfo)
                     SettingsButton(showSettings: $showSettings)

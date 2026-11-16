@@ -13,7 +13,7 @@ final class AgentSourceResourceTests: XCTestCase {
         _ = try await webView.evaluateJavaScript("document.querySelector('p').textContent = 'updated fixture'; void 0;")
         let result = try await AgentDevTools.call(
             "sources_list", arguments: ["section": "html", "query": "updated fixture"], navigator: navigator,
-            storage: StorageManager(), console: ConsoleSession(), authorize: { _ in true }
+            storage: StorageManager(), console: ConsoleSession(), authorize: { _, _ in true }
         )
         let html = try XCTUnwrap(result as? [String: Any])
         XCTAssertEqual(html["retrieval"] as? String, "live-dom")
@@ -118,7 +118,7 @@ final class AgentSourceResourceTests: XCTestCase {
         do {
             _ = try await AgentDevTools.call(
                 "sources_detail", arguments: ["kind": "script", "index": 0], navigator: navigator,
-                storage: StorageManager(), console: ConsoleSession(), authorize: { _ in false }
+                storage: StorageManager(), console: ConsoleSession(), authorize: { _, _ in false }
             )
             XCTFail("External source access must require approval")
         } catch {
@@ -158,7 +158,7 @@ final class AgentSourceResourceTests: XCTestCase {
             do {
                 _ = try await AgentDevTools.call(
                     "sources_detail", arguments: ["kind": "script", "index": 0], navigator: navigator,
-                    storage: StorageManager(), console: ConsoleSession(), authorize: { prompt in
+                    storage: StorageManager(), console: ConsoleSession(), authorize: { prompt, _ in
                         XCTAssertTrue(prompt.contains(base.absoluteString))
                         XCTAssertFalse(prompt.contains("private-fixture"))
                         XCTAssertFalse(prompt.contains("secret-fragment"))
@@ -219,7 +219,7 @@ final class AgentSourceResourceTests: XCTestCase {
     private func detail(_ kind: String, index: Int, navigator: WebViewNavigator, values: [String: Any] = [:]) async throws -> [String: Any] {
         let result = try await AgentDevTools.call(
             "sources_detail", arguments: values.merging(["kind": kind, "index": index]) { _, value in value },
-            navigator: navigator, storage: StorageManager(), console: ConsoleSession(), authorize: { _ in true }
+            navigator: navigator, storage: StorageManager(), console: ConsoleSession(), authorize: { _, _ in true }
         )
         return try XCTUnwrap(result as? [String: Any])
     }

@@ -172,7 +172,7 @@ struct PreloadProfileSettingsView: View {
 
             Button {
                 state.saveCurrentProfile()
-                feedbackState.show(String(localized: "Setup saved"))
+                feedbackState.show("Setup saved")
             } label: {
                 Text("Save Current Setup")
             }
@@ -213,7 +213,7 @@ struct PreloadProfileSettingsView: View {
                     Button {
                         state.profile = saved
                         showSavedSetupLoader = false
-                feedbackState.show(String(localized: "Setup loaded"))
+                feedbackState.show("Setup loaded")
                     } label: {
                         VStack(alignment: .leading, spacing: 4) {
                             Text(saved.name)

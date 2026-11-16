@@ -29,6 +29,8 @@ final class AgentSession {
     var isPairingAvailable: Bool { pinListener.isPairingAvailable }
     var pairingError: String? { pinListener.error ?? pairingStartError }
     var hasPairingGrant: Bool { hasRememberedMac || hasConnectedMac }
+    /// The pairing window opened for this run and has since closed (expired, failed or used up its attempts).
+    var isPairingEnded: Bool { isRunning && pairingCode != nil && !hasPairingGrant && !pinListener.isListening }
     private var pairingStartError: String?
     @ObservationIgnored private var pairingPayload: Data?
     @ObservationIgnored private var listener: NWListener?
@@ -38,17 +40,24 @@ final class AgentSession {
     @ObservationIgnored private var isReceiving = false
     @ObservationIgnored private var operation: Task<Void, Never>?
     @ObservationIgnored private var onDisconnect: (() -> Void)?
-    @ObservationIgnored private var currentCall: (tool: String, arguments: [String: Any])?
 
     typealias Handler = @MainActor (String, [String: Any]) async throws -> Any
     private static weak var activeSession: AgentSession?
     private static let maxRequest = 256 * 1024
     static let maxResponse = 16 * 1024 * 1024
 
-    func start(rememberedOnly: Bool = false, handler: @escaping Handler, onDisconnect: @escaping () -> Void) {
+    /// `automatic` starts (app launch) never report a conflict with another window's session.
+    func start(
+        rememberedOnly: Bool = false,
+        automatic: Bool = false,
+        handler: @escaping Handler,
+        onDisconnect: @escaping () -> Void
+    ) {
         guard !isRunning else { return }
         guard Self.activeSession == nil else {
-            if !rememberedOnly { connectionError = "Stop the Mac Agent connection in the other Walnut window first." }
+            if !rememberedOnly, !automatic {
+                connectionError = String(localized: "Stop the Mac Agent connection in the other Walnut window first.")
+            }
             return
         }
         connectionError = nil
@@ -66,7 +75,7 @@ final class AgentSession {
                        port == PairingWire.port || port == PairingWire.rememberedPort {
                         // Keep both fixed bootstrap ports free for pairing and reconnect.
                         self.stop()
-                        self.start(rememberedOnly: rememberedOnly, handler: handler, onDisconnect: onDisconnect)
+                        self.start(rememberedOnly: rememberedOnly, automatic: automatic, handler: handler, onDisconnect: onDisconnect)
                         return
                     }
                     self.update(state, name: name, key: key, port: listener.port, rememberedOnly: rememberedOnly)
@@ -116,13 +125,9 @@ final class AgentSession {
         onDisconnect = nil
     }
 
-    func authorize(_ message: String) async -> Bool {
-        await authorize(message, preview: nil)
-    }
-
-    func authorize(_ message: String, preview: UIImage?) async -> Bool {
-        if let call = currentCall,
-           AgentApprovalMode.current.approvesWithoutAsking(tool: call.tool, arguments: call.arguments) {
+    /// `message` is shown verbatim, so call sites pass already-localized text.
+    func authorize(_ message: String, preview: UIImage? = nil, scope: ApprovalScope = .sensitive) async -> Bool {
+        if AgentApprovalMode.current.approvesWithoutAsking(scope) {
             return isConnected && !Task.isCancelled
         }
         guard isConnected, await approvals.authorize(message, preview: preview) else { return false }
@@ -312,8 +317,6 @@ final class AgentSession {
             }
             let payload: [String: Any]
             do {
-                self.currentCall = (request.tool, arguments)
-                defer { self.currentCall = nil }
                 let result = try await handler(request.tool, arguments)
                 payload = ["id": request.id, "result": result]
             } catch {

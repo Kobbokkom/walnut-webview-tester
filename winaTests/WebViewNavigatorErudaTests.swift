@@ -167,7 +167,7 @@ final class WebViewNavigatorErudaTests: XCTestCase {
         let documentID = navigator.documentID
         let browserRevision = settings.rebuildID
 
-        let applied = try await AgentSettings.call("settings_apply", arguments: ["settings": [key: true]], navigator: navigator) { prompt in
+        let applied = try await AgentSettings.call("settings_apply", arguments: ["settings": [key: true]], navigator: navigator) { prompt, _ in
             XCTAssertTrue(prompt.contains("Eruda runs third-party JavaScript"))
             return true
         } as? [String: Any]
@@ -187,7 +187,7 @@ final class WebViewNavigatorErudaTests: XCTestCase {
         let displayedInOtherWindow = try await otherWebView.evaluateJavaScript(WebViewNavigator.erudaEntryButtonCheckScript) as? Bool
         XCTAssertEqual(displayedInOtherWindow, false)
 
-        _ = try await AgentSettings.call("settings_reset", arguments: ["keys": [key]], navigator: navigator) { _ in false }
+        _ = try await AgentSettings.call("settings_reset", arguments: ["keys": [key]], navigator: navigator) { _, _ in false }
         await navigator.syncErudaWithSettings()
         let removed = try await webView.evaluateJavaScript(WebViewNavigator.erudaEntryButtonCheckScript) as? Bool
         XCTAssertEqual(removed, false)

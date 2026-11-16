@@ -63,7 +63,7 @@ final class AgentPerformanceTests: XCTestCase {
 
         _ = try await AgentDevTools.call(
             "performance_clear", arguments: [:], navigator: navigator,
-            storage: StorageManager(), console: ConsoleSession(), authorize: { _ in true }
+            storage: StorageManager(), console: ConsoleSession(), authorize: { _, _ in true }
         )
         await assertReadFails(["collect": false], navigator, "No Performance measurement")
     }
@@ -116,7 +116,7 @@ final class AgentPerformanceTests: XCTestCase {
         XCTAssertEqual(pageValue?["observerWasVisible"] as? Bool, false)
         XCTAssertEqual(pageValue?["paint"] as? String, "forged-paint")
 
-        let result = try await read([:], navigator, authorize: { _ in
+        let result = try await read([:], navigator, authorize: { _, _ in
             XCTFail("Default Performance read requires no content approval")
             return false
         })
@@ -156,7 +156,7 @@ final class AgentPerformanceTests: XCTestCase {
         let (navigator, webView, coordinator) = await openPage(url)
         let replacement = url.deletingLastPathComponent().appendingPathComponent("replacement")
         var prompted = false
-        await assertReadFails(["reload": true, "raw": true], navigator, "document changed") { _ in
+        await assertReadFails(["reload": true, "raw": true], navigator, "document changed") { _, _ in
             prompted = true
             let loaded = self.expectation(description: "Replacement finished while the Mac waited for approval")
             coordinator.onFinish = { loaded.fulfill() }
@@ -185,7 +185,7 @@ final class AgentPerformanceTests: XCTestCase {
     private func read(
         _ arguments: [String: Any],
         _ navigator: WebViewNavigator,
-        authorize: @escaping (String) async -> Bool = { _ in true }
+        authorize: @escaping (String, ApprovalScope) async -> Bool = { _, _ in true }
     ) async throws -> [String: Any] {
         let result = try await AgentDevTools.call(
             "performance_read", arguments: arguments, navigator: navigator,
@@ -198,7 +198,7 @@ final class AgentPerformanceTests: XCTestCase {
         _ arguments: [String: Any],
         _ navigator: WebViewNavigator,
         _ message: String,
-        authorize: @escaping (String) async -> Bool = { _ in true },
+        authorize: @escaping (String, ApprovalScope) async -> Bool = { _, _ in true },
         file: StaticString = #filePath,
         line: UInt = #line
     ) async {

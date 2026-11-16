@@ -35,12 +35,12 @@ Run `walnut-agent update` in Terminal. Homebrew installations refresh the tap an
 Install Walnut Agent once, then choose Wi-Fi or USB. Wi-Fi needs no cable. [USB](#connect-by-usb) needs no shared Wi-Fi network.
 
 1. Put both devices on the same Wi-Fi network. In Walnut on the iPhone, tap the network icon to open **Mac Agent**, then turn on the **Mac Agent** switch. Allow Local Network access if prompted.
-2. Run `walnut-agent pair` in a Mac terminal. If the CLI lists multiple iPhones, select the pairing name shown in Walnut. If the pairing window expires, tap **Start pairing again**.
+2. Run `walnut-agent pair` in a Mac terminal. If the CLI lists multiple iPhones, select the pairing name shown in Walnut. If the pairing window expires, tap **Pair again**.
 3. Check that the confirmation number in Terminal matches the one on your iPhone, then tap **Pair** on the iPhone and enter `y` in Terminal. The iPhone saves the pairing in its Keychain, and the CLI saves its copy in `~/.config/walnut-agent/pairing.json` with owner-only permissions. Keep Walnut in the foreground and start a CLI session or ask your agent to use it.
 
 The pairing window lasts two minutes and accepts up to five attempts. Both devices independently display the six digits from their key exchange. The iPhone shares the connection credential only after you approve. Update both Walnut and the CLI to use this pairing flow. Previously saved Mac pairings work after both updates.
 
-While the **Mac Agent** switch is on, Mac Agent also starts each time you open Walnut, so run `walnut-agent session` or `walnut-agent session --usb` on your Mac. Leaving Walnut ends the active session. Turning the switch off stops the connection and keeps Mac Agent off at the next launch. Select **Forget Mac** to revoke access or pair a different Mac. Pairings saved before this feature require one new six-digit pairing.
+While the **Mac Agent** switch is on, Mac Agent also starts each time you open Walnut, so run `walnut-agent session` or `walnut-agent session --usb` on your Mac. Leaving Walnut ends the active session. Turning the switch off stops the connection and keeps Mac Agent off at the next launch. Select **Forget Mac** to revoke access or pair a different Mac.
 
 On the Mac, allow Local Network access if macOS prompts for Walnut Agent or the app that starts it. If you dismissed the prompt, open **System Settings → Privacy & Security → Local Network**, check that app's access, then retry the connection. If Walnut Agent is missing from the list on macOS 27.2 or later, click **+** and select the installed `Walnut Agent.app`. You can also run the CLI directly in Terminal to check the connection. See [Apple's local network privacy notes](https://developer.apple.com/documentation/technotes/tn3179-understanding-local-network-privacy).
 

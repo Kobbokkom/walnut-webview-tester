@@ -28,7 +28,7 @@ final class PairingFileTests: XCTestCase {
         try? output.fileHandleForWriting.close()
         defer { if process.isRunning { process.terminate() } }
         await fulfillment(of: [exited], timeout: 5)
-        guard !process.isRunning else { return }
+        guard !process.isRunning else { return XCTFail("Noninteractive pairing did not exit") }
         XCTAssertNotEqual(process.terminationStatus, 0)
         let diagnostic = try XCTUnwrap(String(bytes: output.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8))
         XCTAssertTrue(diagnostic.contains("confirm the numbers match"), diagnostic)

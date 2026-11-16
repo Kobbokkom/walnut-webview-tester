@@ -92,20 +92,21 @@ struct CopyIconButton: View {
 
 /// Toast message for copy feedback
 struct CopiedFeedbackToast: View {
-    let message: LocalizedStringKey
+    private let text: Text
 
-    /// Convenience init for dynamic string messages
+    /// Shows text that is already localized (for example from `CopiedFeedbackState`).
+    @_disfavoredOverload
     init(message: String) {
-        self.message = LocalizedStringKey(stringLiteral: message)
+        self.text = Text(verbatim: message)
     }
 
-    /// Primary init for localized messages
+    /// Localizes a literal message key.
     init(message: LocalizedStringKey) {
-        self.message = message
+        self.text = Text(message)
     }
 
     var body: some View {
-        Text(message)
+        text
             .font(.system(size: 13, weight: .medium))
             .foregroundStyle(.white)
             .padding(.horizontal, 16)
@@ -120,9 +121,14 @@ struct CopiedFeedbackToast: View {
 /// Observable state for managing copy feedback across views
 @Observable
 final class CopiedFeedbackState {
+    /// Already-localized text shown by `copiedFeedbackOverlay`.
     var message: String?
 
-    func show(_ message: String) {
+    func show(_ message: String.LocalizationValue) {
+        show(verbatim: String(localized: message))
+    }
+
+    func show(verbatim message: String) {
         self.message = message
         Task {
             try? await Task.sleep(for: .seconds(1.5))
@@ -134,8 +140,9 @@ final class CopiedFeedbackState {
         }
     }
 
-    func showCopied(_ label: String = "Copied") {
-        show("\(label) copied")
+    /// Pass a localized `label` (for example `String(localized: "Key")`); technical labels such as "URL" can stay as-is.
+    func showCopied(_ label: String? = nil) {
+        if let label { show("\(label) copied") } else { show("Copied") }
     }
 }
 

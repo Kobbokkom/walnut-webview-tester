@@ -343,14 +343,7 @@ extension ContentView {
             Spacer()
 
             HStack(spacing: 12) {
-                GlassIconButton(
-                    icon: "network",
-                    color: macAgentIndicatorColor,
-                    accessibilityLabel: "Mac Agent"
-                ) {
-                    showAgentConnection = true
-                }
-                .accessibilityValue(macAgentStatusValue)
+                MacAgentButton(session: agentSession) { showAgentConnection = true }
                 InfoSheetButton(showInfo: $showInfo)
                 SettingsButton(showSettings: $showSettings)
             }

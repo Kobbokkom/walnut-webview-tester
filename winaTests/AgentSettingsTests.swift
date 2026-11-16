@@ -34,7 +34,7 @@ final class AgentSettingsTests: XCTestCase {
             do {
                 _ = try await AgentSettings.call(
                     "settings_apply", arguments: ["settings": patch],
-                    navigator: nil, authorize: { _ in XCTFail("Invalid patch reached approval"); return false }
+                    navigator: nil, authorize: { _, _ in XCTFail("Invalid patch reached approval"); return false }
                 )
                 XCTFail("The patch applied an unavailable tint")
             } catch {
@@ -46,7 +46,7 @@ final class AgentSettingsTests: XCTestCase {
 
         let response = try await AgentSettings.call(
             "settings_apply", arguments: ["settings": colors, "persist": true], navigator: nil
-        ) { prompt in
+        ) { prompt, _ in
             XCTAssertEqual(prompt.contains("saved for older iOS versions"), !supported)
             return true
         }
@@ -56,7 +56,7 @@ final class AgentSettingsTests: XCTestCase {
         XCTAssertEqual(applied["browserRecreationRequested"] as? Bool, supported)
         XCTAssertEqual(settings.safariRebuildID != before, supported)
 
-        let snapshot = try await AgentSettings.call("settings_get", arguments: [:], navigator: nil) { _ in false }
+        let snapshot = try await AgentSettings.call("settings_get", arguments: [:], navigator: nil) { _, _ in false }
         let rows = try XCTUnwrap(snapshot as? [[String: Any]])
         let configured = AgentSettings.configuredBrowserSettings(safari: true)
         for (key, color) in colors {
@@ -75,7 +75,7 @@ final class AgentSettingsTests: XCTestCase {
 
         let reset = try await AgentSettings.call(
             "settings_reset", arguments: ["keys": keys], navigator: nil
-        ) { _ in false }
+        ) { _, _ in false }
         XCTAssertEqual((reset as? [String: Any])?["browserRecreationRequested"] as? Bool, false)
         for (key, color) in colors { XCTAssertEqual(defaults.string(forKey: key), color) }
     }
@@ -96,7 +96,7 @@ final class AgentSettingsTests: XCTestCase {
                     XCTAssertTrue(approved)
                     throw AgentError("The callback sheet is open.")
                 },
-                authorize: { _ in
+                authorize: { _, _ in
                     approved = true
                     return true
                 }
@@ -214,7 +214,7 @@ final class AgentSettingsTests: XCTestCase {
 
     func testToolCatalogAndSettingsSnapshotEncodeAsJSON() async throws {
         XCTAssertTrue(JSONSerialization.isValidJSONObject(AgentSettings.tools))
-        let result = try await AgentSettings.call("settings_get", arguments: [:], navigator: nil) { _ in false }
+        let result = try await AgentSettings.call("settings_get", arguments: [:], navigator: nil) { _, _ in false }
         XCTAssertTrue(JSONSerialization.isValidJSONObject(result))
         let keys = Set(try XCTUnwrap((result as? [[String: Any]])?.compactMap { $0["key"] as? String }))
         XCTAssertTrue(keys.isSuperset(of: ["elementFullscreenEnabled", "safariDismissButtonStyle", "emulationHighContrast"]))
@@ -242,7 +242,7 @@ final class AgentSettingsTests: XCTestCase {
 
     func testSafariOnlyAdvertisesSettingsAvailableInItsFullScreenPresentation() async throws {
         let removedDimensions = ["safariWidthRatio", "safariHeightRatio"]
-        let report = try await AgentSettings.call("diagnostics", arguments: ["section": "safari"], navigator: nil) { _ in false }
+        let report = try await AgentSettings.call("diagnostics", arguments: ["section": "safari"], navigator: nil) { _, _ in false }
         let diagnostics = try XCTUnwrap(report as? [String: Any])
         let safariSettings = try XCTUnwrap(diagnostics["settings"] as? [String: Any])
         XCTAssertEqual(diagnostics["presentation"] as? String, "full_screen")
@@ -284,6 +284,7 @@ final class AgentSettingsTests: XCTestCase {
         do {
             _ = try await AgentSettings.call("settings_apply", arguments: ["settings": patch], navigator: nil) {
                 prompt = $0
+                _ = $1
                 return false
             }
             XCTFail("Unapproved settings must not disable site protections")
@@ -306,6 +307,7 @@ final class AgentSettingsTests: XCTestCase {
         do {
             _ = try await AgentSettings.call("settings_apply", arguments: ["settings": [key: true]], navigator: nil) {
                 prompt = $0
+                _ = $1
                 return false
             }
             XCTFail("Unapproved settings must not enable Clean Start")
@@ -350,7 +352,7 @@ final class AgentSettingsTests: XCTestCase {
             "action": "apply",
             "visibleOrder": ["screenshot", "console"],
         ]
-        let result = try await AgentSettings.call("menus", arguments: args, navigator: nil) { _ in false }
+        let result = try await AgentSettings.call("menus", arguments: args, navigator: nil) { _, _ in false }
         XCTAssertEqual((result as? [String: Any])?["visibleOrder"] as? [String], ["screenshot", "console"])
 
         let data = AgentBrowserSettings.shared.value(key, fallback: Data())
@@ -369,7 +371,7 @@ final class AgentSettingsTests: XCTestCase {
                 ["menuItem": "home", "isVisible": true]
             ]
         ]
-        let response = try await AgentSettings.call("menus", arguments: arguments, navigator: nil) { _ in false }
+        let response = try await AgentSettings.call("menus", arguments: arguments, navigator: nil) { _, _ in false }
         let result = try XCTUnwrap(response as? [String: Any])
         XCTAssertEqual(result["visibleOrder"] as? [String], ["refresh", "home"])
         let rows = try XCTUnwrap(result["items"] as? [[String: Any]])
@@ -389,7 +391,7 @@ final class AgentSettingsTests: XCTestCase {
             ["items": [valid], "visibleOrder": ["network"]]
         ] {
             do {
-                _ = try await AgentSettings.call("menus", arguments: base.merging(patch) { _, new in new }, navigator: nil) { _ in false }
+                _ = try await AgentSettings.call("menus", arguments: base.merging(patch) { _, new in new }, navigator: nil) { _, _ in false }
                 XCTFail("Invalid menu layout was accepted")
             } catch {
                 XCTAssertTrue(error.localizedDescription.contains("unique menu item"))
@@ -401,7 +403,7 @@ final class AgentSettingsTests: XCTestCase {
         let urls = (0..<65).map { "https://bookmark\($0).example.com/private?secret=\($0)" }
         let tool = try XCTUnwrap(AgentSettings.tools.first { $0["name"] as? String == "bookmarks" })
         let first = try await AgentSettings.savedURLPage(
-            AgentSettingsInput(arguments: [:], authorize: { _ in false }), action: "list", collection: { urls }
+            AgentSettingsInput(arguments: [:], authorize: { _, _ in false }), action: "list", collection: { urls }
         )
         XCTAssertEqual((first["urls"] as? [String])?.count, 50)
         XCTAssertEqual(first["total"] as? Int, 65)
@@ -409,14 +411,14 @@ final class AgentSettingsTests: XCTestCase {
         let arguments: [String: Any] = ["action": "list", "offset": offset, "limit": 30]
         try AgentTool.validate(arguments, using: tool)
         let next = try await AgentSettings.savedURLPage(
-            AgentSettingsInput(arguments: arguments, authorize: { _ in false }), action: "list", collection: { urls }
+            AgentSettingsInput(arguments: arguments, authorize: { _, _ in false }), action: "list", collection: { urls }
         )
         XCTAssertEqual(next["urls"] as? [String], (50..<65).map { "https://bookmark\($0).example.com" })
         XCTAssertNil(next["nextOffset"])
         XCTAssertEqual(next["redacted"] as? Bool, true)
 
         let filtered = try await AgentSettings.savedURLPage(
-            AgentSettingsInput(arguments: ["query": "private"], authorize: { _ in false }), action: "list", collection: { urls }
+            AgentSettingsInput(arguments: ["query": "private"], authorize: { _, _ in false }), action: "list", collection: { urls }
         )
         XCTAssertEqual(filtered["total"] as? Int, 0)
         XCTAssertThrowsError(try AgentTool.validate(["action": "list", "offset": true], using: tool))
@@ -427,7 +429,7 @@ final class AgentSettingsTests: XCTestCase {
         let url = "https://example.com/path?token=fixture"
         let arguments: [String: Any] = ["raw": true, "limit": 1, "offset": 1]
         var approved = false
-        let input = AgentSettingsInput(arguments: arguments) { _ in
+        let input = AgentSettingsInput(arguments: arguments) { _, _ in
             approved = true
             return true
         }
@@ -452,11 +454,11 @@ final class AgentSettingsTests: XCTestCase {
         try AgentTool.validate(arguments, using: tool)
         XCTAssertThrowsError(try AgentTool.validate(["action": "logs", "limit": 201], using: tool))
 
-        let first = try await AgentSettings.call("preload", arguments: ["action": "logs"], navigator: navigator) { _ in
+        let first = try await AgentSettings.call("preload", arguments: ["action": "logs"], navigator: navigator) { _, _ in
             XCTFail("Listing log metadata does not need approval")
             return false
         }
-        let next = try await AgentSettings.call("preload", arguments: arguments, navigator: navigator) { _ in false }
+        let next = try await AgentSettings.call("preload", arguments: arguments, navigator: navigator) { _, _ in false }
         let rows = try XCTUnwrap(first as? [[String: Any]]) + XCTUnwrap(next as? [[String: Any]])
         XCTAssertEqual((first as? [[String: Any]])?.count, 50)
         XCTAssertEqual(rows.compactMap { $0["channel"] as? String }, (5..<205).reversed().map { "channel_\($0)" })
@@ -476,20 +478,20 @@ final class AgentSettingsTests: XCTestCase {
         var arguments: [String: Any] = ["action": "logs", "logId": entry.id.uuidString, "raw": true]
 
         do {
-            _ = try await AgentSettings.call("preload", arguments: arguments, navigator: navigator) { _ in false }
+            _ = try await AgentSettings.call("preload", arguments: arguments, navigator: navigator) { _, _ in false }
             XCTFail("The log body requires iPhone approval")
         } catch {
             XCTAssertTrue(error.localizedDescription.contains("did not approve"))
         }
 
-        let preview = try await AgentSettings.call("preload", arguments: ["action": "logs", "raw": true], navigator: navigator) { _ in true }
+        let preview = try await AgentSettings.call("preload", arguments: ["action": "logs", "raw": true], navigator: navigator) { _, _ in true }
         let row = try XCTUnwrap((preview as? [[String: Any]])?.first)
         XCTAssertEqual((row["body"] as? String)?.unicodeScalars.count, 8_192)
 
         var approvalCount = 0
         var content = ""
         for _ in 0..<2 {
-            let response = try await AgentSettings.call("preload", arguments: arguments, navigator: navigator) { _ in
+            let response = try await AgentSettings.call("preload", arguments: arguments, navigator: navigator) { _, _ in
                 approvalCount += 1
                 return true
             }
