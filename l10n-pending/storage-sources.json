@@ -1,0 +1,134 @@
+[
+  {
+    "key": "Local",
+    "comment": "Storage type: Local Storage"
+  },
+  {
+    "key": "Session",
+    "comment": "Storage type: Session Storage"
+  },
+  {
+    "key": "Number",
+    "comment": "Value type badge/label"
+  },
+  {
+    "key": "Boolean",
+    "comment": "Value type badge/label"
+  },
+  {
+    "key": "No local storage data",
+    "comment": "Storage empty state when Local Storage is empty"
+  },
+  {
+    "key": "No session storage data",
+    "comment": "Storage empty state when Session Storage is empty"
+  },
+  {
+    "key": "No cookies data",
+    "comment": "Storage empty state when there are no cookies"
+  },
+  {
+    "key": "WebView not connected",
+    "comment": "Storage error"
+  },
+  {
+    "key": "An add for this cookie is already in progress at %@.",
+    "comment": "Cookie add error; %@ is the cookie path"
+  },
+  {
+    "key": "A cookie with this name already exists at %@.",
+    "comment": "Cookie add error; %@ is the cookie path"
+  },
+  {
+    "key": "Could not save the item. The original item was kept. Check the key and available storage, then try again.",
+    "comment": "Storage save error"
+  },
+  {
+    "key": "Could not delete the item. Refresh and try again.",
+    "comment": "Storage delete error"
+  },
+  {
+    "key": "The active cookie store is unavailable.",
+    "comment": "Storage read error"
+  },
+  {
+    "key": "Could not read %@ for the active document.",
+    "comment": "Storage read error; %@ is localStorage or sessionStorage"
+  },
+  {
+    "key": "Key=Value",
+    "comment": "Copy toast label for key=value pair"
+  },
+  {
+    "key": "Navigator not available",
+    "comment": "Sources error"
+  },
+  {
+    "key": "Failed to fetch DOM tree",
+    "comment": "Sources error"
+  },
+  {
+    "key": "Failed to fetch HTML",
+    "comment": "Sources error"
+  },
+  {
+    "key": "Failed to parse DOM: %@",
+    "comment": "Sources error; %@ is the error description"
+  },
+  {
+    "key": "Failed to fetch stylesheets",
+    "comment": "Sources error"
+  },
+  {
+    "key": "Failed to fetch scripts",
+    "comment": "Sources error"
+  },
+  {
+    "key": "Failed to fetch script",
+    "comment": "Sources error"
+  },
+  {
+    "key": "Failed to fetch stylesheet",
+    "comment": "Sources error"
+  },
+  {
+    "key": "Refresh Sources and select the stylesheet again.",
+    "comment": "Sources error"
+  },
+  {
+    "key": "The active WKWebView document changed. Try again.",
+    "comment": "Sources error"
+  },
+  {
+    "key": "No DOM tree available",
+    "comment": "Sources empty state"
+  },
+  {
+    "key": "No HTML available",
+    "comment": "Sources empty state"
+  },
+  {
+    "key": "No stylesheets found",
+    "comment": "Sources empty state"
+  },
+  {
+    "key": "No scripts found",
+    "comment": "Sources empty state"
+  },
+  {
+    "key": "Elements",
+    "comment": "Sources tab"
+  },
+  {
+    "key": "Styles",
+    "comment": "Sources tab / element section / copy toast label"
+  },
+  {
+    "key": "Scripts",
+    "comment": "Sources tab"
+  },
+  {
+    "key": "Attributes",
+    "comment": "Element section / copy toast label"
+  }
+]

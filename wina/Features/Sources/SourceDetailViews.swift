@@ -123,6 +123,14 @@ struct ElementDetailView: View {
         case attributes = "Attributes"
         case styles = "Styles"
         case html = "HTML"
+
+        var title: LocalizedStringKey {
+            switch self {
+            case .attributes: return "Attributes"
+            case .styles: return "Styles"
+            case .html: return "HTML"
+            }
+        }
     }
 
     var body: some View {
@@ -174,7 +182,7 @@ struct ElementDetailView: View {
                         selectedSection = section
                     }
                 } label: {
-                    Text(section.rawValue)
+                    Text(section.title)
                         .font(.system(size: 13, weight: .medium))
                         .foregroundStyle(selectedSection == section ? .primary : .secondary)
                         .frame(maxWidth: .infinity)
@@ -625,11 +633,11 @@ struct ElementDetailView: View {
         case .attributes:
             let text = node.attributes.map { "\($0.key)=\"\($0.value)\"" }.joined(separator: "\n")
             UIPasteboard.general.string = text
-            feedbackState.showCopied("Attributes")
+            feedbackState.showCopied(String(localized: "Attributes"))
         case .styles:
             let text = computedStyles.map { "\($0.key): \($0.value);" }.joined(separator: "\n")
             UIPasteboard.general.string = text
-            feedbackState.showCopied("Styles")
+            feedbackState.showCopied(String(localized: "Styles"))
         case .html:
             UIPasteboard.general.string = outerHTML
             feedbackState.showCopied("HTML")

@@ -85,9 +85,17 @@ struct StorageItem: Identifiable, Equatable {
 
         var label: String {
             switch self {
-            case .localStorage: return "Local"
-            case .sessionStorage: return "Session"
-            case .cookies: return "Cookies"
+            case .localStorage: return String(localized: "Local")
+            case .sessionStorage: return String(localized: "Session")
+            case .cookies: return String(localized: "Cookies")
+            }
+        }
+
+        var emptyTitle: LocalizedStringKey {
+            switch self {
+            case .localStorage: return "No local storage data"
+            case .sessionStorage: return "No session storage data"
+            case .cookies: return "No cookies data"
             }
         }
 
@@ -146,11 +154,11 @@ enum StorageValueType {
         case .json:
             return TypeBadge(text: "JSON", color: .purple, icon: "curlybraces")
         case .number:
-            return TypeBadge(text: "Number", color: .blue, icon: "number")
+            return TypeBadge(text: String(localized: "Number"), color: .blue, icon: "number")
         case .bool:
-            return TypeBadge(text: "Boolean", color: .green, icon: "checkmark")
+            return TypeBadge(text: String(localized: "Boolean"), color: .green, icon: "checkmark")
         case .string:
-            return TypeBadge(text: "Text", color: .gray, icon: "textformat")
+            return TypeBadge(text: String(localized: "Text"), color: .gray, icon: "textformat")
         case .empty:
             return nil
         }
@@ -159,10 +167,10 @@ enum StorageValueType {
     var label: String {
         switch self {
         case .json: return "JSON"
-        case .number: return "Number"
-        case .bool: return "Boolean"
-        case .string: return "Text"
-        case .empty: return "Empty"
+        case .number: return String(localized: "Number")
+        case .bool: return String(localized: "Boolean")
+        case .string: return String(localized: "Text")
+        case .empty: return String(localized: "Empty")
         }
     }
 }

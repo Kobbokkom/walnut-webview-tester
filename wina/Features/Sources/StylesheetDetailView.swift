@@ -157,13 +157,13 @@ struct StylesheetDetailView: View {
 
     private func fetchDetails() async {
         guard let navigator else {
-            errorMessage = "Navigator not available"
+            errorMessage = String(localized: "Navigator not available")
             isLoading = false
             return
         }
 
         guard let expected = sheet.selection else {
-            errorMessage = "Refresh Sources and select the stylesheet again."
+            errorMessage = String(localized: "Refresh Sources and select the stylesheet again.")
             isLoading = false
             return
         }
@@ -171,7 +171,7 @@ struct StylesheetDetailView: View {
         let document = navigator.documentID
         let result = try? await navigator.callAsyncJavaScriptReportingErrors("return \(script)", contentWorld: .defaultClient)
         guard navigator.documentID == document else {
-            errorMessage = "The active WKWebView document changed. Try again."
+            errorMessage = String(localized: "The active WKWebView document changed. Try again.")
             isLoading = false
             return
         }
@@ -192,7 +192,7 @@ struct StylesheetDetailView: View {
                 isTruncated = json["truncated"] as? Bool ?? false
             }
         } else {
-            errorMessage = "Failed to fetch stylesheet"
+            errorMessage = String(localized: "Failed to fetch stylesheet")
         }
 
         isLoading = false
