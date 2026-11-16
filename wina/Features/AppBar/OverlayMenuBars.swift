@@ -145,7 +145,7 @@ struct OverlayMenuBars: View {
         .alert("Recording Not Saved", isPresented: $showRecordingSaveFailedAlert) {
             Button("OK", role: .cancel) {}
         } message: {
-            Text(recordingSaveError)
+            Text(verbatim: recordingSaveError)
         }
         // SafariVC mode: Screenshot flash overlay (full screen)
         .overlay {
