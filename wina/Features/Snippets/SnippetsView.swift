@@ -19,6 +19,16 @@ enum SnippetCategory: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
+    var title: LocalizedStringKey {
+        switch self {
+        case .all: "All"
+        case .layout: "Layout"
+        case .content: "Content"
+        case .debug: "Debug"
+        case .style: "Style"
+        }
+    }
+
     var icon: String {
         switch self {
         case .all: "square.grid.2x2"
@@ -34,8 +44,9 @@ enum SnippetCategory: String, CaseIterable, Identifiable {
 
 struct DebugSnippet: Identifiable {
     let id: String
-    let name: String
-    let description: String
+    /// Localized display title. `name`/`description` stay English (their catalog keys) for the Mac agent.
+    let title: LocalizedStringResource
+    let summary: LocalizedStringResource
     let icon: String
     let iconColor: Color
     let isToggleable: Bool
@@ -43,10 +54,13 @@ struct DebugSnippet: Identifiable {
     let script: String
     let undoScript: String?
 
+    var name: String { title.key }
+    var description: String { summary.key }
+
     init(
         id: String,
-        name: String,
-        description: String,
+        name: LocalizedStringResource,
+        description: LocalizedStringResource,
         icon: String,
         iconColor: Color = .blue,
         isToggleable: Bool = false,
@@ -55,8 +69,8 @@ struct DebugSnippet: Identifiable {
         undoScript: String? = nil
     ) {
         self.id = id
-        self.name = name
-        self.description = description
+        self.title = name
+        self.summary = description
         self.icon = icon
         self.iconColor = iconColor
         self.isToggleable = isToggleable
@@ -382,7 +396,7 @@ class SnippetsManager {
     private func apply(_ snippet: DebugSnippet, using navigator: WebViewNavigator, enable: Bool) async throws -> String {
         let document = navigator.documentID
         let isActive = isActive(snippet.id)
-        if snippet.isToggleable && enable == isActive { return "\(snippet.name) already \(enable ? "enabled" : "disabled")" }
+        if snippet.isToggleable && enable == isActive { return alreadyMessage(snippet, enabled: enable) }
         if Self.styleDependentIDs.contains(snippet.id), isActive == false, self.isActive("disable_css") {
             throw SnippetExecutionError.cssDisabled
         }
@@ -391,7 +405,7 @@ class SnippetsManager {
         if snippet.id == "disable_css", enable {
             for style in Self.defaultSnippets where Self.styleDependentIDs.contains(style.id) && self.isActive(style.id) {
                 _ = try await apply(style, using: navigator, enable: false)
-                disabled.append(style.name)
+                disabled.append(String(localized: style.title))
             }
         }
 
@@ -405,7 +419,12 @@ class SnippetsManager {
         if snippet.isToggleable, enable != self.isActive(snippet.id) {
             toggle(snippet.id)
         }
-        return disabled.isEmpty ? message : "\(message) (Disabled: \(disabled.joined(separator: ", ")))"
+        return disabled.isEmpty ? message : String(localized: "\(message) (Disabled: \(disabled.joined(separator: ", ")))")
+    }
+
+    private func alreadyMessage(_ snippet: DebugSnippet, enabled: Bool) -> String {
+        let name = String(localized: snippet.title)
+        return enabled ? String(localized: "\(name) already enabled") : String(localized: "\(name) already disabled")
     }
 
     func undoAll(using navigator: WebViewNavigator) async throws {
@@ -443,10 +462,10 @@ private enum SnippetExecutionError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .cssDisabled: "This snippet is unavailable while Disable CSS is active."
-        case .pageChanged: "The page changed during snippet execution."
-        case .executionFailed: "Could not run this snippet on the page."
-        case .busy: "Another snippet is running."
+        case .cssDisabled: String(localized: "This snippet is unavailable while Disable CSS is active.")
+        case .pageChanged: String(localized: "The page changed during snippet execution.")
+        case .executionFailed: String(localized: "Could not run this snippet on the page.")
+        case .busy: String(localized: "Another snippet is running.")
         }
     }
 }
@@ -481,8 +500,8 @@ struct SnippetsView: View {
         // Filter by search
         if !searchText.isEmpty {
             result = result.filter {
-                $0.name.localizedCaseInsensitiveContains(searchText)
-                    || $0.description.localizedCaseInsensitiveContains(searchText)
+                String(localized: $0.title).localizedCaseInsensitiveContains(searchText)
+                    || String(localized: $0.summary).localizedCaseInsensitiveContains(searchText)
             }
         }
 
@@ -578,7 +597,7 @@ struct SnippetsView: View {
             HStack(spacing: 0) {
                 ForEach(SnippetCategory.allCases) { category in
                     SnippetFilterTab(
-                        label: category.rawValue,
+                        label: category.title,
                         count: count(for: category),
                         isSelected: selectedCategory == category
                     ) {
@@ -602,7 +621,7 @@ struct SnippetsView: View {
                     Image(systemName: "doc.text.magnifyingglass")
                         .font(.system(size: 36))
                         .foregroundStyle(.tertiary)
-                    Text(searchText.isEmpty ? "No snippets" : "No matches")
+                    Text(searchText.isEmpty ? LocalizedStringKey("No snippets") : LocalizedStringKey("No matches"))
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                     Spacer(minLength: 0)
@@ -722,7 +741,7 @@ struct SnippetsView: View {
         Task {
             do {
                 try await snippetsManager.undoAll(using: navigator)
-                showSnippetResult("All snippets reset")
+                showSnippetResult(String(localized: "All snippets reset"))
             } catch {
                 showSnippetResult(error.localizedDescription)
             }
@@ -742,7 +761,7 @@ struct SnippetsView: View {
 // MARK: - Snippet Filter Tab
 
 private struct SnippetFilterTab: View {
-    let label: String
+    let label: LocalizedStringKey
     let count: Int
     let isSelected: Bool
     let action: () -> Void
@@ -802,12 +821,12 @@ private struct SnippetRow: View {
 
                 // Content
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(snippet.name)
+                    Text(snippet.title)
                         .font(.system(size: 14, weight: .medium))
                         .foregroundStyle(.primary)
                         .lineLimit(1)
 
-                    Text(snippet.description)
+                    Text(snippet.summary)
                         .font(.system(size: 12))
                         .foregroundStyle(.tertiary)
                         .lineLimit(2)

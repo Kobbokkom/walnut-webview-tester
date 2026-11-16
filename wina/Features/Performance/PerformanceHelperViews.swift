@@ -13,11 +13,11 @@ struct CoreVitalCard: View {
     let label: String
     let value: String
     let rating: PerformanceRating
-    let description: String
+    let description: LocalizedStringKey
 
     var body: some View {
         VStack(spacing: 6) {
-            Text(label)
+            Text(verbatim: label)
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
 
@@ -38,7 +38,7 @@ struct CoreVitalCard: View {
 // MARK: - Metric Row
 
 struct MetricRow: View {
-    let label: String
+    let label: LocalizedStringResource
     let value: Double
     let rating: PerformanceRating
 
@@ -103,7 +103,7 @@ struct ResourceDetailRow: View {
 // MARK: - Timing Breakdown Row
 
 struct TimingBreakdownRow: View {
-    let label: String
+    let label: LocalizedStringResource
     let value: Double
     let total: Double
 
@@ -150,7 +150,7 @@ struct TimingBreakdownRow: View {
 // MARK: - Timeline Row
 
 struct TimelineRow: View {
-    let label: String
+    let label: LocalizedStringResource
     let time: Double
 
     var body: some View {

@@ -16,6 +16,15 @@ enum PerformanceRating: String {
     case poor = "Poor"
     case unknown = "N/A"
 
+    var title: LocalizedStringKey {
+        switch self {
+        case .good: "Good"
+        case .needsImprovement: "Needs Improvement"
+        case .poor: "Poor"
+        case .unknown: "N/A"
+        }
+    }
+
     var color: Color {
         switch self {
         case .good: .green
@@ -173,6 +182,18 @@ enum ResourceType: String, CaseIterable {
     case font = "Font"
     case fetch = "Fetch/XHR"
     case other = "Other"
+
+    var title: LocalizedStringResource {
+        switch self {
+        case .document: "Document"
+        case .script: "Script"
+        case .stylesheet: "Stylesheet"
+        case .image: "Image"
+        case .font: "Font"
+        case .fetch: "Fetch/XHR"
+        case .other: "Other"
+        }
+    }
 
     var icon: String {
         switch self {
@@ -490,7 +511,7 @@ class PerformanceManager {
         }
 
         guard navigator.isAttached else {
-            lastError = "Failed to collect performance data. Make sure a page is loaded."
+            lastError = String(localized: "Failed to collect performance data. Make sure a page is loaded.")
             return nil
         }
         let navigation = navigator.agentNavigation
@@ -498,7 +519,7 @@ class PerformanceManager {
         if reload { clear() }
         let expectedReload = reload ? navigator.reload() : nil
         guard !reload || expectedReload != nil else {
-            lastError = "The page could not be refreshed for Performance collection."
+            lastError = String(localized: "The page could not be refreshed for Performance collection.")
             return nil
         }
 
@@ -512,11 +533,11 @@ class PerformanceManager {
             guard !Task.isCancelled, collectionID == id else { return nil }
             if let expectedReload, navigation.runID != initialRun {
                 guard navigation.matches(expectedReload) else {
-                    lastError = "A different navigation interrupted the Performance refresh."
+                    lastError = String(localized: "A different navigation interrupted the Performance refresh.")
                     return nil
                 }
                 guard navigation.phase != "failed" else {
-                    lastError = "The page failed to load during the Performance refresh."
+                    lastError = String(localized: "The page failed to load during the Performance refresh.")
                     return nil
                 }
             }
@@ -528,7 +549,7 @@ class PerformanceManager {
                    let result = result as? String {
                     parseData(from: result)
                     if lastError == nil, data.navigation == nil && data.paints.isEmpty {
-                        lastError = "Page load incomplete. Try refreshing again."
+                        lastError = String(localized: "Page load incomplete. Try refreshing again.")
                     }
                     return lastError == nil ? document : nil
                 }
@@ -536,14 +557,14 @@ class PerformanceManager {
             try? await Task.sleep(for: .milliseconds(500))
         }
         if !Task.isCancelled, collectionID == id {
-            lastError = "Page load incomplete. Try refreshing again."
+            lastError = String(localized: "Page load incomplete. Try refreshing again.")
         }
         return nil
     }
 
     func parseData(from jsonString: String) {
         guard let jsonData = jsonString.data(using: .utf8) else {
-            lastError = "Failed to convert string to data"
+            lastError = String(localized: "Failed to convert string to data")
             return
         }
 
@@ -571,7 +592,7 @@ class PerformanceManager {
             )
             lastError = nil
         } catch {
-            lastError = "Parse error: \(error.localizedDescription)"
+            lastError = String(localized: "Parse error: \(error.localizedDescription)")
         }
     }
 

@@ -156,7 +156,7 @@ extension PerformanceView {
         if let nav = performanceManager.data.navigation {
             PerformanceSection(title: "Navigation Breakdown") {
                 VStack(spacing: 0) {
-                    let breakdowns: [(String, Double)] = [
+                    let breakdowns: [(LocalizedStringResource, Double)] = [
                         ("Redirect", nav.redirectTime),
                         ("DNS", nav.dnsTime),
                         ("TCP", nav.tcpTime),
@@ -167,7 +167,7 @@ extension PerformanceView {
                     ]
 
                     ForEach(Array(breakdowns.enumerated()), id: \.offset) { index, item in
-                        if matchesSearch(item.0) {
+                        if matchesSearch(String(localized: item.0)) {
                             TimingBreakdownRow(label: item.0, value: item.1, total: nav.loadEventTime)
                                 .padding(.vertical, 8)
                             if index < breakdowns.count - 1 {
