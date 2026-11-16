@@ -8,9 +8,23 @@
 import SwiftUI
 
 struct TypeBadge: View {
-    let text: String
+    private let text: Text
     let color: Color
     var icon: String?
+
+    /// UI text: literals are localized.
+    init(text: LocalizedStringKey, color: Color, icon: String? = nil) {
+        self.text = Text(text)
+        self.color = color
+        self.icon = icon
+    }
+
+    /// Runtime data (e.g. a content-type token): shown verbatim.
+    init<S: StringProtocol>(text: S, color: Color, icon: String? = nil) {
+        self.text = Text(verbatim: String(text))
+        self.color = color
+        self.icon = icon
+    }
 
     var body: some View {
         HStack(spacing: 4) {
@@ -18,7 +32,7 @@ struct TypeBadge: View {
                 Image(systemName: icon)
                     .font(.system(size: 9, weight: .semibold))
             }
-            Text(text)
+            text
                 .font(.system(size: 10, weight: .semibold))
         }
         .foregroundStyle(.white)

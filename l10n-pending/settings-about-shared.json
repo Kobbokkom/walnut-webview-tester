@@ -1,0 +1,82 @@
+[
+  {
+    "key": "Not Requested",
+    "comment": "Permission status: not yet requested"
+  },
+  {
+    "key": "Always",
+    "comment": "Location permission status: always allowed"
+  },
+  {
+    "key": "When In Use",
+    "comment": "Location permission status: allowed while using the app"
+  },
+  {
+    "key": "Product not available",
+    "comment": "In-app purchase error: product could not be loaded"
+  },
+  {
+    "key": "No purchases to restore",
+    "comment": "In-app purchase error: nothing to restore"
+  },
+  {
+    "key": "Purchase is pending approval",
+    "comment": "In-app purchase status: waiting for approval (Ask to Buy)"
+  },
+  {
+    "key": "Unknown error occurred",
+    "comment": "Generic purchase error"
+  },
+  {
+    "key": "Purchase could not be verified",
+    "comment": "In-app purchase error: transaction verification failed"
+  },
+  {
+    "key": "Insert %@",
+    "comment": "VoiceOver label for a URL-part chip on the home screen; %@ is the text inserted, e.g. https://"
+  },
+  {
+    "key": "Parameters (%lld)",
+    "comment": "Callback result section header; %lld is the number of query parameters"
+  },
+  {
+    "key": "URL Components",
+    "comment": "Callback result section header"
+  },
+  {
+    "key": "Raw URL",
+    "comment": "Callback result section header"
+  },
+  {
+    "key": "Received",
+    "comment": "Callback result section header"
+  },
+  {
+    "key": "Scheme",
+    "comment": "URL component label"
+  },
+  {
+    "key": "Scheme: %@://callback?key=value",
+    "comment": "Callback test footer hint; %@ is the URL scheme (walnut)"
+  },
+  {
+    "key": "Host",
+    "comment": "URL component label"
+  },
+  {
+    "key": "Number",
+    "comment": "Storage value type badge"
+  },
+  {
+    "key": "Boolean",
+    "comment": "Storage value type badge"
+  },
+  {
+    "key": "100%",
+    "comment": "WebView size preset button"
+  },
+  {
+    "key": "75%",
+    "comment": "WebView size preset button"
+  }
+]
