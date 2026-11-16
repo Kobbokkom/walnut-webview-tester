@@ -77,7 +77,7 @@ struct SourcesErrorView: View {
 // MARK: - Sources Empty View
 
 struct SourcesEmptyView: View {
-    let message: String
+    let message: LocalizedStringKey
 
     var body: some View {
         GeometryReader { geometry in

@@ -14,6 +14,14 @@ enum SourceTab: String, CaseIterable {
     case styles = "Styles"
     case scripts = "Scripts"
 
+    var title: LocalizedStringKey {
+        switch self {
+        case .elements: return "Elements"
+        case .styles: return "Styles"
+        case .scripts: return "Scripts"
+        }
+    }
+
     var icon: String {
         switch self {
         case .elements: return "chevron.left.forwardslash.chevron.right"
@@ -419,7 +427,7 @@ struct SourcesView: View {
                     HStack(spacing: 6) {
                         Image(systemName: tab.icon)
                             .font(.system(size: 12))
-                        Text(tab.rawValue)
+                        Text(tab.title)
                             .font(.system(size: 14, weight: .medium))
                     }
                     .foregroundStyle(selectedTab == tab ? .primary : .secondary)

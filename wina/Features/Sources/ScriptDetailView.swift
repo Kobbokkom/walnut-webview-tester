@@ -73,7 +73,7 @@ struct ScriptDetailView: View {
             rightButtons: [
                 .init(icon: "doc.on.doc") {
                     UIPasteboard.general.string = scriptContent
-                    feedbackState.showCopied("Script")
+                    feedbackState.showCopied(String(localized: "Script"))
                 }
             ]
         )
@@ -141,7 +141,7 @@ struct ScriptDetailView: View {
 
     private func fetchDetails() async {
         guard let navigator else {
-            errorMessage = "Navigator not available"
+            errorMessage = String(localized: "Navigator not available")
             isLoading = false
             return
         }
@@ -161,7 +161,7 @@ struct ScriptDetailView: View {
                 scriptContent = json["content"] as? String ?? ""
                 isTruncated = json["truncated"] as? Bool ?? false
             } else {
-                errorMessage = "Failed to fetch script"
+                errorMessage = String(localized: "Failed to fetch script")
             }
         } catch {
             errorMessage = error.localizedDescription
