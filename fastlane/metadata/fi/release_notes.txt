@@ -1,5 +1,6 @@
-Helpompi Mac Agent
+Walnut puhuu kieltäsi
 
-• Ota Mac Agent käyttöön yhdellä kytkimellä ja yhdistä Mac kolmessa numeroidussa vaiheessa.
-• Valitse, milloin Walnut pyytää hyväksyntää: joka kerta, vain avoimen sivun ulkopuolella tai ei koskaan.
-• Selkeämpi parinmuodostuksen vahvistus ja yhteyden tila.
+• Jokainen näyttö, hyväksyntäkehote ja viesti on nyt käännetty kaikille tuetuille kielille.
+• Mac Agent yhdistyy neljässä selkeässä vaiheessa: asenna, ota käyttöön, parita, aloita istunto.
+• “Salli sivun toiminnot” ohittaa kehotteet vain avoimelle sivulle. Tallennustila, poistot ja verkkotiedot pyytävät aina luvan.
+• Mac Agentin tila pysyy näkyvissä, kun työkalupalkki on piilotettu.

@@ -1,5 +1,6 @@
-Enklare Mac Agent
+Walnut talar ditt språk
 
-• Slå på Mac Agent med en enda reglage och anslut din Mac i tre numrerade steg.
-• Välj när Walnut ber om godkännande: varje gång, bara utanför den öppna sidan eller aldrig.
-• Tydligare parkopplingsbekräftelse och anslutningsstatus.
+• Varje skärm, godkännandeprompt och meddelande är nu översatt till alla språk som stöds.
+• Mac Agent ansluter i fyra tydliga steg: installera, slå på, parkoppla, starta en session.
+• ”Tillåt sidåtgärder” hoppar bara över prompter för den öppna sidan. Lagring, borttagningar och nätverksdetaljer frågar alltid.
+• Statusen för Mac Agent förblir synlig när verktygsfältet är dolt.

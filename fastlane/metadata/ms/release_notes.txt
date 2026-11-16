@@ -1,5 +1,6 @@
-Mac Agent lebih mudah
+Walnut bercakap dalam bahasa anda
 
-• Hidupkan Mac Agent dengan satu suis, kemudian sambungkan Mac anda dalam tiga langkah bernombor.
-• Pilih bila Walnut meminta kelulusan: setiap kali, hanya di luar halaman yang dibuka, atau tidak sekali-kali.
-• Pengesahan penggandingan dan status sambungan yang lebih jelas.
+• Setiap skrin, gesaan kelulusan dan mesej kini diterjemahkan ke dalam semua bahasa yang disokong.
+• Mac Agent bersambung dalam empat langkah yang jelas: pasang, hidupkan, gandingkan, mulakan sesi.
+• “Benarkan tindakan halaman” hanya melangkau gesaan untuk halaman yang dibuka. Storan, pemadaman dan butiran rangkaian sentiasa meminta kelulusan.
+• Status Mac Agent kekal kelihatan apabila bar alat disembunyikan.

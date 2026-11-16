@@ -1,5 +1,6 @@
-Mac Agent artık daha kolay
+Walnut dilinizi konuşuyor
 
-• Mac Agent'ı tek bir anahtarla açın ve Mac'inizi numaralı üç adımda bağlayın.
-• Walnut'un ne zaman onay isteyeceğini seçin: her seferinde, yalnızca açık sayfanın dışında veya hiçbir zaman.
-• Daha anlaşılır eşleştirme onayı ve bağlantı durumu.
+• Artık her ekran, onay istemi ve mesaj desteklenen tüm dillere çevrildi.
+• Mac Agent dört net adımda bağlanır: yükle, aç, eşleştir, oturum başlat.
+• “Sayfa eylemlerine izin ver” yalnızca açık sayfa için istemleri atlar. Depolama, silme işlemleri ve ağ ayrıntıları için her zaman sorulur.
+• Araç çubuğu gizlendiğinde Mac Agent durumu görünür kalır.

@@ -1,5 +1,6 @@
-Mac Agent más fácil de usar
+Walnut habla tu idioma
 
-• Activa Mac Agent con un solo interruptor y sigue tres pasos numerados para conectar tu Mac.
-• Elige cuándo Walnut pide aprobación: siempre, solo fuera de la página abierta o nunca.
-• Confirmación de enlace y estado de conexión más claros.
+• Todas las pantallas, solicitudes de aprobación y mensajes ahora están traducidos a todos los idiomas compatibles.
+• Mac Agent se conecta en cuatro pasos claros: instalar, activar, enlazar e iniciar una sesión.
+• “Permitir acciones en la página” solo omite las solicitudes para la página abierta. El almacenamiento, las eliminaciones y los detalles de red siempre solicitarán aprobación.
+• El estado de Mac Agent permanece visible cuando la barra de herramientas está oculta.

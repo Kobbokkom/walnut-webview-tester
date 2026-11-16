@@ -1,5 +1,6 @@
-Jednoduchší Mac Agent
+Walnut hovorí vaším jazykom
 
-• Zapnite Mac Agent jedným prepínačom a pripojte Mac v troch očíslovaných krokoch.
-• Zvoľte, kedy Walnut žiada o schválenie: zakaždým, len mimo otvorenej stránky alebo nikdy.
-• Prehľadnejšie potvrdenie párovania a stav pripojenia.
+• Každá obrazovka, výzva na schválenie a správa je teraz preložená do všetkých podporovaných jazykov.
+• Mac Agent pripojíte v štyroch jasných krokoch: nainštalovať, zapnúť, spárovať, spustiť reláciu.
+• „Povoliť akcie na stránke“ preskočí výzvy iba pre otvorenú stránku. Úložisko, odstraňovanie a podrobnosti o sieti si vždy vyžiadajú potvrdenie.
+• Stav Mac Agent zostáva viditeľný, aj keď je panel s nástrojmi skrytý.

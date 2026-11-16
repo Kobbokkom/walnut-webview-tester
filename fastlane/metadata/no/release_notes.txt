@@ -1,5 +1,6 @@
-Enklere Mac Agent
+Walnut snakker språket ditt
 
-• Slå på Mac Agent med én bryter, og koble til Macen i tre nummererte trinn.
-• Velg når Walnut ber om godkjenning: hver gang, bare utenfor den åpne siden eller aldri.
-• Tydeligere bekreftelse av sammenkobling og tilkoblingsstatus.
+• Alle skjermer, godkjenningsforespørsler og meldinger er nå oversatt til alle støttede språk.
+• Mac Agent kobles til i fire tydelige trinn: installer, slå på, koble sammen, start en økt.
+• «Tillat sidehandlinger» hopper bare over forespørsler for den åpne siden. Lagring, slettinger og nettverksdetaljer krever alltid godkjenning.
+• Mac Agent-statusen forblir synlig når verktøylinjen er skjult.

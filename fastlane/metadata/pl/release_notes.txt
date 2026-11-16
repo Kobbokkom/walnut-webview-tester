@@ -1,5 +1,6 @@
-Mac Agent jest prostszy
+Walnut mówi Twoim językiem
 
-• Włącz Mac Agent jednym przełącznikiem i połącz Maca w trzech ponumerowanych krokach.
-• Wybierz, kiedy Walnut prosi o zgodę: za każdym razem, tylko poza otwartą stroną lub nigdy.
-• Czytelniejsze potwierdzenie parowania i stan połączenia.
+• Każdy ekran, prośba o zatwierdzenie i komunikat są teraz przetłumaczone na wszystkie obsługiwane języki.
+• Mac Agent łączy się w czterech jasnych krokach: zainstaluj, włącz, sparuj, rozpocznij sesję.
+• „Zezwalaj na czynności na stronie” pomija prośby tylko dla otwartej strony. Pamięć, usunięcia i szczegóły sieci zawsze wymagają potwierdzenia.
+• Status Mac Agent pozostaje widoczny, gdy pasek narzędzi jest ukryty.

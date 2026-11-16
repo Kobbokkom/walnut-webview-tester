@@ -1,5 +1,6 @@
-Jednostavniji Mac Agent
+Walnut govori vašim jezikom
 
-• Uključite Mac Agent jednim prekidačem i povežite Mac u tri numerirana koraka.
-• Odaberite kada Walnut traži odobrenje: svaki put, samo izvan otvorene stranice ili nikad.
-• Jasnija potvrda uparivanja i status veze.
+• Svaki zaslon, upit za odobrenje i poruka sada su prevedeni na sve podržane jezike.
+• Mac Agent se povezuje u četiri jasna koraka: instalirajte, uključite, uparite, pokrenite sesiju.
+• „Dopusti radnje na stranici” preskače upite samo za otvorenu stranicu. Za pohranu, brisanja i mrežne pojedinosti uvijek se traži potvrda.
+• Status Mac Agent ostaje vidljiv kada je alatna traka skrivena.

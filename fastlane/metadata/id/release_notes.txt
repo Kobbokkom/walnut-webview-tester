@@ -1,5 +1,6 @@
-Mac Agent lebih mudah
+Walnut berbicara dalam bahasa Anda
 
-• Aktifkan Mac Agent dengan satu tombol, lalu hubungkan Mac Anda dalam tiga langkah bernomor.
-• Pilih kapan Walnut meminta persetujuan: setiap kali, hanya di luar halaman yang terbuka, atau tidak pernah.
-• Konfirmasi pemasangan dan status koneksi yang lebih jelas.
+• Setiap layar, permintaan persetujuan, dan pesan kini diterjemahkan ke semua bahasa yang didukung.
+• Mac Agent terhubung dalam empat langkah jelas: instal, aktifkan, pasangkan, mulai sesi.
+• “Izinkan tindakan halaman” hanya melewati permintaan untuk halaman yang terbuka. Penyimpanan, penghapusan, dan detail jaringan selalu meminta konfirmasi.
+• Status Mac Agent tetap terlihat saat bilah alat disembunyikan.

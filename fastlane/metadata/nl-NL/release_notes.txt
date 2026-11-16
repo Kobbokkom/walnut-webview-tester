@@ -1,5 +1,6 @@
-Mac Agent is eenvoudiger
+Walnut spreekt jouw taal
 
-• Zet Mac Agent aan met één schakelaar en volg drie genummerde stappen om je Mac te verbinden.
-• Kies hoe vaak Walnut om toestemming vraagt: elke keer, alleen buiten de geopende pagina, of nooit.
-• Duidelijkere koppelingsbevestiging en verbindingsstatus.
+• Elk scherm, elke goedkeuringsprompt en elk bericht is nu vertaald naar alle ondersteunde talen.
+• Mac Agent maakt verbinding in vier duidelijke stappen: installeren, inschakelen, koppelen, een sessie starten.
+• “Pagina-acties toestaan” slaat alleen prompts over voor de geopende pagina. Voor opslag, verwijderingen en netwerkdetails wordt altijd om toestemming gevraagd.
+• De status van Mac Agent blijft zichtbaar wanneer de werkbalk verborgen is.

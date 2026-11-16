@@ -1,5 +1,6 @@
-Mac Agent plus simple
+Walnut parle votre langue
 
-• Activez Mac Agent avec un seul interrupteur, puis suivez trois étapes numérotées pour connecter votre Mac.
-• Choisissez quand Walnut demande une autorisation : chaque fois, seulement hors de la page ouverte, ou jamais.
-• Confirmation de jumelage et état de connexion plus clairs.
+• Chaque écran, demande d’approbation et message est maintenant traduit dans toutes les langues prises en charge.
+• Mac Agent se connecte en quatre étapes claires : installer, activer, jumeler, démarrer une session.
+• « Autoriser les actions sur la page » contourne seulement les invites pour la page ouverte. Pour le stockage, les suppressions et les détails du réseau, une approbation est toujours demandée.
+• Le statut de Mac Agent reste visible lorsque la barre d’outils est masquée.

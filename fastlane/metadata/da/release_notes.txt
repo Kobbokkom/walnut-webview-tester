@@ -1,5 +1,6 @@
-Nemmere Mac Agent
+Walnut taler dit sprog
 
-• Slå Mac Agent til med én kontakt, og forbind din Mac i tre nummererede trin.
-• Vælg, hvornår Walnut beder om godkendelse: hver gang, kun uden for den åbne side eller aldrig.
-• Tydeligere bekræftelse af parring og forbindelsesstatus.
+• Alle skærme, godkendelsesanmodninger og beskeder er nu oversat til alle understøttede sprog.
+• Mac Agent opretter forbindelse i fire tydelige trin: installer, slå til, par, start en session.
+• “Tillad sidehandlinger” springer kun anmodninger over for den åbne side. Der spørges altid om lagring, sletninger og netværksoplysninger.
+• Mac Agent-statussen forbliver synlig, når værktøjslinjen er skjult.

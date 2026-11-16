@@ -1,5 +1,6 @@
-Egyszerűbb Mac Agent
+A Walnut beszéli a nyelvedet
 
-• Kapcsolja be a Mac Agentet egyetlen kapcsolóval, majd csatlakoztassa a Macet három számozott lépésben.
-• Válassza ki, mikor kérjen jóváhagyást a Walnut: minden alkalommal, csak a megnyitott oldalon kívül, vagy soha.
-• Egyértelműbb párosítási megerősítés és kapcsolati állapot.
+• Mostantól minden képernyő, jóváhagyási kérés és üzenet le van fordítva az összes támogatott nyelvre.
+• A Mac Agent négy egyértelmű lépésben csatlakozik: telepítés, bekapcsolás, párosítás, munkamenet indítása.
+• Az „Oldalműveletek engedélyezése” csak a megnyitott oldalhoz tartozó kéréseket hagyja ki. Tárhely, törlések és hálózati részletek esetén mindig megjelenik a kérés.
+• A Mac Agent állapota akkor is látható marad, ha az eszköztár rejtett.
