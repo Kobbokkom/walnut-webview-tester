@@ -46,7 +46,7 @@ final class SharedInfoWebView {
         clearCache()
     }
 
-    func initialize(onStatusUpdate: @escaping (String) -> Void) async {
+    func initialize(onStatusUpdate: @escaping (LocalizedStringKey) -> Void) async {
         // If using live WebView, skip internal WebView initialization
         if isUsingLiveWebView {
             onStatusUpdate("Using loaded page WebView...")

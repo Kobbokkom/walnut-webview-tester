@@ -11,6 +11,7 @@ import SwiftUIBackports
 // MARK: - Active Settings View
 
 struct ActiveSettingsView: View {
+    @Environment(\.locale) private var locale
     @Binding var showSettings: Bool
 
     // Permission status
@@ -126,7 +127,7 @@ struct ActiveSettingsView: View {
                     info: "Scale of page content.\n100% = Default size.\nUseful for small text.")
                 InfoRow(
                     label: "Under Page Background",
-                    value: underPageBackgroundColorHex.isEmpty ? "Default" : underPageBackgroundColorHex,
+                    value: underPageBackgroundColorHex.isEmpty ? String(localized: LocalizedStringResource("Default", locale: locale)) : underPageBackgroundColorHex,
                     info: "Background color shown when scrolling beyond page bounds.")
             } header: {
                 Text("Display")
@@ -134,7 +135,7 @@ struct ActiveSettingsView: View {
 
             Section {
                 if customUserAgent.isEmpty {
-                    InfoRow(label: "Status", value: "Default")
+                    InfoRow(label: "Status", value: String(localized: LocalizedStringResource("Default", locale: locale)))
                 } else {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Custom")

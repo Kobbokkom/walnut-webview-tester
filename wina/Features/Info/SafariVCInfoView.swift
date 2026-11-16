@@ -35,11 +35,7 @@ struct SafariVCInfoView: View {
             SafariInfoSearchItem(category: "Active Settings", label: "Dismiss Button", value: SettingsFormatter.dismissButtonStyleText(dismissButtonStyle)),
             SafariInfoSearchItem(category: "Active Settings", label: "Control Tint", value: controlTintColorHex.isEmpty ? "System" : "\(controlTintColorHex) (iOS 18.4-25)"),
             SafariInfoSearchItem(category: "Active Settings", label: "Bar Tint", value: barTintColorHex.isEmpty ? "System" : "\(barTintColorHex) (iOS 18.4-25)"),
-            SafariInfoSearchItem(
-                category: "Active Settings",
-                label: String(localized: LocalizedStringResource("Presentation", locale: locale)),
-                value: String(localized: LocalizedStringResource("Full Screen", locale: locale))
-            )
+            SafariInfoSearchItem(category: "Active Settings", label: "Presentation", value: "Full Screen")
         ])
 
         // Safari Features
@@ -93,9 +89,8 @@ struct SafariVCInfoView: View {
 
     private var filteredItems: [String: [SafariInfoSearchItem]] {
         let filtered = searchText.isEmpty ? allItems : allItems.filter {
-            $0.label.localizedCaseInsensitiveContains(searchText) ||
-                $0.value.localizedCaseInsensitiveContains(searchText) ||
-                $0.category.localizedCaseInsensitiveContains(searchText)
+            // Items hold English keys; match the typed query against both English and localized text.
+            [$0.label, $0.value, $0.category].contains { SettingsSearchItem.matches($0, query: searchText, locale: locale) }
         }
         return Dictionary(grouping: filtered, by: { $0.category })
     }
@@ -141,14 +136,15 @@ struct SafariVCInfoView: View {
 
     @ViewBuilder
     private var searchResultsView: some View {
+        let grouped = filteredItems
         List {
-            ForEach(filteredItems.keys.sorted(), id: \.self) { category in
-                Section(category) {
-                    ForEach(filteredItems[category] ?? []) { item in
+            ForEach(grouped.keys.sorted(), id: \.self) { category in
+                Section(SettingsSearchItem.localized(category, locale: locale)) {
+                    ForEach(grouped[category] ?? []) { item in
                         HStack {
-                            Text(item.label)
+                            Text(verbatim: SettingsSearchItem.localized(item.label, locale: locale))
                             Spacer()
-                            Text(item.value)
+                            Text(verbatim: SettingsSearchItem.localized(item.value, locale: locale))
                                 .foregroundStyle(.secondary)
                                 .lineLimit(1)
                         }
@@ -157,7 +153,7 @@ struct SafariVCInfoView: View {
             }
         }
         .overlay {
-            if filteredItems.isEmpty {
+            if grouped.isEmpty {
                 ContentUnavailableView.search(text: searchText)
             }
         }
@@ -322,7 +318,7 @@ private struct SafariActiveSettingsDetailView: View {
 
             Section("UI Style") {
                 SafariInfoRow(
-                    label: String(localized: LocalizedStringResource("Presentation", locale: locale)),
+                    label: "Presentation",
                     value: String(localized: LocalizedStringResource("Full Screen", locale: locale))
                 )
                 SafariInfoRow(
@@ -335,12 +331,12 @@ private struct SafariActiveSettingsDetailView: View {
             Section("Colors") {
                 SafariInfoRow(
                     label: "Control Tint",
-                    value: controlTintColorHex.isEmpty ? "System" : controlTintColorHex,
+                    value: controlTintColorHex.isEmpty ? String(localized: LocalizedStringResource("System", locale: locale)) : controlTintColorHex,
                     info: "Tint color for buttons and controls.\nApplied on iOS 18.4-25 only."
                 )
                 SafariInfoRow(
                     label: "Bar Tint",
-                    value: barTintColorHex.isEmpty ? "System" : barTintColorHex,
+                    value: barTintColorHex.isEmpty ? String(localized: LocalizedStringResource("System", locale: locale)) : barTintColorHex,
                     info: "Background color of navigation bar.\nApplied on iOS 18.4-25 only."
                 )
             }
@@ -353,7 +349,7 @@ private struct SafariActiveSettingsDetailView: View {
 // MARK: - Safari Active Setting Row
 
 private struct SafariActiveSettingRow: View {
-    let label: String
+    let label: LocalizedStringKey
     let enabled: Bool
     var info: LocalizedStringKey?
     var unavailable = false
@@ -596,7 +592,7 @@ private struct SafariLimitationsDetailView: View {
 // MARK: - Helper Views
 
 private struct SafariInfoRow: View {
-    let label: String
+    let label: LocalizedStringKey
     let value: String
     var info: LocalizedStringKey?
 
@@ -615,7 +611,7 @@ private struct SafariInfoRow: View {
 }
 
 private struct SafariCapabilityRow: View {
-    let label: String
+    let label: LocalizedStringKey
     let supported: Bool
     var info: LocalizedStringKey?
     var unavailable = false  // Safari policy: never supported
@@ -657,7 +653,7 @@ private struct SafariAPIRow: View {
 }
 
 private struct SafariPrivacyRow: View {
-    let title: String
+    let title: LocalizedStringKey
     let description: LocalizedStringKey
 
     var body: some View {

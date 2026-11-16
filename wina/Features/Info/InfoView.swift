@@ -14,6 +14,7 @@ struct InfoView: View {
     var loadedURL: Binding<String>?
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.locale) private var locale
     @Environment(\.webViewContainerSize) var containerSize
     @State private var searchText = ""
     @State private var webViewInfo: WebViewInfo?
@@ -21,7 +22,7 @@ struct InfoView: View {
     @State private var codecInfo: MediaCodecInfo?
     @State private var displayInfo: DisplayInfo?
     @State private var accessibilityInfo: AccessibilityInfo?
-    @State private var loadingStatus = "Loading..."
+    @State private var loadingStatus: LocalizedStringKey = "Loading..."
     @State private var isLoading = true
     @State private var showSettings = false
 
@@ -249,17 +250,18 @@ struct InfoView: View {
     // MARK: - Search Results View
 
     private var searchResultsView: some View {
-        List {
-            ForEach(filteredItems.keys.sorted(), id: \.self) { category in
-                Section(category) {
-                    ForEach(filteredItems[category] ?? []) { item in
+        let grouped = filteredItems
+        return List {
+            ForEach(grouped.keys.sorted(), id: \.self) { category in
+                Section(SettingsSearchItem.localized(category, locale: locale)) {
+                    ForEach(grouped[category] ?? []) { item in
                         searchResultRow(for: item)
                     }
                 }
             }
         }
         .overlay {
-            if filteredItems.isEmpty {
+            if grouped.isEmpty {
                 ContentUnavailableView.search(text: searchText)
             }
         }
@@ -272,16 +274,16 @@ struct InfoView: View {
                 BenchmarkView()
             } label: {
                 HStack {
-                    Text(item.label)
+                    Text(verbatim: SettingsSearchItem.localized(item.label, locale: locale))
                     Spacer()
-                    Text(item.value)
+                    Text(verbatim: SettingsSearchItem.localized(item.value, locale: locale))
                         .foregroundStyle(.blue)
                         .font(.subheadline)
                 }
             }
         } else {
             HStack {
-                Text(item.label)
+                Text(verbatim: SettingsSearchItem.localized(item.label, locale: locale))
                 Spacer()
                 if item.value == "Supported" {
                     Image(systemName: "checkmark.circle.fill")
@@ -290,7 +292,7 @@ struct InfoView: View {
                     Image(systemName: "xmark.circle.fill")
                         .foregroundStyle(.secondary)
                 } else {
-                    Text(item.value)
+                    Text(verbatim: SettingsSearchItem.localized(item.value, locale: locale))
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }
@@ -337,9 +339,8 @@ struct InfoView: View {
 
     private var filteredItems: [String: [InfoSearchItem]] {
         let filtered = searchText.isEmpty ? allItems : allItems.filter {
-            $0.label.localizedCaseInsensitiveContains(searchText) ||
-            $0.value.localizedCaseInsensitiveContains(searchText) ||
-            $0.category.localizedCaseInsensitiveContains(searchText)
+            // Items hold English keys; match the typed query against both English and localized text.
+            [$0.label, $0.value, $0.category].contains { SettingsSearchItem.matches($0, query: searchText, locale: locale) }
         }
         return Dictionary(grouping: filtered, by: { $0.category })
     }
