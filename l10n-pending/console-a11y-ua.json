@@ -1,0 +1,22 @@
+[
+  {"key": "Warnings", "comment": "Console filter tab / log type label and Accessibility severity label (plural)"},
+  {"key": "Errors", "comment": "Console filter tab / log type label and Accessibility severity label (plural)"},
+  {"key": "Debug", "comment": "Console log type label (console.debug)"},
+  {"key": "GroupEnd", "comment": "Console log type label (console.groupEnd)"},
+  {"key": "Timer", "comment": "Console log type label (console.time/timeLog/timeEnd)"},
+  {"key": "Assert", "comment": "Console log type label (console.assert)"},
+  {"key": "Dir", "comment": "Console log type label (console.dir)"},
+  {"key": "Trace", "comment": "Console log type label (console.trace)"},
+  {"key": "Command", "comment": "Console log type label for a command typed in the JS input"},
+  {"key": "Copied formatted JSON", "comment": "Console log entry toast after copying pretty-printed JSON"},
+  {"key": "Copied minified JSON", "comment": "Console log entry toast after copying minified JSON"},
+  {"key": "Copied", "comment": "Console log entry toast after copying text"},
+  {"key": "Images", "comment": "Accessibility audit issue category (images)"},
+  {"key": "Buttons", "comment": "Accessibility audit issue category (buttons)"},
+  {"key": "Forms", "comment": "Accessibility audit issue category (form controls)"},
+  {"key": "Headings", "comment": "Accessibility audit issue category (heading levels)"},
+  {"key": "Contrast", "comment": "Accessibility audit issue category (color contrast)"},
+  {"key": "Keyboard", "comment": "Accessibility audit issue category (keyboard access)"},
+  {"key": "Builder", "comment": "User Agent editor mode segment: build a UA from browser/platform/version"},
+  {"key": "Manual", "comment": "User Agent editor mode segment: type a UA string by hand"}
+]

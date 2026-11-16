@@ -103,7 +103,7 @@ struct ConsoleLog: Identifiable, Equatable {
             }
         }
 
-        var label: String {
+        var label: LocalizedStringKey {
             switch self {
             case .log: return "Log"
             case .info: return "Info"
