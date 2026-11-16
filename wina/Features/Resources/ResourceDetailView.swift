@@ -176,7 +176,7 @@ struct ResourceDetailView: View {
 
     // MARK: - Helper Views
 
-    private func sectionHeader(_ title: String) -> some View {
+    private func sectionHeader(_ title: LocalizedStringKey) -> some View {
         Text(title)
             .font(.caption)
             .foregroundStyle(.secondary)
@@ -184,7 +184,7 @@ struct ResourceDetailView: View {
             .padding(.leading, 12)
     }
 
-    private func detailRow(_ label: String, value: String, icon: String, color: Color = .secondary) -> some View {
+    private func detailRow(_ label: LocalizedStringKey, value: String, icon: String, color: Color = .secondary) -> some View {
         HStack(spacing: 8) {
             Image(systemName: icon)
                 .foregroundStyle(color)
@@ -200,7 +200,7 @@ struct ResourceDetailView: View {
         .padding(.vertical, 10)
     }
 
-    private func timingRow(_ label: String, time: Double, color: Color, isTotal: Bool = false) -> some View {
+    private func timingRow(_ label: LocalizedStringKey, time: Double, color: Color, isTotal: Bool = false) -> some View {
         HStack(spacing: 8) {
             Circle()
                 .fill(time > 0 ? color : Color.gray.opacity(0.3))
@@ -217,7 +217,7 @@ struct ResourceDetailView: View {
         .padding(.vertical, 10)
     }
 
-    private func sizeRow(_ label: String, bytes: Int) -> some View {
+    private func sizeRow(_ label: LocalizedStringKey, bytes: Int) -> some View {
         HStack(spacing: 8) {
             Image(systemName: "square.stack.3d.up")
                 .foregroundStyle(.secondary)

@@ -163,7 +163,7 @@ struct TimingVisualizationBar: View {
 // MARK: - Timing Phase Row
 
 struct TimingPhaseRow: View {
-    let label: String
+    let label: LocalizedStringKey
     let duration: TimeInterval
     let color: Color
     let icon: String
@@ -271,7 +271,7 @@ struct TimingStatisticsView: View {
 // MARK: - Statistic Row
 
 struct StatisticRow: View {
-    let label: String
+    let label: LocalizedStringKey
     let value: String
     let icon: String
     let color: Color

@@ -102,7 +102,7 @@ struct JSONFormattedView: View {
                   options: [.prettyPrinted, .sortedKeys]
               ),
               let prettyString = String(data: prettyData, encoding: .utf8) else {
-            parseError = "Failed to parse JSON"
+            parseError = String(localized: "Failed to parse JSON")
             return
         }
         formattedJSON = prettyString
@@ -534,7 +534,7 @@ struct ImagePreviewView: View {
             }
         }
 
-        imageLoadError = "Invalid base64 data or unsupported image format"
+        imageLoadError = String(localized: "Invalid base64 data or unsupported image format")
     }
 }
 
