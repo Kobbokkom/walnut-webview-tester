@@ -15,6 +15,14 @@ enum PerformanceTab: String, CaseIterable {
     case resources = "Resources"
     case timing = "Timing"
 
+    var title: LocalizedStringKey {
+        switch self {
+        case .metrics: "Metrics"
+        case .resources: "Resources"
+        case .timing: "Timing"
+        }
+    }
+
     var icon: String {
         switch self {
         case .metrics: return "gauge.with.dots.needle.bottom.50percent"
@@ -189,7 +197,7 @@ struct PerformanceView: View {
             HStack(spacing: 0) {
                 ForEach(PerformanceTab.allCases, id: \.self) { tab in
                     PerformanceFilterTab(
-                        label: tab.rawValue,
+                        label: tab.title,
                         icon: tab.icon,
                         isSelected: selectedTab == tab
                     ) {
@@ -306,7 +314,7 @@ struct PerformanceView: View {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) {
                     Image(systemName: performanceManager.data.scoreRating.icon)
-                    Text(performanceManager.data.scoreRating.rawValue)
+                    Text(performanceManager.data.scoreRating.title)
                 }
                 .font(.headline)
                 .foregroundStyle(performanceManager.data.scoreRating.color)
@@ -345,12 +353,13 @@ struct PerformanceView: View {
 
     private var coreVitalsStatus: some View {
         let passed = performanceManager.data.coreWebVitalsPass
+        let statusText: LocalizedStringKey = passed ? "Passed Core Web Vitals" : "Needs Improvement"
 
         return HStack(spacing: 8) {
             Image(systemName: passed ? "checkmark.seal.fill" : "exclamationmark.triangle.fill")
                 .foregroundStyle(passed ? .green : .orange)
 
-            Text(passed ? "Passed Core Web Vitals" : "Needs Improvement")
+            Text(statusText)
                 .font(.caption.weight(.medium))
                 .foregroundStyle(passed ? .green : .orange)
 
@@ -377,7 +386,7 @@ struct PerformanceView: View {
         ) {
             VStack(spacing: 0) {
                 ForEach(Array(summary.enumerated()), id: \.element.type) { index, item in
-                    if matchesSearch(item.type.rawValue) {
+                    if matchesSearch(String(localized: item.type.title)) {
                         ResourceTypeRow(
                             type: item.type,
                             count: item.count,
@@ -462,7 +471,7 @@ struct PerformanceView: View {
                         .foregroundStyle(.orange)
                     Text("Failed to collect metrics")
                         .font(.headline)
-                    Text(error)
+                    Text(verbatim: error)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
@@ -516,12 +525,12 @@ struct PerformanceView: View {
     }
 
     private func formatLCP(_ value: Double?) -> String {
-        guard let value, value > 0 else { return "N/A" }
+        guard let value, value > 0 else { return String(localized: "N/A") }
         return value >= 1000 ? String(format: "%.2fs", value / 1000) : String(format: "%.0fms", value)
     }
 
     private func formatCLS(_ value: Double) -> String {
-        guard value >= 0 else { return "N/A" }
+        guard value >= 0 else { return String(localized: "N/A") }
         return String(format: "%.3f", value)
     }
 
@@ -554,7 +563,7 @@ struct PerformanceView: View {
 // MARK: - Performance Filter Tab
 
 private struct PerformanceFilterTab: View {
-    let label: String
+    let label: LocalizedStringKey
     let icon: String
     let isSelected: Bool
     let action: () -> Void
@@ -585,12 +594,12 @@ private struct PerformanceFilterTab: View {
 // MARK: - Performance Section
 
 struct PerformanceSection<Content: View>: View {
-    let title: String?
+    let title: LocalizedStringKey?
     let trailing: String?
     let content: () -> Content
 
     init(
-        title: String? = nil,
+        title: LocalizedStringKey? = nil,
         trailing: String? = nil,
         @ViewBuilder content: @escaping () -> Content
     ) {
@@ -608,7 +617,7 @@ struct PerformanceSection<Content: View>: View {
                         .foregroundStyle(.secondary)
                     Spacer()
                     if let trailing {
-                        Text(trailing)
+                        Text(verbatim: trailing)
                             .font(.system(size: 12))
                             .foregroundStyle(.tertiary)
                     }
@@ -650,7 +659,7 @@ private struct ResourceTypeRow: View {
                         .rotationEffect(.degrees(isExpanded ? 90 : 0))
                         .frame(width: 16)
 
-                    Text(type.rawValue)
+                    Text(type.title)
                         .foregroundStyle(.primary)
 
                     Spacer()
