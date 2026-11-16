@@ -31,17 +31,17 @@ enum NetworkResourceFilter: String, CaseIterable, Identifiable {
 
     var displayName: String {
         switch self {
-        case .all: "All"
+        case .all: String(localized: "All")
         case .fetchXhr: "Fetch/XHR"
-        case .doc: "Doc"
-        case .img: "Img"
+        case .doc: String(localized: "Doc")
+        case .img: String(localized: "Img")
         case .js: "JS"
         case .css: "CSS"
-        case .font: "Font"
-        case .media: "Media"
-        case .other: "Other"
-        case .errors: "Errors"
-        case .mixed: "Mixed"
+        case .font: String(localized: "Font")
+        case .media: String(localized: "Media")
+        case .other: String(localized: "Other")
+        case .errors: String(localized: "Errors")
+        case .mixed: String(localized: "Mixed")
         }
     }
 
@@ -344,7 +344,7 @@ struct NetworkView: View {
             HStack(spacing: 0) {
                 // All tab
                 NetworkFilterTab(
-                    label: "All",
+                    label: NetworkResourceFilter.all.displayName,
                     count: count(for: .all),
                     isSelected: filter == .all
                 ) {
@@ -387,7 +387,7 @@ struct NetworkView: View {
 
                 // Status tabs
                 NetworkFilterTab(
-                    label: "Errors",
+                    label: NetworkResourceFilter.errors.displayName,
                     count: count(for: .errors),
                     isSelected: filter == .errors,
                     color: .red
@@ -397,7 +397,7 @@ struct NetworkView: View {
 
                 if networkManager.pageIsSecure {
                     NetworkFilterTab(
-                        label: "Mixed",
+                        label: NetworkResourceFilter.mixed.displayName,
                         count: count(for: .mixed),
                         isSelected: filter == .mixed,
                         color: .orange
@@ -639,7 +639,7 @@ private struct NetworkFilterTab: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: 4) {
-                Text(label)
+                Text(verbatim: label)
                     .font(.system(size: 12, weight: isSelected ? .semibold : .regular))
                 if count != 0 {  // swiftlint:disable:this empty_count
                     Text("\(count)")
@@ -729,7 +729,7 @@ private struct NetworkRequestRow: View {
             }
 
             // Response content type
-            Text(request.responseContentType)
+            Text(LocalizedStringKey(request.responseContentType))
                 .font(.system(size: 9, weight: .semibold, design: .monospaced))
                 .foregroundStyle(request.responseContentTypeColor)
                 .frame(width: 56, alignment: .trailing)

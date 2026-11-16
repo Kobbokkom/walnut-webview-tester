@@ -93,17 +93,17 @@ extension ResourceEntry {
 
         var displayName: String {
             switch self {
-            case .img: "Image"
-            case .script: "Script"
-            case .link: "Stylesheet"
+            case .img: String(localized: "Image")
+            case .script: String(localized: "Script")
+            case .link: String(localized: "Stylesheet")
             case .css: "CSS"
-            case .font: "Font"
+            case .font: String(localized: "Font")
             case .fetch: "Fetch"
             case .xmlhttprequest: "XHR"
-            case .beacon: "Beacon"
-            case .video: "Video"
-            case .audio: "Audio"
-            case .other: "Other"
+            case .beacon: String(localized: "Beacon")
+            case .video: String(localized: "Video")
+            case .audio: String(localized: "Audio")
+            case .other: String(localized: "Other")
             }
         }
 
@@ -219,14 +219,14 @@ enum ResourceFilter: String, CaseIterable, Identifiable {
 
     var displayName: String {
         switch self {
-        case .all: "All"
-        case .img: "Img"
+        case .all: String(localized: "All")
+        case .img: String(localized: "Img")
         case .script: "JS"
         case .css: "CSS"
-        case .font: "Font"
+        case .font: String(localized: "Font")
         case .xhr: "XHR"
-        case .media: "Media"
-        case .other: "Other"
+        case .media: String(localized: "Media")
+        case .other: String(localized: "Other")
         }
     }
 

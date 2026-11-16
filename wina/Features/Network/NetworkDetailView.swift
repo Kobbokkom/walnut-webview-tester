@@ -43,6 +43,15 @@ struct NetworkDetailView: View {
         case headers = "Headers"
         case request = "Request"
         case response = "Response"
+
+        var title: LocalizedStringKey {
+            switch self {
+            case .overview: "Overview"
+            case .headers: "Headers"
+            case .request: "Request"
+            case .response: "Response"
+            }
+        }
     }
 
     var body: some View {
@@ -55,7 +64,7 @@ struct NetworkDetailView: View {
 
             Picker("Tab", selection: $selectedTab) {
                 ForEach(DetailTab.allCases, id: \.self) { tab in
-                    Text(tab.rawValue).tag(tab)
+                    Text(tab.title).tag(tab)
                 }
             }
             .pickerStyle(.segmented)
@@ -223,13 +232,13 @@ struct DetailSection<Content: View>: View {
     @State private var isExpanded: Bool = true
 
     init(
-        title: String,
+        title: String.LocalizationValue,
         rawText: String? = nil,
         onCopy: ((String, String) -> Void)? = nil,
         onShare: (() -> Void)? = nil,
         @ViewBuilder content: @escaping () -> Content
     ) {
-        self.title = title
+        self.title = String(localized: title)
         self.rawText = rawText
         self.onCopy = onCopy
         self.onShare = onShare
@@ -251,7 +260,7 @@ struct DetailSection<Content: View>: View {
                         .foregroundStyle(.secondary)
                         .frame(width: 12)
 
-                    Text(title)
+                    Text(verbatim: title)
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(.secondary)
 
@@ -323,8 +332,14 @@ struct DetailTableRow: View {
     var showBorder: Bool = true
     @State private var isExpanded: Bool = false
 
-    init(key: String, value: String, onCopy: ((String, String) -> Void)? = nil, showBorder: Bool = true) {
-        self.key = key
+    /// Localized label (e.g. "Request URL").
+    init(key: String.LocalizationValue, value: String, onCopy: ((String, String) -> Void)? = nil, showBorder: Bool = true) {
+        self.init(verbatimKey: String(localized: key), value: value, onCopy: onCopy, showBorder: showBorder)
+    }
+
+    /// Runtime data such as an HTTP header or query parameter name; never translated.
+    init(verbatimKey: String, value: String, onCopy: ((String, String) -> Void)? = nil, showBorder: Bool = true) {
+        self.key = verbatimKey
         self.value = value
         self.onCopy = onCopy
         self.showBorder = showBorder
@@ -337,7 +352,7 @@ struct DetailTableRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(alignment: .center, spacing: 12) {
-                Text(key)
+                Text(verbatim: key)
                     .font(.system(size: 12, weight: .medium, design: .monospaced))
                     .foregroundStyle(.blue)
                     .frame(width: 100, alignment: .leading)

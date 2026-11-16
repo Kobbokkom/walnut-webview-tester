@@ -42,7 +42,7 @@ extension NetworkDetailView {
                 }
                 DetailTableRow(
                     key: "Type",
-                    value: request.requestType.rawValue.capitalized,
+                    value: request.requestType.label,
                     onCopy: copyToClipboard,
                     showBorder: false
                 )
@@ -58,7 +58,7 @@ extension NetworkDetailView {
                 ) {
                     ForEach(Array(sortedHeaders.enumerated()), id: \.element.key) { index, pair in
                         DetailTableRow(
-                            key: pair.key,
+                            verbatimKey: pair.key,
                             value: pair.value,
                             onCopy: copyToClipboard,
                             showBorder: index < sortedHeaders.count - 1
@@ -77,7 +77,7 @@ extension NetworkDetailView {
                 ) {
                     ForEach(Array(sortedHeaders.enumerated()), id: \.element.key) { index, pair in
                         DetailTableRow(
-                            key: pair.key,
+                            verbatimKey: pair.key,
                             value: pair.value,
                             onCopy: copyToClipboard,
                             showBorder: index < sortedHeaders.count - 1
@@ -142,8 +142,8 @@ extension NetworkDetailView {
                     ) {
                         ForEach(Array(queryItems.enumerated()), id: \.element.name) { index, item in
                             DetailTableRow(
-                                key: item.name,
-                                value: item.value ?? "(empty)",
+                                verbatimKey: item.name,
+                                value: item.value ?? String(localized: "(empty)"),
                                 onCopy: copyToClipboard,
                                 showBorder: index < queryItems.count - 1
                             )
@@ -207,7 +207,7 @@ extension NetworkDetailView {
             return nil
         }
         guard headerType != bodyType else { return nil }
-        return "Content-Type is \(headerType.label), but the body looks like \(bodyType.label)."
+        return String(localized: "Content-Type is \(headerType.label), but the body looks like \(bodyType.label).")
     }
 
     private enum BodyContentHint: Equatable {

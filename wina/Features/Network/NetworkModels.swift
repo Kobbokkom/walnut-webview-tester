@@ -111,8 +111,8 @@ struct NetworkRequest: Identifiable, Equatable {
             switch self {
             case .fetch: return "Fetch"
             case .xhr: return "XHR"
-            case .document: return "Doc"
-            case .other: return "Other"
+            case .document: return String(localized: "Doc")
+            case .other: return String(localized: "Other")
             }
         }
     }
