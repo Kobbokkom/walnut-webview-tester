@@ -386,7 +386,7 @@ struct PerformanceView: View {
         ) {
             VStack(spacing: 0) {
                 ForEach(Array(summary.enumerated()), id: \.element.type) { index, item in
-                    if matchesSearch(String(localized: item.type.title)) {
+                    if matchesSearch(String.app(resource: item.type.title)) {
                         ResourceTypeRow(
                             type: item.type,
                             count: item.count,
@@ -525,12 +525,12 @@ struct PerformanceView: View {
     }
 
     private func formatLCP(_ value: Double?) -> String {
-        guard let value, value > 0 else { return String(localized: "N/A") }
+        guard let value, value > 0 else { return String.app("N/A") }
         return value >= 1000 ? String(format: "%.2fs", value / 1000) : String(format: "%.0fms", value)
     }
 
     private func formatCLS(_ value: Double) -> String {
-        guard value >= 0 else { return String(localized: "N/A") }
+        guard value >= 0 else { return String.app("N/A") }
         return String(format: "%.3f", value)
     }
 

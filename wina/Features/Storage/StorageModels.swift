@@ -51,12 +51,12 @@ struct StorageEditorTarget: Identifiable {
 
 enum StorageExporter {
     static func heading(for type: StorageItem.StorageType?) -> String {
-        let title = type.map { "\($0.label) Storage Export" } ?? "All Storage Export"
+        let title = type.map { "\($0.rawValue) Export" } ?? "All Storage Export"
         return "# \(title)\n# \(Date().formatted())\n\n"
     }
 
     static func line(_ item: StorageItem, includeType: Bool, decode: Bool = false) -> String {
-        let prefix = includeType ? "[\(item.storageType.label)] " : ""
+        let prefix = includeType ? "[\(item.storageType.rawValue)] " : ""
         let value = decode ? item.value.removingPercentEncoding ?? item.value : item.value
         return "\(prefix)\(item.key) = \(value)\n"
     }
@@ -85,9 +85,9 @@ struct StorageItem: Identifiable, Equatable {
 
         var label: String {
             switch self {
-            case .localStorage: return String(localized: "Local")
-            case .sessionStorage: return String(localized: "Session")
-            case .cookies: return String(localized: "Cookies")
+            case .localStorage: return String.app("Local")
+            case .sessionStorage: return String.app("Session")
+            case .cookies: return String.app("Cookies")
             }
         }
 
@@ -154,11 +154,11 @@ enum StorageValueType {
         case .json:
             return TypeBadge(text: "JSON", color: .purple, icon: "curlybraces")
         case .number:
-            return TypeBadge(text: String(localized: "Number"), color: .blue, icon: "number")
+            return TypeBadge(text: String.app("Number"), color: .blue, icon: "number")
         case .bool:
-            return TypeBadge(text: String(localized: "Boolean"), color: .green, icon: "checkmark")
+            return TypeBadge(text: String.app("Boolean"), color: .green, icon: "checkmark")
         case .string:
-            return TypeBadge(text: String(localized: "Text"), color: .gray, icon: "textformat")
+            return TypeBadge(text: String.app("Text"), color: .gray, icon: "textformat")
         case .empty:
             return nil
         }
@@ -167,10 +167,10 @@ enum StorageValueType {
     var label: String {
         switch self {
         case .json: return "JSON"
-        case .number: return String(localized: "Number")
-        case .bool: return String(localized: "Boolean")
-        case .string: return String(localized: "Text")
-        case .empty: return String(localized: "Empty")
+        case .number: return String.app("Number")
+        case .bool: return String.app("Boolean")
+        case .string: return String.app("Text")
+        case .empty: return String.app("Empty")
         }
     }
 }

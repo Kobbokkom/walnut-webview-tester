@@ -124,7 +124,7 @@ struct AgentAnnouncementView: View {
                 Button {
                     UIPasteboard.general.string = AgentConnectionView.installCommands
                     copyFeedback.show("Install commands copied")
-                    UIAccessibility.post(notification: .announcement, argument: String(localized: "Install commands copied"))
+                    UIAccessibility.post(notification: .announcement, argument: String.app("Install commands copied"))
                 } label: {
                     Label("Copy install commands", systemImage: "doc.on.doc")
                         .font(.subheadline.weight(.semibold))

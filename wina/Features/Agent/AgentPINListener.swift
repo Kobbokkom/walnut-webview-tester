@@ -252,7 +252,7 @@ final class AgentPINListener {
             try commit?()
         } catch {
             stop()
-            self.error = String(localized: "Could not save this pairing. Start pairing again.")
+            self.error = String.app("Could not save this pairing. Start pairing again.")
             return
         }
         peer.stage = .grant

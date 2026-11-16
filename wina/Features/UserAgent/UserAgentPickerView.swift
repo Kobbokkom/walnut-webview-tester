@@ -382,7 +382,7 @@ private struct PresetDetailPopover: View {
 
             Button {
                 UIPasteboard.general.string = preset.userAgent
-                feedbackState.showCopied(String(localized: "User Agent"))
+                feedbackState.showCopied(String.app("User Agent"))
             } label: {
                 HStack {
                     Spacer()

@@ -25,17 +25,17 @@ enum LogClearStrategy: String, CaseIterable {
 
     var displayName: String {
         switch self {
-        case .origin: return String(localized: "Same Origin")
-        case .page: return String(localized: "Each Page")
-        case .keep: return String(localized: "Keep All")
+        case .origin: return String.app("Same Origin")
+        case .page: return String.app("Each Page")
+        case .keep: return String.app("Keep All")
         }
     }
 
     var description: String {
         switch self {
-        case .origin: return String(localized: "Clear when leaving current domain")
-        case .page: return String(localized: "Clear on every navigation")
-        case .keep: return String(localized: "Keep until manually cleared")
+        case .origin: return String.app("Clear when leaving current domain")
+        case .page: return String.app("Clear on every navigation")
+        case .keep: return String.app("Keep until manually cleared")
         }
     }
 }

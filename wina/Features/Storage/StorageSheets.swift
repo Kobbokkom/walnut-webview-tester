@@ -153,7 +153,7 @@ struct StorageEditSheet: View {
                         Text("Key")
                         Spacer()
                         CopyIconButton(text: editedKey) {
-                            feedbackState.showCopied(String(localized: "Key"))
+                            feedbackState.showCopied(String.app("Key"))
                         }
                     }
                 } footer: {
@@ -202,7 +202,7 @@ struct StorageEditSheet: View {
                         Text("Value")
                         Spacer()
                         CopyIconButton(text: editedValue) {
-                            feedbackState.showCopied(String(localized: "Value"))
+                            feedbackState.showCopied(String.app("Value"))
                         }
                         if !editedValue.isEmpty {
                             HeaderActionButton(label: "Clear", icon: "xmark") {

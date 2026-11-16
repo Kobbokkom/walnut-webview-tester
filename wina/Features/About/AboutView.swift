@@ -19,9 +19,9 @@ struct AboutView: View {
 
     private var removeAdsButtonTitle: String {
         if let price = store.product?.displayPrice {
-            return String(localized: "Remove Ads (\(price))")
+            return String.app("Remove Ads (\(price))")
         }
-        return String(localized: "Remove Ads")
+        return String.app("Remove Ads")
     }
 
 #if DEBUG

@@ -31,17 +31,17 @@ enum NetworkResourceFilter: String, CaseIterable, Identifiable {
 
     var displayName: String {
         switch self {
-        case .all: String(localized: "All")
+        case .all: String.app("All")
         case .fetchXhr: "Fetch/XHR"
-        case .doc: String(localized: "Doc")
-        case .img: String(localized: "Img")
+        case .doc: String.app("Doc")
+        case .img: String.app("Img")
         case .js: "JS"
         case .css: "CSS"
-        case .font: String(localized: "Font")
-        case .media: String(localized: "Media")
-        case .other: String(localized: "Other")
-        case .errors: String(localized: "Errors")
-        case .mixed: String(localized: "Mixed")
+        case .font: String.app("Font")
+        case .media: String.app("Media")
+        case .other: String.app("Other")
+        case .errors: String.app("Errors")
+        case .mixed: String.app("Mixed")
         }
     }
 
@@ -601,7 +601,7 @@ struct NetworkView: View {
         // Build header with filter info
         var header = "Network & Resources Export"
         if filter != .all {
-            header += " (Filter: \(filter.displayName))"
+            header += " (Filter: \(filter.rawValue))"
         }
         if !searchText.isEmpty {
             header += " (Search: \(searchText))"

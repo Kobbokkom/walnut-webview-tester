@@ -132,7 +132,7 @@ final class StoreManager {
             } else {
                 let products = try await storeService.fetchProducts(for: [productID])
                 guard let fetched = products.first else {
-                    errorMessage = String(localized: "Product not available")
+                    errorMessage = String.app("Product not available")
                     isLoading = false
                     return
                 }
@@ -161,7 +161,7 @@ final class StoreManager {
             await checkEntitlements()
 
             if !isAdRemoved {
-                errorMessage = String(localized: "No purchases to restore")
+                errorMessage = String.app("No purchases to restore")
             }
         } catch {
             errorMessage = error.localizedDescription
@@ -180,9 +180,9 @@ final class StoreManager {
         case .userCancelled:
             break
         case .pending:
-            errorMessage = String(localized: "Purchase is pending approval")
+            errorMessage = String.app("Purchase is pending approval")
         @unknown default:
-            errorMessage = String(localized: "Unknown error occurred")
+            errorMessage = String.app("Unknown error occurred")
         }
     }
 
@@ -207,7 +207,7 @@ final class StoreManager {
             }
 #endif
         case .unverified:
-            errorMessage = String(localized: "Purchase could not be verified")
+            errorMessage = String.app("Purchase could not be verified")
         }
     }
 

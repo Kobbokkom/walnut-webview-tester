@@ -56,7 +56,7 @@ final class AgentSession {
         guard !isRunning else { return }
         guard Self.activeSession == nil else {
             if !rememberedOnly, !automatic {
-                connectionError = String(localized: "Stop the Mac Agent connection in the other Walnut window first.")
+                connectionError = String.app("Stop the Mac Agent connection in the other Walnut window first.")
             }
             return
         }
@@ -157,14 +157,14 @@ final class AgentSession {
                 },
                 authorize: { [weak self] verification in
                     guard let self, isRunning, !isConnected else { return false }
-                    let message = String(localized: "Pair only if this number matches the one in Terminal on your Mac.")
+                    let message = String.app("Pair only if this number matches the one in Terminal on your Mac.")
                     guard await approvals.authorize(message, pairingConfirmation: verification) else { return false }
                     return isRunning && !isConnected && !Task.isCancelled
                 }
             )
             pairingDeviceName = candidate.serviceName
         } catch {
-            pairingStartError = String(localized: "Could not start pairing. Try again or share a pairing file.")
+            pairingStartError = String.app("Could not start pairing. Try again or share a pairing file.")
         }
     }
 
@@ -185,7 +185,7 @@ final class AgentSession {
             pairingStorageError = nil
             connectionError = nil
         } catch {
-            pairingStorageError = String(localized: "Could not forget the saved Mac. Unlock the iPhone and try again.")
+            pairingStorageError = String.app("Could not forget the saved Mac. Unlock the iPhone and try again.")
         }
     }
 
@@ -195,7 +195,7 @@ final class AgentSession {
             pairingStorageError = nil
         } catch {
             rememberedPairing = nil
-            pairingStorageError = String(localized: "Could not read the saved Mac. Unlock the iPhone or forget the pairing.")
+            pairingStorageError = String.app("Could not read the saved Mac. Unlock the iPhone or forget the pairing.")
             throw error
         }
     }

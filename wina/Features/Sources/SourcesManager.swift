@@ -139,7 +139,7 @@ class SourcesManager {
 
     func fetchDOMTree() async {
         guard let navigator else {
-            errorMessage = String(localized: "Navigator not available")
+            errorMessage = String.app("Navigator not available")
             return
         }
 
@@ -153,10 +153,10 @@ class SourcesManager {
                 domTree = parseNode(json, path: [0])
                 domTreeRevision += 1
             } catch {
-                errorMessage = String(localized: "Failed to parse DOM: \(error.localizedDescription)")
+                errorMessage = String.app("Failed to parse DOM: \(error.localizedDescription)")
             }
         } else {
-            errorMessage = String(localized: "Failed to fetch DOM tree")
+            errorMessage = String.app("Failed to fetch DOM tree")
         }
 
         isLoading = false
@@ -189,7 +189,7 @@ class SourcesManager {
 
     func fetchRawHTML() async {
         guard let navigator else {
-            errorMessage = String(localized: "Navigator not available")
+            errorMessage = String.app("Navigator not available")
             return
         }
 
@@ -199,7 +199,7 @@ class SourcesManager {
         if let result = await navigator.evaluateJavaScript(Self.rawHTMLScript) as? String {
             rawHTML = result
         } else {
-            errorMessage = String(localized: "Failed to fetch HTML")
+            errorMessage = String.app("Failed to fetch HTML")
         }
 
         isLoading = false
@@ -276,7 +276,7 @@ class SourcesManager {
 
     func fetchStylesheets() async {
         guard let navigator else {
-            errorMessage = String(localized: "Navigator not available")
+            errorMessage = String.app("Navigator not available")
             return
         }
 
@@ -298,7 +298,7 @@ class SourcesManager {
                 )
             }
         } else {
-            errorMessage = String(localized: "Failed to fetch stylesheets")
+            errorMessage = String.app("Failed to fetch stylesheets")
         }
 
         isLoading = false
@@ -333,7 +333,7 @@ class SourcesManager {
 
     func fetchScripts() async {
         guard let navigator else {
-            errorMessage = String(localized: "Navigator not available")
+            errorMessage = String.app("Navigator not available")
             return
         }
 
@@ -356,7 +356,7 @@ class SourcesManager {
                 )
             }
         } else {
-            errorMessage = String(localized: "Failed to fetch scripts")
+            errorMessage = String.app("Failed to fetch scripts")
         }
 
         isLoading = false

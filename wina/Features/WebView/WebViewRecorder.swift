@@ -205,7 +205,7 @@ final class WebViewRecorder {
         guard state == .idle else { return nil }
         startFailure = nil
         guard Self.activeRecorder == nil else {
-            startFailure = String(localized: "A screen recording is already active or awaiting approval.")
+            startFailure = String.app("A screen recording is already active or awaiting approval.")
             return nil
         }
 
@@ -256,7 +256,7 @@ final class WebViewRecorder {
             }
             return true
         } catch {
-            startFailure = stopRequested ? String(localized: "Recording was stopped before it started.") : error.localizedDescription
+            startFailure = stopRequested ? String.app("Recording was stopped before it started.") : error.localizedDescription
             discardPendingCapture(outputURL: outputURL)
             completeRecording()
             return false
@@ -316,7 +316,7 @@ final class WebViewRecorder {
         let recorder = RPScreenRecorder.shared()
         guard recorder.isAvailable, !recorder.isRecording else {
             throw NSError(domain: "ScreenRecording", code: 1,
-                          userInfo: [NSLocalizedDescriptionKey: String(localized: "Screen recording is unavailable.")])
+                          userInfo: [NSLocalizedDescriptionKey: String.app("Screen recording is unavailable.")])
         }
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             recorder.startCapture(handler: handler) { error in
@@ -366,13 +366,13 @@ final class WebViewRecorder {
         defer { completeRecording() }
         if stopRequested {
             discardPendingCapture(outputURL: outputURL)
-            lastResult = .failed(captureError?.localizedDescription ?? String(localized: "Recording was stopped before it started."))
+            lastResult = .failed(captureError?.localizedDescription ?? String.app("Recording was stopped before it started."))
             return
         }
         let writerState = writerState
         let writer = writerQueue.sync { writerState.assetWriter }
         guard let writer, let url = outputURL else {
-            lastResult = .failed(String(localized: "No video frames were recorded."))
+            lastResult = .failed(String.app("No video frames were recorded."))
             return
         }
         if writer.status == .writing {
@@ -387,7 +387,7 @@ final class WebViewRecorder {
             } else {
                 try? FileManager.default.removeItem(at: url)
             }
-            lastResult = .failed(captureError?.localizedDescription ?? writer.error?.localizedDescription ?? String(localized: "Could not finish the recording."))
+            lastResult = .failed(captureError?.localizedDescription ?? writer.error?.localizedDescription ?? String.app("Could not finish the recording."))
             return
         }
         do {
@@ -407,8 +407,8 @@ final class WebViewRecorder {
                 failedOutputURL = url
             }
             let message = retainForAgent || !isAgentCapture
-                ? String(localized: "Could not save to Photos. The recording file was kept.")
-                : String(localized: "Could not save to Photos.")
+                ? String.app("Could not save to Photos. The recording file was kept.")
+                : String.app("Could not save to Photos.")
             lastResult = .failed("\(message) \(error.localizedDescription)")
         }
     }

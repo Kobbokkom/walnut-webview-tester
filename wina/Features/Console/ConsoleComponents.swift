@@ -169,7 +169,7 @@ struct LogRow: View {
                                         Menu {
                                             Button {
                                                 UIPasteboard.general.string = json.formatted
-                                                copyFeedbackMessage = String(localized: "Copied formatted JSON")
+                                                copyFeedbackMessage = String.app("Copied formatted JSON")
                                                 showCopyFeedback = true
                                                 DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
                                                     showCopyFeedback = false
@@ -179,7 +179,7 @@ struct LogRow: View {
                                             }
                                             Button {
                                                 UIPasteboard.general.string = json.minified
-                                                copyFeedbackMessage = String(localized: "Copied minified JSON")
+                                                copyFeedbackMessage = String.app("Copied minified JSON")
                                                 showCopyFeedback = true
                                                 DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
                                                     showCopyFeedback = false
@@ -233,7 +233,7 @@ struct LogRow: View {
                 Spacer(minLength: 4)
                 Button {
                     UIPasteboard.general.string = fullCopyableString
-                    copyFeedbackMessage = String(localized: "Copied")
+                    copyFeedbackMessage = String.app("Copied")
                     showCopyFeedback = true
                     DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
                         showCopyFeedback = false

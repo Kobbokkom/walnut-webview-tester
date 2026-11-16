@@ -135,7 +135,7 @@ class AccessibilityManager {
             let severityIssues = issues.filter { $0.severity == severity }
             if severityIssues.isEmpty { continue }
 
-            lines.append("## \(severity.label) (\(severityIssues.count))")
+            lines.append("## \(severity.rawValue) (\(severityIssues.count))")
             lines.append("")
 
             for (index, issue) in severityIssues.enumerated() {
@@ -143,7 +143,7 @@ class AccessibilityManager {
                 if let ruleId = issue.ruleId {
                     lines.append("- Rule: \(ruleId)")
                 }
-                lines.append("- Category: \(issue.category.label)")
+                lines.append("- Category: \(issue.category.rawValue)")
                 if !issue.failureSummary.isEmpty {
                     lines.append("- Details: \(issue.failureSummary)")
                 }

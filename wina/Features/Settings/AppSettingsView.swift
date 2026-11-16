@@ -53,7 +53,7 @@ enum AppLanguage: String, CaseIterable, Identifiable {
 
     var displayName: String {
         switch self {
-        case .system: return String(localized: "System")
+        case .system: return String.app("System")
         case .arabic: return "العربية"
         case .catalan: return "Català"
         case .chineseSimplified: return "简体中文"
@@ -117,7 +117,7 @@ struct AppSettingsView: View {
     }
 
     private var selectedLanguageDisplayName: String {
-        AppLanguage(rawValue: appLanguage)?.displayName ?? String(localized: "System")
+        AppLanguage(rawValue: appLanguage)?.displayName ?? String.app("System")
     }
 
     var body: some View {

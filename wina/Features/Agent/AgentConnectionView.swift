@@ -97,10 +97,10 @@ struct AgentConnectionView: View {
 
     private func announce(_ state: AgentConnectionState) {
         let message: String? = switch state {
-        case .waitingToPair: String(localized: "Ready to pair")
-        case .pairingTimedOut: String(localized: "Pairing timed out")
-        case .waitingForMac: String(localized: "Mac paired. Waiting for your Mac.")
-        case .connected: String(localized: "Mac connected")
+        case .waitingToPair: String.app("Ready to pair")
+        case .pairingTimedOut: String.app("Pairing timed out")
+        case .waitingForMac: String.app("Mac paired. Waiting for your Mac.")
+        case .connected: String.app("Mac connected")
         case .failed(let error): error
         case .off, .starting: nil
         }
@@ -377,7 +377,7 @@ struct AgentConnectionView: View {
     }
 
     private func announce(_ message: String.LocalizationValue) {
-        UIAccessibility.post(notification: .announcement, argument: String(localized: message))
+        UIAccessibility.post(notification: .announcement, argument: String.app(message))
     }
 
     private func clearPairingFile() {

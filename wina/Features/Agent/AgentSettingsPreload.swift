@@ -76,7 +76,7 @@ extension AgentSettings {
         default:
             let profile = try input.arguments["id"] == nil ? currentProfile() : savedProfile(input)
             if try input.flag("raw") {
-                try await input.confirm(String(localized: "Share this Walnut startup profile, including cookie values and JavaScript, with the paired Mac?"))
+                try await input.confirm(String.app("Share this Walnut startup profile, including cookie values and JavaScript, with the paired Mac?"))
                 return try AgentTool.json(profile)
             }
             return profileSummary(profile)
@@ -90,21 +90,21 @@ extension AgentSettings {
         case "apply", "load":
             let candidate = try action == "load" ? savedProfile(input) : decodeProfile(input)
             try await input.confirm(persist
-                ? String(localized: "Save and apply the startup profile in Walnut? It can set cookies and run JavaScript on subsequent WKWebView loads.")
-                : String(localized: "Apply the startup profile in Walnut for this session? It can set cookies and run JavaScript on subsequent WKWebView loads."))
+                ? String.app("Save and apply the startup profile in Walnut? It can set cookies and run JavaScript on subsequent WKWebView loads.")
+                : String.app("Apply the startup profile in Walnut for this session? It can set cookies and run JavaScript on subsequent WKWebView loads."))
             settings.setPreloadProfile(candidate, persist: persist)
         case "save":
             let candidate = try input.arguments["profile"] == nil ? currentProfile() : decodeProfile(input)
-            try await input.confirm(String(localized: "Save this startup profile to Walnut on this iPhone?"))
+            try await input.confirm(String.app("Save this startup profile to Walnut on this iPhone?"))
             return profileSummary(PreloadProfileStore.upsertSavedProfile(candidate))
         case "delete":
             let id = try savedProfile(input).id
-            try await input.confirm(String(localized: "Delete this saved startup profile from Walnut?"))
+            try await input.confirm(String.app("Delete this saved startup profile from Walnut?"))
             let remaining = PreloadProfileStore.savedProfiles().filter { $0.id != id }
             PreloadProfileStore.saveProfiles(remaining)
             return ["deleted": id.uuidString]
         case "disable":
-            if persist { try await input.confirm(String(localized: "Disable Walnut's startup profile for future sessions?")) }
+            if persist { try await input.confirm(String.app("Disable Walnut's startup profile for future sessions?")) }
             var candidate = currentProfile()
             candidate.isEnabled = false
             settings.setPreloadProfile(candidate, persist: persist)
@@ -120,7 +120,7 @@ extension AgentSettings {
         let context = AgentDevContext(navigator: navigator, authorize: input.authorize)
         let raw = try input.flag("raw")
         if action == "clear_logs" {
-            try await context.confirm(String(localized: "Clear Walnut's startup bridge log?"))
+            try await context.confirm(String.app("Clear Walnut's startup bridge log?"))
             navigator.preloadBridgeLogManager.clear()
             return ["cleared": true]
         }
@@ -132,7 +132,7 @@ extension AgentSettings {
         }
         let offset = try options.int("offset", default: 0, range: 0...Int.max)
         let limit = try options.int("limit", default: 50, range: 1...bridgeLogPageLimit)
-        if raw { try await context.confirm(String(localized: "Share startup bridge message bodies with the paired Mac?")) }
+        if raw { try await context.confirm(String.app("Share startup bridge message bodies with the paired Mac?")) }
         return navigator.preloadBridgeLogManager.entries.dropFirst(offset).prefix(limit).map { entry in
             var record = bridgeLogRecord(entry)
             // Bound list previews by scalars because one Swift Character can contain many of them.
@@ -145,7 +145,7 @@ extension AgentSettings {
     private static func bridgeLogDetail(_ input: AgentDevInput, context: AgentDevContext) async throws -> [String: Any] {
         let id = try input.uuid("logId")
         let cursor = try AgentDevTools.exportCursor(input, source: "startup bridge log")
-        try await context.confirm(String(localized: "Share the selected startup bridge log and its retained message body with the paired Mac?"))
+        try await context.confirm(String.app("Share the selected startup bridge log and its retained message body with the paired Mac?"))
         guard let entry = context.navigator.preloadBridgeLogManager.entries.first(where: { $0.id == id }) else {
             throw AgentError("Startup bridge log entry not found.")
         }

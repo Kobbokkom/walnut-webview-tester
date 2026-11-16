@@ -633,11 +633,11 @@ struct ElementDetailView: View {
         case .attributes:
             let text = node.attributes.map { "\($0.key)=\"\($0.value)\"" }.joined(separator: "\n")
             UIPasteboard.general.string = text
-            feedbackState.showCopied(String(localized: "Attributes"))
+            feedbackState.showCopied(String.app("Attributes"))
         case .styles:
             let text = computedStyles.map { "\($0.key): \($0.value);" }.joined(separator: "\n")
             UIPasteboard.general.string = text
-            feedbackState.showCopied(String(localized: "Styles"))
+            feedbackState.showCopied(String.app("Styles"))
         case .html:
             UIPasteboard.general.string = outerHTML
             feedbackState.showCopied("HTML")

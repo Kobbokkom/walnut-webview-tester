@@ -143,7 +143,7 @@ extension NetworkDetailView {
                         ForEach(Array(queryItems.enumerated()), id: \.element.name) { index, item in
                             DetailTableRow(
                                 verbatimKey: item.name,
-                                value: item.value ?? String(localized: "(empty)"),
+                                value: item.value ?? String.app("(empty)"),
                                 onCopy: copyToClipboard,
                                 showBorder: index < queryItems.count - 1
                             )
@@ -207,7 +207,7 @@ extension NetworkDetailView {
             return nil
         }
         guard headerType != bodyType else { return nil }
-        return String(localized: "Content-Type is \(headerType.label), but the body looks like \(bodyType.label).")
+        return String.app("Content-Type is \(headerType.label), but the body looks like \(bodyType.label).")
     }
 
     private enum BodyContentHint: Equatable {

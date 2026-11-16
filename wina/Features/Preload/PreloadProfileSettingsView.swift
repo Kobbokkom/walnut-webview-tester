@@ -85,18 +85,18 @@ enum PreloadProfileValidation {
             if !BridgeChannelNameValidator.isValid(channel.name)
                 || BridgeChannelNameValidator.reservedNames.contains(channel.name)
             {
-                return String(localized: "Channel name must be valid and not reserved.")
+                return String.app("Channel name must be valid and not reserved.")
             }
 
             for rule in channel.responseRules where rule.isEnabled {
                 if !BridgeResponseBodyValidator.isValidTemplate(rule.response.bodyTemplate) {
-                    return String(localized: "Response JSON syntax and placeholders must be valid before applying.")
+                    return String.app("Response JSON syntax and placeholders must be valid before applying.")
                 }
 
                 if rule.response.target == .callback,
                    !JavaScriptPath.isValid(rule.response.callbackName)
                 {
-                    return String(localized: "Callback name must be a valid JavaScript path.")
+                    return String.app("Callback name must be a valid JavaScript path.")
                 }
             }
         }
@@ -311,7 +311,7 @@ struct PreloadProfileSettingsView: View {
                 } label: {
                 PreloadEditableRow(
                     title: channelTitle(for: channel),
-                    subtitle: String(localized: "\(channel.responseRules.filter(\.isEnabled).count) rules"),
+                    subtitle: String.app("\(channel.responseRules.filter(\.isEnabled).count) rules"),
                     isEnabled: channel.isEnabled
                 )
                 }
@@ -377,27 +377,27 @@ struct PreloadProfileSettingsView: View {
             + profile.bridgeChannels.count + profile.customScripts.count
             + (profile.capturesWindowPostMessage ? 1 : 0)
         guard count > 0 else { return nil }
-        return count == 1 ? String(localized: "1 item") : String(localized: "\(count) items")
+        return count == 1 ? String.app("1 item") : String.app("\(count) items")
     }
 
     private func cookieTitle(for cookie: PreloadCookie) -> String {
-        cookie.name.isEmpty ? String(localized: "Cookie") : cookie.name
+        cookie.name.isEmpty ? String.app("Cookie") : cookie.name
     }
 
     private func cookieSubtitle(for cookie: PreloadCookie) -> String {
-        cookie.domainMode == .currentHost ? String(localized: "Current host") : cookie.customDomain
+        cookie.domainMode == .currentHost ? String.app("Current host") : cookie.customDomain
     }
 
     private func windowItemTitle(for item: WindowInjectionItem) -> String {
-        item.name.isEmpty ? String(localized: "Window Item") : "window.\(item.name)"
+        item.name.isEmpty ? String.app("Window Item") : "window.\(item.name)"
     }
 
     private func channelTitle(for channel: BridgeChannel) -> String {
-        channel.name.isEmpty ? String(localized: "Channel") : channel.name
+        channel.name.isEmpty ? String.app("Channel") : channel.name
     }
 
     private func customScriptSubtitle(for script: PreloadCustomScript) -> String {
-        script.forMainFrameOnly ? String(localized: "Main frame") : String(localized: "All frames")
+        script.forMainFrameOnly ? String.app("Main frame") : String.app("All frames")
     }
 
     private func binding(forCookieID id: UUID) -> Binding<PreloadCookie> {
@@ -816,9 +816,9 @@ private enum BridgeMatcherMode: CaseIterable {
 
     var localizedTitle: String {
         switch self {
-        case .any: String(localized: "Any message")
-        case .typeEquals: String(localized: "type equals")
-        case .jsonPathEquals: String(localized: "JSON path equals")
+        case .any: String.app("Any message")
+        case .typeEquals: String.app("type equals")
+        case .jsonPathEquals: String.app("JSON path equals")
         }
     }
 }

@@ -44,11 +44,11 @@ extension AgentDevTools {
                 throw AgentError("A storage type is required.")
             }
             let prompt = if type == .cookies && scope == "all" {
-                String(localized: "Clear all cookies in this WebView's data store?")
+                String.app("Clear all cookies in this WebView's data store?")
             } else if type == .cookies {
-                String(localized: "Clear cookies for \(host)?")
+                String.app("Clear cookies for \(host)?")
             } else {
-                String(localized: "Clear \(type.rawValue) for \(host)?")
+                String.app("Clear \(type.rawValue) for \(host)?")
             }
             try await context.confirm(prompt)
             storage.setNavigator(context.navigator)
@@ -95,10 +95,10 @@ extension AgentDevTools {
         let includeContent = try input.bool("raw") ?? false
         if includeContent || allCookies || hasCookieFilter || !query.isEmpty || format == "text" {
             let prompt = switch (format == "text", allCookies) {
-            case (true, true): String(localized: "Export all domains' cookies and WebView storage on the Mac?")
-            case (true, false): String(localized: "Export the active page's WebView storage on the Mac?")
-            case (false, true): String(localized: "Inspect all domains' cookies and WebView storage on the Mac?")
-            case (false, false): String(localized: "Inspect the active page's WebView storage on the Mac?")
+            case (true, true): String.app("Export all domains' cookies and WebView storage on the Mac?")
+            case (true, false): String.app("Export the active page's WebView storage on the Mac?")
+            case (false, true): String.app("Inspect all domains' cookies and WebView storage on the Mac?")
+            case (false, false): String.app("Inspect the active page's WebView storage on the Mac?")
             }
             try await context.confirm(prompt)
         }
@@ -218,24 +218,24 @@ extension AgentDevTools {
         path: String?
     ) -> String {
         let head = switch (action, type == .cookies) {
-        case ("add", true): String(localized: "Allow the Mac to add a cookie?")
-        case ("add", false): String(localized: "Allow the Mac to add a \(type.rawValue) entry for \(host)?")
-        case ("edit", true): String(localized: "Allow the Mac to edit a cookie?")
-        case ("edit", false): String(localized: "Allow the Mac to edit a \(type.rawValue) entry for \(host)?")
-        case (_, true): String(localized: "Allow the Mac to remove a cookie?")
-        default: String(localized: "Allow the Mac to remove a \(type.rawValue) entry for \(host)?")
+        case ("add", true): String.app("Allow the Mac to add a cookie?")
+        case ("add", false): String.app("Allow the Mac to add a \(type.rawValue) entry for \(host)?")
+        case ("edit", true): String.app("Allow the Mac to edit a cookie?")
+        case ("edit", false): String.app("Allow the Mac to edit a \(type.rawValue) entry for \(host)?")
+        case (_, true): String.app("Allow the Mac to remove a cookie?")
+        default: String.app("Allow the Mac to remove a \(type.rawValue) entry for \(host)?")
         }
         guard type == .cookies else { return head }
         let lines: [String]
         if let cookieScope {
-            let domainLine = cookieScope.domain.map { String(localized: "Domain: \($0) and its subdomains where WebKit allows") }
-                ?? String(localized: "Domain: \(host) (host only)")
-            lines = [domainLine, String(localized: "Path: \(cookieScope.path)")]
+            let domainLine = cookieScope.domain.map { String.app("Domain: \($0) and its subdomains where WebKit allows") }
+                ?? String.app("Domain: \(host) (host only)")
+            lines = [domainLine, String.app("Path: \(cookieScope.path)")]
         } else {
-            let domainLine = domain.map { String(localized: "Domain: exactly \($0)") }
-                ?? String(localized: "Domain: matching \(host)")
-            let pathLine = path.map { String(localized: "Path: \($0)") }
-                ?? String(localized: "Path: any, if only one matches")
+            let domainLine = domain.map { String.app("Domain: exactly \($0)") }
+                ?? String.app("Domain: matching \(host)")
+            let pathLine = path.map { String.app("Path: \($0)") }
+                ?? String.app("Path: any, if only one matches")
             lines = [domainLine, pathLine]
         }
         return ([head] + lines).joined(separator: "\n")

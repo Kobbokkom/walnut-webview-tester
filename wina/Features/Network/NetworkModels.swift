@@ -111,8 +111,8 @@ struct NetworkRequest: Identifiable, Equatable {
             switch self {
             case .fetch: return "Fetch"
             case .xhr: return "XHR"
-            case .document: return String(localized: "Doc")
-            case .other: return String(localized: "Other")
+            case .document: return String.app("Doc")
+            case .other: return String.app("Other")
             }
         }
     }
@@ -278,7 +278,7 @@ enum NetworkExporter {
 
     static func resourceTextLines(_ resources: some Collection<ResourceEntry>) -> some Collection<String> {
         resources.lazy.map { resource in
-            var line = "[\(resource.initiatorType.displayName)] \(resource.name)"
+            var line = "[\(resource.initiatorType.rawValue)] \(resource.name)"
             line += "\n  Duration: \(resource.displayDuration), Size: \(resource.displaySize)"
             if resource.isCrossOriginRestricted {
                 line += " (cross-origin)"

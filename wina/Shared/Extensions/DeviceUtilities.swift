@@ -37,15 +37,15 @@ enum SettingsFormatter {
 
     static func minimumFontSizeText(_ size: Double) -> String {
         let validSize = validMinimumFontSize(size)
-        return validSize == 0 ? "Default" : "\(Int(validSize)) pt"
+        return validSize == 0 ? String.app("Default") : "\(Int(validSize)) pt"
     }
 
     /// Formats content mode integer to display string
     static func contentModeText(_ mode: Int) -> String {
         switch mode {
-        case 1: return "Mobile"
-        case 2: return "Desktop"
-        default: return "Recommended"
+        case 1: return String.app("Mobile")
+        case 2: return String.app("Desktop")
+        default: return String.app("Recommended")
         }
     }
 
@@ -57,24 +57,24 @@ enum SettingsFormatter {
         calendar: Bool
     ) -> String {
         var detectors: [String] = []
-        if phone { detectors.append("Phone") }
-        if links { detectors.append("Links") }
-        if address { detectors.append("Address") }
-        if calendar { detectors.append("Calendar") }
-        return detectors.isEmpty ? "None" : detectors.joined(separator: ", ")
+        if phone { detectors.append(String.app("Phone")) }
+        if links { detectors.append(String.app("Links")) }
+        if address { detectors.append(String.app("Address")) }
+        if calendar { detectors.append(String.app("Calendar")) }
+        return detectors.isEmpty ? String.app("None") : detectors.joined(separator: ", ")
     }
 
-    /// Formats boolean to "Enabled" or "Disabled"
+    /// Formats boolean to "Enabled" or "Disabled" in the app language
     static func enabledStatus(_ enabled: Bool) -> String {
-        enabled ? "Enabled" : "Disabled"
+        enabled ? String.app("Enabled") : String.app("Disabled")
     }
 
     /// Formats Safari dismiss button style integer to display string
     static func dismissButtonStyleText(_ style: Int) -> String {
         switch style {
-        case 1: return "Close"
-        case 2: return "Cancel"
-        default: return "Done"
+        case 1: return String.app("Close")
+        case 2: return String.app("Cancel")
+        default: return String.app("Done")
         }
     }
 }

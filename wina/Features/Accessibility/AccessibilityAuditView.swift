@@ -52,9 +52,9 @@ struct AccessibilityIssue: Identifiable, Equatable {
 
         var label: String {
             switch self {
-            case .error: return String(localized: "Errors")
-            case .warning: return String(localized: "Warnings")
-            case .info: return String(localized: "Info")
+            case .error: return String.app("Errors")
+            case .warning: return String.app("Warnings")
+            case .info: return String.app("Info")
             }
         }
 
@@ -98,17 +98,17 @@ struct AccessibilityIssue: Identifiable, Equatable {
 
         var label: String {
             switch self {
-            case .images: return String(localized: "Images")
-            case .links: return String(localized: "Links")
-            case .buttons: return String(localized: "Buttons")
-            case .forms: return String(localized: "Forms")
-            case .headings: return String(localized: "Headings")
+            case .images: return String.app("Images")
+            case .links: return String.app("Links")
+            case .buttons: return String.app("Buttons")
+            case .forms: return String.app("Forms")
+            case .headings: return String.app("Headings")
             case .aria: return "ARIA"
-            case .contrast: return String(localized: "Contrast")
-            case .keyboard: return String(localized: "Keyboard")
-            case .language: return String(localized: "Language")
-            case .structure: return String(localized: "Structure")
-            case .other: return String(localized: "Other")
+            case .contrast: return String.app("Contrast")
+            case .keyboard: return String.app("Keyboard")
+            case .language: return String.app("Language")
+            case .structure: return String.app("Structure")
+            case .other: return String.app("Other")
             }
         }
 

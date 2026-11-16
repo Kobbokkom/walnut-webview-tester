@@ -125,7 +125,7 @@ final class CopiedFeedbackState {
     var message: String?
 
     func show(_ message: String.LocalizationValue) {
-        show(verbatim: String(localized: message))
+        show(verbatim: String.app(message))
     }
 
     func show(verbatim message: String) {
@@ -140,7 +140,7 @@ final class CopiedFeedbackState {
         }
     }
 
-    /// Pass a localized `label` (for example `String(localized: "Key")`); technical labels such as "URL" can stay as-is.
+    /// Pass a localized `label` (for example `String.app("Key")`); technical labels such as "URL" can stay as-is.
     func showCopied(_ label: String? = nil) {
         if let label { show("\(label) copied") } else { show("Copied") }
     }

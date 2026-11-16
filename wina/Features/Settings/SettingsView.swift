@@ -641,7 +641,7 @@ struct SettingsView: View {
                 HStack {
                     Text("App Settings")
                     Spacer()
-                    Text(AppLanguage(rawValue: appLanguage)?.displayName ?? String(localized: "System"))
+                    Text(AppLanguage(rawValue: appLanguage)?.displayName ?? String.app("System"))
                         .foregroundStyle(.secondary)
                 }
             }

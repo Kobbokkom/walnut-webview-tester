@@ -73,15 +73,15 @@ private enum AgentMenu: String, CaseIterable {
 
     var saveLayoutPrompt: String {
         switch self {
-        case .wkToolbar: String(localized: "Save the WKWebView toolbar layout in Walnut?")
-        case .wkAppBar: String(localized: "Save the App Bar layout in Walnut?")
+        case .wkToolbar: String.app("Save the WKWebView toolbar layout in Walnut?")
+        case .wkAppBar: String.app("Save the App Bar layout in Walnut?")
         }
     }
 
     var restoreLayoutPrompt: String {
         switch self {
-        case .wkToolbar: String(localized: "Restore Walnut's default WKWebView toolbar layout?")
-        case .wkAppBar: String(localized: "Restore Walnut's default App Bar layout?")
+        case .wkToolbar: String.app("Restore Walnut's default WKWebView toolbar layout?")
+        case .wkAppBar: String.app("Restore Walnut's default App Bar layout?")
         }
     }
 

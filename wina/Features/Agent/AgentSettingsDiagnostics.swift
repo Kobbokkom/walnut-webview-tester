@@ -67,12 +67,12 @@ extension AgentSettings {
         switch try input.string("action") {
         case "test_page": return ["url": CallbackTestManager.testPageURL.absoluteString, "scheme": CallbackTestManager.urlScheme]
         case "clear":
-            try await input.confirm(String(localized: "Clear the last URL scheme callback in Walnut?"))
+            try await input.confirm(String.app("Clear the last URL scheme callback in Walnut?"))
             manager.clearHistory()
             return ["cleared": true]
         case "get":
             let raw = try input.flag("raw")
-            if raw { try await input.confirm(String(localized: "Share the latest callback URL and its parameter values with the paired Mac?")) }
+            if raw { try await input.confirm(String.app("Share the latest callback URL and its parameter values with the paired Mac?")) }
             guard let url = manager.lastCallbackURL else { return ["received": false] }
             let timestamp = manager.lastCallbackTime?.formatted(.iso8601) ?? ""
             var result: [String: Any] = ["received": true, "scheme": url.scheme ?? "", "host": url.host ?? "", "receivedAt": timestamp]
@@ -97,7 +97,7 @@ extension AgentSettings {
                 action == "list" ? storage.bookmarks : storage.history
             }
         case "clear_history":
-            try await input.confirm(String(localized: "Clear all Walnut URL history on this iPhone?"))
+            try await input.confirm(String.app("Clear all Walnut URL history on this iPhone?"))
             storage.clearHistory()
         case "add", "remove", "remove_history":
             let url = try input.string("url").trimmingCharacters(in: .whitespacesAndNewlines)
@@ -109,8 +109,8 @@ extension AgentSettings {
                 }
             }
             try await input.confirm(action == "remove_history"
-                ? String(localized: "Update Walnut's saved history on this iPhone?")
-                : String(localized: "Update Walnut's saved bookmarks on this iPhone?"))
+                ? String.app("Update Walnut's saved history on this iPhone?")
+                : String.app("Update Walnut's saved bookmarks on this iPhone?"))
             switch action {
             case "add": storage.addBookmark(url)
             case "remove": storage.removeBookmark(url)
@@ -131,8 +131,8 @@ extension AgentSettings {
         let limit = try pagination.int("limit", default: 50, range: 1...100)
         if raw {
             try await input.confirm(action == "history"
-                ? String(localized: "Share full saved Walnut history URLs with the paired Mac?")
-                : String(localized: "Share full saved Walnut bookmark URLs with the paired Mac?"))
+                ? String.app("Share full saved Walnut history URLs with the paired Mac?")
+                : String.app("Share full saved Walnut bookmark URLs with the paired Mac?"))
         }
         let urls = collection()
         let visibleURLs = raw ? urls : urls.map(safeOrigin)
@@ -155,9 +155,9 @@ extension AgentSettings {
 
     private static func permissionPrompt(_ permission: String) -> String {
         switch permission {
-        case "camera": String(localized: "Let Walnut request camera access or open iOS Settings?")
-        case "microphone": String(localized: "Let Walnut request microphone access or open iOS Settings?")
-        default: String(localized: "Let Walnut request location access or open iOS Settings?")
+        case "camera": String.app("Let Walnut request camera access or open iOS Settings?")
+        case "microphone": String.app("Let Walnut request microphone access or open iOS Settings?")
+        default: String.app("Let Walnut request location access or open iOS Settings?")
         }
     }
 

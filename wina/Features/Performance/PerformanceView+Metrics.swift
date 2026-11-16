@@ -167,7 +167,7 @@ extension PerformanceView {
                     ]
 
                     ForEach(Array(breakdowns.enumerated()), id: \.offset) { index, item in
-                        if matchesSearch(String(localized: item.0)) {
+                        if matchesSearch(String.app(resource: item.0)) {
                             TimingBreakdownRow(label: item.0, value: item.1, total: nav.loadEventTime)
                                 .padding(.vertical, 8)
                             if index < breakdowns.count - 1 {

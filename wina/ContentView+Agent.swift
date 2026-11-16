@@ -333,7 +333,7 @@ extension ContentView {
         var expected: WKNavigation?
         if arguments["cleanStart"] as? Bool == true {
             guard !newSafari, !isPreparingCleanStart else { throw AgentError("Clean Start requires an available WKWebView.") }
-            guard await agentSession.authorize(String(localized: "Clear WKWebView website data and development logs before opening the URL?")) else {
+            guard await agentSession.authorize(String.app("Clear WKWebView website data and development logs before opening the URL?")) else {
                 throw AgentError("Clean Start was denied.")
             }
             try Task.checkCancellation()
@@ -431,7 +431,7 @@ extension ContentView {
         }
         let document = webViewNavigator.documentID
         if selector.range(of: #"^#[a-zA-Z][a-zA-Z0-9_-]*$"#, options: .regularExpression) == nil {
-            guard await agentSession.authorize(String(localized: "Check the current page for elements matching this selector?") + "\n\n" + selector, scope: .page) else {
+            guard await agentSession.authorize(String.app("Check the current page for elements matching this selector?") + "\n\n" + selector, scope: .page) else {
                 throw AgentError("Selector inspection was denied.")
             }
         }
@@ -496,15 +496,15 @@ extension ContentView {
         } else {
             throw AgentError("The test page is no longer visible.")
         }
-        let photosNote = saveToPhotos ? " " + String(localized: "Walnut will also save the approved screenshot to Photos.") : ""
+        let photosNote = saveToPhotos ? " " + String.app("Walnut will also save the approved screenshot to Photos.") : ""
         let prompt = safari
-            ? String(localized: "Capture one image of this device’s entire display with SafariVC visible? Approve in the iOS picker, then review the image before sharing.")
-            : String(localized: "Share a screenshot of the WKWebView test page with the connected Mac and its agent?") + photosNote
+            ? String.app("Capture one image of this device’s entire display with SafariVC visible? Approve in the iOS picker, then review the image before sharing.")
+            : String.app("Share a screenshot of the WKWebView test page with the connected Mac and its agent?") + photosNote
         guard await agentSession.authorize(prompt) else {
             throw AgentError("Screenshot capture was denied in Walnut.")
         }
         return try await AgentCapture.screenshot(source: source, saveToPhotos: saveToPhotos, evidence: evidence) { image in
-            await agentSession.authorize(String(localized: "Share this display screenshot with the connected Mac and its agent?") + photosNote, preview: image)
+            await agentSession.authorize(String.app("Share this display screenshot with the connected Mac and its agent?") + photosNote, preview: image)
         } validateTarget: {
             try validateTarget()
         }
@@ -520,9 +520,9 @@ extension ContentView {
             guard showWebView else { throw AgentError("Open a test page first.") }
             let revision = webViewID
             let safari = useSafariWebView
-            let photosNote = save ? " " + String(localized: "Walnut will also save the video to Photos.") : ""
-            let prompt = String(localized: "Record the app screen and share the video with the connected Mac and its agent?")
-            let systemNote = " " + String(localized: "If iOS asks separately, approve screen capture on the iPhone.")
+            let photosNote = save ? " " + String.app("Walnut will also save the video to Photos.") : ""
+            let prompt = String.app("Record the app screen and share the video with the connected Mac and its agent?")
+            let systemNote = " " + String.app("If iOS asks separately, approve screen capture on the iPhone.")
             guard await agentSession.authorize(prompt + systemNote + photosNote) else {
                 throw AgentError("Recording was denied.")
             }

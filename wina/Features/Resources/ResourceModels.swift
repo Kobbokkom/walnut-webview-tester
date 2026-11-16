@@ -93,17 +93,17 @@ extension ResourceEntry {
 
         var displayName: String {
             switch self {
-            case .img: String(localized: "Image")
-            case .script: String(localized: "Script")
-            case .link: String(localized: "Stylesheet")
+            case .img: String.app("Image")
+            case .script: String.app("Script")
+            case .link: String.app("Stylesheet")
             case .css: "CSS"
-            case .font: String(localized: "Font")
+            case .font: String.app("Font")
             case .fetch: "Fetch"
             case .xmlhttprequest: "XHR"
-            case .beacon: String(localized: "Beacon")
-            case .video: String(localized: "Video")
-            case .audio: String(localized: "Audio")
-            case .other: String(localized: "Other")
+            case .beacon: String.app("Beacon")
+            case .video: String.app("Video")
+            case .audio: String.app("Audio")
+            case .other: String.app("Other")
             }
         }
 
@@ -219,14 +219,14 @@ enum ResourceFilter: String, CaseIterable, Identifiable {
 
     var displayName: String {
         switch self {
-        case .all: String(localized: "All")
-        case .img: String(localized: "Img")
+        case .all: String.app("All")
+        case .img: String.app("Img")
         case .script: "JS"
         case .css: "CSS"
-        case .font: String(localized: "Font")
+        case .font: String.app("Font")
         case .xhr: "XHR"
-        case .media: String(localized: "Media")
-        case .other: String(localized: "Other")
+        case .media: String.app("Media")
+        case .other: String.app("Other")
         }
     }
 

@@ -48,7 +48,7 @@ class StorageManager {
     func refresh(pageURL: URL? = nil, isCurrentDocument: () -> Bool = { true }) async {
         guard isCurrentDocument() else { return }
         guard let navigator else {
-            errorMessage = String(localized: "WebView not connected")
+            errorMessage = String.app("WebView not connected")
             return
         }
 
@@ -97,13 +97,13 @@ class StorageManager {
     ) async throws -> [StorageItem] {
         if type == .cookies {
             guard let cookieStore = navigator.attachedCookieStore else {
-                throw ReadError(errorDescription: String(localized: "The active cookie store is unavailable."))
+                throw ReadError(errorDescription: String.app("The active cookie store is unavailable."))
             }
             return await fetchCookies(in: cookieStore, pageURL: pageURL, allCookies: allCookies)
         }
         let result = await fetchStorage(type: type, navigator: navigator, isolated: true)
         guard let entries = result.items else {
-            throw ReadError(errorDescription: String(localized: "Could not read \(type.rawValue) for the active document."))
+            throw ReadError(errorDescription: String.app("Could not read \(type.rawValue) for the active document."))
         }
         return entries
     }
@@ -238,7 +238,7 @@ class StorageManager {
         let domain = scope?.domain ?? host
         let addKey = StorageCookieAddKey(store: ObjectIdentifier(store), name: cookie.key, domain: domain, path: path)
         guard Self.pendingCookieAdds.insert(addKey).inserted else {
-            errorMessage = String(localized: "An add for this cookie is already in progress at \(path).")
+            errorMessage = String.app("An add for this cookie is already in progress at \(path).")
             return nil
         }
         defer { Self.pendingCookieAdds.remove(addKey) }
@@ -247,7 +247,7 @@ class StorageManager {
         guard isCurrentDocument(), self.navigator === navigator, navigator.documentID == document,
               navigator.attachedCookieStore === store else { return nil }
         guard !existing.contains(where: addKey.matches) else {
-            errorMessage = String(localized: "A cookie with this name already exists at \(path).")
+            errorMessage = String.app("A cookie with this name already exists at \(path).")
             return nil
         }
         // Native Add lets WebKit assign the document-directory path.
@@ -318,7 +318,7 @@ class StorageManager {
             success = await Self.evaluateStorageScript(script, with: navigator, isolated: agentDocumentIsCurrent != nil) as? Bool == true
         }
         if !success {
-            errorMessage = String(localized: "Could not save the item. The original item was kept. Check the key and available storage, then try again.")
+            errorMessage = String.app("Could not save the item. The original item was kept. Check the key and available storage, then try again.")
         }
         return success
     }
@@ -376,7 +376,7 @@ class StorageManager {
         """
         guard agentDocumentIsCurrent?() != false else { return false }
         let success = await Self.evaluateStorageScript(script, with: navigator, isolated: agentDocumentIsCurrent != nil) as? Bool == true
-        if !success { errorMessage = String(localized: "Could not delete the item. Refresh and try again.") }
+        if !success { errorMessage = String.app("Could not delete the item. Refresh and try again.") }
         return success
     }
 
@@ -974,12 +974,12 @@ struct StorageView: View {
 
     private func copyToClipboard(_ text: String) {
         UIPasteboard.general.string = JSONParser.prettyPrintIfJSON(text)
-        feedbackState.showCopied(String(localized: "Value"))
+        feedbackState.showCopied(String.app("Value"))
     }
 
     private func copyKeyValue(_ item: StorageItem) {
         UIPasteboard.general.string = "\(item.key)=\(item.value)"
-        feedbackState.showCopied(String(localized: "Key=Value"))
+        feedbackState.showCopied(String.app("Key=Value"))
     }
 
     // MARK: - Export

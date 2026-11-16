@@ -238,7 +238,7 @@ struct DetailSection<Content: View>: View {
         onShare: (() -> Void)? = nil,
         @ViewBuilder content: @escaping () -> Content
     ) {
-        self.title = String(localized: title)
+        self.title = String.app(title)
         self.rawText = rawText
         self.onCopy = onCopy
         self.onShare = onShare
@@ -334,7 +334,7 @@ struct DetailTableRow: View {
 
     /// Localized label (e.g. "Request URL").
     init(key: String.LocalizationValue, value: String, onCopy: ((String, String) -> Void)? = nil, showBorder: Bool = true) {
-        self.init(verbatimKey: String(localized: key), value: value, onCopy: onCopy, showBorder: showBorder)
+        self.init(verbatimKey: String.app(key), value: value, onCopy: onCopy, showBorder: showBorder)
     }
 
     /// Runtime data such as an HTTP header or query parameter name; never translated.
