@@ -43,8 +43,14 @@ extension AgentDevTools {
             guard let type = try input.option("type", as: StorageItem.StorageType.self) else {
                 throw AgentError("A storage type is required.")
             }
-            let target = type == .cookies && scope == "all" ? "all cookies in this WebView's data store" : "\(type.rawValue) for \(host)"
-            try await context.confirm("Clear \(target)?")
+            let prompt = if type == .cookies && scope == "all" {
+                String(localized: "Clear all cookies in this WebView's data store?")
+            } else if type == .cookies {
+                String(localized: "Clear cookies for \(host)?")
+            } else {
+                String(localized: "Clear \(type.rawValue) for \(host)?")
+            }
+            try await context.confirm(prompt)
             storage.setNavigator(context.navigator)
             let isCurrentDocument = { (try? context.checkDocument()) != nil }
             let success = if type == .cookies && scope != "all" {
@@ -88,8 +94,13 @@ extension AgentDevTools {
         let decode = try input.bool("decode") ?? false
         let includeContent = try input.bool("raw") ?? false
         if includeContent || allCookies || hasCookieFilter || !query.isEmpty || format == "text" {
-            let action = format == "text" ? "Export" : "Inspect"
-            try await context.confirm("\(action) \(allCookies ? "all domains' cookies and" : "the active page's") WebView storage on the Mac?")
+            let prompt = switch (format == "text", allCookies) {
+            case (true, true): String(localized: "Export all domains' cookies and WebView storage on the Mac?")
+            case (true, false): String(localized: "Export the active page's WebView storage on the Mac?")
+            case (false, true): String(localized: "Inspect all domains' cookies and WebView storage on the Mac?")
+            case (false, false): String(localized: "Inspect the active page's WebView storage on the Mac?")
+            }
+            try await context.confirm(prompt)
         }
         var candidates: [StorageItem] = []
         var errors: [String: String] = [:]
@@ -198,6 +209,38 @@ extension AgentDevTools {
         return domainMatches && (path == nil || cookie.path == path)
     }
 
+    private static func writePrompt(
+        action: String,
+        type: StorageItem.StorageType,
+        host: String,
+        cookieScope: StorageCookieAddScope?,
+        domain: String?,
+        path: String?
+    ) -> String {
+        let head = switch (action, type == .cookies) {
+        case ("add", true): String(localized: "Allow the Mac to add a cookie?")
+        case ("add", false): String(localized: "Allow the Mac to add a \(type.rawValue) entry for \(host)?")
+        case ("edit", true): String(localized: "Allow the Mac to edit a cookie?")
+        case ("edit", false): String(localized: "Allow the Mac to edit a \(type.rawValue) entry for \(host)?")
+        case (_, true): String(localized: "Allow the Mac to remove a cookie?")
+        default: String(localized: "Allow the Mac to remove a \(type.rawValue) entry for \(host)?")
+        }
+        guard type == .cookies else { return head }
+        let lines: [String]
+        if let cookieScope {
+            let domainLine = cookieScope.domain.map { String(localized: "Domain: \($0) and its subdomains where WebKit allows") }
+                ?? String(localized: "Domain: \(host) (host only)")
+            lines = [domainLine, String(localized: "Path: \(cookieScope.path)")]
+        } else {
+            let domainLine = domain.map { String(localized: "Domain: exactly \($0)") }
+                ?? String(localized: "Domain: matching \(host)")
+            let pathLine = path.map { String(localized: "Path: \($0)") }
+                ?? String(localized: "Path: any, if only one matches")
+            lines = [domainLine, pathLine]
+        }
+        return ([head] + lines).joined(separator: "\n")
+    }
+
     private static func writeStorage(
         _ input: AgentDevInput,
         _ context: AgentDevContext,
@@ -235,19 +278,10 @@ extension AgentDevTools {
         } else {
             nil
         }
-        let host = pageURL.host ?? "the active page"
-        let target: String
-        if let cookieScope {
-            let domain = cookieScope.domain.map { "\($0) and its subdomains where WebKit allows" } ?? "\(host) (host only)"
-            target = "a cookie for \(domain) at path \(cookieScope.path)"
-        } else if type == .cookies {
-            let cookieDomain = domain.map { "the exact domain \($0)" } ?? "a domain matching \(host)"
-            let cookiePath = path.map { "at path \($0)" } ?? "at any path, if only one matches"
-            target = "a cookie for \(cookieDomain) \(cookiePath)"
-        } else {
-            target = "a \(type.rawValue) entry for \(host)"
-        }
-        try await context.confirm("Allow the Mac to \(action) \(target)?")
+        let host = pageURL.host ?? pageURL.absoluteString
+        try await context.confirm(writePrompt(
+            action: action, type: type, host: host, cookieScope: cookieScope, domain: domain, path: path
+        ))
         let isCurrentDocument = { (try? context.checkDocument()) != nil }
         var result: [String: Any] = ["action": action, "applied": true]
         let success: Bool

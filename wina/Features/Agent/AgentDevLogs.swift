@@ -64,7 +64,7 @@ extension AgentDevTools {
         case "console_detail":
             let id = try input.uuid("id")
             let cursor = try exportCursor(input, source: "Console")
-            try await context.confirm("Share the selected Console entry with the Mac?")
+            try await context.confirm(String(localized: "Share the selected Console entry with the Mac?"), scope: .page)
             guard let log = navigator.consoleManager.logs.first(where: { $0.id == id }) else {
                 throw AgentError("Console record not found.")
             }
@@ -80,12 +80,15 @@ extension AgentDevTools {
             }
             return ["collapsed": collapsed]
         case "console_clear":
-            try await context.confirm("Clear Walnut's Console logs?")
+            try await context.confirm(String(localized: "Clear Walnut's Console logs?"))
             navigator.consoleManager.clear()
             return ["cleared": true]
         case "console_evaluate":
             let script = try input.required("script", maxLength: 16_384)
-            try await context.confirm("Run JavaScript on the current page and share the result with the Mac?\n\n\(script)")
+            try await context.confirm(
+                String(localized: "Run JavaScript on the current page and share the result with the Mac?") + "\n\n" + script,
+                scope: .page
+            )
             if console.commandHistory.last != script {
                 console.commandHistory = Array((console.commandHistory + [script]).suffix(100))
             }
@@ -112,13 +115,13 @@ extension AgentDevTools {
         case "resources_detail":
             let id = try input.uuid("id")
             let includeContent = try input.bool("raw") ?? false
-            if includeContent { try await context.confirm("Share the selected resource URL with the Mac?") }
+            if includeContent { try await context.confirm(String(localized: "Share the selected resource URL with the Mac?"), scope: .page) }
             guard let entry = navigator.resourceManager.resources.first(where: { $0.id == id }) else {
                 throw AgentError("Resource record not found.")
             }
             return resourceRecord(entry, includeContent: includeContent)
         case "network_clear":
-            try await context.confirm("Clear Walnut's Network logs and Resource timings?")
+            try await context.confirm(String(localized: "Clear Walnut's Network logs and Resource timings?"))
             navigator.networkManager.clear()
             navigator.resourceManager.clear()
             return ["cleared": true]
@@ -153,7 +156,7 @@ extension AgentDevTools {
         let tighterStrategy = strategy.map { $0 != currentStrategy && $0 != .keep && (currentStrategy == .keep || $0 == .page) } ?? false
         let canClearHistory = tighterStrategy || (currentPreserve && preserve == false)
         let savesSettings = save && (preserve != nil || strategy != nil)
-        try await confirmLogSettings(context, prefix: prefix, saves: savesSettings, canClearHistory: canClearHistory)
+        try await confirmLogSettings(context, isConsole: isConsole, saves: savesSettings, canClearHistory: canClearHistory)
         if savesSettings {
             if let preserve { defaults.set(preserve, forKey: "\(prefix)PreserveLog") }
             if let strategy {
@@ -201,15 +204,28 @@ extension AgentDevTools {
 
     private static func confirmLogSettings(
         _ context: AgentDevContext,
-        prefix: String,
+        isConsole: Bool,
         saves: Bool,
         canClearHistory: Bool
     ) async throws {
         if canClearHistory {
-            let action = saves ? "Save and apply" : "Apply"
-            try await context.confirm("\(action) the \(prefix) log settings? The next reload or navigation may delete retained entries.")
+            let prompt = switch (isConsole, saves) {
+            case (true, true):
+                String(localized: "Save and apply the Console log settings? The next reload or navigation may delete retained entries.")
+            case (true, false):
+                String(localized: "Apply the Console log settings? The next reload or navigation may delete retained entries.")
+            case (false, true):
+                String(localized: "Save and apply the Network log settings? The next reload or navigation may delete retained entries.")
+            case (false, false):
+                String(localized: "Apply the Network log settings? The next reload or navigation may delete retained entries.")
+            }
+            try await context.confirm(prompt)
         } else if saves {
-            try await context.confirm("Save the \(prefix) log settings on the iPhone?")
+            try await context.confirm(
+                isConsole
+                    ? String(localized: "Save the Console log settings on the iPhone?")
+                    : String(localized: "Save the Network log settings on the iPhone?")
+            )
         }
     }
 
@@ -243,7 +259,7 @@ extension AgentDevTools {
         }
         let runID = context.navigator.agentNavigation.runID
         if includeContent || !query.isEmpty {
-            try await context.confirm("Read the contents of Walnut's Console logs on the Mac?")
+            try await context.confirm(String(localized: "Read the contents of Walnut's Console logs on the Mac?"), scope: .page)
         }
         let manager = context.navigator.consoleManager
         let deadline = ContinuousClock.now + .milliseconds(150)
@@ -453,7 +469,10 @@ extension AgentDevTools {
         let navigator = context.navigator
         let runID = navigator.agentNavigation.runID
         if includeContent {
-            try await context.confirm("Share captured Network and Resource details with the Mac, including full URLs and request errors?")
+            try await context.confirm(
+                String(localized: "Share captured Network and Resource details with the Mac, including full URLs and request errors?"),
+                scope: .page
+            )
         }
         let requests = navigator.networkManager.requests.reversed().filter { request in
             guard filter.matchesNetworkRequest(request), document == nil || document == request.agentDocumentID else { return false }
@@ -507,7 +526,16 @@ extension AgentDevTools {
         }
         let includeContent = (try input.bool("raw") ?? false) || section != "overview"
         let bodyOffset = try input.int("bodyOffset", default: 0, range: 0...16_777_216)
-        if includeContent { try await context.confirm("Share the selected request's \(section) details with the Mac?") }
+        if includeContent {
+            let prompt = switch section {
+            case "headers": String(localized: "Share the selected request and response headers with the Mac?")
+            case "request": String(localized: "Share the selected request body with the Mac?")
+            case "response": String(localized: "Share the selected response body with the Mac?")
+            case "curl": String(localized: "Share the selected request's cURL command with the Mac?")
+            default: String(localized: "Share the selected request details with the Mac?")
+            }
+            try await context.confirm(prompt, scope: .page)
+        }
         guard let request = context.navigator.networkManager.requests.first(where: { $0.id == id }) else {
             throw AgentError("Network request not found.")
         }
