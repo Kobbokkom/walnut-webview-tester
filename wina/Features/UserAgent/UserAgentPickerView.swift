@@ -226,12 +226,12 @@ private struct AllPresetsView: View {
             Section {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
-                        FilterChip(label: "All", isSelected: selectedBrowser == nil) {
+                        FilterChip(label: Text("All"), isSelected: selectedBrowser == nil) {
                             selectedBrowser = nil
                         }
                         ForEach(UserAgentBrowser.allCases) { browser in
                             FilterChip(
-                                label: browser.rawValue,
+                                label: Text(verbatim: browser.rawValue),
                                 icon: browser.icon,
                                 isSelected: selectedBrowser == browser
                             ) {
@@ -270,7 +270,7 @@ private struct AllPresetsView: View {
 // MARK: - Filter Chip
 
 private struct FilterChip: View {
-    let label: String
+    let label: Text
     var icon: String?
     let isSelected: Bool
     let action: () -> Void
@@ -282,7 +282,7 @@ private struct FilterChip: View {
                     Image(systemName: icon)
                         .font(.system(size: 10))
                 }
-                Text(label)
+                label
                     .font(.system(size: 12, weight: .medium))
             }
             .foregroundStyle(isSelected ? .white : .secondary)
@@ -382,7 +382,7 @@ private struct PresetDetailPopover: View {
 
             Button {
                 UIPasteboard.general.string = preset.userAgent
-                feedbackState.showCopied("User Agent")
+                feedbackState.showCopied(String(localized: "User Agent"))
             } label: {
                 HStack {
                     Spacer()
@@ -419,6 +419,13 @@ private struct CustomUserAgentEditor: View {
     enum EditorMode: String, CaseIterable {
         case preset = "Builder"
         case manual = "Manual"
+
+        var title: LocalizedStringKey {
+            switch self {
+            case .preset: return "Builder"
+            case .manual: return "Manual"
+            }
+        }
     }
 
     enum PlatformOption: String, CaseIterable, Identifiable {
@@ -458,7 +465,7 @@ private struct CustomUserAgentEditor: View {
                 Section {
                     Picker("Mode", selection: $mode) {
                         ForEach(EditorMode.allCases, id: \.self) { m in
-                            Text(m.rawValue).tag(m)
+                            Text(m.title).tag(m)
                         }
                     }
                     .pickerStyle(.segmented)

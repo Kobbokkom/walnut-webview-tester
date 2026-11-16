@@ -52,9 +52,9 @@ struct AccessibilityIssue: Identifiable, Equatable {
 
         var label: String {
             switch self {
-            case .error: return "Errors"
-            case .warning: return "Warnings"
-            case .info: return "Info"
+            case .error: return String(localized: "Errors")
+            case .warning: return String(localized: "Warnings")
+            case .info: return String(localized: "Info")
             }
         }
 
@@ -98,17 +98,17 @@ struct AccessibilityIssue: Identifiable, Equatable {
 
         var label: String {
             switch self {
-            case .images: return "Images"
-            case .links: return "Links"
-            case .buttons: return "Buttons"
-            case .forms: return "Forms"
-            case .headings: return "Headings"
+            case .images: return String(localized: "Images")
+            case .links: return String(localized: "Links")
+            case .buttons: return String(localized: "Buttons")
+            case .forms: return String(localized: "Forms")
+            case .headings: return String(localized: "Headings")
             case .aria: return "ARIA"
-            case .contrast: return "Contrast"
-            case .keyboard: return "Keyboard"
-            case .language: return "Language"
-            case .structure: return "Structure"
-            case .other: return "Other"
+            case .contrast: return String(localized: "Contrast")
+            case .keyboard: return String(localized: "Keyboard")
+            case .language: return String(localized: "Language")
+            case .structure: return String(localized: "Structure")
+            case .other: return String(localized: "Other")
             }
         }
 
@@ -319,7 +319,7 @@ struct AccessibilityAuditView: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 0) {
                 FilterTab(
-                    label: "All",
+                    label: Text("All"),
                     count: issues.count,
                     isSelected: filterSeverity == nil
                 ) {
@@ -328,7 +328,7 @@ struct AccessibilityAuditView: View {
 
                 ForEach(AccessibilityIssue.Severity.allCases, id: \.self) { severity in
                     FilterTab(
-                        label: severity.label,
+                        label: Text(verbatim: severity.label),
                         count: issueCountBySeverity[severity] ?? 0,
                         isSelected: filterSeverity == severity,
                         color: severity.color
@@ -494,7 +494,7 @@ struct AccessibilityAuditView: View {
 // MARK: - Filter Tab
 
 private struct FilterTab: View {
-    let label: String
+    let label: Text
     let count: Int
     let isSelected: Bool
     var color: Color = .primary
@@ -503,7 +503,7 @@ private struct FilterTab: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: 4) {
-                Text(label)
+                label
                     .font(.system(size: 12, weight: isSelected ? .semibold : .regular))
                 if count != 0 {  // swiftlint:disable:this empty_count
                     Text("\(count)")

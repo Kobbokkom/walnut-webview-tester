@@ -10,7 +10,7 @@ import SwiftUI
 // MARK: - Console Filter Tab
 
 struct ConsoleFilterTab: View {
-    let label: String
+    let label: LocalizedStringKey
     let count: Int
     let isSelected: Bool
     var color: Color = .primary
@@ -169,7 +169,7 @@ struct LogRow: View {
                                         Menu {
                                             Button {
                                                 UIPasteboard.general.string = json.formatted
-                                                copyFeedbackMessage = "Copied formatted JSON"
+                                                copyFeedbackMessage = String(localized: "Copied formatted JSON")
                                                 showCopyFeedback = true
                                                 DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
                                                     showCopyFeedback = false
@@ -179,7 +179,7 @@ struct LogRow: View {
                                             }
                                             Button {
                                                 UIPasteboard.general.string = json.minified
-                                                copyFeedbackMessage = "Copied minified JSON"
+                                                copyFeedbackMessage = String(localized: "Copied minified JSON")
                                                 showCopyFeedback = true
                                                 DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
                                                     showCopyFeedback = false
@@ -233,7 +233,7 @@ struct LogRow: View {
                 Spacer(minLength: 4)
                 Button {
                     UIPasteboard.general.string = fullCopyableString
-                    copyFeedbackMessage = "Copied"
+                    copyFeedbackMessage = String(localized: "Copied")
                     showCopyFeedback = true
                     DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
                         showCopyFeedback = false
