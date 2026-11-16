@@ -11,7 +11,7 @@ import WebKit
 
 struct BrowserInfoView: View {
     @State private var webViewInfo: WebViewInfo?
-    @State private var loadingStatus = "Launching WebView process..."
+    @State private var loadingStatus: LocalizedStringKey = "Launching WebView process..."
 
     private func flagEmoji(for languageCode: String) -> String? {
         let components = languageCode.split(separator: "-")
@@ -212,7 +212,7 @@ struct WebViewInfo: Sendable, Encodable {
     @MainActor
     static func load(
         using webView: SharedInfoWebView? = nil,
-        onStatusUpdate: @escaping (String) -> Void
+        onStatusUpdate: @escaping (LocalizedStringKey) -> Void
     ) async -> WebViewInfo {
         let shared = webView ?? .shared
         if let cached = shared.cachedWebViewInfo {

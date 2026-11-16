@@ -9,7 +9,7 @@ import SwiftUI
 
 struct APICapabilitiesView: View {
     @State private var webViewInfo: WebViewInfo?
-    @State private var loadingStatus = "Launching WebView process..."
+    @State private var loadingStatus: LocalizedStringKey = "Launching WebView process..."
 
     private var isIPad: Bool {
         UIDevice.current.isIPad

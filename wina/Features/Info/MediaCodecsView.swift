@@ -9,7 +9,7 @@ import SwiftUI
 
 struct MediaCodecsView: View {
     @State private var codecInfo: MediaCodecInfo?
-    @State private var loadingStatus = "Launching WebView process..."
+    @State private var loadingStatus: LocalizedStringKey = "Launching WebView process..."
 
     var body: some View {
         List {
@@ -118,7 +118,7 @@ struct MediaCodecInfo: Sendable, Encodable {
     @MainActor
     static func load(
         using webView: SharedInfoWebView? = nil,
-        onStatusUpdate: @escaping (String) -> Void
+        onStatusUpdate: @escaping (LocalizedStringKey) -> Void
     ) async -> MediaCodecInfo {
         let shared = webView ?? .shared
         // Return cached if available

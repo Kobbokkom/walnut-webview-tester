@@ -9,7 +9,7 @@ import SwiftUI
 
 struct AccessibilityFeaturesView: View {
     @State private var a11yInfo: AccessibilityInfo?
-    @State private var loadingStatus = "Launching WebView process..."
+    @State private var loadingStatus: LocalizedStringKey = "Launching WebView process..."
 
     var body: some View {
         List {
@@ -101,7 +101,7 @@ struct AccessibilityInfo: Sendable, Encodable {
     @MainActor
     static func load(
         using webView: SharedInfoWebView? = nil,
-        onStatusUpdate: @escaping (String) -> Void
+        onStatusUpdate: @escaping (LocalizedStringKey) -> Void
     ) async -> AccessibilityInfo {
         let shared = webView ?? .shared
         // Return cached if available

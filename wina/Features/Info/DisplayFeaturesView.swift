@@ -9,7 +9,7 @@ import SwiftUI
 
 struct DisplayFeaturesView: View {
     @State private var displayInfo: DisplayInfo?
-    @State private var loadingStatus = "Launching WebView process..."
+    @State private var loadingStatus: LocalizedStringKey = "Launching WebView process..."
 
     var body: some View {
         List {
@@ -132,7 +132,7 @@ struct DisplayInfo: Sendable, Encodable {
     @MainActor
     static func load(
         using webView: SharedInfoWebView? = nil,
-        onStatusUpdate: @escaping (String) -> Void
+        onStatusUpdate: @escaping (LocalizedStringKey) -> Void
     ) async -> DisplayInfo {
         let shared = webView ?? .shared
         if let cached = shared.cachedDisplayInfo {

@@ -49,13 +49,13 @@ struct InfoSearchItem: Identifiable {
 
 struct CapabilitySection: Identifiable {
     let id = UUID()
-    let name: String
+    let name: LocalizedStringKey
     let items: [CapabilityItem]
 }
 
 struct CapabilityItem: Identifiable {
     let id = UUID()
-    let label: String
+    let label: LocalizedStringKey
     let supported: Bool
     var info: LocalizedStringKey?
     var unavailable = false
@@ -66,7 +66,7 @@ struct CapabilityItem: Identifiable {
 // MARK: - Info Row
 
 struct InfoRow: View {
-    let label: String
+    let label: LocalizedStringKey
     let value: String
     var info: LocalizedStringKey?
 
@@ -87,7 +87,7 @@ struct InfoRow: View {
 // MARK: - Capability Row
 
 struct CapabilityRow: View {
-    let label: String
+    let label: LocalizedStringKey
     let supported: Bool
     var info: LocalizedStringKey?
     var unavailable = false  // WebKit policy: never supported
@@ -167,7 +167,7 @@ struct UserAgentText: View {
 // MARK: - Benchmark Row
 
 struct BenchmarkRow: View {
-    let label: String
+    let label: LocalizedStringKey
     let ops: String
     var info: LocalizedStringKey?
 
@@ -207,6 +207,7 @@ enum CodecSupport: String, Encodable {
         }
     }
 
+    /// English catalog key; localized when displayed (see `InfoView.searchResultRow`).
     var displayValue: String {
         switch self {
         case .probably: return "Supported"
@@ -219,12 +220,12 @@ enum CodecSupport: String, Encodable {
 // MARK: - Codec Row
 
 struct CodecRow: View {
-    let label: String
+    let label: String  // codec/container names are technical, not localized
     let support: CodecSupport
 
     var body: some View {
         HStack {
-            Text(label)
+            Text(verbatim: label)
             Spacer()
             Image(systemName: support.icon)
                 .foregroundStyle(support.color)
@@ -235,7 +236,7 @@ struct CodecRow: View {
 // MARK: - Active Setting Row
 
 struct ActiveSettingRow: View {
-    let label: String
+    let label: LocalizedStringKey
     let enabled: Bool
     var info: LocalizedStringKey?
     var unavailable = false
@@ -267,7 +268,7 @@ struct ActiveSettingRow: View {
 // MARK: - Permission Status Row
 
 struct PermissionStatusRow: View {
-    let label: String
+    let label: LocalizedStringKey
     let status: Any
     var info: LocalizedStringKey?
 
@@ -285,7 +286,7 @@ struct PermissionStatusRow: View {
         }
     }
 
-    private var statusText: String {
+    private var statusText: LocalizedStringKey {
         if let avStatus = status as? AVAuthorizationStatus {
             switch avStatus {
             case .authorized: return "Granted"

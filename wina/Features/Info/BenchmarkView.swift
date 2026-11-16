@@ -10,7 +10,7 @@ import WebKit
 
 struct BenchmarkView: View {
     @State private var perfInfo: PerformanceInfo?
-    @State private var loadingStatus = "Launching WebView process..."
+    @State private var loadingStatus: LocalizedStringKey = "Launching WebView process..."
     @State private var isRunning = false
 
     var body: some View {
@@ -192,7 +192,7 @@ struct PerformanceInfo: Sendable, Encodable {
     // MARK: - Load Function
 
     @MainActor
-    static func load(onStatusUpdate: @escaping (String) -> Void) async -> PerformanceInfo {
+    static func load(onStatusUpdate: @escaping (LocalizedStringKey) -> Void) async -> PerformanceInfo {
         onStatusUpdate("Launching WebView process...")
 
         let config = WKWebViewConfiguration()
