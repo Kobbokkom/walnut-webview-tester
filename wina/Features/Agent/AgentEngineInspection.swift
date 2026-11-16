@@ -72,13 +72,13 @@ enum AgentEngineInspection {
                 if attemptedMarker { removeMarker(grant, from: navigator) }
             }
         }
-        try await context.confirm("""
+        try await context.confirm(String(localized: """
         Allow the connected Mac's WebKit debugger to inspect this test page?
 
         It can read unredacted page data, scripts, network headers and bodies, and runtime values. Debugger actions can pause JavaScript or change the page. Sensitive commands need a separate confirmation.
 
         This access ends when the document or connection ends. Shared data may reach the Mac's AI service.
-        """)
+        """))
         guard navigator.agentInspectorGrant?.id == grant.id else { throw inactiveGrant }
         let nonce = JavaScriptLiteral.quoted(grant.nonce)
         attemptedMarker = true
@@ -147,7 +147,7 @@ enum AgentEngineInspection {
             "Debugger.setBreakpointByUrl": "condition", "DOM.setOuterHTML": "outerHTML",
             "CSS.setStyleSheetText": "text", "CSS.addRule": "ruleText"
         ]
-        var prompt = "Allow the Mac's WebKit debugger to run \(method) in this test page?"
+        var prompt = String(localized: "Allow the Mac's WebKit debugger to run \(method) in this test page?")
         var arguments = params
         if let field = fields[method], let code = params[field] as? String {
             arguments.removeValue(forKey: field)

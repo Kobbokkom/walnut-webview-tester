@@ -29,13 +29,13 @@ extension AgentSettings {
         case "apply":
             let rows = try menu.rowsForApply(input.arguments)
             let persist = try input.flag("persist")
-            if persist { try await input.confirm("Save the \(menu.rawValue) layout in Walnut?") }
+            if persist { try await input.confirm(menu.saveLayoutPrompt) }
             let data = try JSONEncoder().encode(rows)
             settings.apply([menu.key: data], persist: persist)
         case "reset":
             let persist = try input.flag("persist")
             if persist {
-                try await input.confirm("Restore Walnut's default \(menu.rawValue) layout?")
+                try await input.confirm(menu.restoreLayoutPrompt)
                 UserDefaults.standard.removeObject(forKey: menu.key)
             }
             settings.reset(keys: [menu.key])
@@ -68,6 +68,20 @@ private enum AgentMenu: String, CaseIterable {
         switch self {
         case .wkToolbar: "toolbarItemsOrder"
         case .wkAppBar: "appBarItemsOrder"
+        }
+    }
+
+    var saveLayoutPrompt: String {
+        switch self {
+        case .wkToolbar: String(localized: "Save the WKWebView toolbar layout in Walnut?")
+        case .wkAppBar: String(localized: "Save the App Bar layout in Walnut?")
+        }
+    }
+
+    var restoreLayoutPrompt: String {
+        switch self {
+        case .wkToolbar: String(localized: "Restore Walnut's default WKWebView toolbar layout?")
+        case .wkAppBar: String(localized: "Restore Walnut's default App Bar layout?")
         }
     }
 
