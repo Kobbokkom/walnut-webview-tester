@@ -1,0 +1,134 @@
+[
+  {
+    "key": "Safari tint colors will be saved for older iOS versions.",
+    "comment": "Mac Agent approval prompt (shown verbatim on iPhone): Effect line in settings-change approval."
+  },
+  {
+    "key": "With Clean Start on, opening a page from Walnut’s home screen clears all WKWebView website data unless private browsing is on.",
+    "comment": "Mac Agent approval prompt (shown verbatim on iPhone): Effect line in settings-change approval."
+  },
+  {
+    "key": "Turning off private browsing lets Walnut use its persistent WKWebView website data. If Clean Start is on, opening a page from home will clear that data.",
+    "comment": "Mac Agent approval prompt (shown verbatim on iPhone): Effect line in settings-change approval."
+  },
+  {
+    "key": "Eruda runs third-party JavaScript on the page.",
+    "comment": "Mac Agent approval prompt (shown verbatim on iPhone): Effect line in settings-change approval."
+  },
+  {
+    "key": "Walnut will stop warning about fraudulent websites.",
+    "comment": "Mac Agent approval prompt (shown verbatim on iPhone): Effect line in settings-change approval."
+  },
+  {
+    "key": "Walnut will stop upgrading known hosts to HTTPS.",
+    "comment": "Mac Agent approval prompt (shown verbatim on iPhone): Effect line in settings-change approval."
+  },
+  {
+    "key": "Save changes to Walnut’s testing settings on this iPhone?",
+    "comment": "Mac Agent approval prompt (shown verbatim on iPhone): Leading question of settings approval (persisted)."
+  },
+  {
+    "key": "Apply changes to Walnut’s testing settings for this Mac connection?",
+    "comment": "Mac Agent approval prompt (shown verbatim on iPhone): Leading question of settings approval (session only)."
+  },
+  {
+    "key": "Share this Walnut startup profile, including cookie values and JavaScript, with the paired Mac?",
+    "comment": "Mac Agent approval prompt (shown verbatim on iPhone): Startup profile raw read."
+  },
+  {
+    "key": "Save and apply the startup profile in Walnut? It can set cookies and run JavaScript on subsequent WKWebView loads.",
+    "comment": "Mac Agent approval prompt (shown verbatim on iPhone): Startup profile apply/load, persisted."
+  },
+  {
+    "key": "Apply the startup profile in Walnut for this session? It can set cookies and run JavaScript on subsequent WKWebView loads.",
+    "comment": "Mac Agent approval prompt (shown verbatim on iPhone): Startup profile apply/load, session only."
+  },
+  {
+    "key": "Save this startup profile to Walnut on this iPhone?",
+    "comment": "Mac Agent approval prompt (shown verbatim on iPhone): Startup profile save."
+  },
+  {
+    "key": "Delete this saved startup profile from Walnut?",
+    "comment": "Mac Agent approval prompt (shown verbatim on iPhone): Startup profile delete."
+  },
+  {
+    "key": "Disable Walnut's startup profile for future sessions?",
+    "comment": "Mac Agent approval prompt (shown verbatim on iPhone): Startup profile disable."
+  },
+  {
+    "key": "Clear Walnut's startup bridge log?",
+    "comment": "Mac Agent approval prompt (shown verbatim on iPhone): Bridge log clear."
+  },
+  {
+    "key": "Share startup bridge message bodies with the paired Mac?",
+    "comment": "Mac Agent approval prompt (shown verbatim on iPhone): Bridge log raw list."
+  },
+  {
+    "key": "Share the selected startup bridge log and its retained message body with the paired Mac?",
+    "comment": "Mac Agent approval prompt (shown verbatim on iPhone): Bridge log detail."
+  },
+  {
+    "key": "Save the WKWebView toolbar layout in Walnut?",
+    "comment": "Mac Agent approval prompt (shown verbatim on iPhone): Menu layout save (toolbar)."
+  },
+  {
+    "key": "Save the App Bar layout in Walnut?",
+    "comment": "Mac Agent approval prompt (shown verbatim on iPhone): Menu layout save (app bar)."
+  },
+  {
+    "key": "Restore Walnut's default WKWebView toolbar layout?",
+    "comment": "Mac Agent approval prompt (shown verbatim on iPhone): Menu layout restore (toolbar)."
+  },
+  {
+    "key": "Restore Walnut's default App Bar layout?",
+    "comment": "Mac Agent approval prompt (shown verbatim on iPhone): Menu layout restore (app bar)."
+  },
+  {
+    "key": "Let Walnut request camera access or open iOS Settings?",
+    "comment": "Mac Agent approval prompt (shown verbatim on iPhone): Permission request."
+  },
+  {
+    "key": "Let Walnut request microphone access or open iOS Settings?",
+    "comment": "Mac Agent approval prompt (shown verbatim on iPhone): Permission request."
+  },
+  {
+    "key": "Let Walnut request location access or open iOS Settings?",
+    "comment": "Mac Agent approval prompt (shown verbatim on iPhone): Permission request."
+  },
+  {
+    "key": "Clear the last URL scheme callback in Walnut?",
+    "comment": "Mac Agent approval prompt (shown verbatim on iPhone): Callback clear."
+  },
+  {
+    "key": "Share the latest callback URL and its parameter values with the paired Mac?",
+    "comment": "Mac Agent approval prompt (shown verbatim on iPhone): Callback raw read."
+  },
+  {
+    "key": "Clear all Walnut URL history on this iPhone?",
+    "comment": "Mac Agent approval prompt (shown verbatim on iPhone): History clear."
+  },
+  {
+    "key": "Update Walnut's saved history on this iPhone?",
+    "comment": "Mac Agent approval prompt (shown verbatim on iPhone): History entry removal."
+  },
+  {
+    "key": "Update Walnut's saved bookmarks on this iPhone?",
+    "comment": "Mac Agent approval prompt (shown verbatim on iPhone): Bookmark add/remove."
+  },
+  {
+    "key": "Share full saved Walnut history URLs with the paired Mac?",
+    "comment": "Mac Agent approval prompt (shown verbatim on iPhone): History raw list."
+  },
+  {
+    "key": "Share full saved Walnut bookmark URLs with the paired Mac?",
+    "comment": "Mac Agent approval prompt (shown verbatim on iPhone): Bookmark raw list."
+  },
+  {
+    "key": "Allow the connected Mac's WebKit debugger to inspect this test page?\n\nIt can read unredacted page data, scripts, network headers and bodies, and runtime values. Debugger actions can pause JavaScript or change the page. Sensitive commands need a separate confirmation.\n\nThis access ends when the document or connection ends. Shared data may reach the Mac's AI service.",
+    "comment": "Mac Agent approval prompt (shown verbatim on iPhone): WebKit debugger grant approval (multi-line; keep paragraph breaks)."
+  },
+  {
+    "key": "Allow the Mac's WebKit debugger to run %@ in this test page?",
+    "comment": "Mac Agent approval prompt (shown verbatim on iPhone): Debugger command approval; %@ is a CDP method name such as Runtime.evaluate (keep verbatim). Code and JSON params follow in untranslated text."
+  }
+]

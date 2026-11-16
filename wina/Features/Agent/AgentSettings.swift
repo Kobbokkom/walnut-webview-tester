@@ -121,26 +121,26 @@ enum AgentSettings {
         let savedOnly = values.filter { applied[$0.key] == nil }
         var effects: [String] = []
         if !savedOnly.isEmpty {
-            effects.append("Safari tint colors will be saved for older iOS versions.")
+            effects.append(String(localized: "Safari tint colors will be saved for older iOS versions."))
         }
         if values["cleanStart"]?.base as? Bool == true {
-            effects.append("With Clean Start on, opening a page from Walnut’s home screen clears all WKWebView website data unless private browsing is on.")
+            effects.append(String(localized: "With Clean Start on, opening a page from Walnut’s home screen clears all WKWebView website data unless private browsing is on."))
         }
         if values["privateBrowsing"]?.base as? Bool == false {
-            effects.append("Turning off private browsing lets Walnut use its persistent WKWebView website data. If Clean Start is on, opening a page from home will clear that data.")
+            effects.append(String(localized: "Turning off private browsing lets Walnut use its persistent WKWebView website data. If Clean Start is on, opening a page from home will clear that data."))
         }
         if values[AgentSetting.erudaKey]?.base as? Bool == true {
-            effects.append("Eruda runs third-party JavaScript on the page.")
+            effects.append(String(localized: "Eruda runs third-party JavaScript on the page."))
         }
         if values["fraudulentWebsiteWarning"]?.base as? Bool == false {
-            effects.append("Walnut will stop warning about fraudulent websites.")
+            effects.append(String(localized: "Walnut will stop warning about fraudulent websites."))
         }
         if values["upgradeToHTTPS"]?.base as? Bool == false {
-            effects.append("Walnut will stop upgrading known hosts to HTTPS.")
+            effects.append(String(localized: "Walnut will stop upgrading known hosts to HTTPS."))
         }
         if persist || !effects.isEmpty {
-            let question = persist ? "Save changes to Walnut’s testing settings on this iPhone?"
-                : "Apply changes to Walnut’s testing settings for this Mac connection?"
+            let question = persist ? String(localized: "Save changes to Walnut’s testing settings on this iPhone?")
+                : String(localized: "Apply changes to Walnut’s testing settings for this Mac connection?")
             try await input.confirm(([question] + effects).joined(separator: "\n\n"))
         }
         try validateTarget()
