@@ -63,7 +63,7 @@ extension AgentDevTools {
         case "performance_read":
             return try await readPerformance(input, context)
         case "performance_clear":
-            try await context.confirm("Clear Walnut's Performance results?")
+            try await context.confirm(String(localized: "Clear Walnut's Performance results?"))
             guard !navigator.performanceManager.isLoading else { throw AgentError("A Performance collection is running.") }
             navigator.performanceManager.clear()
             return ["cleared": true]
@@ -72,7 +72,9 @@ extension AgentDevTools {
         case "accessibility_detail":
             let id = try input.uuid("id")
             let cursor = try exportCursor(input, source: "Accessibility issue")
-            try await context.confirm("Share the selected accessibility issue and its markup with the Mac?")
+            try await context.confirm(
+                String(localized: "Share the selected accessibility issue and its markup with the Mac?"), scope: .page
+            )
             guard let issue = navigator.accessibilityManager.issues.first(where: { $0.id == id }) else {
                 throw AgentError("Accessibility issue not found.")
             }
@@ -82,7 +84,7 @@ extension AgentDevTools {
             result["documentId"] = row["documentId"]
             return result
         case "accessibility_clear":
-            try await context.confirm("Clear Walnut's accessibility audit results?")
+            try await context.confirm(String(localized: "Clear Walnut's accessibility audit results?"))
             guard !navigator.accessibilityManager.isScanning else { throw AgentError("An accessibility scan is running.") }
             navigator.accessibilityManager.clear()
             return ["cleared": true]
@@ -110,13 +112,13 @@ extension AgentDevTools {
             guard enabled == nil || snippet.isToggleable else {
                 throw AgentError("This snippet does not have an enabled state.")
             }
-            try await context.confirm("Run Walnut's \(snippet.name) snippet on this page?")
+            try await context.confirm(String(localized: "Run Walnut's \(snippet.name) snippet on this page?"), scope: .page)
             let enable = enabled ?? !navigator.snippetsManager.isActive(id)
             let result = try await navigator.snippetsManager.execute(snippet, using: navigator, enabled: enable)
             try context.checkDocument()
             return ["result": result, "active": navigator.snippetsManager.isActive(id)] as [String: Any]
         case "snippets_reset":
-            try await context.confirm("Undo Walnut's active snippets on this page?")
+            try await context.confirm(String(localized: "Undo Walnut's active snippets on this page?"))
             try await navigator.snippetsManager.undoAll(using: navigator)
             try context.checkDocument()
             return ["reset": true]
@@ -140,7 +142,9 @@ extension AgentDevTools {
             guard let search = SearchTextOverlay.searchScript(for: query, sharingWith: scope) else {
                 throw AgentError("Could not encode the search query.")
             }
-            try await context.confirm("Find and highlight text on the current page and share the match count with the Mac?")
+            try await context.confirm(
+                String(localized: "Find and highlight text on the current page and share the match count with the Mac?"), scope: .page
+            )
             script = SearchTextOverlay.readySearchScript(search, waitForDocument: false)
         case "next":
             script = SearchTextOverlay.navigationScript(step: 1, sharingWith: scope)
@@ -221,7 +225,9 @@ extension AgentDevTools {
             throw AgentError("The active WKWebView document changed. Try again.")
         }
         if raw {
-            try await sharing.confirm("Share captured resource URLs from Performance with the Mac?")
+            try await sharing.confirm(
+                String(localized: "Share captured resource URLs from Performance with the Mac?"), scope: .page
+            )
         }
         if reload, navigator.agentNavigation.documentID != measuredDocument {
             throw AgentError("A different navigation interrupted the Performance refresh.")
@@ -282,9 +288,13 @@ extension AgentDevTools {
             try requireCompletedAccessibilityAudit(manager)
         }
         if export {
-            try await context.confirm("Export Walnut's accessibility report, including its page URL and markup, to the Mac?")
+            try await context.confirm(
+                String(localized: "Export Walnut's accessibility report, including its page URL and markup, to the Mac?")
+            )
         } else if includeContent || !query.isEmpty {
-            try await context.confirm("Share or search details from Walnut's accessibility results on the Mac?")
+            try await context.confirm(
+                String(localized: "Share or search details from Walnut's accessibility results on the Mac?"), scope: .page
+            )
         }
         if shouldRun {
             guard !manager.isScanning else { throw AgentError("An accessibility audit is already running.") }
