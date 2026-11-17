@@ -25,7 +25,12 @@ enum CLI {
             case "pair":
                 let usb = try parseUSB(Array(arguments.dropFirst()))
                 let pairing = try await PINPairing.pair(usb: usb)
-                try pairing.save(to: Pairing.file)
+                do {
+                    try pairing.save(to: Pairing.file)
+                } catch {
+                    throw AgentError("Walnut saved this Mac, but the Mac could not save the pairing. "
+                        + "Tap Forget Mac in Walnut, then pair again. (\(error.localizedDescription))")
+                }
                 print("Saved Walnut pairing.")
             case "session", "mcp":
                 let bridge = DeviceBridge(usb: try parseUSB(Array(arguments.dropFirst())))

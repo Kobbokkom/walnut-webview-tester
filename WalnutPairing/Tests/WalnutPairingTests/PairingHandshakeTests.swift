@@ -86,8 +86,16 @@ final class PairingHandshakeTests: XCTestCase {
         XCTAssertThrowsError(try PairingWire.commitment(message: message.dropLast(), nonce: nonce))
         XCTAssertThrowsError(try PairingWire.commitment(message: message, nonce: nonce + Data([3])))
 
-        let hello = try JSONEncoder().encode(PairingWire.Hello(commitment: commitment))
-        XCTAssertEqual(try JSONDecoder().decode(PairingWire.Hello.self, from: hello).commitment, commitment)
+        let hello = try JSONEncoder().encode(PairingWire.Hello(commitment: commitment, confirmsSave: true))
+        let decodedHello = try JSONDecoder().decode(PairingWire.Hello.self, from: hello)
+        XCTAssertEqual(decodedHello.commitment, commitment)
+        XCTAssertTrue(decodedHello.confirmsSave)
+        // Older clients and apps omit the save-confirmation fields.
+        let legacyHello = Data("{\"commitmentV2\":\"\(commitment.base64EncodedString())\"}".utf8)
+        XCTAssertFalse(try JSONDecoder().decode(PairingWire.Hello.self, from: legacyHello).confirmsSave)
+        let legacyGrant = Data("{\"payload\":\"\(nonce.base64EncodedString())\"}".utf8)
+        XCTAssertFalse(try JSONDecoder().decode(PairingWire.Grant.self, from: legacyGrant).awaitsConfirmation)
+        XCTAssertNotEqual(PairingWire.saveDigest(message), PairingWire.saveDigest(nonce))
         let challenge = try JSONEncoder().encode(PairingWire.Challenge(message: message))
         XCTAssertEqual(try JSONDecoder().decode(PairingWire.Challenge.self, from: challenge).message, message)
         let proof = try JSONEncoder().encode(PairingWire.Proof(message: message, nonce: nonce, proof: Data([4])))

@@ -74,7 +74,7 @@ struct AgentConnectionView: View {
                 showOtherPairing = false
                 clearPairingFile()
             }
-            if state == .pairingTimedOut { focusPairAgain = true }
+            if state == .pairingEnded { focusPairAgain = true }
             announce(state)
         }
     }
@@ -98,7 +98,7 @@ struct AgentConnectionView: View {
     private func announce(_ state: AgentConnectionState) {
         let message: String? = switch state {
         case .waitingToPair: String.app("Ready to pair")
-        case .pairingTimedOut: String.app("Pairing timed out")
+        case .pairingEnded: String.app("Pairing ended")
         case .waitingForMac: String.app("Mac paired. Waiting for your Mac.")
         case .connected: String.app("Mac connected")
         case .failed(let error): error
@@ -175,7 +175,7 @@ struct AgentConnectionView: View {
 
     @ViewBuilder
     private func pairContent(_ state: AgentConnectionState) -> some View {
-        if state == .pairingTimedOut {
+        if state == .pairingEnded {
             Text("Tap Pair again, then run this on your Mac within 2 minutes.")
             Button("Pair again") { session.startPairing() }
                 .buttonStyle(.borderedProminent)

@@ -26,7 +26,8 @@ final class AgentSession {
     var hasRememberedMac: Bool { rememberedPairing != nil }
     var reconnectError: String? { isRunning && hasRememberedMac ? rememberedListener.error : nil }
     var isPairingReady: Bool { hasRememberedMac ? rememberedListener.isReady : hasConnectedMac }
-    var isPairingAvailable: Bool { pinListener.isPairingAvailable }
+    /// Also true while the Mac user confirms in Terminal, so pairing reads as in progress, not timed out.
+    var isPairingAvailable: Bool { pinListener.isPairingAvailable || pinListener.isAwaitingMac }
     var pairingError: String? { pinListener.error ?? pairingStartError }
     var hasPairingGrant: Bool { hasRememberedMac || hasConnectedMac }
     /// The pairing window opened for this run and has since closed (expired, failed or used up its attempts).

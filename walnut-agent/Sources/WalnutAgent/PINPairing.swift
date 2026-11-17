@@ -43,7 +43,7 @@ enum PINPairing {
         var generator = SystemRandomNumberGenerator()
         let nonce = Data((0..<PairingWire.nonceSize).map { _ in UInt8.random(in: .min ... .max, using: &generator) })
         let commitment = try PairingWire.commitment(message: handshake.message, nonce: nonce)
-        let hello = try frame(PairingWire.Hello(commitment: commitment))
+        let hello = try frame(PairingWire.Hello(commitment: commitment, confirmsSave: needsApproval))
         let firstConnection = BridgeExchange(to: endpoint, using: .tcp, responseLimit: PairingWire.maximumFrame)
         let connection: BridgeExchange
         let challenge: Data
@@ -72,13 +72,30 @@ enum PINPairing {
             throw AgentError("Pairing ended before approval. Run `walnut-agent pair` again while pairing is open on your iPhone.")
         }
         let grant = try JSONDecoder().decode(PairingWire.Grant.self, from: reply)
-        let pairing = try Pairing.decode(keys.open(grant.payload))
+        let payload = try keys.open(grant.payload)
+        let pairing = try Pairing.decode(payload)
         guard pairing.version == (needsApproval ? 2 : 1) else { throw PairingHandshakeError.invalidGrant }
-        if needsApproval {
-            FileHandle.standardError.write(Data("Did the numbers match? [y/N] ".utf8))
-            guard readLine()?.lowercased() == "y" else {
-                throw AgentError("Pairing was not saved. If Walnut shows this Mac as paired, tap Forget Mac before retrying.")
+        guard needsApproval else { return pairing }
+        FileHandle.standardError.write(Data("Did the numbers match? [y/N] ".utf8))
+        guard readLine()?.lowercased() == "y" else {
+            // Walnut does not notice the process exiting right away, so release its pending pairing now.
+            await connection.close()
+            throw AgentError(grant.awaitsConfirmation
+                ? "Pairing was not saved on your Mac or iPhone."
+                : "Pairing was not saved. If Walnut shows this Mac as paired, tap Forget Mac before retrying.")
+        }
+        // Walnut saves only after this confirmation, and the Mac saves only after Walnut has.
+        if grant.awaitsConfirmation {
+            let confirmation = PairingWire.SaveConfirmation(digest: PairingWire.saveDigest(payload))
+            let saved: PairingWire.Saved
+            do {
+                let reply = try await connection.run(frame(confirmation), timeout: 8)
+                saved = try JSONDecoder().decode(PairingWire.Saved.self, from: reply)
+            } catch {
+                try Task.checkCancellation()
+                throw AgentError("Walnut did not save the pairing. Keep Walnut open and run `walnut-agent pair` again.")
             }
+            guard saved.saved else { throw PairingHandshakeError.invalidGrant }
         }
         return pairing
     }

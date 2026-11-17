@@ -2,7 +2,7 @@ import SwiftUI
 
 /// The single Mac Agent state shown by the connection sheet and the toolbar button.
 enum AgentConnectionState: Equatable {
-    case off, starting, waitingToPair, pairingTimedOut, waitingForMac, connected
+    case off, starting, waitingToPair, pairingEnded, waitingForMac, connected
     case failed(String)
 
     var title: Text {
@@ -10,7 +10,7 @@ enum AgentConnectionState: Equatable {
         case .off: Text("Not running")
         case .starting: Text("Starting…")
         case .waitingToPair: Text("Waiting for pairing")
-        case .pairingTimedOut: Text("Pairing timed out")
+        case .pairingEnded: Text("Pairing ended")
         case .waitingForMac: Text("Waiting for your Mac")
         case .connected: Text("Connected to Mac")
         case .failed(let error): Text(verbatim: error)
@@ -21,7 +21,7 @@ enum AgentConnectionState: Equatable {
         switch self {
         case .connected: .green
         case .waitingToPair, .waitingForMac, .starting: .accentColor
-        case .pairingTimedOut, .failed: .orange
+        case .pairingEnded, .failed: .orange
         case .off: .secondary
         }
     }
@@ -42,7 +42,7 @@ extension AgentSession {
         if isConnected { return .connected }
         if isPairingAvailable { return .waitingToPair }
         if isRunning, isPairingReady { return .waitingForMac }
-        if isPairingEnded { return .pairingTimedOut }
+        if isPairingEnded { return .pairingEnded }
         if isRunning { return .starting }
         if let error = connectionError { return .failed(error) }
         return .off

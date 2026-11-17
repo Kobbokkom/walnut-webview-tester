@@ -11,6 +11,8 @@ final class AgentPINListener {
     private(set) var isReady = false
     /// The listener exists, even before it is ready; false once the pairing window has closed.
     private(set) var isListening = false
+    /// The iPhone user approved and the Mac user still has to confirm in Terminal; nothing is saved yet.
+    private(set) var isAwaitingMac = false
 
     @ObservationIgnored private var listener: NWListener?
     @ObservationIgnored private var peer: Peer?
@@ -42,7 +44,9 @@ final class AgentPINListener {
 
     @MainActor private final class Peer {
         enum Stage {
-            case connecting, hello, proof(PairingHandshake, commitment: Data), approval, grant
+            case connecting, hello, proof(PairingHandshake, commitment: Data, confirmsSave: Bool), approval
+            case saving(digest: Data, commit: @MainActor () throws -> Void)
+            case grant
         }
 
         let connection: NWConnection
@@ -168,10 +172,10 @@ final class AgentPINListener {
         connection.start(queue: .main)
     }
 
-    private func startPeerTimeout(_ peer: Peer) {
+    private func startPeerTimeout(_ peer: Peer, after delay: Duration = .seconds(8)) {
         peer.timeout?.cancel()
         peer.timeout = Task { [weak self, weak peer] in
-            do { try await Task.sleep(for: .seconds(8)) } catch { return }
+            do { try await Task.sleep(for: delay) } catch { return }
             if let peer { self?.close(peer) }
         }
     }
@@ -184,7 +188,7 @@ final class AgentPINListener {
                 guard error == nil, !done, let data, !data.isEmpty else { self.close(peer); return }
                 switch peer.stage {
                 case .connecting, .approval, .grant: self.close(peer); return
-                case .hello, .proof: break
+                case .hello, .proof, .saving: break
                 }
                 peer.buffer.append(data)
                 guard peer.buffer.count <= PairingWire.maximumFrame + 1 else { self.close(peer); return }
@@ -198,6 +202,10 @@ final class AgentPINListener {
     }
 
     private func handle(_ frame: Data, from peer: Peer) throws {
+        if case .saving(let digest, let commit) = peer.stage {
+            try save(peer, frame: frame, digest: digest, commit: commit)
+            return
+        }
         guard isReady, !peer.credential.requiresApproval || isPairingAvailable else { close(peer); return }
         switch peer.stage {
         case .hello:
@@ -205,9 +213,10 @@ final class AgentPINListener {
             guard hello.commitment.count == PairingWire.commitmentSize else { close(peer); return }
             if peer.credential.requiresApproval { attempts += 1 }
             let handshake = try peer.credential.handshake()
-            peer.stage = .proof(handshake, commitment: hello.commitment)
+            let confirmsSave = hello.confirmsSave && peer.credential.requiresApproval
+            peer.stage = .proof(handshake, commitment: hello.commitment, confirmsSave: confirmsSave)
             send(try Self.encode(PairingWire.Challenge(message: handshake.message)), to: peer)
-        case .proof(let handshake, let commitment):
+        case .proof(let handshake, let commitment, let confirmsSave):
             let proof = try JSONDecoder().decode(PairingWire.Proof.self, from: frame)
             guard proof.message.count == PairingWire.messageSize, proof.nonce.count == PairingWire.nonceSize,
                   try PairingWire.commitment(message: proof.message, nonce: proof.nonce) == commitment else {
@@ -218,18 +227,37 @@ final class AgentPINListener {
             guard keys.verifyClientProof(proof.proof) else { close(peer); return }
             switch peer.credential {
             case .newPairing(let commit, let authorize):
-                authorizePairing(peer, keys: keys, commit: commit, authorize: authorize)
+                authorizePairing(peer, keys: keys, confirmsSave: confirmsSave, commit: commit, authorize: authorize)
             case .remembered:
                 try grant(peer, keys: keys)
             }
-        case .connecting, .approval, .grant:
+        case .connecting, .approval, .saving, .grant:
             close(peer)
         }
+    }
+
+    /// The Mac user confirmed the numbers matched: save, then tell the Mac so it saves too.
+    private func save(_ peer: Peer, frame: Data, digest: Data, commit: @MainActor () throws -> Void) throws {
+        let confirmation = try JSONDecoder().decode(PairingWire.SaveConfirmation.self, from: frame)
+        guard confirmation.digest == digest else { close(peer); return }
+        do {
+            try commit()
+        } catch {
+            stop()
+            self.error = String.app("Could not save this pairing. Start pairing again.")
+            return
+        }
+        peer.stage = .grant
+        isAwaitingMac = false
+        didGrant = true
+        startPeerTimeout(peer)
+        send(try Self.encode(PairingWire.Saved()), to: peer)
     }
 
     private func authorizePairing(
         _ peer: Peer,
         keys: PairingKeys,
+        confirmsSave: Bool,
         commit: @escaping @MainActor @Sendable () throws -> Void,
         authorize: @escaping @MainActor @Sendable (String) async -> Bool
     ) {
@@ -241,13 +269,25 @@ final class AgentPINListener {
             let allowed = await authorize(keys.verificationCode)
             guard self.peer === peer else { return }
             guard allowed, !Task.isCancelled, self.isPairingAvailable else { self.close(peer); return }
-            do { try self.grant(peer, keys: keys, commit: commit) } catch { self.close(peer) }
+            do { try self.grant(peer, keys: keys, commit: commit, confirmsSave: confirmsSave) } catch { self.close(peer) }
         }
     }
 
-    private func grant(_ peer: Peer, keys: PairingKeys, commit: (@MainActor () throws -> Void)? = nil) throws {
-        let grant = PairingWire.Grant(payload: try keys.seal(peer.payload))
+    private func grant(
+        _ peer: Peer, keys: PairingKeys, commit: (@MainActor () throws -> Void)? = nil, confirmsSave: Bool = false
+    ) throws {
+        let grant = PairingWire.Grant(payload: try keys.seal(peer.payload), awaitsConfirmation: confirmsSave)
         let frame = try Self.encode(grant)
+        if let commit, confirmsSave {
+            // Save nothing until the Mac user also confirms, so a "no" in Terminal leaves both sides unpaired.
+            peer.stage = .saving(digest: PairingWire.saveDigest(peer.payload), commit: commit)
+            isAwaitingMac = true
+            stopAdvertising()
+            startPeerTimeout(peer, after: .seconds(90))
+            send(frame, to: peer)
+            return
+        }
+        // Older Mac clients cannot confirm, so the phone saves before sending the grant.
         do {
             try commit?()
         } catch {
@@ -276,7 +316,7 @@ final class AgentPINListener {
                 guard let self, let peer, self.peer === peer else { return }
                 if error != nil { self.close(peer); return }
                 switch peer.stage {
-                case .proof: self.receive(peer)
+                case .proof, .saving: self.receive(peer)
                 case .grant: self.close(peer, deliveredGrant: true)
                 default: break
                 }
@@ -288,6 +328,7 @@ final class AgentPINListener {
         guard self.peer === peer else { return }
         if case .grant = peer.stage, peer.credential.requiresApproval, !deliveredGrant { didGrant = false }
         self.peer = nil
+        isAwaitingMac = false
         peer.timeout?.cancel()
         peer.approval?.cancel()
         peer.connection.cancel()
