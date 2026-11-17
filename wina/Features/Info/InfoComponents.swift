@@ -78,8 +78,33 @@ struct InfoRow: View {
                 InfoPopoverButton(text: info, iconColor: .tertiary)
             }
             Spacer()
-            Text(value)
+            Text(Self.displayValue(value))
                 .textSelection(.enabled)
+        }
+    }
+
+    /// Status words stay English in the data sent to the Mac agent and are translated only on screen.
+    static func displayValue(_ value: String) -> String {
+        switch value {
+        case "Unknown": String.app("Unknown")
+        case "N/A": String.app("N/A")
+        case "Nominal": String.app("Nominal")
+        case "Fair": String.app("Fair")
+        case "Serious": String.app("Serious")
+        case "Critical": String.app("Critical")
+        case "Yes": String.app("Yes")
+        case "No": String.app("No")
+        case "None": String.app("None")
+        case "Enabled": String.app("Enabled")
+        case "Disabled": String.app("Disabled")
+        case "Supported": String.app("Supported")
+        case "On": String.app("On")
+        case "Off": String.app("Off")
+        case "Online": String.app("Online")
+        case "Offline": String.app("Offline")
+        case "Granted": String.app("Granted")
+        case "Denied": String.app("Denied")
+        default: value
         }
     }
 }

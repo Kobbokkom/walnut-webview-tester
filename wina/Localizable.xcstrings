@@ -20298,7 +20298,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mac이 %1$@ 항목을 %2$@에 추가하도록 허용하시겠습니까?"
+            "value" : "Mac이 %1$@ 항목을 %2$@에 추가하도록 허용할까요?"
           }
         },
         "ms" : {
@@ -20500,7 +20500,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mac이 쿠키를 추가하도록 허용하시겠습니까?"
+            "value" : "Mac이 쿠키를 추가하도록 허용할까요?"
           }
         },
         "ms" : {
@@ -20708,7 +20708,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mac이 %1$@ 항목을 %2$@에 대해 편집하도록 허용하시겠습니까?"
+            "value" : "Mac이 %1$@ 항목을 %2$@에 대해 편집하도록 허용할까요?"
           }
         },
         "ms" : {
@@ -20910,7 +20910,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mac이 쿠키를 편집하도록 허용하시겠습니까?"
+            "value" : "Mac이 쿠키를 편집하도록 허용할까요?"
           }
         },
         "ms" : {
@@ -21118,7 +21118,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mac이 %1$@ 항목을 %2$@에서 제거하도록 허용하시겠습니까?"
+            "value" : "Mac이 %1$@ 항목을 %2$@에서 제거하도록 허용할까요?"
           }
         },
         "ms" : {
@@ -21320,7 +21320,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mac이 쿠키를 제거하도록 허용하시겠습니까?"
+            "value" : "Mac이 쿠키를 제거하도록 허용할까요?"
           }
         },
         "ms" : {
@@ -21522,7 +21522,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mac의 WebKit 디버거가 이 테스트 페이지에서 %1$@을(를) 실행하도록 허용하시겠습니까?"
+            "value" : "Mac의 WebKit 디버거가 이 테스트 페이지에서 %1$@을(를) 실행하도록 허용할까요?"
           }
         },
         "ms" : {
@@ -21724,7 +21724,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "연결된 Mac의 WebKit 디버거가 이 테스트 페이지를 검사하도록 허용하시겠습니까?\n\n디버거는 가려지지 않은 페이지 데이터, 스크립트, 네트워크 헤더 및 본문, 런타임 값을 읽을 수 있습니다. 디버거 동작으로 JavaScript가 일시 정지되거나 페이지가 변경될 수 있습니다. 민감한 명령은 별도 확인이 필요합니다.\n\n이 접근 권한은 문서 또는 연결이 종료되면 끝납니다. 공유된 데이터가 Mac의 AI 서비스로 전송될 수 있습니다."
+            "value" : "연결된 Mac의 WebKit 디버거가 이 테스트 페이지를 검사하도록 허용할까요?\n\n디버거는 가려지지 않은 페이지 데이터, 스크립트, 네트워크 헤더 및 본문, 런타임 값을 읽을 수 있습니다. 디버거 동작으로 JavaScript가 일시 정지되거나 페이지가 변경될 수 있습니다. 민감한 명령은 별도 확인이 필요합니다.\n\n이 접근 권한은 문서 또는 연결이 종료되면 끝납니다. 공유된 데이터가 Mac의 AI 서비스로 전송될 수 있습니다."
           }
         },
         "ms" : {
@@ -26789,7 +26789,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "이 Mac 연결에 대해 Walnut의 테스트 설정 변경사항을 적용하시겠습니까?"
+            "value" : "이 Mac 연결에 대해 Walnut의 테스트 설정 변경사항을 적용할까요?"
           }
         },
         "ms" : {
@@ -27199,7 +27199,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "콘솔 로그 설정을 적용하시겠습니까? 다음 새로 고침 또는 탐색 시 보존된 항목이 삭제될 수 있습니다."
+            "value" : "콘솔 로그 설정을 적용할까요? 다음 새로 고침 또는 탐색 시 보존된 항목이 삭제될 수 있습니다."
           }
         },
         "ms" : {
@@ -27401,7 +27401,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "네트워크 로그 설정을 적용하시겠습니까? 다음 새로 고침 또는 탐색 시 보존된 항목이 삭제될 수 있습니다."
+            "value" : "네트워크 로그 설정을 적용할까요? 다음 새로 고침 또는 탐색 시 보존된 항목이 삭제될 수 있습니다."
           }
         },
         "ms" : {
@@ -27603,7 +27603,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "이 세션에 Walnut의 시작 프로필을 적용하시겠습니까? 이후 WKWebView 로드에서 쿠키를 설정하고 JavaScript를 실행할 수 있습니다."
+            "value" : "이 세션에 Walnut의 시작 프로필을 적용할까요? 이후 WKWebView 로드에서 쿠키를 설정하고 JavaScript를 실행할 수 있습니다."
           }
         },
         "ms" : {
@@ -28216,7 +28216,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "정말 진행하시겠습니까?"
+            "value" : "정말 진행할까요?"
           }
         },
         "ms" : {
@@ -47267,7 +47267,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "SafariVC가 보이는 상태에서 이 기기의 전체 디스플레이 이미지 한 장을 캡처하시겠습니까? iOS 선택기에서 승인한 다음, 공유하기 전에 이미지를 검토하세요."
+            "value" : "SafariVC가 보이는 상태에서 이 기기의 전체 디스플레이 이미지 한 장을 캡처할까요? iOS 선택기에서 승인한 다음, 공유하기 전에 이미지를 검토하세요."
           }
         },
         "ms" : {
@@ -51546,7 +51546,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "현재 페이지에서 이 선택자와 일치하는 요소를 확인하시겠습니까?"
+            "value" : "현재 페이지에서 이 선택자와 일치하는 요소를 확인할까요?"
           }
         },
         "ms" : {
@@ -53378,7 +53378,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "URL을 열기 전에 WKWebView 웹 사이트 데이터와 개발 로그를 지우시겠습니까?"
+            "value" : "URL을 열기 전에 WKWebView 웹 사이트 데이터와 개발 로그를 지울까요?"
           }
         },
         "ms" : {
@@ -53580,7 +53580,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Walnut의 콘솔 로그를 지우시겠습니까?"
+            "value" : "Walnut의 콘솔 로그를 지울까요?"
           }
         },
         "ms" : {
@@ -53782,7 +53782,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Walnut의 네트워크 로그 및 리소스 타이밍을 지우시겠습니까?"
+            "value" : "Walnut의 네트워크 로그 및 리소스 타이밍을 지울까요?"
           }
         },
         "ms" : {
@@ -53984,7 +53984,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Walnut의 성능 결과를 지우시겠습니까?"
+            "value" : "Walnut의 성능 결과를 지울까요?"
           }
         },
         "ms" : {
@@ -54186,7 +54186,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Walnut의 손쉬운 사용 감사 결과를 지우시겠습니까?"
+            "value" : "Walnut의 손쉬운 사용 감사 결과를 지울까요?"
           }
         },
         "ms" : {
@@ -54388,7 +54388,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Walnut의 시작 브리지 로그를 지우시겠습니까?"
+            "value" : "Walnut의 시작 브리지 로그를 지울까요?"
           }
         },
         "ms" : {
@@ -54590,7 +54590,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "이 iPhone의 모든 Walnut URL 방문 기록을 지우시겠습니까?"
+            "value" : "이 iPhone의 모든 Walnut URL 방문 기록을 지울까요?"
           }
         },
         "ms" : {
@@ -54792,7 +54792,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "이 WebView의 데이터 저장소에 있는 모든 쿠키를 지우시겠습니까?"
+            "value" : "이 WebView의 데이터 저장소에 있는 모든 쿠키를 지울까요?"
           }
         },
         "ms" : {
@@ -54994,7 +54994,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@의 쿠키를 지우시겠습니까?"
+            "value" : "%@의 쿠키를 지울까요?"
           }
         },
         "ms" : {
@@ -55398,7 +55398,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Walnut의 마지막 URL 스킴 콜백을 지우시겠습니까?"
+            "value" : "Walnut의 마지막 URL 스킴 콜백을 지울까요?"
           }
         },
         "ms" : {
@@ -75462,204 +75462,204 @@
       }
     },
     "Critical" : {
-      "extractionState" : "stale",
+      "comment" : "Device thermal state value in Info, from normal to very hot.",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "حرج"
+            "value" : "مرتفع جدًا"
           }
         },
         "ca" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Crític"
+            "value" : "Molt alta"
           }
         },
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Kritický"
+            "value" : "Velmi vysoká"
           }
         },
         "da" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Kritisk"
+            "value" : "Meget høj"
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Kritisch"
+            "value" : "Sehr hoch"
           }
         },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Κρίσιμο"
+            "value" : "Πολύ υψηλή"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Crítico"
+            "value" : "Muy alta"
           }
         },
         "fi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Kriittinen"
+            "value" : "Erittäin korkea"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Critique"
+            "value" : "Très élevée"
           }
         },
         "he" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "קריטי"
+            "value" : "גבוהה מאוד"
           }
         },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "गंभीर"
+            "value" : "बहुत अधिक"
           }
         },
         "hr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Kritično"
+            "value" : "Vrlo visoka"
           }
         },
         "hu" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Kritikus"
+            "value" : "Nagyon magas"
           }
         },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Kritis"
+            "value" : "Sangat tinggi"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Critico"
+            "value" : "Molto alta"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "重大"
+            "value" : "非常に高い"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "심각"
+            "value" : "매우 높음"
           }
         },
         "ms" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Kritikal"
+            "value" : "Sangat tinggi"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Kritisk"
+            "value" : "Svært høy"
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Kritiek"
+            "value" : "Zeer hoog"
           }
         },
         "pl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Krytyczny"
+            "value" : "Bardzo wysoka"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Crítico"
+            "value" : "Muito alta"
           }
         },
         "pt-PT" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Crítico"
+            "value" : "Muito alta"
           }
         },
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Critic"
+            "value" : "Foarte ridicată"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Критический"
+            "value" : "Очень высокая"
           }
         },
         "sk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Kritický"
+            "value" : "Veľmi vysoká"
           }
         },
         "sv" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Kritisk"
+            "value" : "Mycket hög"
           }
         },
         "th" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "วิกฤต"
+            "value" : "สูงมาก"
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Kritik"
+            "value" : "Çok yüksek"
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Критичний"
+            "value" : "Дуже висока"
           }
         },
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nghiêm trọng"
+            "value" : "Rất cao"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "严重"
+            "value" : "非常高"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "嚴重"
+            "value" : "非常高"
           }
         }
       }
@@ -87356,7 +87356,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Walnut에서 이 저장된 시작 프로필을 삭제하시겠습니까?"
+            "value" : "Walnut에서 이 저장된 시작 프로필을 삭제할까요?"
           }
         },
         "ms" : {
@@ -93631,7 +93631,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "향후 세션에서 Walnut의 시작 프로필을 비활성화하시겠습니까?"
+            "value" : "향후 세션에서 Walnut의 시작 프로필을 비활성화할까요?"
           }
         },
         "ms" : {
@@ -109466,7 +109466,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "페이지 URL 및 마크업을 포함한 Walnut의 손쉬운 사용 리포트를 Mac으로 내보내시겠습니까?"
+            "value" : "페이지 URL 및 마크업을 포함한 Walnut의 손쉬운 사용 리포트를 Mac으로 내보낼까요?"
           }
         },
         "ms" : {
@@ -109668,7 +109668,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "모든 도메인의 쿠키와 WebView 저장소를 Mac으로 내보내시겠습니까?"
+            "value" : "모든 도메인의 쿠키와 WebView 저장소를 Mac으로 내보낼까요?"
           }
         },
         "ms" : {
@@ -109870,7 +109870,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "활성 페이지의 WebView 저장소를 Mac으로 내보내시겠습니까?"
+            "value" : "활성 페이지의 WebView 저장소를 Mac으로 내보낼까요?"
           }
         },
         "ms" : {
@@ -113207,6 +113207,209 @@
         }
       }
     },
+    "Fair" : {
+      "comment" : "Device thermal state value in Info, from normal to very hot.",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مرتفع قليلاً"
+          }
+        },
+        "ca" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Una mica alta"
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mírně zvýšená"
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lidt forhøjet"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Leicht erhöht"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ελαφρώς αυξημένη"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Algo elevada"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hieman koholla"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Légèrement élevée"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "מעט גבוהה"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "थोड़ी अधिक"
+          }
+        },
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blago povišena"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enyhén magas"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sedikit tinggi"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Leggermente alta"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "やや高い"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "약간 높음"
+          }
+        },
+        "ms" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sedikit tinggi"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Litt forhøyet"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Licht verhoogd"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lekko podwyższona"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Um pouco elevada"
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ligeiramente elevada"
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ușor ridicată"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Слегка повышенная"
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mierne zvýšená"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Något förhöjd"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "สูงขึ้นเล็กน้อย"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Biraz yüksek"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Трохи підвищена"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hơi cao"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "偏高"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "偏高"
+          }
+        }
+      }
+    },
     "False" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -115746,7 +115949,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "현재 페이지에서 텍스트를 찾아 강조 표시하고 일치 항목 수를 Mac과 공유하시겠습니까?"
+            "value" : "현재 페이지에서 텍스트를 찾아 강조 표시하고 일치 항목 수를 Mac과 공유할까요?"
           }
         },
         "ms" : {
@@ -136041,7 +136244,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mac에서 모든 도메인의 쿠키와 WebView 저장소를 검사하시겠습니까?"
+            "value" : "Mac에서 모든 도메인의 쿠키와 WebView 저장소를 검사할까요?"
           }
         },
         "ms" : {
@@ -136243,7 +136446,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mac에서 현재 페이지의 DOM 트리를 검사하시겠습니까?"
+            "value" : "Mac에서 현재 페이지의 DOM 트리를 검사할까요?"
           }
         },
         "ms" : {
@@ -136445,7 +136648,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mac에서 현재 페이지의 HTML 소스를 검사하시겠습니까?"
+            "value" : "Mac에서 현재 페이지의 HTML 소스를 검사할까요?"
           }
         },
         "ms" : {
@@ -136647,7 +136850,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mac에서 활성 페이지의 WebView 저장소를 검사하시겠습니까?"
+            "value" : "Mac에서 활성 페이지의 WebView 저장소를 검사할까요?"
           }
         },
         "ms" : {
@@ -136849,7 +137052,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mac에서 현재 페이지의 스크립트를 검사하시겠습니까?"
+            "value" : "Mac에서 현재 페이지의 스크립트를 검사할까요?"
           }
         },
         "ms" : {
@@ -137051,7 +137254,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mac에서 현재 페이지의 스타일시트를 검사하시겠습니까?"
+            "value" : "Mac에서 현재 페이지의 스타일시트를 검사할까요?"
           }
         },
         "ms" : {
@@ -146201,7 +146404,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Walnut이 카메라 접근 권한을 요청하거나 iOS 설정을 열도록 허용하시겠습니까?"
+            "value" : "Walnut이 카메라 접근 권한을 요청하거나 iOS 설정을 열도록 허용할까요?"
           }
         },
         "ms" : {
@@ -146403,7 +146606,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Walnut이 위치 접근 권한을 요청하거나 iOS 설정을 열도록 허용하시겠습니까?"
+            "value" : "Walnut이 위치 접근 권한을 요청하거나 iOS 설정을 열도록 허용할까요?"
           }
         },
         "ms" : {
@@ -146605,7 +146808,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Walnut이 마이크 접근 권한을 요청하거나 iOS 설정을 열도록 허용하시겠습니까?"
+            "value" : "Walnut이 마이크 접근 권한을 요청하거나 iOS 설정을 열도록 허용할까요?"
           }
         },
         "ms" : {
@@ -171048,7 +171251,6 @@
       }
     },
     "No" : {
-      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -178946,6 +179148,209 @@
         }
       }
     },
+    "Nominal" : {
+      "comment" : "Device thermal state value in Info, from normal to very hot.",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "طبيعي"
+          }
+        },
+        "ca" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Normal"
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Normální"
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Normal"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Normal"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Κανονική"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Normal"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Normaali"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Normale"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "רגילה"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "सामान्य"
+          }
+        },
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Normalna"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Normál"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Normal"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Normale"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "通常"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "정상"
+          }
+        },
+        "ms" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Normal"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Normal"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Normaal"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Normalna"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Normal"
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Normal"
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Normală"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Нормальная"
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Normálna"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Normal"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ปกติ"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Normal"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Нормальна"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bình thường"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正常"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正常"
+          }
+        }
+      }
+    },
     "Nominal: Normal operation\nFair: Slightly warm\nSerious: Performance throttled\nCritical: Aggressive throttling" : {
       "localizations" : {
         "ar" : {
@@ -184029,7 +184434,6 @@
       }
     },
     "Offline" : {
-      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -189767,36 +190171,36 @@
         }
       }
     },
-    "Pairing timed out" : {
+    "Pairing ended" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "انتهت مهلة الاقتران"
+            "value" : "انتهى الاقتران"
           }
         },
         "ca" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "S’ha esgotat el temps d’enllaç"
+            "value" : "Enllaç finalitzat"
           }
         },
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Časový limit párování vypršel"
+            "value" : "Párování skončilo"
           }
         },
         "da" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tidsfristen for pardannelse udløb"
+            "value" : "Pardannelse afsluttet"
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Zeitüberschreitung bei der Kopplung"
+            "value" : "Kopplung beendet"
           }
         },
         "el" : {
@@ -189805,172 +190209,166 @@
             "value" : "Η ζεύξη έληξε"
           }
         },
-        "en-GB" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pairing timed out"
-          }
-        },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Se ha agotado el tiempo de emparejamiento"
+            "value" : "Emparejamiento finalizado"
           }
         },
         "fi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Parinmuodostus aikakatkaistiin"
+            "value" : "Parinmuodostus päättyi"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Délai de jumelage dépassé"
+            "value" : "Jumelage terminé"
           }
         },
         "he" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "תם הזמן להתאמה"
+            "value" : "ההתאמה הסתיימה"
           }
         },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "पेयरिंग का समय समाप्त हो गया"
+            "value" : "पेयरिंग समाप्त हुई"
           }
         },
         "hr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Isteklo je vrijeme uparivanja"
+            "value" : "Uparivanje završeno"
           }
         },
         "hu" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "A párosítás időtúllépés miatt megszakadt"
+            "value" : "Párosítás befejezve"
           }
         },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Waktu pemasangan habis"
+            "value" : "Pemasangan berakhir"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Abbinamento scaduto"
+            "value" : "Abbinamento terminato"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ペアリングがタイムアウトしました"
+            "value" : "ペアリングが終了しました"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "페어링 시간 초과"
+            "value" : "페어링 종료됨"
           }
         },
         "ms" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pemasangan tamat masa"
+            "value" : "Pemasangan tamat"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tidsavbrudd for sammenkobling"
+            "value" : "Sammenkobling avsluttet"
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Time-out bij koppelen"
+            "value" : "Koppelen beëindigd"
           }
         },
         "pl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Limit czasu parowania minął"
+            "value" : "Parowanie zakończone"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tempo limite de emparelhamento esgotado"
+            "value" : "Emparelhamento encerrado"
           }
         },
         "pt-PT" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "O emparelhamento excedeu o tempo limite"
+            "value" : "Emparelhamento terminado"
           }
         },
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Asocierea a expirat"
+            "value" : "Asocierea s-a încheiat"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Время создания пары истекло"
+            "value" : "Создание пары завершено"
           }
         },
         "sk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Čas párovania vypršal"
+            "value" : "Párovanie ukončené"
           }
         },
         "sv" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Parkopplingen tog för lång tid"
+            "value" : "Parkopplingen avslutades"
           }
         },
         "th" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "การจับคู่หมดเวลา"
+            "value" : "การจับคู่สิ้นสุดแล้ว"
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Eşleme zaman aşımına uğradı"
+            "value" : "Eşleme sona erdi"
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Час очікування створення пари минув"
+            "value" : "Створення пари завершено"
           }
         },
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ghép đôi đã hết thời gian chờ"
+            "value" : "Ghép đôi đã kết thúc"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "配对超时"
+            "value" : "配对已结束"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "配對逾時"
+            "value" : "配對已結束"
           }
         }
       }
@@ -198999,7 +199397,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%3$@에서 “%2$@”에 %1$@을(를) 누르시겠습니까?"
+            "value" : "%3$@에서 “%2$@”에 %1$@을(를) 누를까요?"
           }
         },
         "ms" : {
@@ -204066,7 +204464,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mac에서 Walnut의 콘솔 로그 내용을 읽도록 허용하시겠습니까?"
+            "value" : "Mac에서 Walnut의 콘솔 로그 내용을 읽도록 허용할까요?"
           }
         },
         "ms" : {
@@ -206710,7 +207108,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "앱 화면을 녹화하고 비디오를 연결된 Mac 및 해당 에이전트와 공유하시겠습니까?"
+            "value" : "앱 화면을 녹화하고 비디오를 연결된 Mac 및 해당 에이전트와 공유할까요?"
           }
         },
         "ms" : {
@@ -218695,7 +219093,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Walnut의 기본 앱 바 레이아웃을 복원하시겠습니까?"
+            "value" : "Walnut의 기본 앱 바 레이아웃을 복원할까요?"
           }
         },
         "ms" : {
@@ -218897,7 +219295,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Walnut의 기본 WKWebView 도구 막대 레이아웃을 복원하시겠습니까?"
+            "value" : "Walnut의 기본 WKWebView 도구 막대 레이아웃을 복원할까요?"
           }
         },
         "ms" : {
@@ -220729,7 +221127,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "현재 페이지에서 JavaScript를 실행하고 결과를 Mac과 공유하시겠습니까?"
+            "value" : "현재 페이지에서 JavaScript를 실행하고 결과를 Mac과 공유할까요?"
           }
         },
         "ms" : {
@@ -221336,7 +221734,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "이 페이지에서 Walnut의 %@ 스니펫을 실행하시겠습니까?"
+            "value" : "이 페이지에서 Walnut의 %@ 스니펫을 실행할까요?"
           }
         },
         "ms" : {
@@ -226828,7 +227226,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "콘솔 로그 설정을 저장하고 적용하시겠습니까? 다음 새로 고침 또는 탐색 시 보존된 항목이 삭제될 수 있습니다."
+            "value" : "콘솔 로그 설정을 저장하고 적용할까요? 다음 새로 고침 또는 탐색 시 보존된 항목이 삭제될 수 있습니다."
           }
         },
         "ms" : {
@@ -227030,7 +227428,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "네트워크 로그 설정을 저장하고 적용하시겠습니까? 다음 새로 고침 또는 탐색 시 보존된 항목이 삭제될 수 있습니다."
+            "value" : "네트워크 로그 설정을 저장하고 적용할까요? 다음 새로 고침 또는 탐색 시 보존된 항목이 삭제될 수 있습니다."
           }
         },
         "ms" : {
@@ -227232,7 +227630,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Walnut에 시작 프로필을 저장하고 적용하시겠습니까? 이후 WKWebView 로드 시 쿠키를 설정하고 JavaScript를 실행할 수 있습니다."
+            "value" : "Walnut에 시작 프로필을 저장하고 적용할까요? 이후 WKWebView 로드 시 쿠키를 설정하고 JavaScript를 실행할 수 있습니다."
           }
         },
         "ms" : {
@@ -227434,7 +227832,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "이 iPhone에서 Walnut의 테스트 설정 변경사항을 저장하시겠습니까?"
+            "value" : "이 iPhone에서 Walnut의 테스트 설정 변경사항을 저장할까요?"
           }
         },
         "ms" : {
@@ -227636,7 +228034,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Walnut에 앱 바 레이아웃을 저장하시겠습니까?"
+            "value" : "Walnut에 앱 바 레이아웃을 저장할까요?"
           }
         },
         "ms" : {
@@ -227838,7 +228236,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "iPhone에 콘솔 로그 설정을 저장하시겠습니까?"
+            "value" : "iPhone에 콘솔 로그 설정을 저장할까요?"
           }
         },
         "ms" : {
@@ -228040,7 +228438,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "iPhone에 네트워크 로그 설정을 저장하시겠습니까?"
+            "value" : "iPhone에 네트워크 로그 설정을 저장할까요?"
           }
         },
         "ms" : {
@@ -228242,7 +228640,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Walnut에 WKWebView 도구 막대 레이아웃을 저장하시겠습니까?"
+            "value" : "Walnut에 WKWebView 도구 막대 레이아웃을 저장할까요?"
           }
         },
         "ms" : {
@@ -228444,7 +228842,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "이 시작 프로필을 이 iPhone의 Walnut에 저장하시겠습니까?"
+            "value" : "이 시작 프로필을 이 iPhone의 Walnut에 저장할까요?"
           }
         },
         "ms" : {
@@ -237886,204 +238284,204 @@
       }
     },
     "Serious" : {
-      "extractionState" : "stale",
+      "comment" : "Device thermal state value in Info, from normal to very hot.",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "خطير"
+            "value" : "مرتفع"
           }
         },
         "ca" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Greu"
+            "value" : "Alta"
           }
         },
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vážný"
+            "value" : "Vysoká"
           }
         },
         "da" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Alvorlig"
+            "value" : "Høj"
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Schwerwiegend"
+            "value" : "Hoch"
           }
         },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Σοβαρό"
+            "value" : "Υψηλή"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Grave"
+            "value" : "Alta"
           }
         },
         "fi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vakava"
+            "value" : "Korkea"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Grave"
+            "value" : "Élevée"
           }
         },
         "he" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "חמור"
+            "value" : "גבוהה"
           }
         },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "गंभीर"
+            "value" : "अधिक"
           }
         },
         "hr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ozbiljno"
+            "value" : "Visoka"
           }
         },
         "hu" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Súlyos"
+            "value" : "Magas"
           }
         },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Serius"
+            "value" : "Tinggi"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Grave"
+            "value" : "Alta"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "深刻"
+            "value" : "高い"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "중요"
+            "value" : "높음"
           }
         },
         "ms" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Serius"
+            "value" : "Tinggi"
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Alvorlig"
+            "value" : "Høy"
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ernstig"
+            "value" : "Hoog"
           }
         },
         "pl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Poważny"
+            "value" : "Wysoka"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Grave"
+            "value" : "Alta"
           }
         },
         "pt-PT" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Grave"
+            "value" : "Alta"
           }
         },
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Serios"
+            "value" : "Ridicată"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Серьёзный"
+            "value" : "Высокая"
           }
         },
         "sk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vážny"
+            "value" : "Vysoká"
           }
         },
         "sv" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Allvarlig"
+            "value" : "Hög"
           }
         },
         "th" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ร้ายแรง"
+            "value" : "สูง"
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ciddi"
+            "value" : "Yüksek"
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Серйозний"
+            "value" : "Висока"
           }
         },
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nghiêm trọng"
+            "value" : "Cao"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "严重"
+            "value" : "高"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "嚴重"
+            "value" : "高"
           }
         }
       }
@@ -241650,7 +242048,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "WKWebView 테스트 페이지의 스크린샷을 연결된 Mac 및 해당 에이전트와 공유하시겠습니까?"
+            "value" : "WKWebView 테스트 페이지의 스크린샷을 연결된 Mac 및 해당 에이전트와 공유할까요?"
           }
         },
         "ms" : {
@@ -241852,7 +242250,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "전체 URL 및 요청 오류를 포함하여 캡처된 네트워크 및 리소스 세부 정보를 Mac과 공유하시겠습니까?"
+            "value" : "전체 URL 및 요청 오류를 포함하여 캡처된 네트워크 및 리소스 세부 정보를 Mac과 공유할까요?"
           }
         },
         "ms" : {
@@ -242054,7 +242452,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "성능에서 캡처한 리소스 URL을 Mac과 공유하시겠습니까?"
+            "value" : "성능에서 캡처한 리소스 URL을 Mac과 공유할까요?"
           }
         },
         "ms" : {
@@ -242256,7 +242654,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "저장된 Walnut 북마크의 전체 URL을 페어링된 Mac과 공유하시겠습니까?"
+            "value" : "저장된 Walnut 북마크의 전체 URL을 페어링된 Mac과 공유할까요?"
           }
         },
         "ms" : {
@@ -242458,7 +242856,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "저장된 Walnut 방문 기록의 전체 URL을 페어링된 Mac과 공유하시겠습니까?"
+            "value" : "저장된 Walnut 방문 기록의 전체 URL을 페어링된 Mac과 공유할까요?"
           }
         },
         "ms" : {
@@ -242660,7 +243058,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Walnut의 손쉬운 사용 결과 세부 정보를 Mac과 공유하거나 Mac에서 검색하시겠습니까?"
+            "value" : "Walnut의 손쉬운 사용 결과 세부 정보를 Mac과 공유하거나 Mac에서 검색할까요?"
           }
         },
         "ms" : {
@@ -242862,7 +243260,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "현재 뷰포트 근처의 페이지 텍스트와 보이는 컨트롤을 Mac과 공유하시겠습니까?"
+            "value" : "현재 뷰포트 근처의 페이지 텍스트와 보이는 컨트롤을 Mac과 공유할까요?"
           }
         },
         "ms" : {
@@ -243272,7 +243670,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "시작 브리지 메시지 본문을 페어링된 Mac과 공유하시겠습니까?"
+            "value" : "시작 브리지 메시지 본문을 페어링된 Mac과 공유할까요?"
           }
         },
         "ms" : {
@@ -243474,7 +243872,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "최신 콜백 URL과 해당 매개변수 값을 페어링된 Mac과 공유하시겠습니까?"
+            "value" : "최신 콜백 URL과 해당 매개변수 값을 페어링된 Mac과 공유할까요?"
           }
         },
         "ms" : {
@@ -243676,7 +244074,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "선택한 콘솔 항목을 Mac과 공유하시겠습니까?"
+            "value" : "선택한 콘솔 항목을 Mac과 공유할까요?"
           }
         },
         "ms" : {
@@ -243878,7 +244276,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "선택한 손쉬운 사용 문제와 해당 마크업을 Mac과 공유하시겠습니까?"
+            "value" : "선택한 손쉬운 사용 문제와 해당 마크업을 Mac과 공유할까요?"
           }
         },
         "ms" : {
@@ -244080,7 +244478,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "이 페이지에서 선택한 요소 세부 정보를 Mac과 공유하시겠습니까?"
+            "value" : "이 페이지에서 선택한 요소 세부 정보를 Mac과 공유할까요?"
           }
         },
         "ms" : {
@@ -244282,7 +244680,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "선택한 요청 및 응답 헤더를 Mac과 공유하시겠습니까?"
+            "value" : "선택한 요청 및 응답 헤더를 Mac과 공유할까요?"
           }
         },
         "ms" : {
@@ -244484,7 +244882,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "선택한 요청 본문을 Mac과 공유하시겠습니까?"
+            "value" : "선택한 요청 본문을 Mac과 공유할까요?"
           }
         },
         "ms" : {
@@ -244686,7 +245084,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "선택한 요청 세부 정보를 Mac과 공유하시겠습니까?"
+            "value" : "선택한 요청 세부 정보를 Mac과 공유할까요?"
           }
         },
         "ms" : {
@@ -244888,7 +245286,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "선택한 요청의 cURL 명령을 Mac과 공유하시겠습니까?"
+            "value" : "선택한 요청의 cURL 명령을 Mac과 공유할까요?"
           }
         },
         "ms" : {
@@ -245090,7 +245488,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "선택한 리소스 URL을 Mac과 공유하시겠습니까?"
+            "value" : "선택한 리소스 URL을 Mac과 공유할까요?"
           }
         },
         "ms" : {
@@ -245292,7 +245690,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "선택한 응답 본문을 Mac과 공유하시겠습니까?"
+            "value" : "선택한 응답 본문을 Mac과 공유할까요?"
           }
         },
         "ms" : {
@@ -245494,7 +245892,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "이 페이지에서 선택한 스크립트 세부 정보를 Mac과 공유하시겠습니까?"
+            "value" : "이 페이지에서 선택한 스크립트 세부 정보를 Mac과 공유할까요?"
           }
         },
         "ms" : {
@@ -245696,7 +246094,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "선택한 시작 브리지 로그와 보관된 메시지 본문을 페어링된 Mac과 공유하시겠습니까?"
+            "value" : "선택한 시작 브리지 로그와 보관된 메시지 본문을 페어링된 Mac과 공유할까요?"
           }
         },
         "ms" : {
@@ -245898,7 +246296,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "이 페이지에서 선택한 스타일시트 세부 정보를 Mac과 공유하시겠습니까?"
+            "value" : "이 페이지에서 선택한 스타일시트 세부 정보를 Mac과 공유할까요?"
           }
         },
         "ms" : {
@@ -246100,7 +246498,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "쿠키 값과 JavaScript를 포함하여 이 Walnut 시작 프로필을 페어링된 Mac과 공유하시겠습니까?"
+            "value" : "쿠키 값과 JavaScript를 포함하여 이 Walnut 시작 프로필을 페어링된 Mac과 공유할까요?"
           }
         },
         "ms" : {
@@ -246302,7 +246700,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "이 디스플레이의 스크린샷을 연결된 Mac 및 해당 에이전트와 공유하시겠습니까?"
+            "value" : "이 디스플레이의 스크린샷을 연결된 Mac 및 해당 에이전트와 공유할까요?"
           }
         },
         "ms" : {
@@ -256572,7 +256970,6 @@
       }
     },
     "Supported" : {
-      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -275751,7 +276148,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "이 페이지에서 Walnut의 활성 스니펫을 실행 취소하시겠습니까?"
+            "value" : "이 페이지에서 Walnut의 활성 스니펫을 실행 취소할까요?"
           }
         },
         "ms" : {
@@ -276970,7 +277367,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "이 iPhone에 저장된 Walnut의 북마크를 업데이트하시겠습니까?"
+            "value" : "이 iPhone에 저장된 Walnut의 북마크를 업데이트할까요?"
           }
         },
         "ms" : {
@@ -277172,7 +277569,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "이 iPhone에 저장된 Walnut의 방문 기록을 업데이트하시겠습니까?"
+            "value" : "이 iPhone에 저장된 Walnut의 방문 기록을 업데이트할까요?"
           }
         },
         "ms" : {
@@ -297828,7 +298225,6 @@
       }
     },
     "Yes" : {
-      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
