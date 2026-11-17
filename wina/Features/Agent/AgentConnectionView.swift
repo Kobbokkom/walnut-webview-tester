@@ -11,6 +11,7 @@ struct AgentConnectionView: View {
     @AppStorage(AgentSession.autoConnectKey) private var autoConnect = false
     @AppStorage(AgentApprovalMode.defaultsKey) private var approvalMode = AgentApprovalMode.ask
     @AppStorage("macAgentInstallConfirmed") private var installConfirmed = false
+    @AppStorage("macAgentUsesUSB") private var usesUSB = false
     @State private var copyFeedback = CopiedFeedbackState()
     @State private var showOtherPairing = false
     @State private var reopenedSteps: Set<Int> = []
@@ -26,6 +27,8 @@ struct AgentConnectionView: View {
     private static let setupGuide = URL(string: "https://github.com/Kobbokkom/walnut-webview-tester/tree/walnut-agent-v0.1.6/walnut-agent#install-on-mac")!
 
     private var isPaired: Bool { session.hasPairingGrant }
+    private var pairCommand: String { usesUSB ? "walnut-agent pair --usb" : "walnut-agent pair" }
+    private var sessionCommand: String { usesUSB ? "walnut-agent session --usb" : "walnut-agent session" }
 
     var body: some View {
         @Bindable var feedback = copyFeedback
@@ -131,6 +134,7 @@ struct AgentConnectionView: View {
         let pairState: StepState = isPaired ? .done : (session.isRunning ? .current : .upcoming)
         let sessionState: StepState = state == .connected ? .done : (isPaired && session.isRunning ? .current : .upcoming)
         return Section {
+            connectionPicker
             step(1, "Install Walnut Agent on your Mac", state: installDone ? .done : .current) {
                 Text("Run these once in Terminal on your Mac. Requires Homebrew.")
                 ForEach(Self.installCommandLines, id: \.self) { line in
@@ -164,14 +168,30 @@ struct AgentConnectionView: View {
                     Text("Keep Walnut open while your Mac uses it.")
                 } else {
                     Text("Run this in Terminal, or ask your coding agent to use Walnut.")
-                    commandRow("walnut-agent session", name: "Copy session command")
+                    commandRow(sessionCommand, name: "Copy session command")
                 }
             }
         } header: {
             Text("How to connect")
         } footer: {
-            Text("Keep your iPhone and Mac on the same Wi-Fi network. To connect by USB instead, add --usb to the pair and session commands and run brew install libusbmuxd once on your Mac. Walnut sends diagnostics and data you approve to your Mac, and your coding agent may pass them to its AI service.")
+            Text("Walnut sends diagnostics and data you approve to your Mac, and your coding agent may pass them to its AI service.")
         }
+    }
+
+    /// Wi-Fi and USB share every step; only the requirement and the command flag differ.
+    private var connectionPicker: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Picker("Connection", selection: $usesUSB) {
+                Text(verbatim: "Wi-Fi").tag(false)
+                Text("USB").tag(true)
+            }
+            .pickerStyle(.segmented)
+            Text(usesUSB ? "Connect your iPhone to your Mac with a cable, then run this once on your Mac." : "Keep your iPhone and Mac on the same Wi-Fi network.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            if usesUSB { commandRow("brew install libusbmuxd", name: "Copy USB tool command") }
+        }
+        .padding(.vertical, 4)
     }
 
     /// Older CLIs still work, so this only recommends updating.
@@ -193,7 +213,7 @@ struct AgentConnectionView: View {
             Button("Pair again") { session.startPairing() }
                 .buttonStyle(.borderedProminent)
                 .accessibilityFocused($focusPairAgain)
-            commandRow("walnut-agent pair", name: "Copy pair command")
+            commandRow(pairCommand, name: "Copy pair command")
             if let error = session.pairingError {
                 Label { Text(verbatim: error) } icon: {
                     Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
@@ -201,7 +221,7 @@ struct AgentConnectionView: View {
             }
         } else {
             Text("First time only. Run this in Terminal on your Mac.")
-            commandRow("walnut-agent pair", name: "Copy pair command")
+            commandRow(pairCommand, name: "Copy pair command")
             Text("Terminal shows a 6-digit number. If it matches the one on iPhone, tap Pair on iPhone, then type y in Terminal.")
             if let name = session.pairingDeviceName {
                 Text("If your Mac lists more than one iPhone, choose \(Text(verbatim: name).font(.subheadline.monospaced()).foregroundStyle(.primary)).")

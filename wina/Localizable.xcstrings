@@ -60775,6 +60775,209 @@
         }
       }
     },
+    "Connect your iPhone to your Mac with a cable, then run this once on your Mac." : {
+      "comment" : "Mac Agent screen, shown when the USB option is selected; a Terminal command (brew install libusbmuxd) follows.",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "وصّل iPhone بجهاز Mac باستخدام كابل، ثم شغّل هذا مرة واحدة على Mac."
+          }
+        },
+        "ca" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connecta l’iPhone al Mac amb un cable i executa això una vegada al Mac."
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Připojte iPhone k Macu kabelem a poté to jednou spusťte na Macu."
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Slut din iPhone til din Mac med et kabel, og kør derefter dette én gang på din Mac."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verbinden Sie Ihr iPhone per Kabel mit Ihrem Mac und führen Sie dies dann einmal auf Ihrem Mac aus."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Συνδέστε το iPhone στο Mac σας με ένα καλώδιο και, στη συνέχεια, εκτελέστε αυτό μία φορά στο Mac σας."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conecta el iPhone al Mac con un cable y ejecuta esto una vez en tu Mac."
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yhdistä iPhone Maciin kaapelilla ja suorita tämä kerran Macissa."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connectez votre iPhone à votre Mac avec un câble, puis exécutez ceci une fois sur votre Mac."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "יש לחבר את ה‑iPhone ל‑Mac שלך באמצעות כבל, ואז להריץ זאת פעם אחת ב‑Mac שלך."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "अपने iPhone को केबल से अपने Mac से कनेक्ट करें, फिर इसे अपने Mac पर एक बार चलाएँ।"
+          }
+        },
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Povežite iPhone s Macom kabelom, a zatim ovo jednom pokrenite na svom Macu."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Csatlakoztassa az iPhone-t kábellel a Machez, majd futtassa ezt egyszer a Macen."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sambungkan iPhone ke Mac Anda dengan kabel, lalu jalankan ini satu kali di Mac Anda."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Collega iPhone al Mac con un cavo, poi esegui questo una volta sul Mac."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iPhoneをケーブルでMacに接続し、Macでこれを一度実行してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iPhone을 케이블로 Mac에 연결한 다음, Mac에서 이 명령을 한 번 실행하세요."
+          }
+        },
+        "ms" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sambungkan iPhone anda ke Mac anda dengan kabel, kemudian jalankan ini sekali pada Mac anda."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Koble iPhone til Macen din med en kabel, og kjør deretter dette én gang på Macen din."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sluit je iPhone met een kabel aan op je Mac en voer dit één keer uit op je Mac."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Podłącz iPhone’a do Maca kablem, a następnie uruchom to raz na Macu."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conecte o iPhone ao Mac com um cabo e execute isto uma vez no Mac."
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ligue o iPhone ao Mac com um cabo e execute isto uma vez no Mac."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conectați iPhone-ul dvs. la Macul dvs. cu un cablu, apoi rulați aceasta o dată pe Macul dvs."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Подключите iPhone к Mac с помощью кабеля, затем один раз выполните это на Mac."
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pripojte iPhone k Macu káblom a potom to raz spustite na Macu."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anslut din iPhone till din Mac med en kabel och kör sedan detta en gång på din Mac."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "เชื่อมต่อ iPhone ของคุณกับ Mac ด้วยสายเคเบิล จากนั้นเรียกใช้สิ่งนี้หนึ่งครั้งบน Mac ของคุณ"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iPhone’unuzu bir kabloyla Mac’inize bağlayın, ardından bunu Mac’inizde bir kez çalıştırın."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Під’єднайте iPhone до Mac кабелем, а потім один раз виконайте це на Mac."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kết nối iPhone với Mac của bạn bằng cáp, rồi chạy lệnh này một lần trên Mac của bạn."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "用线缆将 iPhone 连接到 Mac，然后在 Mac 上运行一次此命令。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "使用連接線將 iPhone 連接到 Mac，然後在 Mac 上執行一次此指令。"
+          }
+        }
+      }
+    },
     "Connected" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -68711,6 +68914,209 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "複製URL"
+          }
+        }
+      }
+    },
+    "Copy USB tool command" : {
+      "comment" : "Accessibility label of a button that copies `brew install libusbmuxd`.",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نسخ أمر أداة USB"
+          }
+        },
+        "ca" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copia l’ordre de l’eina USB"
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kopírovat příkaz nástroje USB"
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kopiér USB-værktøjskommando"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "USB-Tool-Befehl kopieren"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Αντιγραφή εντολής εργαλείου USB"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copiar comando de herramienta USB"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kopioi USB-työkalukomento"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copier la commande de l’outil USB"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "העתק פקודת כלי USB"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "USB टूल कमांड कॉपी करें"
+          }
+        },
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kopiraj naredbu USB alata"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "USB-eszközparancs másolása"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Salin perintah alat USB"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copia comando strumento USB"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "USBツールコマンドをコピー"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "USB 도구 명령 복사"
+          }
+        },
+        "ms" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Salin perintah alat USB"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kopier USB-verktøykommandoen"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kopieer USB-toolopdracht"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kopiuj polecenie narzędzia USB"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copiar comando da ferramenta USB"
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copiar comando da ferramenta USB"
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copiați comanda instrumentului USB"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Скопировать команду USB-инструмента"
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skopírovať príkaz nástroja USB"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kopiera USB-verktygskommando"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "คัดลอกคำสั่งเครื่องมือ USB"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "USB aracı komutunu kopyala"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Скопіювати команду USB-інструмента"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sao chép lệnh công cụ USB"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "复制 USB 工具命令"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "複製 USB 工具指令"
           }
         }
       }
@@ -143260,210 +143666,205 @@
         }
       }
     },
-    "Keep your iPhone and Mac on the same Wi-Fi network. To connect by USB instead, add --usb to the pair and session commands and run brew install libusbmuxd once on your Mac. Walnut sends diagnostics and data you approve to your Mac, and your coding agent may pass them to its AI service." : {
+    "Keep your iPhone and Mac on the same Wi-Fi network." : {
+      "comment" : "Mac Agent screen, shown when the Wi-Fi connection option is selected.",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "أبقِ iPhone وMac على شبكة Wi‑Fi نفسها. للاتصال عبر USB بدلًا من ذلك، أضف --usb إلى أمري pair وsession وشغّل brew install libusbmuxd مرة واحدة على Mac. يرسل Walnut معلومات التشخيص والبيانات التي توافق عليها إلى Mac، وقد يمررها وكيل البرمجة إلى خدمة الذكاء الاصطناعي الخاصة به."
+            "value" : "أبقِ iPhone وMac على شبكة Wi‑Fi نفسها."
           }
         },
         "ca" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mantén l’iPhone i el Mac a la mateixa xarxa Wi‑Fi. Per connectar-te per USB, afegeix --usb a les ordres pair i session i executa brew install libusbmuxd una vegada al Mac. Walnut envia al Mac els diagnòstics i les dades que aprovis, i el teu agent de codi pot transmetre’ls al seu servei d’IA."
+            "value" : "Mantén l’iPhone i el Mac a la mateixa xarxa Wi‑Fi."
           }
         },
         "cs" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mějte iPhone a Mac ve stejné síti Wi-Fi. Chcete-li se místo toho připojit přes USB, přidejte --usb k příkazům pair a session a jednou na Macu spusťte brew install libusbmuxd. Walnut odesílá diagnostiku a vámi schválená data do Macu a váš agent pro kódování je může předat své službě AI."
+            "value" : "Mějte iPhone a Mac ve stejné síti Wi-Fi."
           }
         },
         "da" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Hold din iPhone og Mac på samme Wi-Fi-netværk. Hvis du vil oprette forbindelse via USB i stedet, skal du føje --usb til pair- og session-kommandoerne og køre brew install libusbmuxd én gang på din Mac. Walnut sender diagnoseoplysninger og data, du godkender, til din Mac, og din kodeagent kan sende dem videre til sin AI-tjeneste."
+            "value" : "Hold din iPhone og Mac på samme Wi-Fi-netværk."
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Verbinden Sie Ihr iPhone und Ihren Mac mit demselben WLAN. Um stattdessen eine USB-Verbindung zu verwenden, fügen Sie --usb zu den pair- und session-Befehlen hinzu und führen Sie einmal brew install libusbmuxd auf Ihrem Mac aus. Walnut sendet Diagnoseinformationen und von Ihnen genehmigte Daten an Ihren Mac, und Ihr Coding-Agent kann sie an seinen KI-Dienst weitergeben."
+            "value" : "Verbinden Sie Ihr iPhone und Ihren Mac mit demselben WLAN."
           }
         },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Διατηρήστε το iPhone και το Mac σας στο ίδιο δίκτυο Wi‑Fi. Για σύνδεση μέσω USB, προσθέστε --usb στις εντολές pair και session και εκτελέστε brew install libusbmuxd μία φορά στο Mac σας. Το Walnut στέλνει διαγνωστικά στοιχεία και δεδομένα που εγκρίνετε στο Mac σας και ο coding agent σας μπορεί να τα μεταβιβάσει στην υπηρεσία AI του."
-          }
-        },
-        "en-GB" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Keep your iPhone and Mac on the same Wi-Fi network. To connect by USB instead, add --usb to the pair and session commands and run brew install libusbmuxd once on your Mac. Walnut sends diagnostics and data you approve to your Mac, and your coding agent may pass them to its AI service."
+            "value" : "Διατηρήστε το iPhone και το Mac σας στο ίδιο δίκτυο Wi‑Fi."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mantén el iPhone y el Mac en la misma red Wi-Fi. Para conectarlos por USB, añade --usb a los comandos pair y session y ejecuta brew install libusbmuxd una vez en tu Mac. Walnut envía al Mac los diagnósticos y los datos que apruebes, y tu agente de programación puede pasarlos a su servicio de IA."
+            "value" : "Mantén el iPhone y el Mac en la misma red Wi-Fi."
           }
         },
         "fi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pidä iPhone ja Mac samassa Wi‑Fi-verkossa. Jos haluat muodostaa yhteyden USB:llä, lisää --usb pair- ja session-komentoihin ja suorita brew install libusbmuxd kerran Macissa. Walnut lähettää diagnostiikkaa ja hyväksymäsi tiedot Maciin, ja koodausagenttisi voi välittää ne tekoälypalveluunsa."
+            "value" : "Pidä iPhone ja Mac samassa Wi‑Fi-verkossa."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Gardez votre iPhone et votre Mac connectés au même réseau Wi-Fi. Pour vous connecter par USB à la place, ajoutez --usb aux commandes pair et session, puis exécutez brew install libusbmuxd une fois sur votre Mac. Walnut envoie les diagnostics et les données que vous approuvez à votre Mac, et votre agent de codage peut les transmettre à son service d’IA."
+            "value" : "Gardez votre iPhone et votre Mac connectés au même réseau Wi-Fi."
           }
         },
         "he" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "יש להשאיר את ה‑iPhone וה‑Mac באותה רשת Wi‑Fi. כדי להתחבר ב‑USB במקום זאת, יש להוסיף --usb לפקודות pair ו‑session ולהריץ brew install libusbmuxd פעם אחת ב‑Mac שלך. Walnut שולח ל‑Mac אבחונים ונתונים שאישרת, וסוכן הקידוד שלך עשוי להעביר אותם לשירות ה‑AI שלו."
+            "value" : "יש להשאיר את ה‑iPhone וה‑Mac באותה רשת Wi‑Fi."
           }
         },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "अपने iPhone और Mac को एक ही Wi‑Fi नेटवर्क पर रखें। इसके बजाय USB से कनेक्ट करने के लिए, pair और session कमांड में --usb जोड़ें और अपने Mac पर एक बार brew install libusbmuxd चलाएँ। Walnut डायग्नॉस्टिक्स और आपके द्वारा स्वीकृत डेटा आपके Mac पर भेजता है, और आपका कोडिंग एजेंट उन्हें अपनी AI सेवा को भेज सकता है।"
+            "value" : "अपने iPhone और Mac को एक ही Wi‑Fi नेटवर्क पर रखें।"
           }
         },
         "hr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Držite iPhone i Mac na istoj Wi‑Fi mreži. Za povezivanje putem USB-a dodajte --usb naredbama pair i session te jednom pokrenite brew install libusbmuxd na svom Macu. Walnut šalje dijagnostiku i podatke koje odobrite na vaš Mac, a vaš agent za kodiranje može ih proslijediti svojoj AI usluzi."
+            "value" : "Držite iPhone i Mac na istoj Wi‑Fi mreži."
           }
         },
         "hu" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tartsa az iPhone-t és a Macet ugyanazon a Wi‑Fi-hálózaton. Ha inkább USB-n szeretne csatlakozni, adja hozzá a --usb kapcsolót a pair és session parancsokhoz, és futtassa egyszer a brew install libusbmuxd parancsot a Macen. A Walnut diagnosztikai adatokat és az Ön által jóváhagyott adatokat küld a Macre, a kódoló ügynöke pedig továbbíthatja ezeket az AI-szolgáltatásának."
+            "value" : "Tartsa az iPhone-t és a Macet ugyanazon a Wi‑Fi-hálózaton."
           }
         },
         "id" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pastikan iPhone dan Mac Anda berada di jaringan Wi-Fi yang sama. Untuk menyambungkan dengan USB, tambahkan --usb ke perintah pair dan session, lalu jalankan brew install libusbmuxd satu kali di Mac Anda. Walnut mengirim diagnostik dan data yang Anda setujui ke Mac Anda, dan agen pemrograman Anda dapat meneruskannya ke layanan AI miliknya."
+            "value" : "Pastikan iPhone dan Mac Anda berada di jaringan Wi-Fi yang sama."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mantieni iPhone e Mac sulla stessa rete Wi‑Fi. Per connetterti invece tramite USB, aggiungi --usb ai comandi pair e session ed esegui brew install libusbmuxd una volta sul Mac. Walnut invia al Mac la diagnostica e i dati che approvi, e il tuo agente di programmazione potrebbe trasmetterli al suo servizio di IA."
+            "value" : "Mantieni iPhone e Mac sulla stessa rete Wi‑Fi."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "iPhoneとMacを同じWi-Fiネットワークに接続してください。USBで接続するには、pairコマンドとsessionコマンドに--usbを追加し、Macでbrew install libusbmuxdを一度実行してください。Walnutは診断情報と承認したデータをMacに送信し、コーディングエージェントがそれらをAIサービスに渡す場合があります。"
+            "value" : "iPhoneとMacを同じWi-Fiネットワークに接続してください。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "iPhone과 Mac을 같은 Wi-Fi에 연결하세요. USB로 연결하려면 pair와 session 명령에 --usb를 붙이고, Mac에서 brew install libusbmuxd를 한 번 실행하세요. Walnut은 진단 정보와 승인한 데이터를 Mac으로 보내며, 코딩 에이전트가 이를 AI 서비스에 전달할 수 있습니다."
+            "value" : "iPhone과 Mac을 같은 Wi-Fi에 연결하세요."
           }
         },
         "ms" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pastikan iPhone dan Mac anda berada pada rangkaian Wi-Fi yang sama. Untuk menyambung melalui USB sebaliknya, tambah --usb pada perintah pair dan session serta jalankan brew install libusbmuxd sekali pada Mac anda. Walnut menghantar diagnostik dan data yang anda luluskan ke Mac anda, dan agen pengekodan anda mungkin meneruskannya kepada perkhidmatan AI-nya."
+            "value" : "Pastikan iPhone dan Mac anda berada pada rangkaian Wi-Fi yang sama."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Hold iPhone og Mac på samme Wi-Fi-nettverk. For å koble til via USB i stedet, legger du til --usb i pair- og session-kommandoene og kjører brew install libusbmuxd én gang på Macen din. Walnut sender diagnostikk og data du godkjenner til Macen din, og kodeagenten din kan sende dem videre til AI-tjenesten sin."
+            "value" : "Hold iPhone og Mac på samme Wi-Fi-nettverk."
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Zorg dat je iPhone en Mac met hetzelfde wifinetwerk verbonden zijn. Als je in plaats daarvan via USB wilt verbinden, voeg je --usb toe aan de pair- en session-opdrachten en voer je brew install libusbmuxd één keer uit op je Mac. Walnut stuurt diagnostische gegevens en gegevens die je goedkeurt naar je Mac, en je coding agent kan deze doorgeven aan de AI-service."
+            "value" : "Zorg dat je iPhone en Mac met hetzelfde wifinetwerk verbonden zijn."
           }
         },
         "pl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Niech iPhone i Mac będą w tej samej sieci Wi‑Fi. Aby zamiast tego połączyć przez USB, dodaj --usb do poleceń parowania i sesji oraz uruchom raz brew install libusbmuxd na Macu. Walnut wysyła diagnostykę i zatwierdzone przez Ciebie dane na Maca, a Twój agent programistyczny może przekazać je do swojej usługi AI."
+            "value" : "Niech iPhone i Mac będą w tej samej sieci Wi‑Fi."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mantenha o iPhone e o Mac na mesma rede Wi‑Fi. Para conectar por USB, adicione --usb aos comandos pair e session e execute brew install libusbmuxd uma vez no Mac. O Walnut envia diagnósticos e dados aprovados por você ao Mac, e seu agente de programação pode encaminhá-los ao serviço de IA dele."
+            "value" : "Mantenha o iPhone e o Mac na mesma rede Wi‑Fi."
           }
         },
         "pt-PT" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mantenha o iPhone e o Mac na mesma rede Wi-Fi. Para ligar por USB, adicione --usb aos comandos pair e session e execute brew install libusbmuxd uma vez no Mac. O Walnut envia diagnósticos e os dados que aprovar para o Mac, e o seu agente de programação pode transmiti-los ao respetivo serviço de IA."
+            "value" : "Mantenha o iPhone e o Mac na mesma rede Wi-Fi."
           }
         },
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mențineți iPhone-ul dvs. și Macul dvs. în aceeași rețea Wi-Fi. Pentru a vă conecta prin USB, adăugați --usb la comenzile pair și session și rulați brew install libusbmuxd o dată pe Macul dvs. Walnut trimite către Macul dvs. informațiile de diagnostic și datele pe care le aprobați, iar agentul dvs. de codare le poate transmite către serviciul său AI."
+            "value" : "Mențineți iPhone-ul dvs. și Macul dvs. în aceeași rețea Wi-Fi."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Держите iPhone и Mac в одной сети Wi‑Fi. Чтобы подключаться через USB, добавьте --usb к командам pair и session и один раз выполните brew install libusbmuxd на Mac. Walnut отправляет на ваш Mac диагностические данные и данные, которые вы одобрите, а ваш агент для программирования может передать их в свой сервис ИИ."
+            "value" : "Держите iPhone и Mac в одной сети Wi‑Fi."
           }
         },
         "sk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Majte iPhone a Mac pripojené k rovnakej sieti Wi‑Fi. Ak sa chcete pripojiť cez USB, pridajte --usb k príkazom pair a session a raz na Macu spustite brew install libusbmuxd. Walnut odosiela diagnostiku a vami schválené dáta do vášho Macu a váš kódovací agent ich môže poslať svojej službe AI."
+            "value" : "Majte iPhone a Mac pripojené k rovnakej sieti Wi‑Fi."
           }
         },
         "sv" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Se till att din iPhone och Mac är anslutna till samma Wi‑Fi-nätverk. Om du vill ansluta via USB i stället lägger du till --usb i pair- och session-kommandona och kör brew install libusbmuxd en gång på din Mac. Walnut skickar diagnostik och data som du godkänner till din Mac, och din kodningsagent kan vidarebefordra dem till sin AI-tjänst."
+            "value" : "Se till att din iPhone och Mac är anslutna till samma Wi‑Fi-nätverk."
           }
         },
         "th" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ให้ iPhone และ Mac อยู่บนเครือข่าย Wi-Fi เดียวกัน หากต้องการเชื่อมต่อผ่าน USB แทน ให้เพิ่ม --usb ในคำสั่ง pair และ session แล้วเรียกใช้ brew install libusbmuxd บน Mac ของคุณหนึ่งครั้ง Walnut จะส่งข้อมูลวินิจฉัยและข้อมูลที่คุณอนุมัติไปยัง Mac ของคุณ และเอเจนต์เขียนโค้ดของคุณอาจส่งต่อข้อมูลเหล่านั้นไปยังบริการ AI ของตน"
+            "value" : "ให้ iPhone และ Mac อยู่บนเครือข่าย Wi-Fi เดียวกัน"
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "iPhone’unuzu ve Mac’inizi aynı Wi‑Fi ağında tutun. Bunun yerine USB ile bağlanmak için pair ve session komutlarına --usb ekleyin ve Mac’inizde bir kez brew install libusbmuxd çalıştırın. Walnut, tanılama verilerini ve onayladığınız verileri Mac’inize gönderir; kodlama aracınız bunları kendi yapay zekâ servisine iletebilir."
+            "value" : "iPhone’unuzu ve Mac’inizi aynı Wi‑Fi ağında tutun."
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Тримайте iPhone і Mac в одній мережі Wi‑Fi. Щоб натомість під’єднатися через USB, додайте --usb до команд pair і session та один раз виконайте brew install libusbmuxd на Mac. Walnut надсилає на ваш Mac діагностику й дані, які ви схвалюєте, а ваш агент з програмування може передати їх своєму сервісу ШІ."
+            "value" : "Тримайте iPhone і Mac в одній мережі Wi‑Fi."
           }
         },
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Giữ iPhone và Mac của bạn trên cùng một mạng Wi‑Fi. Để kết nối bằng USB, hãy thêm --usb vào các lệnh pair và session, rồi chạy brew install libusbmuxd một lần trên Mac của bạn. Walnut gửi thông tin chẩn đoán và dữ liệu bạn phê duyệt đến Mac của bạn, và tác nhân lập trình của bạn có thể chuyển chúng đến dịch vụ AI của tác nhân đó."
+            "value" : "Giữ iPhone và Mac của bạn trên cùng một mạng Wi‑Fi."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "将 iPhone 和 Mac 保持在同一 Wi-Fi 网络上。若要改用 USB 连接，请在 pair 和 session 命令中添加 --usb，并在 Mac 上运行一次 brew install libusbmuxd。Walnut 会将诊断信息和你批准的数据发送到 Mac，你的编程智能体可能会将其传递给其 AI 服务。"
+            "value" : "将 iPhone 和 Mac 保持在同一 Wi-Fi 网络上。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "請讓你的 iPhone 和 Mac 連接到同一個 Wi-Fi 網路。若要改用 USB 連線，請在 pair 和 session 指令加入 --usb，並在你的 Mac 上執行一次 brew install libusbmuxd。Walnut 會將診斷資訊和你核准的資料傳送到你的 Mac，而你的程式碼代理可能會將這些資料傳給其 AI 服務。"
+            "value" : "請讓你的 iPhone 和 Mac 連接到同一個 Wi-Fi 網路。"
           }
         }
       }
@@ -288276,6 +288677,209 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Walnut 會移除已儲存的配對。若要使用這部 Mac，請重新配對。"
+          }
+        }
+      }
+    },
+    "Walnut sends diagnostics and data you approve to your Mac, and your coding agent may pass them to its AI service." : {
+      "comment" : "Privacy footer under the Mac Agent connection steps.",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يرسل Walnut معلومات التشخيص والبيانات التي توافق عليها إلى Mac، وقد يمررها وكيل البرمجة إلى خدمة الذكاء الاصطناعي الخاصة به."
+          }
+        },
+        "ca" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Walnut envia al Mac els diagnòstics i les dades que aprovis, i el teu agent de codi pot transmetre’ls al seu servei d’IA."
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Walnut odesílá diagnostiku a vámi schválená data do Macu a váš agent pro kódování je může předat své službě AI."
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Walnut sender diagnoseoplysninger og data, du godkender, til din Mac, og din kodeagent kan sende dem videre til sin AI-tjeneste."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Walnut sendet Diagnoseinformationen und von Ihnen genehmigte Daten an Ihren Mac, und Ihr Coding-Agent kann sie an seinen KI-Dienst weitergeben."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Το Walnut στέλνει διαγνωστικά στοιχεία και δεδομένα που εγκρίνετε στο Mac σας και ο coding agent σας μπορεί να τα μεταβιβάσει στην υπηρεσία AI του."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Walnut envía al Mac los diagnósticos y los datos que apruebes, y tu agente de programación puede pasarlos a su servicio de IA."
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Walnut lähettää diagnostiikkaa ja hyväksymäsi tiedot Maciin, ja koodausagenttisi voi välittää ne tekoälypalveluunsa."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Walnut envoie les diagnostics et les données que vous approuvez à votre Mac, et votre agent de codage peut les transmettre à son service d’IA."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Walnut שולח ל‑Mac אבחונים ונתונים שאישרת, וסוכן הקידוד שלך עשוי להעביר אותם לשירות ה‑AI שלו."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Walnut डायग्नॉस्टिक्स और आपके द्वारा स्वीकृत डेटा आपके Mac पर भेजता है, और आपका कोडिंग एजेंट उन्हें अपनी AI सेवा को भेज सकता है।"
+          }
+        },
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Walnut šalje dijagnostiku i podatke koje odobrite na vaš Mac, a vaš agent za kodiranje može ih proslijediti svojoj AI usluzi."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A Walnut diagnosztikai adatokat és az Ön által jóváhagyott adatokat küld a Macre, a kódoló ügynöke pedig továbbíthatja ezeket az AI-szolgáltatásának."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Walnut mengirim diagnostik dan data yang Anda setujui ke Mac Anda, dan agen pemrograman Anda dapat meneruskannya ke layanan AI miliknya."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Walnut invia al Mac la diagnostica e i dati che approvi, e il tuo agente di programmazione potrebbe trasmetterli al suo servizio di IA."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Walnutは診断情報と承認したデータをMacに送信し、コーディングエージェントがそれらをAIサービスに渡す場合があります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Walnut은 진단 정보와 승인한 데이터를 Mac으로 보내며, 코딩 에이전트가 이를 AI 서비스에 전달할 수 있습니다."
+          }
+        },
+        "ms" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Walnut menghantar diagnostik dan data yang anda luluskan ke Mac anda, dan agen pengekodan anda mungkin meneruskannya kepada perkhidmatan AI-nya."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Walnut sender diagnostikk og data du godkjenner til Macen din, og kodeagenten din kan sende dem videre til AI-tjenesten sin."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Walnut stuurt diagnostische gegevens en gegevens die je goedkeurt naar je Mac, en je coding agent kan deze doorgeven aan de AI-service."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Walnut wysyła diagnostykę i zatwierdzone przez Ciebie dane na Maca, a Twój agent programistyczny może przekazać je do swojej usługi AI."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O Walnut envia diagnósticos e dados aprovados por você ao Mac, e seu agente de programação pode encaminhá-los ao serviço de IA dele."
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O Walnut envia diagnósticos e os dados que aprovar para o Mac, e o seu agente de programação pode transmiti-los ao respetivo serviço de IA."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Walnut trimite către Macul dvs. informațiile de diagnostic și datele pe care le aprobați, iar agentul dvs. de codare le poate transmite către serviciul său AI."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Walnut отправляет на ваш Mac диагностические данные и данные, которые вы одобрите, а ваш агент для программирования может передать их в свой сервис ИИ."
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Walnut odosiela diagnostiku a vami schválené dáta do vášho Macu a váš kódovací agent ich môže poslať svojej službe AI."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Walnut skickar diagnostik och data som du godkänner till din Mac, och din kodningsagent kan vidarebefordra dem till sin AI-tjänst."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Walnut จะส่งข้อมูลวินิจฉัยและข้อมูลที่คุณอนุมัติไปยัง Mac ของคุณ และเอเจนต์เขียนโค้ดของคุณอาจส่งต่อข้อมูลเหล่านั้นไปยังบริการ AI ของตน"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Walnut, tanılama verilerini ve onayladığınız verileri Mac’inize gönderir; kodlama aracınız bunları kendi yapay zekâ servisine iletebilir."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Walnut надсилає на ваш Mac діагностику й дані, які ви схвалюєте, а ваш агент з програмування може передати їх своєму сервісу ШІ."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Walnut gửi thông tin chẩn đoán và dữ liệu bạn phê duyệt đến Mac của bạn, và tác nhân lập trình của bạn có thể chuyển chúng đến dịch vụ AI của tác nhân đó."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Walnut 会将诊断信息和你批准的数据发送到 Mac，你的编程智能体可能会将其传递给其 AI 服务。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Walnut 會將診斷資訊和你核准的資料傳送到你的 Mac，而你的程式碼代理可能會將這些資料傳給其 AI 服務。"
           }
         }
       }
