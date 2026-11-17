@@ -23,7 +23,7 @@ struct AgentConnectionView: View {
 
     static let installCommandLines = ["brew tap kobbokkom/tap", "brew install --cask kobbokkom/tap/walnut-agent"]
     static let installCommands = installCommandLines.joined(separator: "\n")
-    private static let setupGuide = URL(string: "https://github.com/Kobbokkom/walnut-webview-tester/tree/walnut-agent-v0.1.5/walnut-agent#install-on-mac")!
+    private static let setupGuide = URL(string: "https://github.com/Kobbokkom/walnut-webview-tester/tree/walnut-agent-v0.1.6/walnut-agent#install-on-mac")!
 
     private var isPaired: Bool { session.hasPairingGrant }
 
@@ -147,6 +147,7 @@ struct AgentConnectionView: View {
             }
             step(2, "Turn on Mac Agent", state: switchState, collapsible: false, forceOpen: true) {
                 if state != .off { statusLine(state) }
+                if session.isMacAgentOutdated { outdatedAgentWarning }
                 if switchState != .upcoming {
                     Text("While on, Mac Agent also starts when you open Walnut.")
                         .foregroundStyle(.secondary)
@@ -170,6 +171,18 @@ struct AgentConnectionView: View {
             Text("How to connect")
         } footer: {
             Text("Keep your iPhone and Mac on the same Wi-Fi network. To connect by USB instead, add --usb to the pair and session commands and run brew install libusbmuxd once on your Mac. Walnut sends diagnostics and data you approve to your Mac, and your coding agent may pass them to its AI service.")
+        }
+    }
+
+    /// Older CLIs still work, so this only recommends updating.
+    private var outdatedAgentWarning: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label {
+                Text("Walnut Agent on your Mac is out of date. It still works, but updating is recommended.")
+            } icon: {
+                Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+            }
+            commandRow("walnut-agent update", name: "Copy update command")
         }
     }
 

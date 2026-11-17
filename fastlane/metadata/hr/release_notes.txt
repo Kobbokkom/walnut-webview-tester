@@ -1,5 +1,6 @@
 Sigurnije uparivanje s Macom
 
-• Novo uparivanje s Macom sprema se tek nakon što potvrdite i na iPhoneu i na Macu. Ako u Terminal odgovorite ne, oba uređaja ostaju neuparena. Ažurirajte Walnut Agent na Macu naredbom brew upgrade walnut-agent.
+• Novo uparivanje s Macom sprema se tek nakon što ga potvrdite i na iPhoneu i na Macu. Ako u aplikaciji Terminal odgovorite ne, oba uređaja ostaju neuparena. Ažurirajte Walnut Agent na Macu naredbom brew upgrade walnut-agent.
 • Informacije o uređaju prikazuju toplinsko stanje i druge vrijednosti statusa na vašem jeziku.
-• Jasniji status za Mac Agent po završetku uparivanja.
+• Jasniji status za Mac Agent nakon završetka uparivanja.
+• Walnut vas obavještava kada je Walnut Agent na vašem Macu zastario. Starije verzije i dalje rade.

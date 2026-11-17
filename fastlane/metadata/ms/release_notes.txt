@@ -1,5 +1,6 @@
-Gandingan Mac yang lebih selamat
+Pemasangan Mac yang lebih selamat
 
-• Gandingan Mac baharu hanya disimpan selepas anda mengesahkan pada kedua-dua iPhone dan Mac. Menjawab tidak dalam Terminal membuatkan kedua-duanya tidak digandingkan. Kemas kini Walnut Agent pada Mac anda dengan brew upgrade walnut-agent.
+• Pemasangan Mac baharu hanya disimpan selepas anda mengesahkan pada kedua-dua iPhone dan Mac. Menjawab no dalam Terminal akan membiarkan kedua-duanya tidak dipasangkan. Kemas kini Walnut Agent pada Mac anda dengan brew upgrade walnut-agent.
 • Maklumat Peranti menunjukkan keadaan terma dan nilai status lain dalam bahasa anda.
-• Status Mac Agent yang lebih jelas apabila gandingan tamat.
+• Status Mac Agent yang lebih jelas apabila pemasangan berakhir.
+• Walnut memberitahu anda apabila Walnut Agent pada Mac anda sudah lapuk. Versi lama masih berfungsi.

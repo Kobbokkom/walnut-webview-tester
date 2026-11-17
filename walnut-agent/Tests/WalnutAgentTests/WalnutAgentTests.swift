@@ -1,10 +1,15 @@
 import Darwin
 import Foundation
 import Network
+import WalnutPairing
 import XCTest
 @testable import WalnutAgent
 
 final class WalnutAgentTests: XCTestCase {
+    func testThisCLIIsNotReportedAsOutdated() {
+        XCTAssertFalse(PairingWire.isOutdatedClient(CLI.version), "Raise recommendedClientVersion only to a released CLI")
+    }
+
     func testPairingRoundTripAndPrivatePermissions() throws {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: directory) }

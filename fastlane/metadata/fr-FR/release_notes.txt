@@ -1,5 +1,6 @@
 Jumelage Mac plus sûr
 
-• Un nouveau jumelage Mac n’est enregistré qu’après votre confirmation à la fois sur l’iPhone et sur le Mac. Répondre non dans Terminal laisse les deux appareils non jumelés. Mettez à jour Walnut Agent sur votre Mac avec brew upgrade walnut-agent.
+• Un nouveau jumelage Mac n’est enregistré qu’après confirmation à la fois sur l’iPhone et sur le Mac. Répondre non dans Terminal laisse les deux appareils non jumelés. Mettez à jour Walnut Agent sur votre Mac avec brew upgrade walnut-agent.
 • Informations sur l’appareil affiche l’état thermique et d’autres valeurs d’état dans votre langue.
-• Statut Mac Agent plus clair lorsque le jumelage prend fin.
+• Statut de Mac Agent plus clair à la fin du jumelage.
+• Walnut vous indique lorsque Walnut Agent sur votre Mac n’est pas à jour. Les anciennes versions continuent de fonctionner.

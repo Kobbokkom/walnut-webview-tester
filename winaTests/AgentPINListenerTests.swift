@@ -85,6 +85,19 @@ final class AgentPINListenerTests: XCTestCase {
         XCTAssertFalse(listener.isPairingAvailable)
     }
 
+    func testReconnectingMacReportsWhetherItsCLIIsOutdated() async throws {
+        let secret = SymmetricKey(size: .bits256).withUnsafeBytes { Data($0) }
+        try listener.startRemembered(serviceName: "Walnut-test-\(UUID().uuidString)", secret: secret, payload: payload)
+        defer { listener.stop() }
+        try await waitUntilReady()
+        _ = try await exchange(secret: secret)
+        XCTAssertTrue(listener.isClientOutdated, "A CLI that sends no version predates 0.1.6")
+        _ = try await exchange(secret: secret, clientVersion: PairingWire.recommendedClientVersion)
+        XCTAssertFalse(listener.isClientOutdated)
+        listener.stop()
+        XCTAssertFalse(listener.isClientOutdated)
+    }
+
     func testAttemptLimitDisablesNewPairing() async throws {
         try await start { _ in
             XCTFail("An invalid proof must not prompt for approval")
@@ -177,9 +190,9 @@ final class AgentPINListenerTests: XCTestCase {
                                   tamperWithProof: tamperWithProof, confirm: confirm)
     }
 
-    private func exchange(secret: Data) async throws -> Outcome {
+    private func exchange(secret: Data, clientVersion: String? = nil) async throws -> Outcome {
         let handshake = try PairingHandshake(role: .client, secret: secret, context: PairingWire.rememberedContext)
-        return try await exchange(handshake, port: PairingWire.rememberedPort)
+        return try await exchange(handshake, port: PairingWire.rememberedPort, clientVersion: clientVersion)
     }
 
     private func exchange(
@@ -187,7 +200,8 @@ final class AgentPINListenerTests: XCTestCase {
         port portNumber: UInt16,
         tamperWithReveal: Bool = false,
         tamperWithProof: Bool = false,
-        confirm: Confirm? = nil
+        confirm: Confirm? = nil,
+        clientVersion: String? = nil
     ) async throws -> Outcome {
         let port = try XCTUnwrap(NWEndpoint.Port(rawValue: portNumber))
         let connection = NWConnection(host: "127.0.0.1", port: port, using: .tcp)
@@ -202,7 +216,7 @@ final class AgentPINListenerTests: XCTestCase {
         var nonce = SymmetricKey(size: .bits256).withUnsafeBytes { Data($0) }
         let commitment = try PairingWire.commitment(message: handshake.message, nonce: nonce)
         connection.start(queue: .main)
-        try await send(PairingWire.Hello(commitment: commitment, confirmsSave: confirm != nil), using: connection)
+        try await send(PairingWire.Hello(commitment: commitment, confirmsSave: confirm != nil, clientVersion: clientVersion), using: connection)
         let response = await receive(using: connection)
         let challengeData = try XCTUnwrap(response)
         let challenge = try JSONDecoder().decode(PairingWire.Challenge.self, from: challengeData)

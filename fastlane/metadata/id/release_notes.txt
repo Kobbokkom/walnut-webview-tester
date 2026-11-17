@@ -1,5 +1,6 @@
 Pemasangan Mac yang lebih aman
 
-• Pemasangan Mac baru disimpan hanya setelah Anda mengonfirmasi di iPhone dan Mac. Menjawab no di Terminal membuat keduanya tetap tidak dipasangkan. Perbarui Walnut Agent di Mac Anda dengan brew upgrade walnut-agent.
-• Informasi Perangkat menampilkan status termal dan nilai status lainnya dalam bahasa Anda.
-• Status Mac Agent yang lebih jelas saat pemasangan berakhir.
+• Pemasangan Mac baru hanya disimpan setelah Anda mengonfirmasi di iPhone dan Mac. Menjawab tidak di Terminal akan membuat keduanya tetap tidak dipasangkan. Perbarui Walnut Agent di Mac Anda dengan brew upgrade walnut-agent.
+• Informasi Perangkat menampilkan kondisi termal dan nilai status lainnya dalam bahasa Anda.
+• Status Mac Agent lebih jelas saat pemasangan berakhir.
+• Walnut memberi tahu Anda saat Walnut Agent di Mac Anda sudah kedaluwarsa. Versi lama tetap berfungsi.

@@ -1,5 +1,6 @@
 Säkrare Mac-parkoppling
 
-• En ny Mac-parkoppling sparas först efter att du bekräftat på både iPhone och Mac. Om du svarar nej i Terminal förblir båda oparkopplade. Uppdatera Walnut Agent på din Mac med brew upgrade walnut-agent.
+• En ny Mac-parkoppling sparas först efter att du har bekräftat på både iPhone och Mac. Om du svarar nej i Terminal förblir båda oparkopplade. Uppdatera Walnut Agent på din Mac med brew upgrade walnut-agent.
 • Enhetsinformation visar termiskt tillstånd och andra statusvärden på ditt språk.
 • Tydligare Mac Agent-status när parkopplingen avslutas.
+• Walnut meddelar dig när Walnut Agent på din Mac är inaktuell. Äldre versioner fortsätter att fungera.

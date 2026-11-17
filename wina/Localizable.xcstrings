@@ -70783,6 +70783,209 @@
         }
       }
     },
+    "Copy update command" : {
+      "comment" : "Accessibility label of a button that copies `walnut-agent update`.",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نسخ أمر update"
+          }
+        },
+        "ca" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copia l’ordre update"
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kopírovat příkaz update"
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kopiér update-kommando"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "update-Befehl kopieren"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Αντιγραφή εντολής update"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copiar comando update"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kopioi update-komento"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copier la commande update"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "העתק פקודת update"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "update कमांड कॉपी करें"
+          }
+        },
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kopiraj naredbu update"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "update parancs másolása"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Salin perintah update"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copia comando update"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "updateコマンドをコピー"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "update 명령 복사"
+          }
+        },
+        "ms" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Salin perintah update"
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kopier update-kommandoen"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kopieer update-opdracht"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kopiuj polecenie update"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copiar comando update"
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copiar comando update"
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copiați comanda update"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Скопировать команду update"
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skopírovať príkaz update"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kopiera update-kommando"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "คัดลอกคำสั่ง update"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "update komutunu kopyala"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Скопіювати команду update"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sao chép lệnh update"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "复制 update 命令"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "複製 update 指令"
+          }
+        }
+      }
+    },
     "Core API" : {
       "localizations" : {
         "ar" : {
@@ -287252,6 +287455,209 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "顯示前等待完整頁面載入。可能感覺較慢但更整潔。"
+          }
+        }
+      }
+    },
+    "Walnut Agent on your Mac is out of date. It still works, but updating is recommended." : {
+      "comment" : "Warning on the Mac Agent screen when the Mac's command-line tool is older than recommended.",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إصدار Walnut Agent على Mac الخاص بك قديم. لا يزال يعمل، لكن يُنصح بالتحديث."
+          }
+        },
+        "ca" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Walnut Agent del Mac no està actualitzat. Encara funciona, però es recomana actualitzar-lo."
+          }
+        },
+        "cs" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Walnut Agent na vašem Mac je zastaralý. Stále funguje, ale doporučujeme aktualizaci."
+          }
+        },
+        "da" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Walnut Agent på din Mac er forældet. Den fungerer stadig, men det anbefales at opdatere."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Walnut Agent auf Ihrem Mac ist veraltet. Er funktioniert weiterhin, eine Aktualisierung wird aber empfohlen."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Το Walnut Agent στο Mac σας δεν είναι ενημερωμένο. Εξακολουθεί να λειτουργεί, αλλά συνιστάται ενημέρωση."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Walnut Agent en tu Mac no está actualizado. Sigue funcionando, pero se recomienda actualizarlo."
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mac-laitteesi Walnut Agent on vanhentunut. Se toimii edelleen, mutta päivittämistä suositellaan."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Walnut Agent sur votre Mac n’est pas à jour. Il fonctionne encore, mais il est recommandé de le mettre à jour."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Walnut Agent ב-Mac שלך לא מעודכן. הוא עדיין עובד, אבל מומלץ לעדכן."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "आपके Mac पर Walnut Agent पुराना हो गया है। यह अभी भी काम करता है, लेकिन अपडेट करने की सलाह दी जाती है।"
+          }
+        },
+        "hr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Walnut Agent na vašem Mac računalu je zastario. I dalje radi, ali preporučuje se ažuriranje."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A Mac gépeden lévő Walnut Agent elavult. Továbbra is működik, de ajánlott frissíteni."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Walnut Agent di Mac Anda sudah kedaluwarsa. Masih berfungsi, tetapi disarankan untuk memperbarui."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Walnut Agent sul tuo Mac non è aggiornato. Funziona ancora, ma è consigliabile aggiornarlo."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mac上のWalnut Agentは古くなっています。引き続き動作しますが、アップデートをおすすめします。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mac의 Walnut Agent가 오래된 버전입니다. 계속 작동하지만 업데이트하는 것이 좋습니다."
+          }
+        },
+        "ms" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Walnut Agent pada Mac anda sudah lapuk. Ia masih berfungsi, tetapi pengemaskinian disyorkan."
+          }
+        },
+        "nb" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Walnut Agent på din Mac er utdatert. Den fungerer fortsatt, men oppdatering anbefales."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Walnut Agent op je Mac is verouderd. Het werkt nog steeds, maar bijwerken wordt aanbevolen."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Walnut Agent na Twoim Mac jest nieaktualny. Nadal działa, ale zaleca się aktualizację."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O Walnut Agent no seu Mac está desatualizado. Ele ainda funciona, mas é recomendável atualizá-lo."
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O Walnut Agent no seu Mac está desatualizado. Continua a funcionar, mas recomenda-se a atualização."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Walnut Agent de pe Mac este învechit. Încă funcționează, dar se recomandă actualizarea."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Walnut Agent на вашем Mac устарел. Он всё еще работает, но рекомендуется обновить его."
+          }
+        },
+        "sk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Walnut Agent vo vašom zariadení Mac je zastaraný. Stále funguje, ale odporúča sa aktualizácia."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Walnut Agent på din Mac är inaktuell. Den fungerar fortfarande, men uppdatering rekommenderas."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Walnut Agent บน Mac ของคุณล้าสมัยแล้ว ยังใช้งานได้อยู่ แต่แนะนำให้อัปเดต"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mac’inizdeki Walnut Agent güncel değil. Hâlâ çalışır, ancak güncellemeniz önerilir."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Walnut Agent на вашому Mac застарів. Він усе ще працює, але рекомендується оновити його."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Walnut Agent trên Mac của bạn đã lỗi thời. Công cụ này vẫn hoạt động, nhưng bạn nên cập nhật."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你的 Mac 上的 Walnut Agent 已过期。它仍可工作，但建议更新。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你的 Mac 上的 Walnut Agent 已過期。仍可運作，但建議更新。"
           }
         }
       }

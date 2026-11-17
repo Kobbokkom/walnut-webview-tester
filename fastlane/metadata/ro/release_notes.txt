@@ -1,5 +1,6 @@
 Asociere Mac mai sigură
 
 • O nouă asociere Mac este salvată numai după ce confirmi atât pe iPhone, cât și pe Mac. Dacă răspunzi nu în Terminal, ambele rămân neasociate. Actualizează Walnut Agent pe Mac cu brew upgrade walnut-agent.
-• Informații despre dispozitiv afișează starea termică și alte valori de stare în limba ta.
+• Informații dispozitiv afișează starea termică și alte valori de stare în limba ta.
 • Stare Mac Agent mai clară când asocierea se încheie.
+• Walnut te anunță când Walnut Agent de pe Mac este învechit. Versiunile mai vechi continuă să funcționeze.

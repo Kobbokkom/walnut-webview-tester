@@ -3,3 +3,4 @@ Safer Mac pairing
 • A new Mac pairing is saved only after you confirm on both the iPhone and the Mac. Answering no in Terminal leaves both unpaired. Update Walnut Agent on your Mac with brew upgrade walnut-agent.
 • Device Information shows the thermal state and other status values in your language.
 • Clearer Mac Agent status when pairing ends.
+• Walnut tells you when Walnut Agent on your Mac is out of date. Older versions keep working.

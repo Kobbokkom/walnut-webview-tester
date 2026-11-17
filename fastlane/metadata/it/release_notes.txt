@@ -1,5 +1,6 @@
 Abbinamento Mac più sicuro
 
-• Un nuovo abbinamento Mac viene salvato solo dopo la conferma sia su iPhone sia su Mac. Rispondere no in Terminal lascia entrambi non abbinati. Aggiorna Walnut Agent sul Mac con brew upgrade walnut-agent.
+• Un nuovo abbinamento Mac viene salvato solo dopo la conferma sia su iPhone sia su Mac. Se rispondi no in Terminal, entrambi restano non abbinati. Aggiorna Walnut Agent sul tuo Mac con brew upgrade walnut-agent.
 • Informazioni dispositivo mostra lo stato termico e altri valori di stato nella tua lingua.
 • Stato di Mac Agent più chiaro al termine dell’abbinamento.
+• Walnut ti avvisa quando Walnut Agent sul tuo Mac non è aggiornato. Le versioni precedenti continuano a funzionare.

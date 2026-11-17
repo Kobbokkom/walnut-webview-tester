@@ -13,6 +13,8 @@ final class AgentPINListener {
     private(set) var isListening = false
     /// The iPhone user approved and the Mac user still has to confirm in Terminal; nothing is saved yet.
     private(set) var isAwaitingMac = false
+    /// The last Mac that authenticated runs a CLI older than `PairingWire.recommendedClientVersion`.
+    private(set) var isClientOutdated = false
 
     @ObservationIgnored private var listener: NWListener?
     @ObservationIgnored private var peer: Peer?
@@ -53,6 +55,7 @@ final class AgentPINListener {
         let payload: Data
         let credential: Credential
         var stage = Stage.connecting
+        var clientVersion: String?
         var buffer = Data()
         var timeout: Task<Void, Never>?
         var approval: Task<Void, Never>?
@@ -128,6 +131,7 @@ final class AgentPINListener {
 
     func stop() {
         didGrant = false
+        isClientOutdated = false
         stopAdvertising()
         if let peer { close(peer) }
     }
@@ -213,6 +217,7 @@ final class AgentPINListener {
             guard hello.commitment.count == PairingWire.commitmentSize else { close(peer); return }
             if peer.credential.requiresApproval { attempts += 1 }
             let handshake = try peer.credential.handshake()
+            peer.clientVersion = hello.clientVersion
             let confirmsSave = hello.confirmsSave && peer.credential.requiresApproval
             peer.stage = .proof(handshake, commitment: hello.commitment, confirmsSave: confirmsSave)
             send(try Self.encode(PairingWire.Challenge(message: handshake.message)), to: peer)
@@ -276,6 +281,7 @@ final class AgentPINListener {
     private func grant(
         _ peer: Peer, keys: PairingKeys, commit: (@MainActor () throws -> Void)? = nil, confirmsSave: Bool = false
     ) throws {
+        isClientOutdated = PairingWire.isOutdatedClient(peer.clientVersion)
         let grant = PairingWire.Grant(payload: try keys.seal(peer.payload), awaitsConfirmation: confirmsSave)
         let frame = try Self.encode(grant)
         if let commit, confirmsSave {

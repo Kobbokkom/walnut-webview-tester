@@ -1,5 +1,6 @@
 Turvallisempi Mac-paritus
 
-• Uusi Mac-paritus tallennetaan vasta, kun vahvistat sen sekä iPhonessa että Macissa. Jos vastaat ei Terminal-sovelluksessa, molemmat jäävät parittamatta. Päivitä Macisi Walnut Agent komennolla brew upgrade walnut-agent.
-• Laitetiedot näyttää lämpötilatilan ja muut tila-arvot omalla kielelläsi.
+• Uusi Mac-paritus tallennetaan vasta, kun vahvistat sen sekä iPhonessa että Macissa. Jos vastaat Terminalissa ei, kumpaakaan laitetta ei pariteta. Päivitä Macisi Walnut Agent komennolla brew upgrade walnut-agent.
+• Laitetiedot näyttää lämpötilan tilan ja muut tilatiedot omalla kielelläsi.
 • Selkeämpi Mac Agent -tila, kun paritus päättyy.
+• Walnut kertoo, kun Macisi Walnut Agent on vanhentunut. Vanhemmat versiot toimivat edelleen.

@@ -1,5 +1,6 @@
-Ghép nối Mac an toàn hơn
+Ghép đôi Mac an toàn hơn
 
-• Một ghép nối Mac mới chỉ được lưu sau khi bạn xác nhận trên cả iPhone và Mac. Trả lời no trong Terminal sẽ khiến cả hai vẫn chưa được ghép nối. Cập nhật Walnut Agent trên Mac của bạn bằng brew upgrade walnut-agent.
+• Một lượt ghép đôi Mac mới chỉ được lưu sau khi bạn xác nhận trên cả iPhone và Mac. Trả lời không trong Terminal sẽ giữ cả hai ở trạng thái chưa ghép đôi. Cập nhật Walnut Agent trên Mac của bạn bằng brew upgrade walnut-agent.
 • Thông tin thiết bị hiển thị trạng thái nhiệt và các giá trị trạng thái khác bằng ngôn ngữ của bạn.
-• Trạng thái Mac Agent rõ ràng hơn khi quá trình ghép nối kết thúc.
+• Trạng thái Mac Agent rõ ràng hơn khi quá trình ghép đôi kết thúc.
+• Walnut cho bạn biết khi Walnut Agent trên Mac của bạn đã lỗi thời. Các phiên bản cũ hơn vẫn tiếp tục hoạt động.

@@ -1,5 +1,6 @@
-Bezpieczniejsze parowanie z Maciem
+Bezpieczniejsze parowanie z Mac
 
-• Nowe parowanie z Maciem jest zapisywane dopiero po potwierdzeniu zarówno na iPhonie, jak i na Macu. Odpowiedź „nie” w Terminal pozostawia oba urządzenia niesparowane. Zaktualizuj Walnut Agent na Macu za pomocą brew upgrade walnut-agent.
+• Nowe parowanie z Mac jest zapisywane dopiero po potwierdzeniu zarówno na iPhonie, jak i na Macu. Odpowiedź „no” w Terminal pozostawia oba urządzenia niesparowane. Zaktualizuj Walnut Agent na Macu za pomocą brew upgrade walnut-agent.
 • Informacje o urządzeniu pokazują stan termiczny i inne wartości statusu w Twoim języku.
 • Czytelniejszy status Mac Agent po zakończeniu parowania.
+• Walnut poinformuje Cię, gdy Walnut Agent na Twoim Macu jest nieaktualny. Starsze wersje nadal działają.

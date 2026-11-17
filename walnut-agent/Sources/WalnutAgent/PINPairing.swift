@@ -43,7 +43,7 @@ enum PINPairing {
         var generator = SystemRandomNumberGenerator()
         let nonce = Data((0..<PairingWire.nonceSize).map { _ in UInt8.random(in: .min ... .max, using: &generator) })
         let commitment = try PairingWire.commitment(message: handshake.message, nonce: nonce)
-        let hello = try frame(PairingWire.Hello(commitment: commitment, confirmsSave: needsApproval))
+        let hello = try frame(PairingWire.Hello(commitment: commitment, confirmsSave: needsApproval, clientVersion: CLI.version))
         let firstConnection = BridgeExchange(to: endpoint, using: .tcp, responseLimit: PairingWire.maximumFrame)
         let connection: BridgeExchange
         let challenge: Data

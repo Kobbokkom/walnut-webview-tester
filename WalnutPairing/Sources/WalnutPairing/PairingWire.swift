@@ -13,6 +13,14 @@ public enum PairingWire {
     public static let messageSize = 32
     public static let nonceSize = 32
     public static let commitmentSize = 32
+    /// Walnut recommends updating a Mac CLI older than this; older ones still work.
+    public static let recommendedClientVersion = "0.1.6"
+
+    /// Clients before 0.1.6 send no version.
+    public static func isOutdatedClient(_ version: String?) -> Bool {
+        guard let version else { return true }
+        return version.compare(recommendedClientVersion, options: .numeric) == .orderedAscending
+    }
 
     public static func commitment(message: Data, nonce: Data) throws -> Data {
         guard message.count == messageSize, nonce.count == nonceSize else {
@@ -34,21 +42,26 @@ public enum PairingWire {
         public let commitment: Data
         /// The client sends `SaveConfirmation` before either side saves. Older clients omit it.
         public let confirmsSave: Bool
+        /// The Mac CLI version, sent since 0.1.6 so Walnut can recommend updating.
+        public let clientVersion: String?
 
-        public init(commitment: Data, confirmsSave: Bool) {
+        public init(commitment: Data, confirmsSave: Bool, clientVersion: String?) {
             self.commitment = commitment
             self.confirmsSave = confirmsSave
+            self.clientVersion = clientVersion
         }
 
         public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
             commitment = try container.decode(Data.self, forKey: .commitment)
             confirmsSave = try container.decodeIfPresent(Bool.self, forKey: .confirmsSave) ?? false
+            clientVersion = try container.decodeIfPresent(String.self, forKey: .clientVersion)
+                .flatMap { $0.utf8.count <= 32 ? $0 : nil }
         }
 
         private enum CodingKeys: String, CodingKey {
             case commitment = "commitmentV2"
-            case confirmsSave
+            case confirmsSave, clientVersion
         }
     }
 

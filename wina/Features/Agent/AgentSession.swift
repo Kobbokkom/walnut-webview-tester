@@ -28,6 +28,8 @@ final class AgentSession {
     var isPairingReady: Bool { hasRememberedMac ? rememberedListener.isReady : hasConnectedMac }
     /// Also true while the Mac user confirms in Terminal, so pairing reads as in progress, not timed out.
     var isPairingAvailable: Bool { pinListener.isPairingAvailable || pinListener.isAwaitingMac }
+    /// The Mac that last paired or reconnected runs an old Walnut Agent; it still works.
+    var isMacAgentOutdated: Bool { rememberedListener.isClientOutdated || pinListener.isClientOutdated }
     var pairingError: String? { pinListener.error ?? pairingStartError }
     var hasPairingGrant: Bool { hasRememberedMac || hasConnectedMac }
     /// The pairing window opened for this run and has since closed (expired, failed or used up its attempts).

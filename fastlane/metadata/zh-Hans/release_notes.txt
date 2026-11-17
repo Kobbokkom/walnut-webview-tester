@@ -1,5 +1,6 @@
 更安全的 Mac 配对
 
-• 只有在 iPhone 和 Mac 上都确认后，新的 Mac 配对才会保存。在 Terminal 中回答 no 会让双方保持未配对状态。请在 Mac 上使用 brew upgrade walnut-agent 更新 Walnut Agent。
-• “设备信息”会以你的语言显示热状态和其他状态值。
-• 配对结束时，Mac Agent 状态提示更清晰。
+• 只有在 iPhone 和 Mac 上都确认后，新的 Mac 配对才会保存。在 Terminal 中回答 no 会让双方都保持未配对状态。请使用 brew upgrade walnut-agent 更新 Mac 上的 Walnut Agent。
+• 设备信息会以你的语言显示散热状态和其他状态值。
+• 配对结束时，Mac Agent 状态更清晰。
+• 当 Mac 上的 Walnut Agent 版本过旧时，Walnut 会提醒你。旧版本仍可继续使用。
