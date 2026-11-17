@@ -1,6 +1,5 @@
-Walnut talar ditt språk
+Säkrare Mac-parkoppling
 
-• Varje skärm, godkännandeprompt och meddelande är nu översatt till alla språk som stöds.
-• Mac Agent ansluter i fyra tydliga steg: installera, slå på, parkoppla, starta en session.
-• ”Tillåt sidåtgärder” hoppar bara över prompter för den öppna sidan. Lagring, borttagningar och nätverksdetaljer frågar alltid.
-• Statusen för Mac Agent förblir synlig när verktygsfältet är dolt.
+• En ny Mac-parkoppling sparas först efter att du bekräftat på både iPhone och Mac. Om du svarar nej i Terminal förblir båda oparkopplade. Uppdatera Walnut Agent på din Mac med brew upgrade walnut-agent.
+• Enhetsinformation visar termiskt tillstånd och andra statusvärden på ditt språk.
+• Tydligare Mac Agent-status när parkopplingen avslutas.

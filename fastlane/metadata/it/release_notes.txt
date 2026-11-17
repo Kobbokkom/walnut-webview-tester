@@ -1,6 +1,5 @@
-Walnut parla la tua lingua
+Abbinamento Mac più sicuro
 
-• Ogni schermata, richiesta di approvazione e messaggio è ora tradotto in tutte le lingue supportate.
-• Mac Agent si connette in quattro passaggi chiari: installa, attiva, abbina, avvia una sessione.
-• “Consenti azioni sulla pagina” salta le richieste solo per la pagina aperta. Archiviazione, eliminazioni e dettagli di rete richiedono sempre conferma.
-• Lo stato di Mac Agent resta visibile quando la barra degli strumenti è nascosta.
+• Un nuovo abbinamento Mac viene salvato solo dopo la conferma sia su iPhone sia su Mac. Rispondere no in Terminal lascia entrambi non abbinati. Aggiorna Walnut Agent sul Mac con brew upgrade walnut-agent.
+• Informazioni dispositivo mostra lo stato termico e altri valori di stato nella tua lingua.
+• Stato di Mac Agent più chiaro al termine dell’abbinamento.

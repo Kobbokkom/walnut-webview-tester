@@ -1,6 +1,5 @@
-Walnut hovorí vaším jazykom
+Bezpečnejšie párovanie Macu
 
-• Každá obrazovka, výzva na schválenie a správa je teraz preložená do všetkých podporovaných jazykov.
-• Mac Agent pripojíte v štyroch jasných krokoch: nainštalovať, zapnúť, spárovať, spustiť reláciu.
-• „Povoliť akcie na stránke“ preskočí výzvy iba pre otvorenú stránku. Úložisko, odstraňovanie a podrobnosti o sieti si vždy vyžiadajú potvrdenie.
-• Stav Mac Agent zostáva viditeľný, aj keď je panel s nástrojmi skrytý.
+• Nové párovanie Macu sa uloží až po potvrdení na iPhone aj na Macu. Ak v Terminal odpoviete nie, obe zariadenia zostanú nespárované. Aktualizujte Walnut Agent na Macu pomocou brew upgrade walnut-agent.
+• Informácie o zariadení zobrazujú tepelný stav a ďalšie stavové hodnoty vo vašom jazyku.
+• Jasnejší stav Mac Agent po skončení párovania.

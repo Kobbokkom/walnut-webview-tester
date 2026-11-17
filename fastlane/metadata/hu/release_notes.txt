@@ -1,6 +1,5 @@
-A Walnut beszéli a nyelvedet
+Biztonságosabb Mac párosítás
 
-• Mostantól minden képernyő, jóváhagyási kérés és üzenet le van fordítva az összes támogatott nyelvre.
-• A Mac Agent négy egyértelmű lépésben csatlakozik: telepítés, bekapcsolás, párosítás, munkamenet indítása.
-• Az „Oldalműveletek engedélyezése” csak a megnyitott oldalhoz tartozó kéréseket hagyja ki. Tárhely, törlések és hálózati részletek esetén mindig megjelenik a kérés.
-• A Mac Agent állapota akkor is látható marad, ha az eszköztár rejtett.
+• Az új Mac párosítás csak azután lesz mentve, hogy mind az iPhone-on, mind a Macen megerősíted. Ha a Terminalban nemmel válaszolsz, egyik eszköz sem lesz párosítva. Frissítsd a Walnut Agentet a Maceden ezzel: brew upgrade walnut-agent.
+• Az Eszközinformációk a hőállapotot és más állapotértékeket a saját nyelveden jeleníti meg.
+• Egyértelműbb Mac Agent állapot, amikor a párosítás véget ér.

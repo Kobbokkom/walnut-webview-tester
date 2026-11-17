@@ -1,6 +1,5 @@
-Walnut speaks your language
+Safer Mac pairing
 
-• Every screen, approval prompt and message is now translated into all supported languages.
-• Mac Agent connects in four clear steps: install, turn on, pair, start a session.
-• “Allow page actions” only skips prompts for the open page. Storage, deletions and network details always ask.
-• The Mac Agent status stays visible when the toolbar is hidden.
+• A new Mac pairing is saved only after you confirm on both the iPhone and the Mac. Answering no in Terminal leaves both unpaired. Update Walnut Agent on your Mac with brew upgrade walnut-agent.
+• Device Information shows the thermal state and other status values in your language.
+• Clearer Mac Agent status when pairing ends.

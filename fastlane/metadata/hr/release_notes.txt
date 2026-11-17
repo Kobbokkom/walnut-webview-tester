@@ -1,6 +1,5 @@
-Walnut govori vašim jezikom
+Sigurnije uparivanje s Macom
 
-• Svaki zaslon, upit za odobrenje i poruka sada su prevedeni na sve podržane jezike.
-• Mac Agent se povezuje u četiri jasna koraka: instalirajte, uključite, uparite, pokrenite sesiju.
-• „Dopusti radnje na stranici” preskače upite samo za otvorenu stranicu. Za pohranu, brisanja i mrežne pojedinosti uvijek se traži potvrda.
-• Status Mac Agent ostaje vidljiv kada je alatna traka skrivena.
+• Novo uparivanje s Macom sprema se tek nakon što potvrdite i na iPhoneu i na Macu. Ako u Terminal odgovorite ne, oba uređaja ostaju neuparena. Ažurirajte Walnut Agent na Macu naredbom brew upgrade walnut-agent.
+• Informacije o uređaju prikazuju toplinsko stanje i druge vrijednosti statusa na vašem jeziku.
+• Jasniji status za Mac Agent po završetku uparivanja.

@@ -1,6 +1,5 @@
-Walnut parla el teu idioma
+Enllaç amb el Mac més segur
 
-• Totes les pantalles, sol·licituds d’aprovació i missatges ara estan traduïts a tots els idiomes compatibles.
-• Mac Agent es connecta en quatre passos clars: instal·la, activa, enllaça, inicia una sessió.
-• “Permet accions de la pàgina” només omet les sol·licituds per a la pàgina oberta. L’emmagatzematge, les supressions i els detalls de xarxa sempre demanen confirmació.
-• L’estat de Mac Agent continua sent visible quan la barra d’eines està amagada.
+• Un enllaç nou amb el Mac només es desa després que el confirmis tant a l’iPhone com al Mac. Si respons que no a Terminal, tots dos queden sense enllaçar. Actualitza Walnut Agent al Mac amb brew upgrade walnut-agent.
+• Informació del dispositiu mostra l’estat tèrmic i altres valors d’estat en el teu idioma.
+• Estat de Mac Agent més clar quan finalitza l’enllaç.

@@ -1,6 +1,5 @@
-Walnut puhuu kieltäsi
+Turvallisempi Mac-paritus
 
-• Jokainen näyttö, hyväksyntäkehote ja viesti on nyt käännetty kaikille tuetuille kielille.
-• Mac Agent yhdistyy neljässä selkeässä vaiheessa: asenna, ota käyttöön, parita, aloita istunto.
-• “Salli sivun toiminnot” ohittaa kehotteet vain avoimelle sivulle. Tallennustila, poistot ja verkkotiedot pyytävät aina luvan.
-• Mac Agentin tila pysyy näkyvissä, kun työkalupalkki on piilotettu.
+• Uusi Mac-paritus tallennetaan vasta, kun vahvistat sen sekä iPhonessa että Macissa. Jos vastaat ei Terminal-sovelluksessa, molemmat jäävät parittamatta. Päivitä Macisi Walnut Agent komennolla brew upgrade walnut-agent.
+• Laitetiedot näyttää lämpötilatilan ja muut tila-arvot omalla kielelläsi.
+• Selkeämpi Mac Agent -tila, kun paritus päättyy.

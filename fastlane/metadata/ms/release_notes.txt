@@ -1,6 +1,5 @@
-Walnut bercakap dalam bahasa anda
+Gandingan Mac yang lebih selamat
 
-• Setiap skrin, gesaan kelulusan dan mesej kini diterjemahkan ke dalam semua bahasa yang disokong.
-• Mac Agent bersambung dalam empat langkah yang jelas: pasang, hidupkan, gandingkan, mulakan sesi.
-• “Benarkan tindakan halaman” hanya melangkau gesaan untuk halaman yang dibuka. Storan, pemadaman dan butiran rangkaian sentiasa meminta kelulusan.
-• Status Mac Agent kekal kelihatan apabila bar alat disembunyikan.
+• Gandingan Mac baharu hanya disimpan selepas anda mengesahkan pada kedua-dua iPhone dan Mac. Menjawab tidak dalam Terminal membuatkan kedua-duanya tidak digandingkan. Kemas kini Walnut Agent pada Mac anda dengan brew upgrade walnut-agent.
+• Maklumat Peranti menunjukkan keadaan terma dan nilai status lain dalam bahasa anda.
+• Status Mac Agent yang lebih jelas apabila gandingan tamat.

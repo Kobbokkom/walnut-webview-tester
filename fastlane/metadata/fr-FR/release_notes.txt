@@ -1,6 +1,5 @@
-Walnut parle votre langue
+Jumelage Mac plus sûr
 
-• Chaque écran, demande d’autorisation et message est désormais traduit dans toutes les langues prises en charge.
-• Mac Agent se connecte en quatre étapes claires : installer, activer, jumeler, démarrer une session.
-• « Autoriser les actions sur la page » ignore uniquement les demandes de confirmation pour la page ouverte. Le stockage, les suppressions et les détails réseau demandent toujours une confirmation.
-• L’état de Mac Agent reste visible lorsque la barre d’outils est masquée.
+• Un nouveau jumelage Mac n’est enregistré qu’après votre confirmation à la fois sur l’iPhone et sur le Mac. Répondre non dans Terminal laisse les deux appareils non jumelés. Mettez à jour Walnut Agent sur votre Mac avec brew upgrade walnut-agent.
+• Informations sur l’appareil affiche l’état thermique et d’autres valeurs d’état dans votre langue.
+• Statut Mac Agent plus clair lorsque le jumelage prend fin.

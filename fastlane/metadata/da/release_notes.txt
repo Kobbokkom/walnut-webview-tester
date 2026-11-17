@@ -1,6 +1,5 @@
-Walnut taler dit sprog
+Sikrere Mac-parring
 
-• Alle skærme, godkendelsesanmodninger og beskeder er nu oversat til alle understøttede sprog.
-• Mac Agent opretter forbindelse i fire tydelige trin: installer, slå til, par, start en session.
-• “Tillad sidehandlinger” springer kun anmodninger over for den åbne side. Der spørges altid om lagring, sletninger og netværksoplysninger.
-• Mac Agent-statussen forbliver synlig, når værktøjslinjen er skjult.
+• En ny Mac-parring gemmes først, når du har bekræftet på både iPhone og Mac. Hvis du svarer nej i Terminal, forbliver begge ikke parret. Opdater Walnut Agent på din Mac med brew upgrade walnut-agent.
+• Enhedsoplysninger viser termisk tilstand og andre statusværdier på dit sprog.
+• Tydeligere Mac Agent-status, når parringen afsluttes.

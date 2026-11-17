@@ -1,6 +1,5 @@
-Walnut nói ngôn ngữ của bạn
+Ghép nối Mac an toàn hơn
 
-• Mọi màn hình, lời nhắc phê duyệt và thông báo hiện đã được dịch sang tất cả các ngôn ngữ được hỗ trợ.
-• Mac Agent kết nối qua bốn bước rõ ràng: cài đặt, bật, ghép đôi, bắt đầu phiên.
-• “Cho phép tác vụ trên trang” chỉ bỏ qua lời nhắc cho trang đang mở. Bộ nhớ, thao tác xóa và chi tiết mạng luôn yêu cầu xác nhận.
-• Trạng thái Mac Agent vẫn hiển thị khi thanh công cụ bị ẩn.
+• Một ghép nối Mac mới chỉ được lưu sau khi bạn xác nhận trên cả iPhone và Mac. Trả lời no trong Terminal sẽ khiến cả hai vẫn chưa được ghép nối. Cập nhật Walnut Agent trên Mac của bạn bằng brew upgrade walnut-agent.
+• Thông tin thiết bị hiển thị trạng thái nhiệt và các giá trị trạng thái khác bằng ngôn ngữ của bạn.
+• Trạng thái Mac Agent rõ ràng hơn khi quá trình ghép nối kết thúc.

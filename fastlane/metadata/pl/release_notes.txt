@@ -1,6 +1,5 @@
-Walnut mówi Twoim językiem
+Bezpieczniejsze parowanie z Maciem
 
-• Każdy ekran, prośba o zatwierdzenie i komunikat są teraz przetłumaczone na wszystkie obsługiwane języki.
-• Mac Agent łączy się w czterech jasnych krokach: zainstaluj, włącz, sparuj, rozpocznij sesję.
-• „Zezwalaj na czynności na stronie” pomija prośby tylko dla otwartej strony. Pamięć, usunięcia i szczegóły sieci zawsze wymagają potwierdzenia.
-• Status Mac Agent pozostaje widoczny, gdy pasek narzędzi jest ukryty.
+• Nowe parowanie z Maciem jest zapisywane dopiero po potwierdzeniu zarówno na iPhonie, jak i na Macu. Odpowiedź „nie” w Terminal pozostawia oba urządzenia niesparowane. Zaktualizuj Walnut Agent na Macu za pomocą brew upgrade walnut-agent.
+• Informacje o urządzeniu pokazują stan termiczny i inne wartości statusu w Twoim języku.
+• Czytelniejszy status Mac Agent po zakończeniu parowania.

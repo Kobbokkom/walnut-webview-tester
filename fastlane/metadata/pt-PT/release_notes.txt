@@ -1,6 +1,5 @@
-Walnut fala a sua língua
+Emparelhamento com Mac mais seguro
 
-• Todos os ecrãs, pedidos de aprovação e mensagens estão agora traduzidos para todos os idiomas suportados.
-• Mac Agent liga-se em quatro passos claros: instalar, ativar, emparelhar, iniciar uma sessão.
-• “Permitir ações da página” só ignora pedidos para a página aberta. O armazenamento, as eliminações e os detalhes de rede pedem sempre confirmação.
-• O estado do Mac Agent permanece visível quando a barra de ferramentas está oculta.
+• Um novo emparelhamento com Mac só é guardado depois de confirmar no iPhone e no Mac. Responder não no Terminal deixa ambos desemparelhados. Atualize o Walnut Agent no seu Mac com brew upgrade walnut-agent.
+• As Informações do dispositivo mostram o estado térmico e outros valores de estado no seu idioma.
+• Estado do Mac Agent mais claro quando o emparelhamento termina.

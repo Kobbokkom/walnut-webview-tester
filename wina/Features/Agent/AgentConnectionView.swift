@@ -23,7 +23,7 @@ struct AgentConnectionView: View {
 
     static let installCommandLines = ["brew tap kobbokkom/tap", "brew install --cask kobbokkom/tap/walnut-agent"]
     static let installCommands = installCommandLines.joined(separator: "\n")
-    private static let setupGuide = URL(string: "https://github.com/Kobbokkom/walnut-webview-tester/tree/walnut-agent-v0.1.4/walnut-agent#install-on-mac")!
+    private static let setupGuide = URL(string: "https://github.com/Kobbokkom/walnut-webview-tester/tree/walnut-agent-v0.1.5/walnut-agent#install-on-mac")!
 
     private var isPaired: Bool { session.hasPairingGrant }
 

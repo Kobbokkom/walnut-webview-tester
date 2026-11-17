@@ -1,6 +1,5 @@
-Walnut spricht Ihre Sprache
+Sichereres Mac-Koppeln
 
-• Jeder Bildschirm, jede Bestätigungsaufforderung und jede Nachricht ist jetzt in alle unterstützten Sprachen übersetzt.
-• Mac Agent verbindet sich in vier klaren Schritten: installieren, einschalten, koppeln, eine Sitzung starten.
-• „Seitenaktionen erlauben“ überspringt Aufforderungen nur für die geöffnete Seite. Bei Speicher, Löschvorgängen und Netzwerkdetails werden Sie immer gefragt.
-• Der Status von Mac Agent bleibt sichtbar, wenn die Symbolleiste ausgeblendet ist.
+• Eine neue Mac-Kopplung wird erst gespeichert, nachdem Sie sie sowohl auf dem iPhone als auch auf dem Mac bestätigt haben. Wenn Sie in Terminal mit Nein antworten, bleiben beide ungepaart. Aktualisieren Sie Walnut Agent auf Ihrem Mac mit brew upgrade walnut-agent.
+• Geräteinformationen zeigen den thermischen Zustand und andere Statuswerte in Ihrer Sprache.
+• Klarerer Mac Agent-Status, wenn die Kopplung beendet wird.

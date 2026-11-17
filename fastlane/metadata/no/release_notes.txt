@@ -1,6 +1,5 @@
-Walnut snakker språket ditt
+Tryggere Mac-sammenkobling
 
-• Alle skjermer, godkjenningsforespørsler og meldinger er nå oversatt til alle støttede språk.
-• Mac Agent kobles til i fire tydelige trinn: installer, slå på, koble sammen, start en økt.
-• «Tillat sidehandlinger» hopper bare over forespørsler for den åpne siden. Lagring, slettinger og nettverksdetaljer krever alltid godkjenning.
-• Mac Agent-statusen forblir synlig når verktøylinjen er skjult.
+• En ny Mac-sammenkobling lagres først etter at du bekrefter på både iPhone og Mac. Hvis du svarer nei i Terminal, forblir begge ikke sammenkoblet. Oppdater Walnut Agent på Macen med brew upgrade walnut-agent.
+• Enhetsinformasjon viser den termiske tilstanden og andre statusverdier på språket ditt.
+• Tydeligere Mac Agent-status når sammenkoblingen avsluttes.

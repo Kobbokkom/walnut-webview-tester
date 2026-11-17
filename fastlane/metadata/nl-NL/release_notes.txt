@@ -1,6 +1,5 @@
-Walnut spreekt jouw taal
+Veiligere Mac-koppeling
 
-• Elk scherm, elke goedkeuringsprompt en elk bericht is nu vertaald naar alle ondersteunde talen.
-• Mac Agent maakt verbinding in vier duidelijke stappen: installeren, inschakelen, koppelen, een sessie starten.
-• “Pagina-acties toestaan” slaat alleen prompts over voor de geopende pagina. Voor opslag, verwijderingen en netwerkdetails wordt altijd om toestemming gevraagd.
-• De status van Mac Agent blijft zichtbaar wanneer de werkbalk verborgen is.
+• Een nieuwe Mac-koppeling wordt pas opgeslagen nadat je dit op zowel de iPhone als de Mac hebt bevestigd. Als je in Terminal ‘no’ antwoordt, blijven beide ongekoppeld. Werk Walnut Agent op je Mac bij met brew upgrade walnut-agent.
+• Apparaatinformatie toont de thermische status en andere statuswaarden in je taal.
+• Duidelijkere Mac Agent-status wanneer het koppelen eindigt.
