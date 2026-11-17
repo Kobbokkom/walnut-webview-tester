@@ -389,10 +389,10 @@ final class AgentDevToolsTests: XCTestCase {
                 XCTAssertEqual(prefix + suffix, """
                     [\(timestamp.string(from: requestStart))] GET \(request.url) → 503 (125ms) ERROR: Fixture request failed
 
-                    [Stylesheet] \(resource.name)
+                    [link] \(resource.name)
                       Duration: 1ms, Size: \(resource.displaySize)
 
-                    [Stylesheet] \(restrictedResource.name)
+                    [link] \(restrictedResource.name)
                       Duration: 42ms, Size: — (cross-origin)
                     """)
             } else {

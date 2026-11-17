@@ -287,7 +287,7 @@ final class StorageManagerTests: XCTestCase {
         }
         let added = try await write([:], authorize: { prompt, _ in
             XCTAssertTrue(prompt.contains("example.com and its subdomains"))
-            XCTAssertTrue(prompt.contains("at path /receipt"))
+            XCTAssertTrue(prompt.contains("Path: /receipt"))
             return true
         }) as? [String: Any]
         XCTAssertEqual(added?["applied"] as? Bool, true)
@@ -307,7 +307,7 @@ final class StorageManagerTests: XCTestCase {
         let foreign = ["action": "edit", "key": "foreign", "domain": "unrelated.test", "path": "/", "value": "changed"]
         do {
             _ = try await write(foreign, authorize: { prompt, _ in
-                XCTAssertTrue(prompt.contains("the exact domain unrelated.test at path /"))
+                XCTAssertTrue(prompt.contains("Domain: exactly unrelated.test\nPath: /"))
                 return false
             })
             XCTFail("A cross-domain edit must require approval")
