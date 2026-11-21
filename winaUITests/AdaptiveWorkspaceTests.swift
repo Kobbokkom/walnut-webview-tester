@@ -74,6 +74,14 @@ final class AdaptiveWorkspaceTests: XCTestCase {
         XCTAssertTrue(pageHeading.waitForExistence(timeout: 15))
         XCTAssertFalse(app.otherElements["devToolsPanel"].exists)
         XCTAssertTrue(console.exists)
+
+        console.tap()
+        let closeConsole = app.buttons["closeDevTools"].firstMatch
+        XCTAssertTrue(closeConsole.waitForExistence(timeout: 10))
+        XCTAssertTrue(draft.exists)
+        closeConsole.tap()
+        XCTAssertTrue(pageHeading.waitForExistence(timeout: 15))
+
         XCUIDevice.shared.orientation = .portrait
     }
 

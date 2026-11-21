@@ -40,6 +40,7 @@ struct ContentView: View {
     @State var showBookmarks: Bool = false
     @State var showInfo: Bool = false
     @State var devToolsState = DevToolsOverlayState()
+    @State private var consolePresentation = ConsoleSheetPresentation()
     @State private var showURLInput: Bool = false
     @State var showPreloadSettings: Bool = false
     @State private var urlInputText: String = ""
@@ -183,7 +184,7 @@ struct ContentView: View {
         .background { safariPresentation }
         .environment(\.agentBrowserSettings, agentBrowserSettings)
         .agentAnnouncement(openConnection: $showAgentConnection, canPresent: canPresentAgentAnnouncement, preferredScheme: preferredScheme)
-        .sheet(isPresented: $showAgentConnection) {
+        .sheet(isPresented: $showAgentConnection, onDismiss: consolePresentation.siblingSheetDidDismiss) {
             AgentConnectionView(session: agentSession) { rememberedOnly in
                 if agentScenePhase == .active { startAgentConnection(rememberedOnly: rememberedOnly) }
             }
@@ -226,6 +227,7 @@ struct ContentView: View {
     }
 
     var body: some View {
+        let resumeConsole = consolePresentation.siblingSheetDidDismiss
         browserSurface
         .onOpenURL { url in
             CallbackTestManager.shared.handleIncomingURL(url)
@@ -236,7 +238,7 @@ struct ContentView: View {
         } message: {
             Text("Check your browsing options and open the URL again.")
         }
-        .sheet(isPresented: $showSettings) {
+        .sheet(isPresented: $showSettings, onDismiss: resumeConsole) {
             if useSafariWebView {
                 SafariVCSettingsView(webViewID: webViewIDBinding)
                     .fullSizeSheet()
@@ -252,12 +254,12 @@ struct ContentView: View {
                 .preferredColorScheme(preferredScheme)
             }
         }
-        .sheet(isPresented: $showPreloadSettings) {
+        .sheet(isPresented: $showPreloadSettings, onDismiss: resumeConsole) {
             PreloadProfileSettingsView { applyPreloadProfileFromEditor($0) }
                 .fullSizeSheet()
                 .preferredColorScheme(preferredScheme)
         }
-        .sheet(isPresented: $showBookmarks) {
+        .sheet(isPresented: $showBookmarks, onDismiss: resumeConsole) {
             BookmarksSheet(
                 bookmarkedURLs: urlStorage.bookmarks,
                 onSelect: { url in
@@ -287,7 +289,7 @@ struct ContentView: View {
             )
             .preferredColorScheme(preferredScheme)
         }
-        .sheet(isPresented: $showInfo) {
+        .sheet(isPresented: $showInfo, onDismiss: resumeConsole) {
             if useSafariWebView {
                 SafariVCInfoView(webViewID: webViewIDBinding)
                     .fullSizeSheet()
@@ -304,42 +306,40 @@ struct ContentView: View {
                 .preferredColorScheme(preferredScheme)
             }
         }
-        .sheet(isPresented: devToolsState.presentationBinding(for: .console)) {
+        .consoleSheet(isPresented: devToolsState.presentationBinding(for: .console), presentation: consolePresentation, colorScheme: preferredScheme) {
             devToolsContent(for: .console)
-                .devToolsSheet()
-                .preferredColorScheme(preferredScheme)
         }
-        .sheet(isPresented: devToolsState.presentationBinding(for: .network)) {
+        .sheet(isPresented: consolePresentation.deferUntilDismissed(devToolsState.presentationBinding(for: .network)), onDismiss: resumeConsole) {
             devToolsContent(for: .network)
                 .devToolsSheet()
                 .preferredColorScheme(preferredScheme)
         }
-        .sheet(isPresented: devToolsState.presentationBinding(for: .storage)) {
+        .sheet(isPresented: consolePresentation.deferUntilDismissed(devToolsState.presentationBinding(for: .storage)), onDismiss: resumeConsole) {
             devToolsContent(for: .storage)
                 .devToolsSheet()
                 .preferredColorScheme(preferredScheme)
         }
-        .sheet(isPresented: devToolsState.presentationBinding(for: .performance)) {
+        .sheet(isPresented: consolePresentation.deferUntilDismissed(devToolsState.presentationBinding(for: .performance)), onDismiss: resumeConsole) {
             devToolsContent(for: .performance)
                 .devToolsSheet()
                 .preferredColorScheme(preferredScheme)
         }
-        .sheet(isPresented: devToolsState.presentationBinding(for: .editor)) {
+        .sheet(isPresented: consolePresentation.deferUntilDismissed(devToolsState.presentationBinding(for: .editor)), onDismiss: resumeConsole) {
             devToolsContent(for: .editor)
                 .devToolsSheet()
                 .preferredColorScheme(preferredScheme)
         }
-        .sheet(isPresented: devToolsState.presentationBinding(for: .accessibility)) {
+        .sheet(isPresented: consolePresentation.deferUntilDismissed(devToolsState.presentationBinding(for: .accessibility)), onDismiss: resumeConsole) {
             devToolsContent(for: .accessibility)
                 .devToolsSheet()
                 .preferredColorScheme(preferredScheme)
         }
-        .sheet(isPresented: devToolsState.presentationBinding(for: .snippets)) {
+        .sheet(isPresented: consolePresentation.deferUntilDismissed(devToolsState.presentationBinding(for: .snippets)), onDismiss: resumeConsole) {
             devToolsContent(for: .snippets)
                 .devToolsSheet()
                 .preferredColorScheme(preferredScheme)
         }
-        .sheet(isPresented: $showAbout) {
+        .sheet(isPresented: $showAbout, onDismiss: resumeConsole) {
             AboutView()
                 .preferredColorScheme(preferredScheme)
         }

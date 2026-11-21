@@ -55,7 +55,8 @@ enum BarConstants {
     // MARK: - Sheet Presentation
 
     /// Standard sheet detents with compact option
-    static let sheetDetents: Set<PresentationDetent> = [.fraction(0.35), .medium, .large]
+    static let compactSheetFraction: CGFloat = 0.35
+    static let sheetDetents: Set<PresentationDetent> = [.fraction(compactSheetFraction), .medium, .large]
 
     /// Default sheet detent when opening
     static let defaultSheetDetent: PresentationDetent = .medium

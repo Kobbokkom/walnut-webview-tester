@@ -7,21 +7,6 @@ BUNDLE_ID := com.kobbokkom.wina
 SIMULATOR ?= iPhone 17 Pro
 OS ?= latest
 
-# Apps built with SDK 26.5 can hang when rotating Console on iOS 27.2.
-ifeq ($(origin DEVELOPER_DIR),undefined)
-ifeq ($(shell xcrun --sdk iphonesimulator --show-sdk-version 2>/dev/null),26.5)
-DEVELOPER_DIR := $(shell for developer in /Applications/Xcode*.app/Contents/Developer; do \
-	[ -d "$$developer" ] || continue; \
-	if [ "$$(DEVELOPER_DIR="$$developer" xcrun --sdk iphonesimulator --show-sdk-version 2>/dev/null)" = 27.2 ]; then \
-		printf '%s' "$$developer"; break; \
-	fi; \
-done)
-endif
-endif
-ifneq ($(DEVELOPER_DIR),)
-export DEVELOPER_DIR
-endif
-
 APP_PATH := $(DERIVED_DATA)/Build/Products/$(CONFIGURATION)-iphonesimulator/$(SCHEME).app
 
 ifneq ($(DEVICE_ID),)
@@ -37,8 +22,7 @@ endif
 dev: boot build install launch
 
 boot:
-	@simulator="$$(xcode-select -p)/Applications/Simulator.app"; \
-	if [ -d "$$simulator" ]; then open -a "$$simulator"; else open -a Simulator; fi
+	@open -a Simulator
 	@xcrun simctl boot "$(SIMCTL_DEVICE)" 2>/dev/null || true
 	@xcrun simctl bootstatus "$(SIMCTL_DEVICE)" -b
 
