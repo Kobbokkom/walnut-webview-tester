@@ -1,6 +1,1 @@
-더 안전해진 Mac 페어링
-
-• 새 Mac 페어링은 iPhone과 Mac 양쪽에서 확인한 뒤에만 저장됩니다. Terminal에서 아니요로 답하면 양쪽 모두 페어링되지 않습니다. Mac에서 brew upgrade walnut-agent로 Walnut Agent를 업데이트하세요.
-• 기기 정보의 발열 상태 등 상태 값이 사용 언어로 표시됩니다.
-• 페어링이 끝났을 때 Mac Agent 상태를 더 명확하게 보여줍니다.
-• Mac의 Walnut Agent가 오래된 버전이면 알려줍니다. 이전 버전도 계속 사용할 수 있습니다.
+Console에 입력한 뒤 iPhone 화면을 회전하면 앱이 멈출 수 있는 문제를 수정했습니다. 배너 광고의 불필요한 재로딩도 줄였습니다.

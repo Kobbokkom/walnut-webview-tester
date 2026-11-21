@@ -1,6 +1,1 @@
-Sikrere Mac-parring
-
-• En ny Mac-parring gemmes først, når du har bekræftet på både iPhone og Mac. Hvis du svarer nej i Terminal, forbliver begge uparrede. Opdater Walnut Agent på din Mac med brew upgrade walnut-agent.
-• Enhedsoplysninger viser den termiske tilstand og andre statusværdier på dit sprog.
-• Tydeligere Mac Agent-status, når parringen afsluttes.
-• Walnut fortæller dig, når Walnut Agent på din Mac er forældet. Ældre versioner fungerer fortsat.
+Vi har rettet en fejl, hvor appen kunne fryse, når iPhonen blev drejet efter indtastning i konsollen, og reduceret unødvendig genindlæsning af bannerannoncer.

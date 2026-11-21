@@ -1,6 +1,1 @@
-Veiliger koppelen met Mac
-
-• Een nieuwe Mac-koppeling wordt pas opgeslagen nadat je dit op zowel de iPhone als de Mac hebt bevestigd. Als je in Terminal nee antwoordt, blijven beide ongekoppeld. Werk Walnut Agent op je Mac bij met brew upgrade walnut-agent.
-• Device-informatie toont de thermische status en andere statuswaarden in jouw taal.
-• Duidelijkere Mac Agent-status wanneer het koppelen eindigt.
-• Walnut laat je weten wanneer Walnut Agent op je Mac verouderd is. Oudere versies blijven werken.
+We hebben een probleem opgelost waarbij de app kon vastlopen als je de iPhone draaide na het typen in de console. Banneradvertenties worden minder vaak onnodig opnieuw geladen.

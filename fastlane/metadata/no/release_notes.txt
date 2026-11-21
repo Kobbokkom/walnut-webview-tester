@@ -1,6 +1,1 @@
-Tryggere Mac-sammenkobling
-
-• En ny Mac-sammenkobling lagres først etter at du har bekreftet på både iPhone og Mac. Hvis du svarer nei i Terminal, forblir begge usammenkoblet. Oppdater Walnut Agent på Macen med brew upgrade walnut-agent.
-• Enhetsinformasjon viser termisk tilstand og andre statusverdier på språket ditt.
-• Tydeligere Mac Agent-status når sammenkoblingen avsluttes.
-• Walnut sier fra når Walnut Agent på Macen er utdatert. Eldre versjoner fortsetter å fungere.
+Vi har rettet en feil som kunne få appen til å fryse når iPhonen ble rotert etter at du skrev i konsollen. Vi har også redusert unødvendig lasting av bannerannonser på nytt.

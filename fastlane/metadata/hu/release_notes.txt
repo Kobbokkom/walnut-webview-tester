@@ -1,6 +1,1 @@
-Biztonságosabb Mac-párosítás
-
-• Az új Mac-párosítás csak azután kerül mentésre, hogy mind az iPhone-on, mind a Macen megerősíted. Ha a Terminal kérdésére nemmel válaszolsz, mindkét eszköz párosítatlan marad. Frissítsd a Walnut Agent alkalmazást a Maceden ezzel: brew upgrade walnut-agent.
-• Az Eszközinformációk a hőállapotot és más állapotértékeket a saját nyelveden jeleníti meg.
-• Érthetőbb Mac Agent-állapot, amikor a párosítás véget ér.
-• A Walnut jelzi, ha a Maceden futó Walnut Agent elavult. A régebbi verziók továbbra is működnek.
+Javítottuk azt a hibát, amely miatt az alkalmazás lefagyhatott, ha a konzolba gépelés után elforgatták az iPhone-t. Csökkentettük a szalaghirdetések felesleges újratöltését is.

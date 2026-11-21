@@ -1,6 +1,1 @@
-Emparelhamento com Mac mais seguro
-
-• Um novo emparelhamento com Mac só é salvo depois que você confirma no iPhone e no Mac. Responder não no Terminal deixa ambos desemparelhados. Atualize o Walnut Agent no seu Mac com brew upgrade walnut-agent.
-• Informações do Dispositivo mostra o estado térmico e outros valores de status no seu idioma.
-• Status mais claro do Mac Agent quando o emparelhamento termina.
-• O Walnut avisa quando o Walnut Agent no seu Mac está desatualizado. Versões mais antigas continuam funcionando.
+Corrigimos um travamento que podia ocorrer ao girar o iPhone depois de digitar no Console. Também reduzimos os recarregamentos desnecessários de anúncios em banner.

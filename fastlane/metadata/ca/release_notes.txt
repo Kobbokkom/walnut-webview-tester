@@ -1,6 +1,1 @@
-Enllaç amb el Mac més segur
-
-• Un nou enllaç amb el Mac només es desa després que el confirmeu tant a l’iPhone com al Mac. Respondre que no a Terminal deixa tots dos sense enllaçar. Actualitzeu Walnut Agent al Mac amb brew upgrade walnut-agent.
-• Informació del dispositiu mostra l’estat tèrmic i altres valors d’estat en el vostre idioma.
-• Estat de Mac Agent més clar quan finalitza l’enllaç.
-• Walnut us avisa quan Walnut Agent al Mac no està actualitzat. Les versions antigues continuen funcionant.
+S’ha corregit un bloqueig que es podia produir en girar l’iPhone després d’escriure a la consola. També s’han reduït les recàrregues innecessàries dels bàners publicitaris.

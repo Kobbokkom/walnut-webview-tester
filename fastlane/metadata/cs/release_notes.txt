@@ -1,6 +1,1 @@
-Bezpečnější párování s Macem
-
-• Nové párování s Macem se uloží až poté, co ho potvrdíte na iPhonu i Macu. Když v Terminal odpovíte „no“, obě strany zůstanou nespárované. Aktualizujte Walnut Agent na Macu pomocí brew upgrade walnut-agent.
-• Informace o zařízení zobrazují tepelný stav a další stavové hodnoty ve vašem jazyce.
-• Jasnější stav Mac Agent po ukončení párování.
-• Walnut vám řekne, když je Walnut Agent na vašem Macu zastaralý. Starší verze budou dál fungovat.
+Opravili jsme zamrznutí aplikace při otočení iPhonu po psaní v konzoli a omezili zbytečné opětovné načítání reklamních bannerů.

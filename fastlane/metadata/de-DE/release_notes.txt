@@ -1,6 +1,1 @@
-Sicherere Mac-Kopplung
-
-• Eine neue Mac-Kopplung wird erst gespeichert, nachdem Sie sie sowohl auf dem iPhone als auch auf dem Mac bestätigt haben. Wenn Sie in Terminal mit Nein antworten, bleiben beide Geräte ungekuppelt. Aktualisieren Sie Walnut Agent auf Ihrem Mac mit brew upgrade walnut-agent.
-• Geräteinformationen zeigen den thermischen Zustand und andere Statuswerte in Ihrer Sprache an.
-• Klarerer Mac Agent-Status, wenn die Kopplung endet.
-• Walnut informiert Sie, wenn Walnut Agent auf Ihrem Mac veraltet ist. Ältere Versionen funktionieren weiterhin.
+Ein Fehler wurde behoben, bei dem die App nach einer Eingabe in der Konsole beim Drehen des iPhone einfrieren konnte. Banneranzeigen werden seltener unnötig neu geladen.

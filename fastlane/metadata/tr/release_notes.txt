@@ -1,6 +1,1 @@
-Daha güvenli Mac eşleştirme
-
-• Yeni bir Mac eşleştirmesi, yalnızca hem iPhone’da hem de Mac’te onay verdikten sonra kaydedilir. Terminal’de hayır yanıtı vermek, her ikisinin de eşleştirilmeden kalmasını sağlar. Mac’inizde Walnut Agent’ı brew upgrade walnut-agent ile güncelleyin.
-• Aygıt Bilgileri, termal durumu ve diğer durum değerlerini sizin dilinizde gösterir.
-• Eşleştirme sona erdiğinde daha net Mac Agent durumu.
-• Walnut, Mac’inizdeki Walnut Agent güncel olmadığında sizi bilgilendirir. Eski sürümler çalışmaya devam eder.
+Konsolda yazı yazdıktan sonra iPhone döndürüldüğünde uygulamanın donmasına yol açabilen bir sorun düzeltildi. Banner reklamların gereksiz yere yeniden yüklenmesi de azaltıldı.
