@@ -5,14 +5,14 @@
 //  URL input view components for ContentView.
 //
 
-import GoogleMobileAds
 import SwiftUI
 import SwiftUIBackports
 
 // MARK: - URL Input Views
 
 extension ContentView {
-    var urlInputView: some View {
+    // swiftlint:disable:next function_body_length
+    func urlInputView(bannerHeight: CGFloat) -> some View {
         GeometryReader { geometry in
             // Background tap to dismiss keyboard and dropdown
             Color.clear
@@ -154,12 +154,7 @@ extension ContentView {
                 .frame(maxWidth: .infinity)
             }
             .safeAreaInset(edge: .bottom, spacing: 0) {
-                if !StoreManager.shared.isAdRemoved {
-                    let adSize = currentOrientationAnchoredAdaptiveBanner(width: geometry.size.width)
-                    BannerAdView(adUnitId: AdManager.bannerAdUnitId, availableWidth: geometry.size.width)
-                        .frame(width: adSize.size.width, height: adSize.size.height)
-                        .background(.background)
-                }
+                Color.clear.frame(height: bannerHeight).allowsHitTesting(false)
             }
             .scrollDismissesKeyboard(.interactively)
             .onChange(of: textFieldFocused) { _, newValue in

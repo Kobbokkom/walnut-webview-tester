@@ -7,13 +7,22 @@ private let logger = Logger(subsystem: "com.walnut.wina", category: "AdManager")
 // MARK: - Banner Ad View
 
 struct BannerAdView: UIViewControllerRepresentable {
-    let adUnitId: String
-    let availableWidth: CGFloat
+    let adSize: AdSize
+    let isVisible: Bool
+
+    var placement: some View {
+        frame(width: adSize.size.width, height: isVisible ? adSize.size.height : 0)
+            .background(.background)
+            .clipped()
+            .allowsHitTesting(isVisible)
+            .accessibilityHidden(!isVisible)
+    }
 
     func makeUIViewController(context: Context) -> UIViewController {
         let controller = UIViewController()
         let banner = BannerView()
-        banner.adUnitID = adUnitId
+        banner.adUnitID = AdManager.bannerAdUnitId
+        banner.isHidden = true
         banner.delegate = context.coordinator
         banner.rootViewController = controller
         controller.view = banner
@@ -21,20 +30,52 @@ struct BannerAdView: UIViewControllerRepresentable {
     }
 
     func updateUIViewController(_ controller: UIViewController, context: Context) {
-        guard availableWidth > 0, let banner = controller.view as? BannerView else { return }
-        let adSize = currentOrientationAnchoredAdaptiveBanner(width: availableWidth)
-        guard context.coordinator.requestedSize != adSize.size else { return }
-        context.coordinator.requestedSize = adSize.size
-        banner.adSize = adSize
-        banner.load(Request())
+        guard let banner = controller.view as? BannerView else { return }
+        banner.isHidden = !isVisible || banner.adSize.size != adSize.size
+        context.coordinator.scheduleLoad(for: isVisible ? adSize : nil) { [weak banner] size in
+            guard let banner else { return }
+            banner.adSize = size
+            banner.isHidden = false
+            banner.load(Request())
+        }
+    }
+
+    static func dismantleUIViewController(_ controller: UIViewController, coordinator: BannerCoordinator) {
+        coordinator.cancelPendingLoad()
+        controller.view.isHidden = true
     }
 
     func makeCoordinator() -> BannerCoordinator {
         BannerCoordinator()
     }
 
-    class BannerCoordinator: NSObject, BannerViewDelegate {
-        var requestedSize: CGSize?
+    @MainActor final class BannerCoordinator: NSObject, BannerViewDelegate {
+        private var requestedSize: CGSize?
+        private var layoutSize: CGSize?
+        private var pendingLoad: Task<Void, Never>?
+
+        func scheduleLoad(for size: AdSize?, load: @escaping (AdSize) -> Void) {
+            guard layoutSize != size?.size else { return }
+            layoutSize = size?.size
+            cancelPendingLoad()
+            guard let size, requestedSize != size.size else { return }
+            pendingLoad = Task { [weak self] in
+                do {
+                    try await Task.sleep(for: .milliseconds(250))
+                } catch {
+                    return
+                }
+                guard !Task.isCancelled, let self else { return }
+                pendingLoad = nil
+                requestedSize = size.size
+                load(size)
+            }
+        }
+
+        func cancelPendingLoad() {
+            pendingLoad?.cancel()
+            pendingLoad = nil
+        }
 
         func bannerViewDidReceiveAd(_ bannerView: BannerView) {
             logger.info("Banner ad loaded successfully")
@@ -71,17 +112,13 @@ final class AdManager: NSObject {
 
     // MARK: - Ad Unit IDs
 
-    /// Interstitial ad unit ID (Production)
+    #if DEBUG
+    static let interstitialAdUnitId = "ca-app-pub-3940256099942544/4411468910"
+    static let bannerAdUnitId = "ca-app-pub-3940256099942544/2435281174"
+    #else
     static let interstitialAdUnitId = "ca-app-pub-6737616702687889/5962304852"
-
-    /// Banner ad unit ID (Production) - Home screen bottom
     static let bannerAdUnitId = "ca-app-pub-6737616702687889/6596869296"
-
-    /// Google's official test interstitial ad unit ID (always shows test ads)
-    static let testInterstitialAdUnitId = "ca-app-pub-3940256099942544/4411468910"
-
-    /// Google's official test banner ad unit ID (always shows test ads)
-    static let testBannerAdUnitId = "ca-app-pub-3940256099942544/2435281174"
+    #endif
 
     private var interstitialAd: InterstitialAd?
     private var shownAdIds: Set<String> = []

@@ -5,6 +5,7 @@
 //  Tests for AdManager and AdOptions.
 //
 
+import GoogleMobileAds
 import XCTest
 @testable import wina
 
@@ -80,27 +81,47 @@ final class AdManagerTests: XCTestCase {
     // MARK: - Ad Unit ID Tests
 
     func testInterstitialAdUnitIdIsValid() {
-        let adUnitId = AdManager.interstitialAdUnitId
-        XCTAssertFalse(adUnitId.isEmpty)
-        XCTAssertTrue(adUnitId.hasPrefix("ca-app-pub-"))
+        #if DEBUG
+        XCTAssertEqual(AdManager.interstitialAdUnitId, "ca-app-pub-3940256099942544/4411468910")
+        #else
+        XCTAssertEqual(AdManager.interstitialAdUnitId, "ca-app-pub-6737616702687889/5962304852")
+        #endif
     }
 
     func testBannerAdUnitIdIsValid() {
-        let adUnitId = AdManager.bannerAdUnitId
-        XCTAssertFalse(adUnitId.isEmpty)
-        XCTAssertTrue(adUnitId.hasPrefix("ca-app-pub-"))
+        #if DEBUG
+        XCTAssertEqual(AdManager.bannerAdUnitId, "ca-app-pub-3940256099942544/2435281174")
+        XCTAssertEqual(Bundle.main.object(forInfoDictionaryKey: "GADApplicationIdentifier") as? String,
+                       "ca-app-pub-3940256099942544~1458002511")
+        #else
+        XCTAssertEqual(AdManager.bannerAdUnitId, "ca-app-pub-6737616702687889/6596869296")
+        XCTAssertEqual(Bundle.main.object(forInfoDictionaryKey: "GADApplicationIdentifier") as? String,
+                       "ca-app-pub-6737616702687889~9215154150")
+        #endif
     }
 
-    func testTestInterstitialAdUnitIdIsGoogleTest() {
-        let testAdUnitId = AdManager.testInterstitialAdUnitId
-        // Google's test ad unit IDs start with this prefix
-        XCTAssertTrue(testAdUnitId.hasPrefix("ca-app-pub-3940256099942544"))
-    }
+    func testBannerRequestsOncePerVisibleSettledSize() async throws {
+        let coordinator = BannerAdView.BannerCoordinator()
+        var sizes: [CGSize] = []
+        let record: (AdSize) -> Void = { sizes.append($0.size) }
+        coordinator.scheduleLoad(for: AdSizeBanner, load: record)
+        coordinator.scheduleLoad(for: nil, load: record)
+        try await Task.sleep(for: .milliseconds(350))
+        XCTAssertTrue(sizes.isEmpty)
 
-    func testTestBannerAdUnitIdIsGoogleTest() {
-        let testAdUnitId = AdManager.testBannerAdUnitId
-        // Google's test ad unit IDs start with this prefix
-        XCTAssertTrue(testAdUnitId.hasPrefix("ca-app-pub-3940256099942544"))
+        coordinator.scheduleLoad(for: AdSizeLargeBanner, load: record)
+        coordinator.scheduleLoad(for: AdSizeBanner, load: record)
+        try await Task.sleep(for: .milliseconds(350))
+        XCTAssertEqual(sizes, [AdSizeBanner.size])
+
+        coordinator.scheduleLoad(for: nil, load: record)
+        coordinator.scheduleLoad(for: AdSizeBanner, load: record)
+        try await Task.sleep(for: .milliseconds(350))
+        XCTAssertEqual(sizes, [AdSizeBanner.size])
+
+        coordinator.scheduleLoad(for: AdSizeLargeBanner, load: record)
+        try await Task.sleep(for: .milliseconds(350))
+        XCTAssertEqual(sizes, [AdSizeBanner.size, AdSizeLargeBanner.size])
     }
 
     // MARK: - shownAdIds Tracking Tests

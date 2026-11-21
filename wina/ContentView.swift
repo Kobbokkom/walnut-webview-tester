@@ -5,6 +5,7 @@
 //  Created by 박지원 on 12/6/25.
 //
 
+import GoogleMobileAds
 import SafariServices
 import SwiftUI
 import SwiftUIBackports
@@ -156,7 +157,7 @@ struct ContentView: View {
             let hasPanel = docked && devToolsState.selectedTool != nil
             let browserFrame = hasPanel ? frames.browser : CGRect(origin: .zero, size: geometry.size)
             ZStack(alignment: .topLeading) {
-                browserContent(hasDockedDevTools: hasPanel)
+                browserContent(hasDockedDevTools: hasPanel, width: browserFrame.width)
                     .frame(width: browserFrame.width, height: browserFrame.height)
                     .onGeometryChange(for: CGSize.self) { proxy in
                         CGSize(width: proxy.size.width, height: proxy.size.height + proxy.safeAreaInsets.bottom)
@@ -364,8 +365,11 @@ struct ContentView: View {
         return (false, nil)
     }
 
-    private func browserContent(hasDockedDevTools: Bool) -> some View {
-        ZStack {
+    private func browserContent(hasDockedDevTools: Bool, width: CGFloat) -> some View {
+        let adSize = !StoreManager.shared.isAdRemoved && width >= 1
+            ? currentOrientationAnchoredAdaptiveBanner(width: floor(width))
+            : nil
+        return ZStack {
             if showWebView && !useSafariWebView {
                 // WebView screen
                 WebViewContainer(
@@ -376,7 +380,7 @@ struct ContentView: View {
                 .ignoresSafeArea(edges: .bottom)
             } else {
                 // URL input screen
-                urlInputView
+                urlInputView(bannerHeight: showWebView ? 0 : adSize?.size.height ?? 0)
             }
 
             // Menu bars
@@ -405,6 +409,11 @@ struct ContentView: View {
                 )
             } else if !showWebView {
                 topBar
+            }
+        }
+        .overlay(alignment: .bottom) {
+            if let adSize {
+                BannerAdView(adSize: adSize, isVisible: !showWebView).placement
             }
         }
         .overlay {
